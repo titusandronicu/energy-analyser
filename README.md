@@ -28,6 +28,7 @@ Configuration:
 | `SUPABASE_ANON_KEY` | Public/anon Supabase key; service-role and secret keys are rejected | unset         |
 | `ALLOW_SIGNUP`      | Enables the signup page and endpoint only when exactly `true`       | `false`       |
 | `APP_VERSION`       | Release identifier returned by `/api/health`                        | `development` |
+| `HOST`              | Address used by the standalone Node server                          | `::`          |
 
 For local auth testing, start Supabase with `npx supabase start`, copy its API URL and anon key to `.env`, and set `ALLOW_SIGNUP=true`. Public signup stays disabled in production; create the owner account manually in Supabase.
 
@@ -71,9 +72,10 @@ Runtime secrets belong in `/opt/energy-analyser/.env.runtime` with mode `600`:
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_ANON_KEY=<anon-key>
 ALLOW_SIGNUP=false
+HOST=2a01:4f9:6b:4f6b::170
 ```
 
-The service listens on IPv6 `::`, port `20170`. Micr.us terminates TLS and forwards `https://neil170-20170.mikrus.cloud` to that port.
+The production service listens on the VPS's dedicated IPv6 address, port `20170`. Binding the specific IPv6 address avoids the IPv4 `rathole` listener that Micr.us uses on the same port. Micr.us terminates TLS and forwards `https://neil170-20170.mikrus.cloud` to that port.
 
 ## Health endpoint
 

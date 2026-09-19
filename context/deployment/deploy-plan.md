@@ -8,7 +8,7 @@ Wdrożyć publicznie aktualny starter Astro z jednoosobowym logowaniem jako kont
 - Obraz: `ghcr.io/titusandronicu/energy-analyser:sha-<pełny-commit>` (publiczny).
 - VPS: `root@neil170.mikrus.xyz`, SSH `10170`; po bootstrapie wdrożenia wykonuje użytkownik `deploy`.
 - Publiczny adres: `https://neil170-20170.mikrus.cloud`.
-- Serwer: HTTP na `[::]:20170`; TLS kończy proxy Mikrusa, bez Caddy.
+- Serwer: HTTP na dedykowanym adresie IPv6 `[2a01:4f9:6b:4f6b::170]:20170`; TLS kończy proxy Mikrusa, bez Caddy. Konkretny adres IPv6 jest wymagany, ponieważ zarządzany przez Mikrusa proces `rathole` zajmuje wariant IPv4 tego samego portu, a kernel ma wyłączone `bindv6only`.
 
 ## Zmiany w repozytorium
 

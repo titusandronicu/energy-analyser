@@ -76,7 +76,7 @@ jobs:
           docker compose --env-file release.env up -d
           for attempt in $(seq 1 30); do
             version=$(docker compose --env-file release.env exec -T app node -e \
-              "fetch('http://[::1]:20170/api/health').then(r=>r.json()).then(j=>process.stdout.write(j.version)).catch(()=>process.exit(1))" 2>/dev/null || true)
+              "fetch('http://['+process.env.HOST+']:20170/api/health').then(r=>r.json()).then(j=>process.stdout.write(j.version)).catch(()=>process.exit(1))" 2>/dev/null || true)
             if test "$version" = "$RELEASE_SHA"; then
               trap - ERR
               exit 0

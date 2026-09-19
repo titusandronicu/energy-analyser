@@ -47,7 +47,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 - Node.js v22.14.0 (see `.nvmrc`)
 - Env vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ALLOW_SIGNUP`, `APP_VERSION` (copy `.env.example` to `.env` locally)
 - Local Supabase: `npx supabase start` (requires Docker)
-- Production: `HOST=:: PORT=20170 node ./dist/server/entry.mjs`; Compose loads secrets from uncommitted `.env.runtime` and image/version from `release.env`.
+- Production: `HOST=2a01:4f9:6b:4f6b::170 PORT=20170 node ./dist/server/entry.mjs`; Compose loads runtime configuration and secrets from uncommitted `.env.runtime` and image/version from `release.env`. Bind the dedicated IPv6 address, not `::`, because Micr.us already listens on the IPv4 side of port `20170`.
 
 ## CI
 

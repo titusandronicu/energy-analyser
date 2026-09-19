@@ -7,7 +7,6 @@ services:
       - .env.runtime
     environment:
       APP_VERSION: ${APP_VERSION}
-      HOST: "::"
       PORT: "20170"
     read_only: true
     tmpfs:
@@ -23,7 +22,7 @@ services:
           "CMD",
           "node",
           "-e",
-          "fetch('http://[::1]:20170/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+          "fetch('http://['+process.env.HOST+']:20170/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
         ]
       interval: 15s
       timeout: 5s
