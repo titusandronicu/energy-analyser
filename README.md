@@ -31,7 +31,7 @@ Configuration:
 | `APP_ORIGIN`        | Trusted public origin for CSRF checks on mutating API requests      | request origin |
 | `HOST`              | Address used by the standalone Node server                          | `::`           |
 
-For local auth testing, start Supabase with `npx supabase start`, copy its API URL and anon key to `.env`, and set `ALLOW_SIGNUP=true`. Public signup stays disabled in production; create the owner account manually in Supabase.
+For local auth testing, start Supabase with `npx supabase start`, copy its API URL and anon key to `.env`, and set `ALLOW_SIGNUP=true`. Public signup stays disabled in production; create the owner account manually in Supabase. In hosted Supabase, keep the email provider enabled for sign-in while setting the global `auth.enable_signup` option to `false`.
 
 ## Commands
 

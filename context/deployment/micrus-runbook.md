@@ -61,7 +61,7 @@ Restrict it immediately:
 chmod 600 /opt/energy-analyser/.env.runtime
 ```
 
-In Supabase, disable public email signup, create the single owner account, and set the Site URL to `https://neil170-20170.mikrus.cloud`.
+In Supabase, set global `auth.enable_signup=false`, keep `auth.email.enable_signup=true` so the existing owner can still sign in, create the single owner account, and set the Site URL to `https://neil170-20170.mikrus.cloud`.
 
 ## 4. Configure GitHub
 

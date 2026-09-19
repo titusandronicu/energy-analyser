@@ -30,7 +30,7 @@ Przed wdrożeniem operator:
 - potwierdza Debian/Ubuntu, minimum 512 MB RAM, 1 GB wolnego dysku oraz przydział portu `20170`;
 - instaluje/weryfikuje Docker Engine z Compose, tworzy `deploy` i `/opt/energy-analyser`;
 - tworzy `.env.runtime` z `SUPABASE_URL`, anon key, `ALLOW_SIGNUP=false` i wersją aplikacji;
-- wyłącza signup w Supabase, tworzy konto właściciela i ustawia Site URL;
+- ustawia globalne `auth.enable_signup=false` w Supabase, pozostawiając provider e-mail włączony dla logowania istniejącego właściciela, tworzy konto właściciela i ustawia Site URL;
 - opcjonalnie przygotowuje Tailscale dopiero po wdrożeniu ACL ograniczającego dostęp do HA `8123` i Ollama `11434`.
 
 Jeżeli system, zasoby lub przydział portu nie spełniają wymagań, wdrożenie zostaje zatrzymane zamiast samodzielnej zmiany założeń.
