@@ -1,0 +1,88 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full 40-character Git commit SHA to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.sha }}
+      - name: Validate release SHA
+        env:
+          RELEASE_SHA: ${{ inputs.sha }}
+        run: |
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "A full lowercase commit SHA is required"; exit 1; }
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+      - name: Upload Compose configuration
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: scp -i ~/.ssh/deploy_key -P "$SSH_PORT" compose.yaml "$SSH_USER@$SSH_HOST:/opt/energy-analyser/compose.yaml.next"
+      - name: Deploy and roll back automatically on failed health check
+        env:
+          RELEASE_SHA: ${{ inputs.sha }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
+            "RELEASE_SHA='$RELEASE_SHA' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+          cd /opt/energy-analyser
+          test -f .env.runtime
+          test "$(stat -c '%a' .env.runtime)" = "600"
+          if test -f compose.yaml; then cp compose.yaml compose.yaml.previous; fi
+          if test -f release.env; then cp release.env release.env.previous; fi
+          mv compose.yaml.next compose.yaml
+          printf 'IMAGE=ghcr.io/titusandronicu/energy-analyser:sha-%s\nAPP_VERSION=%s\n' "$RELEASE_SHA" "$RELEASE_SHA" > release.env
+
+          rollback() {
+            if test -f release.env.previous; then
+              cp release.env.previous release.env
+              if test -f compose.yaml.previous; then cp compose.yaml.previous compose.yaml; fi
+              docker compose --env-file release.env up -d
+            fi
+          }
+          trap rollback ERR
+
+          docker compose --env-file release.env pull
+          docker compose --env-file release.env up -d
+          for attempt in $(seq 1 30); do
+            version=$(docker compose --env-file release.env exec -T app node -e \
+              "fetch('http://[::1]:20170/api/health').then(r=>r.json()).then(j=>process.stdout.write(j.version)).catch(()=>process.exit(1))" 2>/dev/null || true)
+            if test "$version" = "$RELEASE_SHA"; then
+              trap - ERR
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Health check failed for $RELEASE_SHA" >&2
+          false
+          REMOTE

@@ -1,0 +1,12 @@
+.git
+.github
+.astro
+.DS_Store
+.env
+.env.*
+!.env.example
+.wrangler
+context
+dist
+node_modules
+npm-debug.log*

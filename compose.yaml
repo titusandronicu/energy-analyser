@@ -1,0 +1,36 @@
+services:
+  app:
+    image: ${IMAGE}
+    network_mode: host
+    restart: unless-stopped
+    env_file:
+      - .env.runtime
+    environment:
+      APP_VERSION: ${APP_VERSION}
+      HOST: "::"
+      PORT: "20170"
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 384m
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://[::1]:20170/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
