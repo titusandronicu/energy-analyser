@@ -22,13 +22,14 @@ npm run dev
 
 Configuration:
 
-| Variable            | Purpose                                                             | Default       |
-| ------------------- | ------------------------------------------------------------------- | ------------- |
-| `SUPABASE_URL`      | Supabase project URL                                                | unset         |
-| `SUPABASE_ANON_KEY` | Public/anon Supabase key; service-role and secret keys are rejected | unset         |
-| `ALLOW_SIGNUP`      | Enables the signup page and endpoint only when exactly `true`       | `false`       |
-| `APP_VERSION`       | Release identifier returned by `/api/health`                        | `development` |
-| `HOST`              | Address used by the standalone Node server                          | `::`          |
+| Variable            | Purpose                                                             | Default        |
+| ------------------- | ------------------------------------------------------------------- | -------------- |
+| `SUPABASE_URL`      | Supabase project URL                                                | unset          |
+| `SUPABASE_ANON_KEY` | Public/anon Supabase key; service-role and secret keys are rejected | unset          |
+| `ALLOW_SIGNUP`      | Enables the signup page and endpoint only when exactly `true`       | `false`        |
+| `APP_VERSION`       | Release identifier returned by `/api/health`                        | `development`  |
+| `APP_ORIGIN`        | Trusted public origin for CSRF checks on mutating API requests      | request origin |
+| `HOST`              | Address used by the standalone Node server                          | `::`           |
 
 For local auth testing, start Supabase with `npx supabase start`, copy its API URL and anon key to `.env`, and set `ALLOW_SIGNUP=true`. Public signup stays disabled in production; create the owner account manually in Supabase.
 
@@ -72,6 +73,7 @@ Runtime secrets belong in `/opt/energy-analyser/.env.runtime` with mode `600`:
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_ANON_KEY=<anon-key>
 ALLOW_SIGNUP=false
+APP_ORIGIN=https://neil170-20170.mikrus.cloud
 HOST=2a01:4f9:6b:4f6b::170
 ```
 

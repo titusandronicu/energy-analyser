@@ -45,7 +45,8 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 ### Environment
 
 - Node.js v22.14.0 (see `.nvmrc`)
-- Env vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ALLOW_SIGNUP`, `APP_VERSION` (copy `.env.example` to `.env` locally)
+- Env vars: `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `ALLOW_SIGNUP`, `APP_VERSION`, `APP_ORIGIN` (copy `.env.example` to `.env` locally)
+- Mutating `/api/*` requests are protected in `src/middleware.ts` by comparing the `Origin` header with `APP_ORIGIN` (or the request origin locally). Astro's built-in origin check is disabled because the Micr.us/Cloudflare proxy changes the internal request origin.
 - Local Supabase: `npx supabase start` (requires Docker)
 - Production: `HOST=2a01:4f9:6b:4f6b::170 PORT=20170 node ./dist/server/entry.mjs`; Compose loads runtime configuration and secrets from uncommitted `.env.runtime` and image/version from `release.env`. Bind the dedicated IPv6 address, not `::`, because Micr.us already listens on the IPv4 side of port `20170`.
 

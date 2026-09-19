@@ -10,6 +10,9 @@ import node from "@astrojs/node";
 export default defineConfig({
   site: "https://neil170-20170.mikrus.cloud",
   output: "server",
+  security: {
+    checkOrigin: false,
+  },
   integrations: [react(), sitemap()],
   vite: {
     plugins: [tailwindcss()],
@@ -21,6 +24,7 @@ export default defineConfig({
       SUPABASE_ANON_KEY: envField.string({ context: "server", access: "secret", optional: true }),
       ALLOW_SIGNUP: envField.string({ context: "server", access: "secret", optional: true, default: "false" }),
       APP_VERSION: envField.string({ context: "server", access: "secret", optional: true, default: "development" }),
+      APP_ORIGIN: envField.string({ context: "server", access: "secret", optional: true }),
     },
   },
 });

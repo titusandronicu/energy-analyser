@@ -51,6 +51,7 @@ As `deploy`, create `/opt/energy-analyser/.env.runtime` directly on the VPS:
 SUPABASE_URL=https://PROJECT_REF.supabase.co
 SUPABASE_ANON_KEY=PUBLIC_ANON_KEY
 ALLOW_SIGNUP=false
+APP_ORIGIN=https://neil170-20170.mikrus.cloud
 HOST=2a01:4f9:6b:4f6b::170
 ```
 
