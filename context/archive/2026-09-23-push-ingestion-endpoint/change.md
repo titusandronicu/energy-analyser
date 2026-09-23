@@ -1,10 +1,10 @@
 ---
 change_id: push-ingestion-endpoint
 title: Authenticated, idempotent push ingestion endpoint for home-lab data
-status: impl_reviewed
+status: archived
 created: 2026-09-23
 updated: 2026-09-23
-archived_at: null
+archived_at: 2026-09-23T12:36:07Z
 ---
 
 ## Notes
