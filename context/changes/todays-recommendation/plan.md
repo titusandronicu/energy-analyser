@@ -257,7 +257,7 @@ The additive migration doesn't touch existing data. In production, run it before
 #### Automated
 
 - [x] 2.1 Lint, type check, build and unit tests pass — 5218d06
-- [ ] 2.2 CI `smoke` job passes including the dashboard-shows-recommendation step
+- [x] 2.2 CI `smoke` job passes including the dashboard-shows-recommendation step — ba798bf
 - [x] 2.3 No references to the deleted starter components remain — 5218d06
 
 #### Manual
@@ -268,7 +268,7 @@ The additive migration doesn't touch existing data. In production, run it before
 
 #### Automated
 
-- [ ] 3.1 CI `ci` and `smoke` jobs pass on the PR
+- [x] 3.1 CI `ci` and `smoke` jobs pass on the PR — ba798bf
 
 #### Manual
 
