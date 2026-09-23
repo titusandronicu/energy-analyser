@@ -257,9 +257,9 @@ No database migration. Production needs the two email templates set in the Supab
 
 #### Automated
 
-- [x] 2.1 Lint, type check and build pass
-- [x] 2.2 Unit tests pass: `npm test`
-- [x] 2.3 No references to removed routes or components remain
+- [x] 2.1 Lint, type check and build pass — 01c8bb6
+- [x] 2.2 Unit tests pass: `npm test` — 01c8bb6
+- [x] 2.3 No references to removed routes or components remain — 01c8bb6
 
 #### Manual
 

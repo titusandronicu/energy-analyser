@@ -63,6 +63,8 @@ chmod 600 /opt/energy-analyser/.env.runtime
 
 In Supabase, set global `auth.enable_signup=false`, keep `auth.email.enable_signup=true` so the existing owner can still sign in, create the single owner account, and set the Site URL to `https://neil170-20170.mikrus.cloud`.
 
+Sign-in is an emailed one-time link. Under Authentication → Emails, set **both** the "Magic link" and "Confirm signup" templates to the body of `supabase/templates/magic-link.html` (subject: `Twój link do logowania — Energy Analyser`). Do this **before** deploying a release that includes `/auth/confirm`: Supabase's default template links to a flow the app doesn't accept, so sign-in fails until the template is changed. The owner's sign-in email must be a member of the Supabase organisation while the built-in mailer is used.
+
 ## 4. Configure GitHub
 
 Create the public repository `titusandronicu/energy-analyser`, push `main`, and configure the `production` environment with required reviewers. Add these environment secrets:
@@ -82,10 +84,10 @@ Wait for CI and image publication for the chosen commit. Run the **Deploy produc
 ```bash
 curl -fsS https://neil170-20170.mikrus.cloud/api/health
 curl -I https://neil170-20170.mikrus.cloud/dashboard
-curl -I https://neil170-20170.mikrus.cloud/auth/signup
+curl -I https://neil170-20170.mikrus.cloud/auth/signup   # expect 404
 ```
 
-Confirm owner login and logout in a browser. Restart the container once and confirm it returns healthy. Do not run `npm run smoke` against production because that test creates a user.
+Confirm owner sign-in in a browser: request a link, open it on a different device than the one that requested it, land on `/dashboard`, then sign out. Restart the container once and confirm it returns healthy. Do not run `npm run smoke` against production because that test creates a user.
 
 ## Rollback
 

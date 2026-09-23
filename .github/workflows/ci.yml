@@ -36,7 +36,7 @@ jobs:
       - run: npm ci
       - name: Start local Supabase
         run: |
-          npx supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,realtime,storage-api,postgres-meta,supavisor
+          npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,storage-api,postgres-meta,supavisor
           npx supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' > supabase.env
       - name: Build and run the Node server
         run: |
@@ -44,6 +44,6 @@ jobs:
           SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" ALLOW_SIGNUP=true npm run build
           SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" ALLOW_SIGNUP=true APP_VERSION="$GITHUB_SHA" HOST=127.0.0.1 PORT=4321 node ./dist/server/entry.mjs &
           for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:4321/api/health && break; sleep 1; done
-          BASE_URL=http://127.0.0.1:4321 SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" npm run smoke
+          BASE_URL=http://127.0.0.1:4321 MAILPIT_URL=http://127.0.0.1:54324 SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" npm run smoke
       - if: always()
         run: npx supabase stop --no-backup
