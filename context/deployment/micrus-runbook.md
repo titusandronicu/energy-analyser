@@ -65,6 +65,16 @@ In Supabase, set global `auth.enable_signup=false`, keep `auth.email.enable_sign
 
 Sign-in is an emailed one-time link. Under Authentication → Emails, set **both** the "Magic link" and "Confirm signup" templates to the body of `supabase/templates/magic-link.html` (subject: `Twój link do logowania — Energy Analyser`). Do this **before** deploying a release that includes `/auth/confirm`: Supabase's default template links to a flow the app doesn't accept, so sign-in fails until the template is changed. The owner's sign-in email must be a member of the Supabase organisation while the built-in mailer is used.
 
+Only users listed in `public.app_owners` can read the pushed data. After applying the migrations, register the owner once in the SQL editor:
+
+```sql
+insert into public.app_owners (user_id)
+select id from auth.users where email = '<owner email>'
+on conflict do nothing;
+```
+
+Never apply `supabase/seed.sql` to production: its trigger makes every user an owner.
+
 ## 4. Configure GitHub
 
 Create the public repository `titusandronicu/energy-analyser`, push `main`, and configure the `production` environment with required reviewers. Add these environment secrets:

@@ -28,7 +28,7 @@ function storeCookies(response) {
   }
 }
 
-async function request(path, { method = "GET", form } = {}) {
+async function request(path, { method = "GET", form, readBody = false } = {}) {
   const response = await fetch(new URL(path, BASE_URL), {
     method,
     redirect: "manual",
@@ -40,11 +40,21 @@ async function request(path, { method = "GET", form } = {}) {
     body: form ? new URLSearchParams(form).toString() : undefined,
   });
   storeCookies(response);
-  return { status: response.status, location: response.headers.get("location") ?? "" };
+  const body = readBody ? await response.text() : undefined;
+  return { status: response.status, location: response.headers.get("location") ?? "", body };
 }
 
+// A recommendation generated "now", with a text unique to this run, pushed before the dashboard check.
+const freshMarker = `Smoke rekomendacja ${Date.now()}`;
+const freshPush = () =>
+  ingest({
+    ...example,
+    captured_at: new Date(Date.now() - 60_000).toISOString(),
+    recommendation: { ...example.recommendation, generated_at: new Date().toISOString(), text: freshMarker },
+  });
+
 const steps = [
-  ["home renders", () => request("/"), { status: 200 }],
+  ["home redirects anonymous user to sign-in", () => request("/"), { status: 302, location: "/auth/signin" }],
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
   ["password sign-up is gone", () => request("/auth/signup"), { status: 404 }],
   [
@@ -59,7 +69,13 @@ const steps = [
   ],
   ["sign-in email arrives in Mailpit", fetchSigninLink, { status: 200 }],
   ["sign-in link opens a session", () => request(signinLink), { status: 302, location: "/dashboard" }],
-  ["dashboard renders for signed-in user", () => request("/dashboard"), { status: 200 }],
+  ["home redirects signed-in owner to dashboard", () => request("/"), { status: 302, location: "/dashboard" }],
+  ["fresh recommendation is pushed", freshPush, { status: 201 }],
+  [
+    "dashboard shows the fresh recommendation",
+    () => request("/dashboard", { readBody: true }),
+    { status: 200, contains: freshMarker, notContains: "Nieaktualna" },
+  ],
   ["used sign-in link is rejected", () => request(signinLink), { status: 302, location: "/auth/signin?error=" }],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
@@ -117,6 +133,16 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     },
     { status: 401 },
   ]);
+  steps.push([
+    "anon cannot read recommendations directly",
+    async () => {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/recommendations?select=text`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      return { status: response.status, location: "" };
+    },
+    { status: 401 },
+  ]);
 } else {
   console.log("SKIP  anon direct-table check (SUPABASE_URL / SUPABASE_ANON_KEY not set)");
 }
@@ -126,7 +152,9 @@ for (const [name, run, expected] of steps) {
   const actual = await run();
   const ok =
     actual.status === expected.status &&
-    (expected.location === undefined || actual.location.startsWith(expected.location));
+    (expected.location === undefined || actual.location.startsWith(expected.location)) &&
+    (expected.contains === undefined || Boolean(actual.body?.includes(expected.contains))) &&
+    (expected.notContains === undefined || !actual.body?.includes(expected.notContains));
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
   if (!ok) {
     failed++;
