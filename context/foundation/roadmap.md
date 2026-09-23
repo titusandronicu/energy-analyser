@@ -40,7 +40,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | ID   | Change ID                 | Outcome (user can …)                                                    | Prerequisites | PRD refs                     | Status   |
 | ---- | ------------------------- | ----------------------------------------------------------------------- | ------------- | ---------------------------- | -------- |
 | F-01 | push-ingestion-endpoint   | (foundation) the home lab can push an authenticated, versioned payload  | —             | NFR (secrets, raw data)      | done     |
-| S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | ready    |
+| S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | in-progress |
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop        | F-01, S-01    | US-01, FR-002, FR-004        | proposed |
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence    | F-01, S-01    | US-01, FR-005, FR-006        | proposed |
 | S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-01, S-01    | US-01, FR-003                | proposed |
@@ -97,7 +97,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** — (resolved 2026-09-23: emailed magic link with a long-lived session; a pre-issued reusable link is parked, see ## Parked)
 - **Risk:** Replaces the starter's email/password flow; kept first and small because every page-facing slice relies on the session.
-- **Status:** ready
+- **Status:** in-progress
 
 ### S-02: Live state with staleness
 

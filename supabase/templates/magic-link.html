@@ -1,0 +1,6 @@
+<!-- Used for both the magic-link and confirm-signup emails. The token-hash link works on any device.
+     Production: paste this into Supabase → Authentication → Emails (Magic link and Confirm signup). -->
+<h2>Logowanie do Energy Analyser</h2>
+<p>Kliknij poniższy link, aby się zalogować. Możesz go otworzyć na dowolnym urządzeniu.</p>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email">Zaloguj się</a></p>
+<p>Link jest jednorazowy i wygasa po godzinie. Jeśli to nie Ty próbujesz się zalogować, zignoruj tę wiadomość.</p>
