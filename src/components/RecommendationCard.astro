@@ -1,0 +1,75 @@
+---
+import type { RecommendationView } from "@/lib/services/recommendation";
+
+interface Props {
+  view: RecommendationView | null;
+}
+
+// null means loading failed; the page never throws a 500 for a data problem.
+const { view } = Astro.props;
+---
+
+<section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
+  <h2 class="mb-4 text-lg font-semibold text-blue-100">Rekomendacja na dziś</h2>
+
+  {view === null && (
+    <p class="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">
+      Nie udało się wczytać rekomendacji. Spróbuj odświeżyć stronę.
+    </p>
+  )}
+
+  {view?.kind === "empty" && (
+    <p class="text-blue-100/70">Brak rekomendacji — laboratorium jeszcze nie przesłało danych.</p>
+  )}
+
+  {view?.kind === "recommendation" && (
+    <div class="space-y-4">
+      {view.isStale && (
+        <p
+          class="rounded-lg border border-amber-400/40 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
+          data-testid="stale-warning"
+        >
+          Nieaktualna — ta rekomendacja nie jest z ostatnich godzin. Laboratorium mogło przestać przesyłać dane.
+        </p>
+      )}
+
+      <p class="leading-relaxed whitespace-pre-line" data-testid="recommendation-text">
+        {view.text}
+      </p>
+
+      <dl class="grid grid-cols-2 gap-3 rounded-lg bg-white/5 p-3 text-sm">
+        <div>
+          <dt class="text-blue-100/60">Prognoza na dziś</dt>
+          <dd class="font-medium">{view.forecast.todayLabel}</dd>
+        </div>
+        <div>
+          <dt class="text-blue-100/60">Prognoza na jutro</dt>
+          <dd class="font-medium">{view.forecast.tomorrowLabel}</dd>
+        </div>
+        <div class="col-span-2">
+          <dt class="text-blue-100/60">Pewność prognozy</dt>
+          <dd class="font-medium">{view.forecast.confidenceLabel}</dd>
+        </div>
+      </dl>
+
+      {view.findings.length > 0 && (
+        <details class="text-sm text-blue-100/80">
+          <summary class="cursor-pointer text-blue-100">Na podstawie</summary>
+          <ul class="mt-2 list-disc space-y-1 pl-5">
+            {view.findings.map((finding) => (
+              <li>{finding}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      <p class="text-xs text-blue-100/50">
+        Wygenerowano {view.generatedAtLabel} · {view.modelLabel}
+      </p>
+    </div>
+  )}
+
+  <p class="mt-4 text-xs text-blue-100/50">
+    To tylko porada. Aplikacja niczego nie zmienia w falowniku ani w Home Assistant.
+  </p>
+</section>

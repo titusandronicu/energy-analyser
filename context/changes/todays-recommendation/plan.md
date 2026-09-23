@@ -243,10 +243,10 @@ The additive migration doesn't touch existing data. In production, run it before
 
 #### Automated
 
-- [x] 1.1 Migration applies on a clean local DB
-- [x] 1.2 Unit tests pass: `npm test`
-- [x] 1.3 View-model tests cover staleness boundaries, confidence, missing values and malformed facts
-- [x] 1.4 Lint, type check and build pass
+- [x] 1.1 Migration applies on a clean local DB — 02d1ce3
+- [x] 1.2 Unit tests pass: `npm test` — 02d1ce3
+- [x] 1.3 View-model tests cover staleness boundaries, confidence, missing values and malformed facts — 02d1ce3
+- [x] 1.4 Lint, type check and build pass — 02d1ce3
 
 #### Manual
 
@@ -256,9 +256,9 @@ The additive migration doesn't touch existing data. In production, run it before
 
 #### Automated
 
-- [ ] 2.1 Lint, type check, build and unit tests pass
+- [x] 2.1 Lint, type check, build and unit tests pass
 - [ ] 2.2 CI `smoke` job passes including the dashboard-shows-recommendation step
-- [ ] 2.3 No references to the deleted starter components remain
+- [x] 2.3 No references to the deleted starter components remain
 
 #### Manual
 
