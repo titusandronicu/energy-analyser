@@ -1,7 +1,12 @@
-// Smoke test: proves the built Node app and the Supabase auth flow still work together.
+// Smoke test: proves the built Node app, the Supabase auth flow and the push ingestion path work together.
 // Zero dependencies on purpose. Run against a live server: BASE_URL=http://localhost:4321 node scripts/smoke.mjs
+// Ingest steps use the local/CI seed token; SUPABASE_URL + SUPABASE_ANON_KEY enable the direct-table check.
+import { readFileSync } from "node:fs";
+import { URL } from "node:url";
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
+const INGEST_TOKEN = process.env.INGEST_TOKEN ?? "local-dev-ingest-token-not-secret";
+const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
 const email = `smoke-${Date.now()}@example.com`;
 const password = "Smoke-Test-Passw0rd!";
 const jar = new Map();
@@ -57,6 +62,45 @@ const steps = [
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
 ];
+
+// Machine push: no cookies and no Origin header, like the home lab.
+async function ingest(body, token = INGEST_TOKEN) {
+  const response = await fetch(`${BASE_URL}/api/ingest`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: typeof body === "string" ? body : JSON.stringify(body),
+  });
+  return { status: response.status, location: "" };
+}
+
+const example = JSON.parse(readFileSync(new URL("../docs/ingest/example-v1.json", import.meta.url), "utf8"));
+const payload = { ...example, captured_at: new Date().toISOString() };
+const changed = { ...payload, state: { ...payload.state, pv_w: (payload.state.pv_w ?? 0) + 1 } };
+
+steps.push(
+  ["ingest rejects a missing token", () => ingest(payload, null), { status: 401 }],
+  ["ingest rejects a wrong token", () => ingest(payload, "wrong-token"), { status: 401 }],
+  ["ingest stores a new push without an Origin header", () => ingest(payload), { status: 201 }],
+  ["ingest accepts an identical re-send as duplicate", () => ingest(payload), { status: 200 }],
+  ["ingest rejects changed content at the same capture time", () => ingest(changed), { status: 409 }],
+  ["ingest rejects unknown fields", () => ingest({ ...payload, customer_id: "x" }), { status: 422 }],
+  ["ingest rejects an oversized body", () => ingest(" ".repeat(300 * 1024)), { status: 413 }],
+);
+
+if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+  steps.push([
+    "anon cannot read ingested pushes directly",
+    async () => {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/ingest_pushes?select=id`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      return { status: response.status, location: "" };
+    },
+    { status: 401 },
+  ]);
+} else {
+  console.log("SKIP  anon direct-table check (SUPABASE_URL / SUPABASE_ANON_KEY not set)");
+}
 
 let failed = 0;
 for (const [name, run, expected] of steps) {

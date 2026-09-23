@@ -1,4 +1,5 @@
 import { createServerClient, parseCookieHeader } from "@supabase/ssr";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { AstroCookies } from "astro";
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from "astro:env/server";
 
@@ -19,6 +20,17 @@ function assertAnonKey(key: string) {
   } catch (error) {
     if (error instanceof Error && error.message.includes("service_role")) throw error;
   }
+}
+
+// For machine callers (the home-lab push): anon role, no cookies, no session.
+export function createAnonClient() {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return null;
+  }
+  assertAnonKey(SUPABASE_ANON_KEY);
+  return createSupabaseClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  });
 }
 
 export function createClient(requestHeaders: Headers, cookies: AstroCookies) {
