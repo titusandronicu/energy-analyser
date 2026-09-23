@@ -44,8 +44,10 @@ What gets stored: raw pushes for 14 days, daily totals per day (the push with th
 
 Tokens are stored only as SHA-256 hashes in `public.ingest_tokens`, and there is no service-role key anywhere.
 
+Payload validation (strict keys, size cap, capture-time window) happens in the app, not in the database. The `ingest_push` function checks only the token, so someone holding both an ingest token and the app's Supabase anon key could bypass validation by calling it directly. That's accepted for v1 because the home lab never receives the anon key. Keep it that way: give pushers only the ingest token, and never both secrets.
+
 1. **Create:** `node scripts/create-ingest-token.mjs <label>` prints the token once, plus an `insert` statement. Run the statement in the Supabase SQL editor and put the token in the home lab's push config (never in either repo).
-2. **Verify:** `BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs` should print `201`.
+2. **Verify:** `BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs` should print `201`. It sends only the live `state` section, which the next real push supersedes. `--full` also sends the example's made-up recommendation and daily history; use it only against a local database, because recommendations are never pruned.
 3. **Rotate:** create a new token, switch the lab to it, then revoke the old one. Both work in the meantime.
 4. **Revoke:** `update public.ingest_tokens set revoked_at = now() where label = '<label>';`
 
