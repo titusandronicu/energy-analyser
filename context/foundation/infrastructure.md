@@ -18,6 +18,15 @@ This is the user's accepted choice after comparing six managed platforms plus AW
 
 Use Tailscale between Micr.us and the home network. Do not expose Home Assistant, Ollama or a NAS management interface directly to the public internet. Keep Supabase managed and use OpenRouter as an LLM fallback.
 
+## Existing home-lab data plane (reviewed 2026-09-23)
+
+This plan was written as if the data sources would be new integrations. They already run in the home lab (see [existing-system.md](existing-system.md)): Home Assistant with the Deye inverter, PGE import and bill math, a 5-minute refresh job, SQLite history, and the lab analyser's LLM provider chain (HA conversation → local Ollama → OpenRouter). Consequences for this plan:
+
+- **The private path isn't ready.** Home Assistant, the history store and the analyser are LAN-only. Ollama is bound to localhost on its host. The home lab's only Tailscale node today is the legacy NAS that is being retired, and Tailscale for the new platform is still planned. The "Micr.us → Tailscale → HA/LLM" link in *Getting Started* step 4 has nothing to connect to yet.
+- **Local LLM is the running primary, not a fallback.** OpenRouter is opt-in escalation in the existing system. If the VPS keeps OpenRouter as the default, recommendation text will differ from what the lab page produces from the same facts.
+- **Much of the pipeline already exists.** The daily ingestion and pre-compute job in this plan duplicates the home-lab refresh pipeline. The cheaper option is to pull its public-safe aggregates, which were designed to leave the private store, rather than re-collecting from HA.
+- **Hosting at home is an option.** Running the app inside the home lab removes the VPS-to-home trust path entirely, at the cost of a public URL. A public URL is only a "nice to have" for 10xDevs certification.
+
 ## Platform Comparison
 
 | Platform | CLI-first | Managed / serverless | Agent-readable docs | Stable deployment API | MCP / agent integration | Project fit |
@@ -97,6 +106,8 @@ Six months after launch, the app stopped refreshing recommendations even though 
 | Supabase/OpenRouter internet outage | Research finding | M | M | Cache last good state, degrade visibly and retry asynchronously |
 | Micr.us resource limit unknown | Unknown unknowns | M | M | Confirm CPU/RAM/disk/backup limits and run a load/soak check before launch |
 | Unpatched host or dependencies | Devil's advocate | M | H | Monthly patch window, automated vulnerability scan and explicit upgrade runbook |
+| No remote path from VPS to home lab yet | Existing-system review | H | H | Decide hosting location first; if VPS, stand up Tailscale on the new platform with an ACL scoped to one read-only endpoint |
+| Duplicate pipeline drifts from the lab analyser | Existing-system review | M | M | Consume the lab analyser's public-safe aggregates/facts bundle instead of re-deriving them |
 
 ## Getting Started
 

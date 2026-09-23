@@ -21,6 +21,8 @@ The sole operator of a home PV + battery + grid system gets no timely feedback o
 
 Generic solar-monitoring apps don't have this owner's exact PGE tariff and billing history, the seasonal PV generation pattern specific to this location, or the Deye inverter's own behavior quirks (reserve, Grid Charge, Time-of-Use) — combining those three is what makes a forecast-driven recommendation possible instead of a generic one.
 
+**Not a blank slate.** The app's code is new, but its data plane already runs in the owner's home lab: live Home Assistant with the Deye inverter integrated, PGE bill import and tariff math, and a lab Solar Energy Analyser page whose deterministic facts bundle is narrated by an LLM provider chain (HA conversation → local Ollama → OpenRouter). This product adds access control, feedback CRUD, tests and a maintained codebase on top of that system instead of recreating it. See [existing-system.md](existing-system.md).
+
 ## User & Persona
 
 Primary persona: the homeowner (you) — sole operator of a home solar PV + battery + grid system (Deye inverter, PGE G11 tariff, Home Assistant as the live telemetry hub). Reaches for this product:
@@ -143,4 +145,12 @@ Access key (magic link) — no account-creation form, no roles, but opening the 
 
 ## Open Questions
 
-None. All required sections were resolved during the `/10x-shape` session — the closing quality cross-check reported no gaps (Access Control, Business Logic, Project artifacts, Timeline-cost acknowledgment, Non-Goals all present). A post-generation review surfaced four refinements (cold-start fallback, data-freshness NFR, sharpened secrets guardrail, and pre-computed recommendation timing) — all resolved at the product level and folded into the relevant sections above; the underlying implementation mechanisms (pipeline push-vs-cron, secret-injection method) are intentionally left open here and forwarded to `/10x-tech-stack-selector`.
+Raised 2026-09-23 after reviewing this PRD against the running home-lab system ([existing-system.md](existing-system.md)):
+
+1. **Consume or port?** Should the app read the existing facts bundle and history (as a client of the lab analyser), or port the deterministic rules into this repo? "Port, no code copied" was decided when the lab system was treated as a prototype. It's now a running system, so the decision needs to be re-confirmed.
+2. **Which LLM path is primary?** The PRD and infrastructure plan assume OpenRouter with an optional local model. The running system uses HA conversation → local Ollama → OpenRouter (opt-in). Which order does FR-005 follow?
+3. **Where does the app run relative to the data?** Home Assistant, the history store and Ollama are LAN-only and have no production remote-access path. That conflicts with a public VPS that reads them live (FR-002).
+4. **Is bill reconciliation still a v2 non-goal?** PGE import, PGE vs Deye cross-check and a current-month bill forecast already exist. Surfacing them may be cheaper than deferring.
+5. **Should `context_type` become `brownfield`?** The app code is greenfield, but the data plane and business logic are an existing system. Switching means re-running `/10x-shape`, which regenerates this PRD in the 11-section brownfield template.
+
+Original note: all required sections were resolved during the `/10x-shape` session — the closing quality cross-check reported no gaps (Access Control, Business Logic, Project artifacts, Timeline-cost acknowledgment, Non-Goals all present). A post-generation review surfaced four refinements (cold-start fallback, data-freshness NFR, sharpened secrets guardrail, and pre-computed recommendation timing) — all resolved at the product level and folded into the relevant sections above; the underlying implementation mechanisms (pipeline push-vs-cron, secret-injection method) are intentionally left open here and forwarded to `/10x-tech-stack-selector`.
