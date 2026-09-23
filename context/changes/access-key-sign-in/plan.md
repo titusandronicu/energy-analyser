@@ -245,9 +245,9 @@ No database migration. Production needs the two email templates set in the Supab
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test`
-- [x] 1.2 Service tests cover request validation, generic redirect, shouldCreateUser, confirm cases and ignored next
-- [x] 1.3 Lint, type check and build pass
+- [x] 1.1 Unit tests pass: `npm test` — ce4947f
+- [x] 1.2 Service tests cover request validation, generic redirect, shouldCreateUser, confirm cases and ignored next — ce4947f
+- [x] 1.3 Lint, type check and build pass — ce4947f
 
 #### Manual
 
@@ -257,9 +257,9 @@ No database migration. Production needs the two email templates set in the Supab
 
 #### Automated
 
-- [ ] 2.1 Lint, type check and build pass
-- [ ] 2.2 Unit tests pass: `npm test`
-- [ ] 2.3 No references to removed routes or components remain
+- [x] 2.1 Lint, type check and build pass
+- [x] 2.2 Unit tests pass: `npm test`
+- [x] 2.3 No references to removed routes or components remain
 
 #### Manual
 

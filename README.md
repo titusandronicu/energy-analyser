@@ -26,12 +26,12 @@ Configuration:
 | ------------------- | ------------------------------------------------------------------- | -------------- |
 | `SUPABASE_URL`      | Supabase project URL                                                | unset          |
 | `SUPABASE_ANON_KEY` | Public/anon Supabase key; service-role and secret keys are rejected | unset          |
-| `ALLOW_SIGNUP`      | Enables the signup page and endpoint only when exactly `true`       | `false`        |
+| `ALLOW_SIGNUP`      | When exactly `true`, a sign-in link request may create a new user   | `false`        |
 | `APP_VERSION`       | Release identifier returned by `/api/health`                        | `development`  |
 | `APP_ORIGIN`        | Trusted public origin for CSRF checks on mutating API requests      | request origin |
 | `HOST`              | Address used by the standalone Node server                          | `::`           |
 
-For local auth testing, start Supabase with `npx supabase start`, copy its API URL and anon key to `.env`, and set `ALLOW_SIGNUP=true`. Public signup stays disabled in production; create the owner account manually in Supabase. In hosted Supabase, keep the email provider enabled for sign-in while setting the global `auth.enable_signup` option to `false`.
+Sign-in is an emailed one-time link (no passwords): `/auth/signin` → `POST /api/auth/magic-link` → email → `/auth/confirm`. The email template lives in `supabase/templates/magic-link.html`; production must use the same template for "Magic link" and "Confirm signup" (Supabase → Authentication → Emails), or links won't work. For local testing, start Supabase with `npx supabase start` (emails land in Mailpit on port 54324), copy its API URL and anon key to `.env`, and set `ALLOW_SIGNUP=true` so new addresses can sign in. Production keeps `ALLOW_SIGNUP=false` and the global `auth.enable_signup` option off, so only the existing owner account gets a link.
 
 ## Commands
 
@@ -40,9 +40,10 @@ For local auth testing, start Supabase with `npx supabase start`, copy its API U
 - `npx astro check` — Astro and TypeScript checks
 - `npm run build` — standalone Node production build
 - `npm run preview` — local production preview
-- `npm run smoke` — auth-flow smoke test against `BASE_URL`
+- `npm test` — Vitest unit tests
+- `npm run smoke` — smoke test of sign-in and push ingestion against `BASE_URL`
 
-The smoke test creates a user. Run it only against a disposable/local Supabase instance with `ALLOW_SIGNUP=true`, never against production.
+The smoke test creates a user and reads its sign-in email from Mailpit. Run it only against a disposable/local Supabase instance with `ALLOW_SIGNUP=true`, never against production.
 
 ## Container
 

@@ -1,0 +1,23 @@
+---
+import Layout from "@/layouts/Layout.astro";
+---
+
+<Layout title="Sprawdź skrzynkę">
+  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/10 p-8 text-center text-white backdrop-blur-xl">
+      <div class="mb-4 text-5xl">📧</div>
+      <h1 class="mb-3 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-2xl font-bold text-transparent">
+        Sprawdź skrzynkę
+      </h1>
+      <p class="mb-3 text-blue-100/80">
+        Jeśli ten adres ma dostęp do aplikacji, właśnie wysłaliśmy na niego link do logowania.
+      </p>
+      <p class="mb-6 text-sm text-blue-100/60">
+        Link działa na dowolnym urządzeniu, jest jednorazowy i wygasa po godzinie.
+      </p>
+      <a href="/auth/signin" class="text-sm text-purple-300 hover:underline">
+        Wyślij link ponownie
+      </a>
+    </div>
+  </div>
+</Layout>
