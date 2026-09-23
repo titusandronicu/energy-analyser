@@ -256,9 +256,9 @@ The additive migration doesn't touch existing data. In production, run it before
 
 #### Automated
 
-- [x] 2.1 Lint, type check, build and unit tests pass
+- [x] 2.1 Lint, type check, build and unit tests pass — 5218d06
 - [ ] 2.2 CI `smoke` job passes including the dashboard-shows-recommendation step
-- [x] 2.3 No references to the deleted starter components remain
+- [x] 2.3 No references to the deleted starter components remain — 5218d06
 
 #### Manual
 
