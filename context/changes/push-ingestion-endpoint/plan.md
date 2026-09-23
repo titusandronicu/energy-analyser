@@ -357,13 +357,13 @@ This is the first migration, so there's no existing data. The production rollout
 
 #### Automated
 
-- [x] 3.1 Unit tests cover every status-mapping branch including size-cap boundaries
-- [x] 3.2 Lint, type check and build pass
-- [x] 3.3 Existing auth smoke steps still pass
+- [x] 3.1 Unit tests cover every status-mapping branch including size-cap boundaries — 7d676da
+- [x] 3.2 Lint, type check and build pass — 7d676da
+- [x] 3.3 Existing auth smoke steps still pass — 7d676da
 
 #### Manual
 
-- [x] 3.4 curl against dev server returns 201, then 200 on repeat
+- [x] 3.4 curl against dev server returns 201, then 200 on repeat — 7d676da
 
 ### Phase 4: End-to-end verification and homelab-2 handoff
 
