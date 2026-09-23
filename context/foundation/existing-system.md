@@ -16,7 +16,7 @@ Recorded: 2026-09-23, from the private home-lab repository's inventory (last upd
 | **Refresh pipeline** | Live | Scheduled job (every 5 minutes) collects the HA snapshot and Deye settings snapshot, rebuilds the briefing and appends history. |
 | **History storage** | Live | Private SQLite: multi-month HA/Deye snapshot history plus PGE hourly readings. Public-safe JSON/JSONL cache (~90 days) and Markdown memory files for the UI and agents. |
 | **Local LLM runtime** | Live | Ollama + Open WebUI in the home lab, bound to localhost only. |
-| **Tailscale** | Live | Subnet routing on the home lab's main host (owner-confirmed 2026-09-23). |
+| **Tailscale** | Live | The home lab's main host is a tailnet node (no subnet routes advertised, checked 2026-09-23). |
 
 ## What this means for Energy Analyser
 
