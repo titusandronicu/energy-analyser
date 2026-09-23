@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "test": "vitest run",
+    "contract:export": "UPDATE_INGEST_CONTRACT=1 vitest run src/lib/ingest/contract.test.ts"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.10",
@@ -52,7 +54,8 @@
     "prettier-plugin-tailwindcss": "^0.8.1",
     "supabase": "^2.23.4",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.70.0"
+    "typescript-eslint": "^8.70.0",
+    "vitest": "^5.0.1"
   },
   "lint-staged": {
     "*.{ts,tsx,astro}": [
