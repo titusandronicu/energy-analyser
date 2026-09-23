@@ -51,7 +51,7 @@ Micr.us joins the tailnet as an entry point into the home network from outside. 
 - **Not on the critical path.** Every v1 feature works with Tailscale down. Anything that starts to depend on it must be decided explicitly and added to the risk register.
 - **Tag-based ACL, least privilege.** Micr.us is a tagged node (e.g. `tag:vps`) allowed to reach only named home-lab hosts and ports. No subnet routing, no exit node, and no access from the home lab back to the VPS beyond what the push needs.
 - **App isolation.** Tailscale runs on the VPS host; the public app container gets no tailnet access by default. A future feature that needs it gets its own narrowly scoped path.
-- **Home-side prerequisite.** The new platform has no Tailscale node yet (the only one runs on the legacy NAS being retired). Setting it up is a homelab-2 change.
+- **Home side is ready.** The home lab's main host runs Tailscale with subnet routing (confirmed by the owner 2026-09-23). Because it advertises the home subnet, the Micr.us ACL must list explicit destination IPs and ports; a tag allowed to use the subnet route without destination limits would reach the whole LAN.
 
 
 ## Platform Comparison
@@ -144,7 +144,7 @@ Six months after launch, the app stopped refreshing recommendations even though 
 2. Replace `@astrojs/cloudflare` with the version-compatible `@astrojs/node` adapter in standalone mode, then make `npm run build` and the smoke flow pass against the Node artifact.
 3. Add a multi-stage Dockerfile and a Compose `app` service, using immutable image tags, health checks and `restart: unless-stopped`. No separate scheduler is needed: the home lab pushes data in.
 4. Add the `/api/ingest` endpoint and its Supabase tables and policies, issue the ingestion token, then extend the home lab's refresh job to push. Verify that raw PGE data and credentials never appear in payloads or logs.
-5. Optional, independent of 4: once the home lab has a Tailscale node, join Micr.us as a tagged node with a least-privilege ACL and verify the app container cannot reach the tailnet.
+5. Optional, independent of 4: join Micr.us to the tailnet as a tagged node, with an ACL limited to explicit home-lab IPs and ports behind the existing subnet router. Verify that the app container cannot reach the tailnet and that other LAN addresses are unreachable from Micr.us.
 6. Put Caddy or Traefik in front of the app, connect the production domain, inject scoped secrets, deploy with human approval, and verify HTTPS, auth, live HA data, stale-data behavior, scheduled refresh, LLM fallback, logs and rollback.
 
 ## Out of Scope
