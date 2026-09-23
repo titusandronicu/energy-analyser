@@ -27,9 +27,10 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 ### Auth flow
 
 - `src/lib/supabase.ts` — creates a Supabase SSR client using `@supabase/ssr` with cookie-based sessions. Uses `astro:env/server` for `SUPABASE_URL` and `SUPABASE_ANON_KEY`; secret/service-role keys are forbidden.
-- `src/middleware.ts` — runs on every request, resolves the current user, attaches to `context.locals.user`. Redirects unauthenticated users away from routes listed in `PROTECTED_ROUTES`.
-- API endpoints: `src/pages/api/auth/{signin,signup,signout}.ts`. Signup is available only when `ALLOW_SIGNUP=true`.
-- Auth pages: `src/pages/auth/{signin,signup,confirm-email}.astro`
+- `src/middleware.ts` — runs on every request, resolves the current user (which also refreshes the session), attaches to `context.locals.user`. Redirects unauthenticated users away from routes listed in `PROTECTED_ROUTES`.
+- Sign-in is an emailed one-time link, no passwords: `src/pages/auth/signin.astro` → `POST src/pages/api/auth/magic-link.ts` → email (`supabase/templates/magic-link.html`, token-hash link that works on any device) → `GET src/pages/auth/confirm.ts` → `/dashboard`. Logic and tests: `src/lib/services/magic-link.ts`. The request always ends on `/auth/check-email` so account existence is never revealed.
+- `ALLOW_SIGNUP=true` (local/CI only) lets a link request create a new user; production is `false`. Sign-out: `src/pages/api/auth/signout.ts`.
+- The production email templates ("Magic link" and "Confirm signup") must match `supabase/templates/magic-link.html`; they are set by hand in the Supabase dashboard.
 - Protected page example: `src/pages/dashboard.astro`
 
 ### Push ingestion

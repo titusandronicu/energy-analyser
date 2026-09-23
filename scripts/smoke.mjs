@@ -1,15 +1,18 @@
 // Smoke test: proves the built Node app, the Supabase auth flow and the push ingestion path work together.
 // Zero dependencies on purpose. Run against a live server: BASE_URL=http://localhost:4321 node scripts/smoke.mjs
-// Ingest steps use the local/CI seed token; SUPABASE_URL + SUPABASE_ANON_KEY enable the direct-table check.
+// Sign-in reads the magic-link email from Mailpit (MAILPIT_URL); ingest steps use the local/CI seed token;
+// SUPABASE_URL + SUPABASE_ANON_KEY enable the direct-table check. Needs ALLOW_SIGNUP=true on the server.
 import { readFileSync } from "node:fs";
+import { setTimeout as sleep } from "node:timers/promises";
 import { URL } from "node:url";
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
 const INGEST_TOKEN = process.env.INGEST_TOKEN ?? "local-dev-ingest-token-not-secret";
+const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
 const email = `smoke-${Date.now()}@example.com`;
-const password = "Smoke-Test-Passw0rd!";
 const jar = new Map();
+let signinLink = "";
 
 function cookieHeader() {
   return [...jar.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
@@ -26,7 +29,7 @@ function storeCookies(response) {
 }
 
 async function request(path, { method = "GET", form } = {}) {
-  const response = await fetch(BASE_URL + path, {
+  const response = await fetch(new URL(path, BASE_URL), {
     method,
     redirect: "manual",
     headers: {
@@ -43,25 +46,41 @@ async function request(path, { method = "GET", form } = {}) {
 const steps = [
   ["home renders", () => request("/"), { status: 200 }],
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
+  ["password sign-up is gone", () => request("/auth/signup"), { status: 404 }],
   [
-    "signup creates account",
-    () => request("/api/auth/signup", { method: "POST", form: { email, password } }),
-    { status: 302, location: "/auth/confirm-email" },
-  ],
-  [
-    "signin rejects wrong password",
-    () => request("/api/auth/signin", { method: "POST", form: { email, password: "wrong" } }),
+    "sign-in link request rejects an invalid email",
+    () => request("/api/auth/magic-link", { method: "POST", form: { email: "not-an-email" } }),
     { status: 302, location: "/auth/signin?error=" },
   ],
   [
-    "signin accepts correct password",
-    () => request("/api/auth/signin", { method: "POST", form: { email, password } }),
-    { status: 302, location: "/" },
+    "sign-in link request goes to check-email",
+    () => request("/api/auth/magic-link", { method: "POST", form: { email } }),
+    { status: 302, location: "/auth/check-email" },
   ],
+  ["sign-in email arrives in Mailpit", fetchSigninLink, { status: 200 }],
+  ["sign-in link opens a session", () => request(signinLink), { status: 302, location: "/dashboard" }],
   ["dashboard renders for signed-in user", () => request("/dashboard"), { status: 200 }],
+  ["used sign-in link is rejected", () => request(signinLink), { status: 302, location: "/auth/signin?error=" }],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
 ];
+
+// Polls Mailpit for this run's email and extracts the /auth/confirm link (200 once found).
+async function fetchSigninLink() {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const search = await fetch(`${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:${email}`)}`);
+    const { messages = [] } = await search.json();
+    if (messages.length) {
+      const message = await (await fetch(`${MAILPIT_URL}/api/v1/message/${messages[0].ID}`)).json();
+      const href = /href="([^"]*\/auth\/confirm\?[^"]*)"/.exec(message.HTML)?.[1];
+      if (!href) return { status: 422, location: "email has no /auth/confirm link" };
+      signinLink = href.replaceAll("&amp;", "&");
+      return { status: 200, location: "" };
+    }
+    await sleep(500);
+  }
+  return { status: 404, location: "no email within 10 s" };
+}
 
 // Machine push: no cookies and no Origin header, like the home lab.
 async function ingest(body, token = INGEST_TOKEN) {
