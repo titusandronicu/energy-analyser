@@ -5,7 +5,16 @@ import { createClient } from "@/lib/supabase";
 const PROTECTED_ROUTES = ["/dashboard"];
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 
+// Machine endpoints authenticated by bearer token, not cookies: exempt from the Origin (CSRF) check
+// and from the per-request session lookup. Exact paths only.
+const TOKEN_AUTH_ROUTES = new Set(["/api/ingest"]);
+
 export const onRequest = defineMiddleware(async (context, next) => {
+  if (TOKEN_AUTH_ROUTES.has(context.url.pathname)) {
+    context.locals.user = null;
+    return next();
+  }
+
   if (!SAFE_METHODS.has(context.request.method) && context.url.pathname.startsWith("/api/")) {
     const requestOrigin = context.request.headers.get("Origin");
     const expectedOrigin = APP_ORIGIN ?? context.url.origin;

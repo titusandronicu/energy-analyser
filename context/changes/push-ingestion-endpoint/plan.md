@@ -344,26 +344,26 @@ This is the first migration, so there's no existing data. The production rollout
 
 #### Automated
 
-- [x] 2.1 Migration applies on a clean local DB: `npx supabase db reset`
-- [x] 2.2 Anon cannot select or insert on the four tables directly (asserted in Phase 4 smoke)
-- [x] 2.3 Lint passes: `npm run lint`
+- [x] 2.1 Migration applies on a clean local DB: `npx supabase db reset` — e35750c
+- [x] 2.2 Anon cannot select or insert on the four tables directly (asserted in Phase 4 smoke) — e35750c
+- [x] 2.3 Lint passes: `npm run lint` — e35750c
 
 #### Manual
 
-- [x] 2.4 `ingest_push` with seed token returns created, then duplicate
-- [x] 2.5 `create-ingest-token.mjs` output inserts cleanly and the token is accepted
+- [x] 2.4 `ingest_push` with seed token returns created, then duplicate — e35750c
+- [x] 2.5 `create-ingest-token.mjs` output inserts cleanly and the token is accepted — e35750c
 
 ### Phase 3: Ingest endpoint and middleware exemption
 
 #### Automated
 
-- [ ] 3.1 Unit tests cover every status-mapping branch including size-cap boundaries
-- [ ] 3.2 Lint, type check and build pass
-- [ ] 3.3 Existing auth smoke steps still pass
+- [x] 3.1 Unit tests cover every status-mapping branch including size-cap boundaries
+- [x] 3.2 Lint, type check and build pass
+- [x] 3.3 Existing auth smoke steps still pass
 
 #### Manual
 
-- [ ] 3.4 curl against dev server returns 201, then 200 on repeat
+- [x] 3.4 curl against dev server returns 201, then 200 on repeat
 
 ### Phase 4: End-to-end verification and homelab-2 handoff
 
