@@ -40,9 +40,11 @@ jobs:
         run: |
           PR_DIFF=$(git diff "origin/${BASE_REF}...HEAD")
           CLAUDE_CR_PROMPT=$(cat .ai/prompts/code-review.md)
-          claude --append-system-prompt "$CLAUDE_CR_PROMPT" \
+          if ! claude --append-system-prompt "$CLAUDE_CR_PROMPT" \
             --print "Przeprowadź Code Review:\n\n $PR_DIFF" \
-            > claude-review.md
+            > claude-review.md 2>&1; then
+            echo "::error::Claude Code failed:"; cat claude-review.md; exit 1
+          fi
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
