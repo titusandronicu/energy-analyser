@@ -58,6 +58,21 @@ const steps = [
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
   ["password sign-up is gone", () => request("/auth/signup"), { status: 404 }],
   [
+    "home forwards a Supabase code to /auth/confirm",
+    () => request("/?code=smoke-code"),
+    { status: 302, location: "/auth/confirm?code=smoke-code" },
+  ],
+  [
+    "an unknown code is rejected",
+    () => request("/auth/confirm?code=smoke-code"),
+    { status: 302, location: "/auth/signin?error=" },
+  ],
+  [
+    "password sign-in rejects a wrong password",
+    () => request("/api/auth/signin", { method: "POST", form: { email, password: "wrong-password" } }),
+    { status: 302, location: "/auth/signin?error=" },
+  ],
+  [
     "sign-in link request rejects an invalid email",
     () => request("/api/auth/magic-link", { method: "POST", form: { email: "not-an-email" } }),
     { status: 302, location: "/auth/signin?error=" },
@@ -143,8 +158,32 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     },
     { status: 401 },
   ]);
+  // Password alternative: create a local user with a password through Supabase, then sign in via the app.
+  const passwordEmail = `smoke-pw-${Date.now()}@example.com`;
+  const passwordValue = "Smoke-Test-Passw0rd!";
+  steps.push(
+    [
+      "local password user is created",
+      async () => {
+        const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+          method: "POST",
+          headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ email: passwordEmail, password: passwordValue }),
+        });
+        return { status: response.status, location: "" };
+      },
+      { status: 200 },
+    ],
+    [
+      "password sign-in opens a session",
+      () => request("/api/auth/signin", { method: "POST", form: { email: passwordEmail, password: passwordValue } }),
+      { status: 302, location: "/dashboard" },
+    ],
+    ["dashboard renders after password sign-in", () => request("/dashboard"), { status: 200 }],
+    ["signout after password sign-in", () => request("/api/auth/signout", { method: "POST" }), { status: 302 }],
+  );
 } else {
-  console.log("SKIP  anon direct-table check (SUPABASE_URL / SUPABASE_ANON_KEY not set)");
+  console.log("SKIP  anon direct-table and password checks (SUPABASE_URL / SUPABASE_ANON_KEY not set)");
 }
 
 let failed = 0;

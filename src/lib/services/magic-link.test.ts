@@ -24,6 +24,7 @@ function requestDeps(error: { message: string } | null = null, signupEnabled = f
 function confirmDeps(error: { message: string } | null = null) {
   return {
     verifyOtp: vi.fn<ConfirmMagicLinkDeps["verifyOtp"]>(() => Promise.resolve({ error })),
+    exchangeCode: vi.fn<ConfirmMagicLinkDeps["exchangeCode"]>(() => Promise.resolve({ error })),
     logError: vi.fn(),
   };
 }
@@ -71,6 +72,7 @@ describe("confirmMagicLink", () => {
       const deps = confirmDeps();
       expect(await confirmMagicLink(confirmUrl(query), deps)).toEqual({ redirect: signinError(MESSAGES.invalidLink) });
       expect(deps.verifyOtp).not.toHaveBeenCalled();
+      expect(deps.exchangeCode).not.toHaveBeenCalled();
     },
   );
 
@@ -80,6 +82,27 @@ describe("confirmMagicLink", () => {
       redirect: signinError(MESSAGES.expiredLink),
     });
     expect(deps.logError).toHaveBeenCalled();
+  });
+
+  it("exchanges a PKCE code from Supabase's default email and lands on the dashboard", async () => {
+    const deps = confirmDeps();
+    expect(await confirmMagicLink(confirmUrl("code=pkce-code"), deps)).toEqual({ redirect: "/dashboard" });
+    expect(deps.exchangeCode).toHaveBeenCalledWith("pkce-code");
+    expect(deps.verifyOtp).not.toHaveBeenCalled();
+  });
+
+  it("sends a failed code exchange back to sign-in", async () => {
+    const deps = confirmDeps({ message: "code verifier missing" });
+    expect(await confirmMagicLink(confirmUrl("code=pkce-code"), deps)).toEqual({
+      redirect: signinError(MESSAGES.expiredLink),
+    });
+  });
+
+  it("prefers the token hash when both are present", async () => {
+    const deps = confirmDeps();
+    await confirmMagicLink(confirmUrl("token_hash=abc&type=email&code=pkce-code"), deps);
+    expect(deps.verifyOtp).toHaveBeenCalled();
+    expect(deps.exchangeCode).not.toHaveBeenCalled();
   });
 
   it("ignores a next parameter", async () => {

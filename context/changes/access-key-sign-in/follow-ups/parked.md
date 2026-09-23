@@ -12,3 +12,8 @@ S-01 is merged and deployed (`d61c78a`) and proven end to end in CI. Production 
 - **Double submit on the sign-in form.** `SubmitButton` disables itself via `useFormStatus`, which only tracks React form actions, not the native POST used by `MagicLinkForm`, so a double click sends two requests. Fix: track submitting state in `MagicLinkForm` and disable the button on submit.
 - **Rate limit is invisible.** By design the request always shows `/auth/check-email`. Consider adding a hint there ("no email within a few minutes? wait an hour before retrying") without revealing account existence.
 - **Consider custom SMTP** if the 2/hour limit keeps getting in the way (changes the "built-in mailer" decision in the plan brief).
+
+## Decision change (2026-09-23, later)
+
+- **Password sign-in restored as an alternative** at the owner's request, after the first production attempts: the magic link stayed unusable while the production email templates were unset. The plan's "remove both" decision now applies only to sign-up: there is still no sign-up form.
+- **Default-template links now work too** (same browser only): Supabase's `/verify` redirects to the Site URL with `?code=`, which `/` forwards to `/auth/confirm` for a PKCE code exchange. Setting the production templates is still recommended so links also work on another device.
