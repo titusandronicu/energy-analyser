@@ -32,6 +32,8 @@ checkpoint:
       decision: "Four gaps found reviewing prd.md v1: (1) FR-003 cold-start when same-season data missing — resolved with flat-30-day fallback + visible disclaimer; (2) historic dataset had no defined freshness — resolved as a daily-minimum-refresh NFR, exact pipeline mechanism (push vs. cron) forwarded to tech-stack step; (3) secrets guardrail sharpened to name the three integrations needing credentials (LLM, weather, HA) — env-var injection mechanism forwarded to tech-stack step; (4) LLM latency vs. the 2s-feedback NFR contradicted US-01 — resolved by pre-computing the recommendation at least daily instead of synchronously on page load; refresh cadence confirmed as 'at least once daily' for both the historical dataset and the recommendation."
     - topic: "certification-criteria gap check"
       decision: "Checked shaped MVP against updated 10xBuilder criteria pasted by the user. Two gaps found: (1) access control was a bare page-gate token, not tied to a 'logged-in user' — reframed as a magic-link login that establishes a session; (2) MVP had zero create/update/delete capability (pure read-only insight/recommendation views) — added FR-007–010, a CRUD surface on recommendation feedback (accept/dismiss + note, editable/deletable), chosen by the user over threshold-CRUD and manual-bill-CRUD alternatives. Business Logic, contextual docs, and (deferred) tests were already on track; no changes needed there."
+    - topic: "existing home-lab system and integration (2026-09-23)"
+      decision: "The homelab-2 energy stack is a running system, not prior art: live HA + Deye, PGE import and bill math, 5-minute refresh, SQLite history, LLM narration (HA conversation -> Ollama -> OpenRouter). Integration model: the home lab pushes public-safe snapshots, history aggregates, the facts bundle and the narrated recommendation outbound to this app on the VPS; no v1 feature depends on connecting into the home network (Tailscale via Micr.us is kept as an optional private channel for flexibility). This app owns access control, feedback CRUD and the season-adjusted baseline/anomaly logic. context_type stays greenfield (new code; the home lab is an external data source). See existing-system.md."
   frs_drafted: 10
   quality_check_status: accepted
 ---
@@ -77,7 +79,7 @@ Access key (magic link) — no account-creation form, no roles, but opening the 
   > Socratic: No counter-argument considered; stands as written.
 
 ### Live state & insight
-- FR-002: User can view current PV/battery/grid state pulled live from Home Assistant, independently of whether the insight/recommendation panel is available. Priority: must-have
+- FR-002: User can view current PV/battery/grid state from Home Assistant, pushed by the home lab at least every 5 minutes (corrected 2026-09-23; originally "pulled live"), independently of whether the insight/recommendation panel is available. Priority: must-have
   > Socratic: Counter-argument considered: "live pull adds a failure-prone dependency for
   > something that isn't the differentiator." Resolution: kept, but decoupled — the live-state
   > panel and the insight/recommendation panel degrade independently; an HA hiccup doesn't take
@@ -172,8 +174,9 @@ All checks present — no gaps. (Access Control, Business Logic, Project artifac
 - New standalone repo, intended public, separate from the private `homelab-2` monorepo.
 - Consumes Home Assistant as an external live-data integration (read-only telemetry), not as code dependency.
 - May reference PGE billing/tariff calculation logic and deterministic-advisory patterns already prototyped in `homelab-2/apps/solar-energy-analyser` as prior art — no code or secrets copied from that repo.
+- **Correction (2026-09-23):** the `homelab-2` energy stack is not just prior art. It is a running system: live HA + Deye telemetry, PGE CSV import and bill math, a 5-minute refresh pipeline, multi-month SQLite history, and an advisory page whose facts bundle is narrated by HA conversation → local Ollama → OpenRouter. See [existing-system.md](existing-system.md). The "port, don't consume" decision and the OpenRouter-first LLM assumption should be re-confirmed. Open questions are listed in `prd.md`.
 - Should validate cleanly without live access to the owner's QNAP/HA (fixture-based telemetry adapters recommended, mirroring the pattern already used in the prior-art module) so a reviewer can run tests from a clone.
-- Historic-dataset refresh mechanism (must meet the daily-minimum NFR): either Home Assistant pushes continuously into the dataset, or a scheduled job pulls and appends the previous period's telemetry — pick during stack selection.
-- Recommendation pre-compute mechanism (must meet the daily-minimum NFR + the no-synchronous-LLM-wait non-goal): a scheduled background job (e.g. daily cron) runs the deterministic engine + LLM narration pass ahead of user visits — pick the scheduler/runtime during stack selection.
-- Secret handling mechanism for the three credentialed integrations (LLM, weather forecast, Home Assistant): environment-variable-based injection (or an equivalent secret store) was suggested during review — confirm the concrete mechanism during stack selection so it fits the chosen deployment target.
+- Historic-dataset refresh mechanism: **resolved 2026-09-23.** The home lab's existing 5-minute refresh job pushes snapshots and history aggregates to an ingestion endpoint in this app.
+- Recommendation pre-compute mechanism: **resolved 2026-09-23.** The home lab narrates the facts bundle with its LLM chain and pushes the result. No scheduler or LLM call runs in this app for v1.
+- Secret handling: **narrowed 2026-09-23.** The app holds only Supabase keys and one push-ingestion token (environment-injected on the VPS). HA and LLM credentials stay in the home lab.
 - Streaming/token-by-token UI for the recommendation was considered as an alternative to pre-computation, but not adopted for v1 (adds transport/protocol complexity the pre-compute approach avoids). Worth revisiting only if pre-computed daily cadence proves too stale in practice.
