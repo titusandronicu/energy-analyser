@@ -44,7 +44,7 @@ jobs:
             --print "Przeprowadź Code Review:\n\n $PR_DIFF" \
             > claude-review.md
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
 
       - name: Comment PR with Claude Code Review

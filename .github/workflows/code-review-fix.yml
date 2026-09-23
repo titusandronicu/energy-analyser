@@ -74,7 +74,7 @@ jobs:
       - name: Run Claude with last bot comment
         env:
           CLAUDE_PROMPT: ${{ steps.fetch_bot_comment.outputs.result }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           CLAUDE_CR_PROMPT=$(cat .ai/prompts/code-review-fix.md)
           claude --append-system-prompt "$CLAUDE_CR_PROMPT" \
