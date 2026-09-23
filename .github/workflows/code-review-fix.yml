@@ -1,0 +1,99 @@
+# Source: przeprogramowani/claude-code-gha
+# Trigger: add the `claude-code-support` label to a PR -> Claude applies fixes from the last bot review comment.
+name: Claude Code Support
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  claude-support:
+    if: contains(github.event.label.name, 'claude-code-support')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - name: Install dependencies (if Node project)
+        run: if [ -f package-lock.json ]; then npm ci; elif [ -f package.json ]; then npm install; fi
+
+      - name: Install Claude Code SDK
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Fetch last GitHub Actions bot comment
+        id: fetch_bot_comment
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = context.payload.pull_request?.number;
+            if (!prNumber) {
+              core.setFailed('PR number not found in context.');
+              return;
+            }
+            const issueComments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              per_page: 100,
+            });
+            const reviewComments = await github.paginate(github.rest.pulls.listReviewComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100,
+            });
+            const allComments = [
+              ...issueComments.map(c => ({ type: 'issue', created_at: c.created_at, body: c.body, user: c.user, id: c.id })),
+              ...reviewComments.map(c => ({ type: 'review', created_at: c.created_at, body: c.body, user: c.user, id: c.id })),
+            ];
+            allComments.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+            const botComments = allComments.filter(c => c.user?.login === 'github-actions[bot]');
+            if (botComments.length === 0) {
+              core.notice('No comments by github-actions[bot] found.');
+              return '';
+            }
+            const last = botComments[botComments.length - 1];
+            core.info(`Found ${botComments.length} comments by github-actions[bot]. Last comment id: ${last.id}`);
+            return last.body ?? '';
+
+      - name: Run Claude with last bot comment
+        env:
+          CLAUDE_PROMPT: ${{ steps.fetch_bot_comment.outputs.result }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          CLAUDE_CR_PROMPT=$(cat .ai/prompts/code-review-fix.md)
+          claude --append-system-prompt "$CLAUDE_CR_PROMPT" \
+          --print "$CLAUDE_PROMPT" \
+          --permission-mode "acceptEdits"
+
+      - name: Detect changes
+        id: detect_changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push changes
+        if: steps.detect_changes.outputs.changed == 'true'
+        uses: EndBug/add-and-commit@a94899bca583c204427a224a7af87c02f9b325d5 # v9.1.4
+        with:
+          add: "-A"
+          default_author: github_actions
+          message: "chore: apply Claude suggestions"

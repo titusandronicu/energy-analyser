@@ -1,0 +1,57 @@
+# Source: przeprogramowani/claude-code-gha (generalized: any base branch)
+# Trigger: add the `claude-code-review` label to a PR.
+name: Code Review for PRs
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  code-review:
+    if: contains(github.event.label.name, 'claude-code-review')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+
+      - name: Install Claude Code SDK
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Comment PR with Claude Code Review
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
+        with:
+          header: claude-code-review
+          message: 🔎 Code Review w trakcie...
+
+      - name: Run Claude Code Review
+        run: |
+          PR_DIFF=$(git diff "origin/${BASE_REF}...HEAD")
+          CLAUDE_CR_PROMPT=$(cat .ai/prompts/code-review.md)
+          if ! claude --append-system-prompt "$CLAUDE_CR_PROMPT" \
+            --print "Przeprowadź Code Review:\n\n $PR_DIFF" \
+            > claude-review.md 2>&1; then
+            echo "::error::Claude Code failed:"; cat claude-review.md; exit 1
+          fi
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+
+      - name: Comment PR with Claude Code Review
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: marocchino/sticky-pull-request-comment@773744901bac0e8cbb5a0dc842800d45e9b2b405 # v2.9.4
+        with:
+          header: claude-code-review
+          path: claude-review.md
