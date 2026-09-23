@@ -315,6 +315,16 @@ One push every 5 minutes, at most 256 KB, one RPC per push. Pruning is an indexe
 
 This is the first migration, so there's no existing data. The production rollout order is: apply the migration (`supabase db push`), deploy the app, create a production token with `create-ingest-token.mjs`, verify with `push-fixture.mjs`, then hand the token to the homelab-2 push change. `seed.sql` is never applied to production.
 
+## Implementation Notes
+
+Departures from the phases above, made during implementation and kept on purpose:
+
+- **`daily_energy.captured_at` (Phase 2):** each daily row records the `captured_at` of the push that wrote it, and the upsert only overwrites when the new push is at least as recent. Without it, a late retry of an older push could overwrite newer totals.
+- **Duplicate handling (Phase 2):** `ingest_push` inserts with `on conflict do nothing` and compares hashes only when the insert was skipped, instead of selecting first. This closes the race between two concurrent pushes for the same capture time.
+- **Contract export (Phase 1):** `npm run contract:export` runs the contract test with `UPDATE_INGEST_CONTRACT=1` instead of a separate script, and the drift test compares parsed JSON, so Prettier's formatting of the committed schema doesn't count as drift.
+- **Migration version (rollout):** the migration was applied to production through the Supabase MCP, which recorded version `20260923101001`. The file was renamed to match (`01caea6`) so `supabase db push` sees it as applied.
+- **Fixture push (rollout):** `scripts/push-fixture.mjs` sends only the `state` section by default; `--full` adds the example's made-up recommendation and daily history, for local databases only, because recommendations are never pruned. The production check (4.3) used the state-only push.
+
 ## References
 
 - Roadmap item: `context/foundation/roadmap.md` (F-01)
