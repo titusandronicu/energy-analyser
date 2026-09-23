@@ -36,7 +36,7 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 ## Success Criteria
 
 ### Primary
-- End-to-end flow works: opening the app with the access key shows current state (live Home Assistant telemetry) plus one derived insight against the historical baseline (built from the existing database and advisory logic ported from the prior prototype), and an LLM-narrated battery-setting recommendation for today, informed by a weather forecast.
+- End-to-end flow works: opening the app with the access key shows current state (near-live Home Assistant telemetry pushed from the home lab) plus one derived insight against the historical baseline (computed in this app from pushed history), and an LLM-narrated battery-setting recommendation for today, informed by a weather forecast (narrated in the home lab and pushed with its facts bundle).
 
 ### Secondary
 - The battery recommendation already incorporates a weather forecast in v1, rather than being deferred to v2.
@@ -44,7 +44,7 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 ### Guardrails
 - The app never writes to Home Assistant or the inverter — recommendations are advisory-only, for human review.
 - No private-network data or secrets (telemetry, bills, credentials, local network topology) leak into the public repo.
-- The app degrades gracefully when Home Assistant is temporarily unreachable — shows last-known data with a clear staleness indicator instead of failing.
+- The app degrades gracefully when the home lab stops pushing (Home Assistant, the lab pipeline or the connection is down): it shows last-known data with a clear staleness indicator instead of failing.
 
 ## User Stories
 
@@ -58,7 +58,7 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 - Insight and recommendation are visible without further clicks beyond opening the app
 - The recommendation shown reflects the most recent daily refresh — it is not computed live while the user waits
 - If same-season historical data is insufficient, the insight visibly discloses it is using the flat-30-day fallback baseline
-- If Home Assistant is unreachable, last-known state is shown with a visible staleness indicator instead of an error page
+- If no fresh push has arrived (Home Assistant or the home-lab pipeline is down), last-known state is shown with a visible staleness indicator instead of an error page
 - The recommendation is advisory text only — no controls to apply it directly to the inverter/HA
 
 ### US-02: User records feedback on a recommendation
@@ -79,11 +79,14 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
   > Socratic: No counter-argument considered; stands as written.
 
 ### Live state & insight
-- FR-002: User can view current PV/battery/grid state pulled live from Home Assistant, independently of whether the insight/recommendation panel is available. Priority: must-have
+- FR-002: User can view current PV/battery/grid state from Home Assistant, pushed by the home lab at least every 5 minutes, independently of whether the insight/recommendation panel is available. Priority: must-have
   > Socratic: Counter-argument considered: "live pull adds a failure-prone dependency for
   > something that isn't the differentiator." Resolution: kept, but decoupled — the live-state
   > panel and the insight/recommendation panel degrade independently; an HA hiccup doesn't take
   > down the whole app.
+  > Correction (2026-09-23): "pulled live" changed to "pushed by the home lab". The home lab
+  > is LAN-only, so the app never reaches into it; the lab's existing refresh job sends
+  > public-safe snapshots outbound. See existing-system.md.
 - FR-003: User can view a derived insight comparing recent usage/generation against a season-adjusted historical baseline (a same-season historical window, not a flat recent average). When same-season historical data is missing or insufficient, the app falls back to a flat trailing-30-day average and visibly discloses that the fallback baseline is in use, rather than silently comparing against thin data or failing. Priority: must-have
   > Socratic: Counter-argument considered: "a raw day-vs-baseline comparison can be misleading
   > without controlling for season/weather." Resolution: baseline redefined as season-adjusted
@@ -91,7 +94,7 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
   > Correction (post-PRD review): the season-adjusted baseline has a cold-start problem — if the
   > historic database lacks data from the equivalent point a year ago, there's nothing to compare
   > against. Resolution: explicit fallback to a flat 30-day average with a visible disclaimer.
-- FR-004: User sees a clear staleness indicator and last-known data when Home Assistant is temporarily unreachable. Priority: must-have
+- FR-004: User sees a clear staleness indicator and last-known data when the latest push is older than expected (Home Assistant, the lab pipeline or the connection is down). Priority: must-have
   > Socratic: Counter-argument considered: "this is edge-case engineering effort that could be
   > skipped for v1." Resolution: kept must-have — consistent with the guardrail already locked
   > in Phase 3 (app must not fail hard when Home Assistant is down).
@@ -119,10 +122,10 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 
 ## Non-Functional Requirements
 
-- No PV/battery/grid telemetry or billing data leaves the user's own systems, except the minimum data required for the weather-forecast lookup and the LLM narration call.
-- Credentials for third-party integrations (LLM narration, weather forecast, Home Assistant access) are never committed to source control.
+- Raw telemetry and billing data (PGE CSVs, customer/POD identifiers, hourly private readings, HA tokens) never leave the home lab. Only public-safe aggregates, the facts bundle and the narrated recommendation are pushed to the app, plus the minimum data required for the weather-forecast lookup.
+- Credentials (the app's push-ingestion token, Supabase keys, and the home lab's own HA/LLM credentials) are never committed to source control. The app holds no Home Assistant or LLM credentials.
 - The user sees continuous visible feedback (not a frozen screen) during any operation that takes longer than 2 seconds.
-- The historical dataset used for the baseline and recommendation is refreshed at least once per day, so "yesterday's usage" is never based on a static, aging snapshot.
+- The historical dataset used for the baseline and recommendation is refreshed at least once per day (met by the home lab's 5-minute refresh and push), so "yesterday's usage" is never based on a static, aging snapshot.
 - The battery recommendation is generated ahead of the user's visit (refreshed at least once daily) rather than synchronously while the user waits, so opening the app never triggers a multi-second wait for LLM inference.
 
 ## Business Logic
@@ -139,18 +142,18 @@ Access key (magic link) — no account-creation form, no roles, but opening the 
 
 - **No custom weather-forecast modeling** — the app consumes an existing weather-forecast source rather than building forecasting logic of its own.
 - **No multi-user / multi-household support** — single-tenant only for this MVP; the 100x-scale check confirmed that real multi-user support would need proper account/credential security, which is out of scope here.
-- **No full PGE bill reconciliation (predicted vs. actual) in v1** — deferred to v2, per the earlier MVP scope-down decision; v1 stops at the anomaly insight and recommendation.
+- **No full PGE bill reconciliation (predicted vs. actual) in v1** — deferred to v2, per the earlier MVP scope-down decision; v1 stops at the anomaly insight and recommendation. The home lab already has PGE import, a PGE vs Deye cross-check and a bill forecast, so v2 is mostly surfacing them.
 - **No synchronous/live LLM generation on each page view** — the recommendation is pre-computed on a daily cadence (see Non-Functional Requirements), not generated fresh while the user waits.
 - **No automatic learning/adjustment of recommendations from feedback in v1** — feedback (FR-007–010) is recorded for the user's own reference only; it does not yet feed back into the recommendation logic.
 
 ## Open Questions
 
-Raised 2026-09-23 after reviewing this PRD against the running home-lab system ([existing-system.md](existing-system.md)):
+None open. Five questions raised on 2026-09-23 by reviewing this PRD against the running home-lab system ([existing-system.md](existing-system.md)) were resolved the same day:
 
-1. **Consume or port?** Should the app read the existing facts bundle and history (as a client of the lab analyser), or port the deterministic rules into this repo? "Port, no code copied" was decided when the lab system was treated as a prototype. It's now a running system, so the decision needs to be re-confirmed.
-2. **Which LLM path is primary?** The PRD and infrastructure plan assume OpenRouter with an optional local model. The running system uses HA conversation → local Ollama → OpenRouter (opt-in). Which order does FR-005 follow?
-3. **Where does the app run relative to the data?** Home Assistant, the history store and Ollama are LAN-only and have no production remote-access path. That conflicts with a public VPS that reads them live (FR-002).
-4. **Is bill reconciliation still a v2 non-goal?** PGE import, PGE vs Deye cross-check and a current-month bill forecast already exist. Surfacing them may be cheaper than deferring.
-5. **Should `context_type` become `brownfield`?** The app code is greenfield, but the data plane and business logic are an existing system. Switching means re-running `/10x-shape`, which regenerates this PRD in the 11-section brownfield template.
+1. **Consume or port?** Split. The home lab keeps ingestion, PGE parsing and LLM narration. This app implements the season-adjusted baseline and anomaly flag (FR-003), feedback CRUD and access control over pushed data. No home-lab code is copied.
+2. **Which LLM path is primary?** The running chain: HA conversation → local Ollama → OpenRouter (opt-in). Narration happens in the home lab; the app displays it with its facts bundle.
+3. **Where does the app run relative to the data?** The app stays on the public VPS. The home lab pushes public-safe data outbound; nothing connects into the home network (FR-002, FR-004).
+4. **Bill reconciliation?** Stays a v2 non-goal for scope. The lab already has most of it, which makes v2 cheaper.
+5. **Brownfield?** No. This repo is new code; the home lab is an external data source that pushes in. `context_type` stays `greenfield`.
 
 Original note: all required sections were resolved during the `/10x-shape` session — the closing quality cross-check reported no gaps (Access Control, Business Logic, Project artifacts, Timeline-cost acknowledgment, Non-Goals all present). A post-generation review surfaced four refinements (cold-start fallback, data-freshness NFR, sharpened secrets guardrail, and pre-computed recommendation timing) — all resolved at the product level and folded into the relevant sections above; the underlying implementation mechanisms (pipeline push-vs-cron, secret-injection method) are intentionally left open here and forwarded to `/10x-tech-stack-selector`.

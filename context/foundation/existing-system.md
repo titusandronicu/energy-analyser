@@ -23,9 +23,9 @@ Items the PRD and infrastructure plan treat as future work already exist in some
 
 | Planned in Energy Analyser | Already exists | Implication |
 |---|---|---|
-| Live state from HA (FR-002) | HA telemetry + sanitized snapshot every 5 min | Consume it, don't re-collect it |
+| Live state from HA (FR-002) | HA telemetry + sanitized snapshot every 5 min | Consume it via push, don't re-collect it |
 | Historical baseline (FR-003) | Multi-month SQLite history + PGE hourly readings | Cold start is smaller than assumed, but same-season year-ago data likely doesn't exist yet (history starts mid-2026), so the 30-day fallback is still needed |
-| Deterministic advisory engine → facts bundle (FR-005) | Energy agent briefing | Reuse the bundle format or port the rules; decide which one is the source of truth |
+| Deterministic advisory engine → facts bundle (FR-005) | Energy agent briefing | Resolved: the home lab's bundle is the source of truth and is pushed to the app (see *Integration decision*) |
 | LLM narration (FR-005) | Provider chain HA → Ollama → OpenRouter, Polish output | Local LLM is primary, not "optional"; OpenRouter is the escalation, not the fallback |
 | Weather-informed recommendation (FR-006) | Solar forecast in HA, forecast-accuracy tracking | A forecast source already exists |
 | Daily refresh NFR | 5-minute refresh job | Already exceeds the daily-minimum requirement |
@@ -43,4 +43,17 @@ What Energy Analyser adds that does **not** exist yet:
 - Advisory only: nothing writes to Home Assistant, the inverter or battery schedules.
 - PGE CSV is the financial source of truth; inverter telemetry is operational evidence.
 - Raw PGE files, customer/POD identifiers, HA tokens and hourly private rows never leave the home lab. Only public-safe aggregates may reach this public repo or a public host.
-- The home-lab services are LAN-only today. There is no production remote-access path to them yet.
+- The home-lab services stay LAN-only. Energy Analyser never needs a path into them (see *Integration decision*).
+
+## Integration decision (2026-09-23)
+
+**Push, not pull.** The home lab's refresh job sends public-safe data outbound to Energy Analyser's ingestion endpoint. Energy Analyser never connects into the home network.
+
+| Stays in the home lab | Built in Energy Analyser |
+|---|---|
+| HA + Deye collection, PGE import and bill math | Access control (FR-001) |
+| History store and aggregation | Season-adjusted baseline + anomaly flag over pushed history (FR-003) |
+| Facts bundle + LLM narration (HA → Ollama → OpenRouter) | Display of state, insight and recommendation with staleness (FR-002, FR-004, FR-005) |
+| The push step (homelab-2 change) | Ingestion endpoint + payload contract; feedback CRUD (FR-007–010) |
+
+`context_type` stays `greenfield`: this repository is new code, and the home lab is an external data source.
