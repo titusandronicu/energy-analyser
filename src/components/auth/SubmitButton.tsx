@@ -6,10 +6,13 @@ interface SubmitButtonProps {
   pendingText: string;
   icon: ReactNode;
   children: ReactNode;
+  /** Explicit pending state for native form posts, which `useFormStatus` does not track. */
+  pending?: boolean;
 }
 
-export function SubmitButton({ pendingText, icon, children }: SubmitButtonProps) {
-  const { pending } = useFormStatus();
+export function SubmitButton({ pendingText, icon, children, pending: pendingProp }: SubmitButtonProps) {
+  const formStatus = useFormStatus();
+  const pending = pendingProp ?? formStatus.pending;
 
   return (
     <Button
