@@ -1,8 +1,10 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import MagicLinkForm from "@/components/auth/MagicLinkForm";
+import PasswordSignInForm from "@/components/auth/PasswordSignInForm";
 
 const error = Astro.url.searchParams.get("error");
+const passwordError = Astro.url.searchParams.get("method") === "password";
 ---
 
 <Layout title="Logowanie">
@@ -11,10 +13,16 @@ const error = Astro.url.searchParams.get("error");
       <h1 class="mb-2 bg-gradient-to-r from-blue-200 to-purple-200 bg-clip-text text-center text-2xl font-bold text-transparent">
         Zaloguj się
       </h1>
-      <p class="mb-6 text-center text-sm text-blue-100/70">
-        Wyślemy Ci jednorazowy link do logowania. Hasło nie jest potrzebne.
-      </p>
-      <MagicLinkForm serverError={error} client:load />
+      <p class="mb-6 text-center text-sm text-blue-100/70">Wyślemy Ci jednorazowy link do logowania.</p>
+      <MagicLinkForm serverError={passwordError ? null : error} client:load />
+
+      <div class="my-6 flex items-center gap-3 text-xs text-blue-100/50">
+        <span class="h-px flex-1 bg-white/15"></span>
+        albo zaloguj się hasłem
+        <span class="h-px flex-1 bg-white/15"></span>
+      </div>
+
+      <PasswordSignInForm serverError={passwordError ? error : null} client:load />
     </div>
   </div>
 </Layout>

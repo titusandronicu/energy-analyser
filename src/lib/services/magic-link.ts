@@ -27,6 +27,9 @@ export interface RequestMagicLinkDeps {
 
 export interface ConfirmMagicLinkDeps {
   verifyOtp: (params: { token_hash: string; type: "email" }) => PromiseLike<{ error: AuthError | null }>;
+  // Supabase's default email template links to its own /verify, which redirects back with a PKCE `code`.
+  // It only works in the browser that requested the link (the code verifier cookie lives there).
+  exchangeCode: (code: string) => PromiseLike<{ error: AuthError | null }>;
   logError?: (message: string, detail: unknown) => void;
 }
 
@@ -45,12 +48,22 @@ export async function requestMagicLink(form: FormData, deps: RequestMagicLinkDep
   return { redirect: CHECK_EMAIL_PATH };
 }
 
-// Any `next` parameter is ignored: confirmation always lands on the dashboard, so the link can't redirect elsewhere.
+// Accepts both link shapes: our template's `token_hash` (any device) and the default template's `code`
+// (same browser). Any `next` parameter is ignored: confirmation always lands on the dashboard.
 export async function confirmMagicLink(url: URL, deps: ConfirmMagicLinkDeps): Promise<{ redirect: string }> {
   const tokenHash = url.searchParams.get("token_hash")?.trim();
-  if (!tokenHash || url.searchParams.get("type") !== "email") return { redirect: signinError(MESSAGES.invalidLink) };
+  const code = url.searchParams.get("code")?.trim();
 
-  const { error } = await deps.verifyOtp({ token_hash: tokenHash, type: "email" });
+  let result: { error: AuthError | null };
+  if (tokenHash && url.searchParams.get("type") === "email") {
+    result = await deps.verifyOtp({ token_hash: tokenHash, type: "email" });
+  } else if (code) {
+    result = await deps.exchangeCode(code);
+  } else {
+    return { redirect: signinError(MESSAGES.invalidLink) };
+  }
+
+  const { error } = result;
   if (error) {
     deps.logError?.("magic link verification failed", error.message);
     return { redirect: signinError(MESSAGES.expiredLink) };
