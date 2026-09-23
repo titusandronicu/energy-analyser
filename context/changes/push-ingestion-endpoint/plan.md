@@ -331,27 +331,27 @@ This is the first migration, so there's no existing data. The production rollout
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test`
-- [x] 1.2 Contract tests cover acceptance, strictness, bounds, time window and optional sections
-- [x] 1.3 Committed JSON Schema matches the zod export (drift test)
-- [x] 1.4 Lint and type checks pass: `npm run lint` and `npx astro check`
+- [x] 1.1 Unit tests pass: `npm test` — ebe3b5c
+- [x] 1.2 Contract tests cover acceptance, strictness, bounds, time window and optional sections — ebe3b5c
+- [x] 1.3 Committed JSON Schema matches the zod export (drift test) — ebe3b5c
+- [x] 1.4 Lint and type checks pass: `npm run lint` and `npx astro check` — ebe3b5c
 
 #### Manual
 
-- [x] 1.5 Example payload matches the lab bundle shape and contains no private identifiers
+- [x] 1.5 Example payload matches the lab bundle shape and contains no private identifiers — ebe3b5c
 
 ### Phase 2: Database schema and ingest function
 
 #### Automated
 
-- [ ] 2.1 Migration applies on a clean local DB: `npx supabase db reset`
-- [ ] 2.2 Anon cannot select or insert on the four tables directly (asserted in Phase 4 smoke)
-- [ ] 2.3 Lint passes: `npm run lint`
+- [x] 2.1 Migration applies on a clean local DB: `npx supabase db reset`
+- [x] 2.2 Anon cannot select or insert on the four tables directly (asserted in Phase 4 smoke)
+- [x] 2.3 Lint passes: `npm run lint`
 
 #### Manual
 
-- [ ] 2.4 `ingest_push` with seed token returns created, then duplicate
-- [ ] 2.5 `create-ingest-token.mjs` output inserts cleanly and the token is accepted
+- [x] 2.4 `ingest_push` with seed token returns created, then duplicate
+- [x] 2.5 `create-ingest-token.mjs` output inserts cleanly and the token is accepted
 
 ### Phase 3: Ingest endpoint and middleware exemption
 
