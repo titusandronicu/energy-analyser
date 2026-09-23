@@ -369,10 +369,10 @@ This is the first migration, so there's no existing data. The production rollout
 
 #### Automated
 
-- [ ] 4.1 CI `ci` job passes including `npm test`
-- [ ] 4.2 CI `smoke` job passes including all ingest steps
+- [x] 4.1 CI `ci` job passes including `npm test` — 718c1db
+- [x] 4.2 CI `smoke` job passes including all ingest steps — 718c1db
 
 #### Manual
 
-- [ ] 4.3 Production fixture push returns 201 and the row is visible
-- [ ] 4.4 `docs/ingest/README.md` is sufficient to write the homelab-2 push step
+- [x] 4.3 Production fixture push returns 201 and the row is visible — 9a094c0
+- [x] 4.4 `docs/ingest/README.md` is sufficient to write the homelab-2 push step — 718c1db
