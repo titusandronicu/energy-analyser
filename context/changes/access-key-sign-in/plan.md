@@ -269,8 +269,8 @@ No database migration. Production needs the two email templates set in the Supab
 
 #### Automated
 
-- [ ] 3.1 CI `ci` job passes
-- [ ] 3.2 CI `smoke` job passes including the Mailpit magic-link steps
+- [x] 3.1 CI `ci` job passes — 063f7b0
+- [x] 3.2 CI `smoke` job passes including the Mailpit magic-link steps — 063f7b0
 
 #### Manual
 
