@@ -152,7 +152,7 @@ None open. Five questions raised on 2026-09-23 by reviewing this PRD against the
 
 1. **Consume or port?** Split. The home lab keeps ingestion, PGE parsing and LLM narration. This app implements the season-adjusted baseline and anomaly flag (FR-003), feedback CRUD and access control over pushed data. No home-lab code is copied.
 2. **Which LLM path is primary?** The running chain: HA conversation → local Ollama → OpenRouter (opt-in). Narration happens in the home lab; the app displays it with its facts bundle.
-3. **Where does the app run relative to the data?** The app stays on the public VPS. The home lab pushes public-safe data outbound; nothing connects into the home network (FR-002, FR-004).
+3. **Where does the app run relative to the data?** The app stays on the public VPS. The home lab pushes public-safe data outbound, and no v1 feature connects into the home network (FR-002, FR-004). Tailscale via Micr.us is kept as an optional private channel for flexibility, not as a data dependency.
 4. **Bill reconciliation?** Stays a v2 non-goal for scope. The lab already has most of it, which makes v2 cheaper.
 5. **Brownfield?** No. This repo is new code; the home lab is an external data source that pushes in. `context_type` stays `greenfield`.
 

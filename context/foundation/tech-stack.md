@@ -21,7 +21,7 @@ hints:
 
 ## Why this stack
 
-A solo operator shipping a single-user energy-insight MVP keeps the existing agent-friendly Astro 7, React 19, TypeScript and Supabase foundation, but deploys it as a persistent Node.js service on the existing Micr.us server. Self-hosting removes the Cloudflare edge-runtime constraint from the daily HA/Deye ingestion and recommendation pipeline, and permits longer-running requests. (Superseded 2026-09-23: the app no longer connects to Home Assistant or the local LLM; the home lab pushes data to it. See below.) The Cloudflare adapter must be replaced with `@astrojs/node` in standalone mode; Docker Compose provides repeatable deployment, restart policy and health checks. Supabase remains the managed auth/PostgreSQL service. GitHub Actions keeps checks automatic, but production rollout and secret changes remain human-approved.
+A solo operator shipping a single-user energy-insight MVP keeps the existing agent-friendly Astro 7, React 19, TypeScript and Supabase foundation, but deploys it as a persistent Node.js service on the existing Micr.us server. Self-hosting removes the Cloudflare edge-runtime constraint from the daily HA/Deye ingestion and recommendation pipeline, and permits longer-running requests. (Revised 2026-09-23: data reaches the app by push from the home lab; the Tailscale path is kept only as an optional channel. See below.) The Cloudflare adapter must be replaced with `@astrojs/node` in standalone mode; Docker Compose provides repeatable deployment, restart policy and health checks. Supabase remains the managed auth/PostgreSQL service. GitHub Actions keeps checks automatic, but production rollout and secret changes remain human-approved.
 
 ## Existing system and integration (2026-09-23)
 

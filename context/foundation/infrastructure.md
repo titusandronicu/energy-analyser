@@ -16,7 +16,7 @@ tech_stack:
 
 This is the user's accepted choice after comparing six managed platforms plus AWS and self-hosting. It best fits the decisive project constraint: reliable access to Home Assistant/Deye and an optional local LLM without forcing a short-lived serverless function to cross the public internet for every refresh. It should also keep incremental hosting cost minimal because the server already exists. The trade-off is explicit: the owner, not a managed platform, is responsible for patching, monitoring, backups, TLS and recovery.
 
-Integrate with the home lab by **push, not pull**: the home lab sends public-safe data outbound to an authenticated ingestion endpoint on Micr.us, and nothing connects into the home network (decided 2026-09-23, replacing the earlier Tailscale plan). Keep Supabase managed. Do not expose Home Assistant, Ollama or a NAS management interface to the public internet.
+Integrate with the home lab by **push, not pull**: the home lab sends public-safe data outbound to an authenticated ingestion endpoint on Micr.us, and nothing connects into the home network (decided 2026-09-23). Tailscale stays as an **optional** private channel between Micr.us and the home network for admin access and future on-demand features; the v1 data flow does not depend on it. Keep Supabase managed. Do not expose Home Assistant, Ollama or a NAS management interface to the public internet.
 
 ## Home-lab integration: push ingestion (decided 2026-09-23)
 
@@ -42,7 +42,17 @@ PGE CSV ─►   facts bundle + LLM narration      bearer token     (validate)  
 - Make pushes idempotent: re-sending the same capture time must not duplicate rows.
 - The pushing side is a small addition to the home lab's existing refresh job (a homelab-2 change, not in this repo).
 
-What this removes from the original plan: the Tailscale link and ACL, the app-side `scheduler` service, and app-held HA/LLM credentials.
+What this removes from the original plan: the app-side `scheduler` service and app-held HA/LLM credentials. Tailscale is kept, but moves from required data path to optional channel (below).
+
+### Optional private channel: Tailscale via Micr.us
+
+Micr.us joins the tailnet as an entry point into the home network from outside. It adds flexibility (operator access to lab UIs while away, on-demand refresh or drill-down queries later) without changing the push-based data flow. Rules:
+
+- **Not on the critical path.** Every v1 feature works with Tailscale down. Anything that starts to depend on it must be decided explicitly and added to the risk register.
+- **Tag-based ACL, least privilege.** Micr.us is a tagged node (e.g. `tag:vps`) allowed to reach only named home-lab hosts and ports. No subnet routing, no exit node, and no access from the home lab back to the VPS beyond what the push needs.
+- **App isolation.** Tailscale runs on the VPS host; the public app container gets no tailnet access by default. A future feature that needs it gets its own narrowly scoped path.
+- **Home-side prerequisite.** The new platform has no Tailscale node yet (the only one runs on the legacy NAS being retired). Setting it up is a homelab-2 change.
+
 
 ## Platform Comparison
 
@@ -85,7 +95,7 @@ It offers inexpensive serverless execution and strong scheduling, using an accou
 
 1. The VPS is a single point of failure; platform, kernel, disk or provider incidents stop both the UI and scheduled work.
 2. Security patching, firewall rules, TLS renewal, Docker lifecycle and capacity alarms are the owner's responsibility.
-3. ~~A private link from the public VPS to the home network creates a sensitive trust path.~~ Removed by the push model (2026-09-23). The remaining trust path is the ingestion token: if it leaks, an attacker can write fake data, but cannot read the home network.
+3. A private link from the public VPS to the home network is a sensitive trust path. With the push model it is optional rather than required, but if Micr.us is compromised while on the tailnet, an over-broad ACL would expose more of the home network than intended. The ingestion token is a second, smaller trust path: if it leaks, an attacker can write fake data but cannot read the home network.
 4. A container rollback does not reverse Supabase migrations, corrupted history or rotated secrets.
 5. The existing Astro Cloudflare adapter cannot be used for a persistent Node server; the adapter and deployment verification must change together.
 
@@ -97,6 +107,7 @@ Six months after launch, the app stopped refreshing recommendations even though 
 
 - Micr.us resource limits, snapshot policy, outbound filtering and provider recovery process must be verified before production deployment.
 - How the home lab's push behaves across its own outages (buffer and resend vs. skip) decides whether history has gaps.
+- Tailscale subnet routing is unnecessary and riskier than device-to-device access to explicit ports.
 - Astro's Node adapter behavior differs from the current Cloudflare adapter; middleware, environment access and smoke tests must be revalidated.
 - Local LLM latency and memory pressure can delay the home lab's narration; the app must show the last narrated recommendation with its age rather than wait.
 - DNS and TLS ownership must be documented so recovery does not depend on an undocumented dashboard account.
@@ -123,6 +134,7 @@ Six months after launch, the app stopped refreshing recommendations even though 
 | Supabase or home-lab internet outage | Research finding | M | M | Cache last good state, degrade visibly and retry asynchronously |
 | Micr.us resource limit unknown | Unknown unknowns | M | M | Confirm CPU/RAM/disk/backup limits and run a load/soak check before launch |
 | Unpatched host or dependencies | Devil's advocate | M | H | Monthly patch window, automated vulnerability scan and explicit upgrade runbook |
+| Over-broad VPS-to-home access via Tailscale | Devil's advocate | L | H | Tag-based ACL to named hosts/ports only; no subnet routing; app container kept off the tailnet; review ACL on every change |
 | Private data leaks through the push payload | Push-model review | L | H | Versioned allow-list payload contract; reject unknown fields; the home lab sends aggregates only |
 | Duplicate pipeline drifts from the lab analyser | Existing-system review | M | M | Consume the lab analyser's public-safe aggregates/facts bundle instead of re-deriving them |
 
@@ -132,7 +144,8 @@ Six months after launch, the app stopped refreshing recommendations even though 
 2. Replace `@astrojs/cloudflare` with the version-compatible `@astrojs/node` adapter in standalone mode, then make `npm run build` and the smoke flow pass against the Node artifact.
 3. Add a multi-stage Dockerfile and a Compose `app` service, using immutable image tags, health checks and `restart: unless-stopped`. No separate scheduler is needed: the home lab pushes data in.
 4. Add the `/api/ingest` endpoint and its Supabase tables and policies, issue the ingestion token, then extend the home lab's refresh job to push. Verify that raw PGE data and credentials never appear in payloads or logs.
-5. Put Caddy or Traefik in front of the app, connect the production domain, inject scoped secrets, deploy with human approval, and verify HTTPS, auth, live HA data, stale-data behavior, scheduled refresh, LLM fallback, logs and rollback.
+5. Optional, independent of 4: once the home lab has a Tailscale node, join Micr.us as a tagged node with a least-privilege ACL and verify the app container cannot reach the tailnet.
+6. Put Caddy or Traefik in front of the app, connect the production domain, inject scoped secrets, deploy with human approval, and verify HTTPS, auth, live HA data, stale-data behavior, scheduled refresh, LLM fallback, logs and rollback.
 
 ## Out of Scope
 
@@ -141,4 +154,4 @@ The following were not implemented by this research:
 - Docker image and Compose configuration
 - CI/CD pipeline configuration
 - Production-scale multi-region availability or disaster recovery
-- Changes to the Micr.us server, DNS or live secrets
+- Changes to the Micr.us server, DNS, Tailscale ACLs or live secrets

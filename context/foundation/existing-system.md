@@ -43,11 +43,11 @@ What Energy Analyser adds that does **not** exist yet:
 - Advisory only: nothing writes to Home Assistant, the inverter or battery schedules.
 - PGE CSV is the financial source of truth; inverter telemetry is operational evidence.
 - Raw PGE files, customer/POD identifiers, HA tokens and hourly private rows never leave the home lab. Only public-safe aggregates may reach this public repo or a public host.
-- The home-lab services stay LAN-only. Energy Analyser never needs a path into them (see *Integration decision*).
+- The home-lab services stay LAN-only. The only way in from outside is the optional Tailscale channel, restricted to named hosts and ports.
 
 ## Integration decision (2026-09-23)
 
-**Push, not pull.** The home lab's refresh job sends public-safe data outbound to Energy Analyser's ingestion endpoint. Energy Analyser never connects into the home network.
+**Push, not pull.** The home lab's refresh job sends public-safe data outbound to Energy Analyser's ingestion endpoint. No v1 feature depends on a connection into the home network. Tailscale via Micr.us is kept as an optional private channel (admin access, future on-demand features) under a least-privilege ACL.
 
 | Stays in the home lab | Built in Energy Analyser |
 |---|---|
