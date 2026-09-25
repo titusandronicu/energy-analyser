@@ -240,7 +240,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **PRD refs:** US-01, FR-015, FR-006
 - **Prerequisites:** F-02, S-03
 - **Parallel with:** S-12, S-13
-- **Blockers:** —
+- **Blockers:** Home Assistant has no solar forecast integration since its host move (~2026-07-21), so no forecasts are pushed; the owner must add Forecast.Solar or Solcast before this slice has data.
 - **Unknowns:** —
 - **Risk:** Computed in the app from pushed daily forecast and actual PV; history is short at first, so the view must state how many days it covers.
 - **Status:** proposed
@@ -266,7 +266,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Parallel with:** S-11, S-12
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** Fixed status codes only; raw provider errors can contain URLs or prompt fragments.
+- **Risk:** Fixed status codes only; raw provider errors can contain URLs or prompt fragments. Lab-side alerting already exists (Uptime Kuma heartbeat + Telegram, 2026-09-25), so this slice is about explaining degraded data in the app, not alerting.
 - **Status:** proposed
 
 ## Backlog Handoff
@@ -291,7 +291,8 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ## Open Roadmap Questions
 
-1. **How are the push contract versions kept in step between this repo and homelab-2?** — Owner: user. Block: none (settle in F-01's plan).
+1. **How are the push contract versions kept in step between this repo and homelab-2?** — Owner: user. Block: none (settle in F-01's plan). Practice since F-02: optional fields are added to the app contract first and deployed before the lab sends them.
+2. **Should the daily advice also go to Telegram?** — Owner: user. Block: none. Raised 2026-09-25; the lab's Telegram bot could send a morning summary (battery setting, forecast confidence, dashboard link). This is lab-side and not in the PRD, so it would be a homelab-2 change or a PRD update, not an M-1 slice.
 
 ## Parked
 
