@@ -123,3 +123,15 @@ docker image ls ghcr.io/titusandronicu/energy-analyser
 ```
 
 Remove app images the running container doesn't use (`docker image rm <id>`; Docker refuses to remove the one in use), then `docker image prune -f` and `docker builder prune -f`. If the space is used outside Docker, look before deleting anything (`sudo du -xh --max-depth=2 / | sort -h | tail -20`), then re-run the deploy.
+
+## Database migrations and rollback
+
+Migrations are applied to production through the Supabase connector; afterwards the repo file is renamed to the version production recorded. Each one so far is additive (tables, grants, policies, views), so a rollback only removes what it added. For `20260925123751_live_state_view.sql`:
+
+```sql
+drop view public.live_state;
+drop policy "owners can read ingest pushes" on public.ingest_pushes;
+revoke select (source, captured_at, received_at, payload) on public.ingest_pushes from authenticated;
+```
+
+Roll the app back first (see Rollback) so no deployed code still reads the view. Owners can read the retained raw push payloads (`payload`, 14 days) from `ingest_pushes` directly, not only through `live_state`; `token_id` and `payload_hash` stay unreadable.

@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LiveStateRow } from "@/types";
-import { formatWarsawDateTime } from "./recommendation";
+import { asNumber, asRecord, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
+import { formatWarsawDateTime } from "@/lib/format/warsaw-time";
 
 // The lab pushes every few minutes; a snapshot older than 15 minutes no longer describes "now".
 export const LIVE_STALE_AFTER_MS = 15 * 60 * 1000;
-const MISSING = "—";
+// Below this a flow is noise (inverter idle draw, meter jitter): it shows as "0,0 kW" with no direction word.
+export const MIN_FLOW_W = 50;
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
@@ -41,30 +43,16 @@ export async function loadLiveState(client: SupabaseClient): Promise<LiveStateRo
   return data[0] ?? null;
 }
 
-const oneDecimal = new Intl.NumberFormat("pl-PL", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const wholeNumber = new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 });
-
-function asNumber(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) ? value : null;
-}
-
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
-}
 
 function kwLabel(watts: number | null): string {
   return watts === null ? MISSING : `${oneDecimal.format(Math.abs(watts) / 1000)} kW`;
 }
 
-function kwhLabel(value: unknown): string {
-  const kwh = asNumber(value);
-  return kwh === null ? MISSING : `${oneDecimal.format(kwh)} kWh`;
-}
-
 // Sign conventions follow the ingest contract: the value is shown unsigned and the sign becomes a direction.
 function flow(value: unknown, positive: string, negative: string): FlowLabel {
   const watts = asNumber(value);
-  const direction = watts === null || watts === 0 ? null : watts > 0 ? positive : negative;
+  const direction = watts === null || Math.abs(watts) < MIN_FLOW_W ? null : watts > 0 ? positive : negative;
   return { value: kwLabel(watts), direction };
 }
 

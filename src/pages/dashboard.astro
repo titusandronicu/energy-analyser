@@ -64,6 +64,7 @@ const [liveView, view]: [LiveStateView | null, RecommendationView | null] = awai
     }
   }
 
-  setTimeout(reloadIfDue, RELOAD_AFTER_MS);
+  // Check every minute rather than once, so a timer firing a moment early can't skip the reload for good.
+  setInterval(reloadIfDue, 60 * 1000);
   document.addEventListener("visibilitychange", reloadIfDue);
 </script>

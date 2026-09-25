@@ -1,7 +1,7 @@
 ---
 change_id: live-state-with-staleness
 title: Show the latest pushed PV/battery/grid state with staleness on the dashboard
-status: implementing
+status: impl_reviewed
 created: 2026-09-25
 updated: 2026-09-25
 archived_at: null

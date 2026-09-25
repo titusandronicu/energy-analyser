@@ -190,6 +190,22 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       { status: 200 },
     ],
     [
+      // Column grants: even a signed-in owner (every local user is one) can't read the token or hash columns.
+      "signed-in user cannot read push token columns",
+      async () => {
+        const session = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+          method: "POST",
+          headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ email: passwordEmail, password: passwordValue }),
+        }).then((response) => response.json());
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/ingest_pushes?select=token_id,payload_hash`, {
+          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${String(session.access_token)}` },
+        });
+        return { status: response.status, location: "" };
+      },
+      { status: 403 },
+    ],
+    [
       "password sign-in opens a session",
       () => request("/api/auth/signin", { method: "POST", form: { email: passwordEmail, password: passwordValue } }),
       { status: 302, location: "/dashboard" },
