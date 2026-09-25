@@ -111,3 +111,15 @@ docker compose --env-file release.env pull
 docker compose --env-file release.env up -d
 docker compose --env-file release.env ps
 ```
+
+## Disk space
+
+The Micr.us disk is small. The deploy workflow keeps only the running and previous app images, removes the rest before pulling, and stops without changing anything when less than 1 GB is free ("Only N MB free on the production host"). If that happens, check what is using the space as `deploy`:
+
+```bash
+df -h / /var/lib
+docker system df
+docker image ls ghcr.io/titusandronicu/energy-analyser
+```
+
+Remove app images the running container doesn't use (`docker image rm <id>`; Docker refuses to remove the one in use), then `docker image prune -f` and `docker builder prune -f`. If the space is used outside Docker, look before deleting anything (`sudo du -xh --max-depth=2 / | sort -h | tail -20`), then re-run the deploy.
