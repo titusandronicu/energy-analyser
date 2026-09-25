@@ -19,7 +19,7 @@
 | Pattern Consistency | PASS |
 | Success Criteria | PASS |
 
-The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`, because PR #19 was merged before its last two commits (fixed by homelab-2 PR #21). The day rules match the plan and the approved adaptations. Tests pass (30 push tests, 36 app tests). Production check on 2026-09-25: 16 August stores PV 21.3 kWh (day max 25.3) and 3 September stores 23.4 (day max 25.9).
+The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`, because PR #19 was merged before its last two commits (fixed by homelab-2 PR #21). The day rules match the plan and the approved adaptations. Tests pass (30 push tests, 36 app tests). Correction (2026-09-25, after triage): the suspected undercounts on 16 August (21.3 vs 25.3) and 3 September (23.4 vs 25.9) were false positives. The higher values came from the 00:00 sample, which still carried the previous day's total. The production values are correct.
 
 ## Findings
 
@@ -29,13 +29,13 @@ The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`
 - **Impact**: 🔎 MEDIUM — real tradeoff; pause to reason through it
 - **Dimension**: Safety & Quality
 - **Location**: homelab-2 infra/compose/energy-app/scripts/push-energy-analyser.py:198-253
-- **Detail**: "Latest usable sample" trusts whatever the last sample says. When a Deye counter dips late in the day, or when a legacy row has a zero-filled PV counter with consumed still above 0 (the collector fills gaps with 0 and estimates load from import), the day is pushed too low. It is confirmed in production for 2026-08-16 (PV 21.3 vs 25.3) and 2026-09-03 (23.4 vs 25.9). Every push re-sends 35 days with latest-wins, so a wrong value would also overwrite a good one.
+- **Detail**: "Latest usable sample" trusts whatever the last sample says. When a Deye counter dips late in the day, or when a legacy row has a zero-filled PV counter with consumed still above 0 (the collector fills gaps with 0 and estimates load from import), the day is pushed too low. Suspected in production for 2026-08-16 and 2026-09-03; on inspection both were the 00:00 carry-over of the previous day, not a real dip, so production is correct. Every push re-sends 35 days with latest-wins, so a wrong value would also overwrite a good one.
 - **Fix**: Treat daily counters as never decreasing. Within a day, ignore a sample whose PV, load, import or export is below 95% of that counter's running maximum for the day (except in the first 30 minutes after midnight). Add tests for a late dip and the zero-filled legacy pattern. Then re-send 62 days so production corrects the affected days.
   - Strength: It removes the whole class of bad samples, and the repair is automatic through latest-wins.
   - Tradeoff: A genuine counter correction downwards by the inverter would be ignored for that day.
   - Confidence: HIGH — Deye "today" counters only rise within a day.
   - Blind spot: How often Deye Cloud revises a day's total downward.
-- **Decision**: PENDING
+- **Decision**: FIXED: 95% running-max dip filter per counter plus ignoring pre-00:30 carry-over samples (homelab-2 d17ff9a); re-push not needed, production values verified correct
 
 ### F2 — A partial day can be frozen as final
 
@@ -54,7 +54,7 @@ The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`
   - Tradeoff: A contract change in both repos for little benefit.
   - Confidence: MED.
   - Blind spot: S-04 and S-11 would both need the flag.
-- **Decision**: PENDING
+- **Decision**: FIXED (Fix A): incomplete past days (last sample before 23:00) sent with null totals; cutoff 23:00
 
 ### F3 — Heartbeat errors can leak the monitor URL and fail the push
 
@@ -64,7 +64,7 @@ The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`
 - **Location**: homelab-2 push-energy-analyser.py:336-347
 - **Detail**: A malformed URL raises `ValueError`/`InvalidURL` before the `try`. The traceback prints the full push URL, including its token, into journald, and the script exits 1 after a successful push. Tests don't cover when the heartbeat fires.
 - **Fix**: Build the request inside the `try`, catch `Exception`, log only the exception type, and test that `main` pings only after a 2xx and never prints the URL.
-- **Decision**: PENDING
+- **Decision**: FIXED: heartbeat never raises or prints its URL; tests for when it fires
 
 ### F4 — Future-dated history rows are not rejected
 
@@ -74,7 +74,7 @@ The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`
 - **Location**: homelab-2 push-energy-analyser.py:230-235
 - **Detail**: Only rows dated after today are dropped. If the VM clock jumps ahead and NTP corrects it, those rows win "latest" for today.
 - **Fix**: Skip rows more than 10 minutes after `now`, and add a test.
-- **Decision**: PENDING
+- **Decision**: FIXED: rows more than 10 minutes in the future skipped
 
 ### F5 — Runbook steps are not safe to repeat
 
@@ -84,7 +84,7 @@ The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`
 - **Location**: homelab-2 runbooks/energy-analyser-push.md:44-63; runbooks/proxmox-nic-hang-and-alerting.md:33-37
 - **Detail**: Re-running a step the same day overwrites the `.bak-<date>` backups with the new files, the NIC `sed` adds the `post-up` line again, and rebuilding `.env.push` drops the heartbeat URL.
 - **Fix**: Use timestamped or `cp -n` backups, guard the NIC edit with a `grep` check, skip rebuilding `.env.push` when it exists, and document the heartbeat variable in the push runbook.
-- **Decision**: PENDING
+- **Decision**: FIXED: timestamped backups, guarded NIC edit, .env.push not overwritten, heartbeat documented
 
 ### F6 — homelab-2 main was behind docker-core
 
@@ -94,7 +94,7 @@ The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`
 - **Location**: homelab-2 main (PR #19 merged at fdf6a4e)
 - **Detail**: The `counters_ok` rule and the heartbeat were running on docker-core but missing from main.
 - **Fix**: Merge homelab-2 PR #21 (opened on 2026-09-25); draft PRs from now on.
-- **Decision**: PENDING
+- **Decision**: PENDING OWNER: merge homelab-2 PR #21
 
 ### F7 — Whole history file loaded, and trimmed in place, every run
 
@@ -104,4 +104,4 @@ The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`
 - **Location**: homelab-2 push-energy-analyser.py:258; append-energy-history.py:76-79
 - **Detail**: About 20 MB is parsed every 5 minutes (fine today), and `trim_lines` rewrites the file in place, so a crash mid-write could lose history.
 - **Fix**: Stream rows lazily, and write the trimmed file to a temp file followed by `os.replace`.
-- **Decision**: PENDING
+- **Decision**: FIXED: history streamed; atomic trim with os.replace
