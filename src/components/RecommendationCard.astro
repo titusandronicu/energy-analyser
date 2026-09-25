@@ -1,5 +1,6 @@
 ---
 import type { RecommendationView } from "@/lib/services/recommendation";
+import { parseAdviceMarkdown } from "@/lib/format/advice-markdown";
 
 interface Props {
   view: RecommendationView | null;
@@ -33,9 +34,32 @@ const { view } = Astro.props;
         </p>
       )}
 
-      <p class="leading-relaxed whitespace-pre-line" data-testid="recommendation-text">
-        {view.text}
-      </p>
+      <div class="space-y-3 leading-relaxed" data-testid="recommendation-text">
+        {parseAdviceMarkdown(view.text).map((block) =>
+          block.type === "paragraph" ? (
+            <p>
+              {block.lines.map((line, i) => (
+                <>
+                  {i > 0 && <br />}
+                  {line.map((segment) => (segment.bold ? <strong>{segment.text}</strong> : segment.text))}
+                </>
+              ))}
+            </p>
+          ) : block.ordered ? (
+            <ol class="list-decimal space-y-1 pl-5">
+              {block.items.map((item) => (
+                <li>{item.map((segment) => (segment.bold ? <strong>{segment.text}</strong> : segment.text))}</li>
+              ))}
+            </ol>
+          ) : (
+            <ul class="list-disc space-y-1 pl-5">
+              {block.items.map((item) => (
+                <li>{item.map((segment) => (segment.bold ? <strong>{segment.text}</strong> : segment.text))}</li>
+              ))}
+            </ul>
+          ),
+        )}
+      </div>
 
       <dl class="grid grid-cols-2 gap-3 rounded-lg bg-white/5 p-3 text-sm">
         <div>

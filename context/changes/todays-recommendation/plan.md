@@ -250,7 +250,7 @@ The additive migration doesn't touch existing data. In production, run it before
 
 #### Manual
 
-- [ ] 1.5 Non-owner reads zero recommendations and owner reads rows in the local DB
+- [x] 1.5 Non-owner reads zero recommendations and owner reads rows in the local DB — 02d1ce3
 
 ### Phase 2: Dashboard recommendation card
 
@@ -272,6 +272,6 @@ The additive migration doesn't touch existing data. In production, run it before
 
 #### Manual
 
-- [ ] 3.2 Migration applied in production and owner row inserted
+- [x] 3.2 Migration applied in production and owner row inserted — 5300552
 - [ ] 3.3 Production dashboard shows the empty state after deploy
 - [ ] 3.4 Production dashboard shows the lab's latest recommendation once the homelab-2 push is live

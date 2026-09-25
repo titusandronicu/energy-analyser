@@ -1,9 +1,9 @@
 ---
 change_id: todays-recommendation
 title: Show the latest lab-narrated battery recommendation on the dashboard
-status: implementing
+status: impl_reviewed
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-09-25
 archived_at: null
 ---
 
