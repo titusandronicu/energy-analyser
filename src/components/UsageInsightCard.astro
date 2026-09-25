@@ -1,0 +1,69 @@
+---
+import type { UsageInsightView, UsageStatus } from "@/lib/services/usage-insight";
+
+interface Props {
+  view: UsageInsightView | null;
+}
+
+// null means loading failed; the page never throws a 500 for a data problem.
+const { view } = Astro.props;
+
+// The text carries the meaning; the colour only supports it.
+const STATUS: Record<UsageStatus, { label: string; tone: string }> = {
+  above: { label: "powyżej normy", tone: "border-amber-400/40 bg-amber-900/30 text-amber-200" },
+  below: { label: "poniżej normy", tone: "border-emerald-400/40 bg-emerald-900/30 text-emerald-200" },
+  normal: { label: "w normie", tone: "border-white/15 bg-white/5 text-blue-100" },
+};
+---
+
+<section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
+  <h2 class="mb-4 text-lg font-semibold text-blue-100">Zużycie wczoraj</h2>
+
+  {view === null && (
+    <p class="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">
+      Nie udało się wczytać porównania. Spróbuj odświeżyć stronę.
+    </p>
+  )}
+
+  {view?.kind === "insufficient" && <p class="text-blue-100/70">Za mało historii do porównania.</p>}
+
+  {view?.kind === "insight" && (
+    <div class="space-y-4">
+      <p class="text-sm text-blue-100/80">
+        {view.isYesterday ? `Wczoraj (${view.dayLabel})` : view.dayLabel}
+        {!view.isYesterday && <span class="text-blue-100/60"> — brak danych z wczoraj.</span>}
+      </p>
+
+      {view.baseline.kind === "fallback" && (
+        <p
+          class="rounded-lg border border-amber-400/40 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
+          data-testid="usage-fallback-notice"
+        >
+          Za mało danych z tej pory roku — porównanie ze średnią z ostatnich 30 dni ({view.baseline.days} dni).
+        </p>
+      )}
+
+      <dl class="grid grid-cols-2 gap-3 text-sm">
+        <div class="rounded-lg bg-white/5 p-3">
+          <dt class="text-blue-100/60">Zużycie domu</dt>
+          <dd class="text-lg font-medium">{view.load.kwhLabel}</dd>
+          <dd class="mt-1 flex flex-wrap items-center gap-2 text-xs">
+            <span class:list={["rounded-full border px-2 py-0.5", STATUS[view.load.status].tone]}>
+              {STATUS[view.load.status].label}
+            </span>
+            <span class="text-blue-100/70">{view.load.deltaLabel} vs średnia</span>
+          </dd>
+        </div>
+        <div class="rounded-lg bg-white/5 p-3">
+          <dt class="text-blue-100/60">Zakup z sieci</dt>
+          <dd class="text-lg font-medium">{view.purchase.kwhLabel}</dd>
+          <dd class="mt-1 text-xs text-blue-100/70">{view.purchase.deltaLabel} vs średnia</dd>
+        </div>
+      </dl>
+
+      {view.baseline.kind === "seasonal" && (
+        <p class="text-xs text-blue-100/50">Porównanie: ta sama pora roku (±14 dni, {view.baseline.days} dni).</p>
+      )}
+    </div>
+  )}
+</section>

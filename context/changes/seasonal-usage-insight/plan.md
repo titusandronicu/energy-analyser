@@ -211,20 +211,20 @@ Additive grant and policy; no data changes. Rollback: drop the policy and revoke
 
 #### Automated
 
-- [x] 1.1 Migration applies on a clean local DB
-- [x] 1.2 Unit tests pass
-- [x] 1.3 View-model tests cover day selection, baselines, fallback, thresholds and nulls
-- [x] 1.4 Lint, type check and build pass
+- [x] 1.1 Migration applies on a clean local DB — 0c25f2c
+- [x] 1.2 Unit tests pass — 0c25f2c
+- [x] 1.3 View-model tests cover day selection, baselines, fallback, thresholds and nulls — 0c25f2c
+- [x] 1.4 Lint, type check and build pass — 0c25f2c
 
 #### Manual
 
-- [x] 1.5 Owner reads daily_energy, non-owner and anon don't, owner can't read push_id
+- [x] 1.5 Owner reads daily_energy, non-owner and anon don't, owner can't read push_id — 0c25f2c
 
 ### Phase 2: Dashboard insight card
 
 #### Automated
 
-- [ ] 2.1 Lint, type check, build and unit tests pass
+- [x] 2.1 Lint, type check, build and unit tests pass
 - [ ] 2.2 CI smoke job passes including the new steps
 
 #### Manual
