@@ -1,5 +1,10 @@
 ---
-import type { UsageInsightView, UsageStatus } from "@/lib/services/usage-insight";
+import {
+  FALLBACK_DAYS,
+  SEASONAL_WINDOW_DAYS,
+  type UsageInsightView,
+  type UsageStatus,
+} from "@/lib/services/usage-insight";
 
 interface Props {
   view: UsageInsightView | null;
@@ -7,6 +12,8 @@ interface Props {
 
 // null means loading failed; the page never throws a 500 for a data problem.
 const { view } = Astro.props;
+// "Yesterday" only when the compared day is yesterday; the error and insufficient states keep it too.
+const heading = view?.kind === "insight" && !view.isYesterday ? "Zużycie dzienne" : "Zużycie wczoraj";
 
 // The text carries the meaning; the colour only supports it.
 const STATUS: Record<UsageStatus, { label: string; tone: string }> = {
@@ -17,7 +24,7 @@ const STATUS: Record<UsageStatus, { label: string; tone: string }> = {
 ---
 
 <section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
-  <h2 class="mb-4 text-lg font-semibold text-blue-100">Zużycie wczoraj</h2>
+  <h2 class="mb-4 text-lg font-semibold text-blue-100">{heading}</h2>
 
   {view === null && (
     <p class="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">
@@ -39,7 +46,8 @@ const STATUS: Record<UsageStatus, { label: string; tone: string }> = {
           class="rounded-lg border border-amber-400/40 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
           data-testid="usage-fallback-notice"
         >
-          Za mało danych z tej pory roku — porównanie ze średnią z ostatnich 30 dni ({view.baseline.days} dni).
+          Za mało danych z tej pory roku — porównanie ze średnią z ostatnich {FALLBACK_DAYS} dni ({view.baseline.days}{" "}
+          dni).
         </p>
       )}
 
@@ -51,18 +59,20 @@ const STATUS: Record<UsageStatus, { label: string; tone: string }> = {
             <span class:list={["rounded-full border px-2 py-0.5", STATUS[view.load.status].tone]}>
               {STATUS[view.load.status].label}
             </span>
-            <span class="text-blue-100/70">{view.load.deltaLabel} vs średnia</span>
+            <span class="text-blue-100/70">{view.load.deltaLabel} wobec średniej</span>
           </dd>
         </div>
         <div class="rounded-lg bg-white/5 p-3">
           <dt class="text-blue-100/60">Zakup z sieci</dt>
           <dd class="text-lg font-medium">{view.purchase.kwhLabel}</dd>
-          <dd class="mt-1 text-xs text-blue-100/70">{view.purchase.deltaLabel} vs średnia</dd>
+          <dd class="mt-1 text-xs text-blue-100/70">{view.purchase.deltaLabel} wobec średniej</dd>
         </div>
       </dl>
 
       {view.baseline.kind === "seasonal" && (
-        <p class="text-xs text-blue-100/50">Porównanie: ta sama pora roku (±14 dni, {view.baseline.days} dni).</p>
+        <p class="text-xs text-blue-100/50">
+          Porównanie: ta sama pora roku (±{SEASONAL_WINDOW_DAYS} dni, {view.baseline.days} dni).
+        </p>
       )}
     </div>
   )}

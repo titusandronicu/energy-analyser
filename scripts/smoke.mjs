@@ -192,8 +192,8 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
   // Password alternative: create a local user with a password through Supabase, then sign in via the app.
   const passwordEmail = `smoke-pw-${Date.now()}@example.com`;
   const passwordValue = "Smoke-Test-Passw0rd!";
-  // Signed-in REST read as the password user; returns the status only.
-  const ownerRead = async (path) => {
+  // Signed-in REST read as the password user; returns the status and, with readBody, the parsed JSON rows.
+  const ownerRead = async (path, { readBody = false } = {}) => {
     const session = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
       method: "POST",
       headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
@@ -202,7 +202,7 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
       headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${String(session.access_token)}` },
     });
-    return { status: response.status, location: "" };
+    return { status: response.status, location: "", rows: readBody ? await response.json() : undefined };
   };
   steps.push(
     [
@@ -224,8 +224,14 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       { status: 403 },
     ],
     [
+      // RLS filtering everything out is still a 200 with an empty list, so require the fixture's daily rows
+      // (the ingest steps above wrote two); an empty list reports 299.
       "signed-in owner can read daily energy totals",
-      () => ownerRead("daily_energy?select=day,load_kwh,grid_import_kwh"),
+      async () => {
+        const result = await ownerRead("daily_energy?select=day,load_kwh,grid_import_kwh", { readBody: true });
+        const empty = result.status === 200 && !(Array.isArray(result.rows) && result.rows.length >= 1);
+        return empty ? { status: 299, location: "no daily rows visible" } : result;
+      },
       { status: 200 },
     ],
     [

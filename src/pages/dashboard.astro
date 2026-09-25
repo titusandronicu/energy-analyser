@@ -21,19 +21,28 @@ async function orLoadError<T>(load: () => Promise<T>): Promise<T | null> {
   }
 }
 
+// One Supabase client for the page, so an expired session is refreshed once instead of by each card in parallel.
+// It is created on the first loader's call, so a configuration error still shows as each card's load error, and
+// without a configuration (null) each card shows its empty state.
+let client: ReturnType<typeof createClient> | undefined;
+function getClient() {
+  if (client === undefined) client = createClient(Astro.request.headers, Astro.cookies);
+  return client;
+}
+
 const now = new Date();
 const [liveView, usageView, view]: [LiveStateView | null, UsageInsightView | null, RecommendationView | null] =
   await Promise.all([
     orLoadError(async () => {
-      const supabase = createClient(Astro.request.headers, Astro.cookies);
+      const supabase = getClient();
       return toLiveStateView(supabase ? await loadLiveState(supabase) : null, now);
     }),
     orLoadError(async () => {
-      const supabase = createClient(Astro.request.headers, Astro.cookies);
+      const supabase = getClient();
       return toUsageInsightView(supabase ? await loadDailyEnergy(supabase, now) : [], now);
     }),
     orLoadError(async () => {
-      const supabase = createClient(Astro.request.headers, Astro.cookies);
+      const supabase = getClient();
       return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
     }),
   ]);

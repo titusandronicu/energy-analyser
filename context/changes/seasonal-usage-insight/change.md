@@ -1,7 +1,7 @@
 ---
 change_id: seasonal-usage-insight
 title: Show whether yesterday's usage was normal against a season-adjusted baseline
-status: implemented
+status: impl_reviewed
 created: 2026-09-25
 updated: 2026-09-25
 archived_at: null
