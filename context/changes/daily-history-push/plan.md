@@ -232,22 +232,22 @@ Additive column and a function replacement with the same signature; no data chan
 
 #### Automated
 
-- [ ] 2.1 CI ci and smoke jobs pass on the PR
-- [x] 2.2 Production has the column and no new advisor finding
+- [x] 2.1 CI ci and smoke jobs pass on the PR — 6286a66
+- [x] 2.2 Production has the column and no new advisor finding — 6286a66
 
 #### Manual
 
-- [ ] 2.3 Production health reports the deployed commit
+- [x] 2.3 Production health reports the deployed commit — 6286a66
 
 ### Phase 3: Lab derives and sends daily history
 
 #### Automated
 
-- [ ] 3.1 Push script tests pass
-- [ ] 3.2 Dry run shows 35 days with contract fields only
-- [ ] 3.3 Backfill push and timer pushes return 201
-- [ ] 3.4 Production daily_energy has about 60 rows with forecasts
+- [x] 3.1 Push script tests pass — 3d107ae
+- [x] 3.2 Dry run shows 35 days with contract fields only — 3d107ae
+- [x] 3.3 Backfill push and timer pushes return 201 — 3d107ae
+- [x] 3.4 Production daily_energy has about 60 rows with forecasts
 
 #### Manual
 
-- [ ] 3.5 Recent days' totals look plausible against the inverter app
+- [x] 3.5 Recent days' totals look plausible against the inverter app
