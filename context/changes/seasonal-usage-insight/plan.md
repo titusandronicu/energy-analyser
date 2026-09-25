@@ -224,8 +224,8 @@ Additive grant and policy; no data changes. Rollback: drop the policy and revoke
 
 #### Automated
 
-- [x] 2.1 Lint, type check, build and unit tests pass
-- [ ] 2.2 CI smoke job passes including the new steps
+- [x] 2.1 Lint, type check, build and unit tests pass — b028a0c
+- [x] 2.2 CI smoke job passes including the new steps — b028a0c
 
 #### Manual
 
@@ -236,7 +236,7 @@ Additive grant and policy; no data changes. Rollback: drop the policy and revoke
 #### Automated
 
 - [ ] 3.1 CI ci and smoke jobs pass on the PR
-- [ ] 3.2 Production grants and policy verified by SQL
+- [x] 3.2 Production grants and policy verified by SQL
 
 #### Manual
 
