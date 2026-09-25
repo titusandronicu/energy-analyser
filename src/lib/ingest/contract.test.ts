@@ -106,6 +106,11 @@ describe("ingest contract v1", () => {
     expect(validateIngestPayload(payload, now).success).toBe(true);
   });
 
+  it("accepts a day with an unknown (null) PV forecast", () => {
+    const payload = withChanges((p) => (sections(p).days[0].pv_forecast_kwh = null));
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
   it("accepts a day without a PV forecast", () => {
     const payload = withChanges((p) => {
       for (const d of sections(p).days) delete d.pv_forecast_kwh;

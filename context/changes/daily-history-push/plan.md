@@ -223,10 +223,10 @@ Additive column and a function replacement with the same signature; no data chan
 
 #### Automated
 
-- [x] 1.1 Migration applies on a clean local DB
-- [x] 1.2 Unit tests pass including the committed schema
-- [x] 1.3 Lint, type check and build pass
-- [x] 1.4 Local example push stores pv_forecast_kwh
+- [x] 1.1 Migration applies on a clean local DB — d66f079
+- [x] 1.2 Unit tests pass including the committed schema — d66f079
+- [x] 1.3 Lint, type check and build pass — d66f079
+- [x] 1.4 Local example push stores pv_forecast_kwh — d66f079
 
 ### Phase 2: Production rollout of the app change
 
