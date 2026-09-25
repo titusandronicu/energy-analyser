@@ -246,8 +246,8 @@ Additive column and a function replacement with the same signature; no data chan
 - [x] 3.1 Push script tests pass — 3d107ae
 - [x] 3.2 Dry run shows 35 days with contract fields only — 3d107ae
 - [x] 3.3 Backfill push and timer pushes return 201 — 3d107ae
-- [ ] 3.4 Production daily_energy has about 60 rows with forecasts
+- [x] 3.4 Production daily_energy has about 60 rows with forecasts
 
 #### Manual
 
-- [ ] 3.5 Recent days' totals look plausible against the inverter app
+- [x] 3.5 Recent days' totals look plausible against the inverter app
