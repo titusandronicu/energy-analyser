@@ -41,7 +41,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | ---- | ------------------------- | ----------------------------------------------------------------------- | ------------- | ---------------------------- | -------- |
 | F-01 | push-ingestion-endpoint   | (foundation) the home lab can push an authenticated, versioned payload  | —             | NFR (secrets, raw data)      | done     |
 | S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | in-progress |
-| S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop        | F-01, S-01    | US-01, FR-002, FR-004        | in-progress |
+| S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop        | F-01, S-01    | US-01, FR-002, FR-004        | done     |
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence    | F-01, S-01    | US-01, FR-005, FR-006        | in-progress |
 | S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-01, S-01    | US-01, FR-003                | proposed |
 | S-05 | record-feedback           | accept or dismiss today's recommendation with a note and see history    | S-03          | US-02, FR-007, FR-008        | proposed |
@@ -109,7 +109,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Low domain risk; first consumer of the state section of the push contract, so a contract mismatch shows up here.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-03: Today's recommendation
 
@@ -192,3 +192,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 ## Done
 
 - **F-01: (foundation) the app accepts a versioned, bearer-token-authenticated, idempotent push from the home lab and stores it without a service-role key; payload sections for state, recommendation and history are added by the slices that first consume them.** — Archived 2026-09-23 → `context/archive/2026-09-23-push-ingestion-endpoint/`. Lesson: —.
+- **S-02: user can see current PV/battery/grid state pushed by the home lab, and last-known data with a visible staleness indicator when pushes stop.** — Archived 2026-09-25 → `context/archive/2026-09-25-live-state-with-staleness/`. Lesson: —.
