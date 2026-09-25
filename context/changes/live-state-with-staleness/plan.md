@@ -220,20 +220,20 @@ Additive view, policy and column grants; no data changes. Production shows the e
 
 #### Automated
 
-- [x] 1.1 Migration applies on a clean local DB
-- [x] 1.2 Unit tests pass: `npm test`
-- [x] 1.3 View-model tests cover staleness boundary, age labels, directions, degraded, missing and malformed data
-- [x] 1.4 Lint, type check and build pass
+- [x] 1.1 Migration applies on a clean local DB — ff11664
+- [x] 1.2 Unit tests pass: `npm test` — ff11664
+- [x] 1.3 View-model tests cover staleness boundary, age labels, directions, degraded, missing and malformed data — ff11664
+- [x] 1.4 Lint, type check and build pass — ff11664
 
 #### Manual
 
-- [x] 1.5 Owner reads live_state, non-owner and anon don't, owner can't read token_id
+- [x] 1.5 Owner reads live_state, non-owner and anon don't, owner can't read token_id — ff11664
 
 ### Phase 2: Dashboard live-state card and auto-reload
 
 #### Automated
 
-- [ ] 2.1 Lint, type check, build and unit tests pass
+- [x] 2.1 Lint, type check, build and unit tests pass
 - [ ] 2.2 CI `smoke` job passes including the live-state steps
 
 #### Manual
