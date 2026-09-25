@@ -19,3 +19,14 @@ export interface LiveStateRow {
   received_at: string;
   state: unknown;
 }
+
+// A row of public.daily_energy as the dashboard reads it: one Europe/Warsaw calendar day ("YYYY-MM-DD") of
+// totals pushed by the home lab. Any total may be missing (null) for a day.
+export interface DailyEnergyRow {
+  day: string;
+  pv_kwh: number | null;
+  load_kwh: number | null;
+  grid_import_kwh: number | null;
+  grid_export_kwh: number | null;
+  pv_forecast_kwh: number | null;
+}

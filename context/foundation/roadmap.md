@@ -43,7 +43,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | in-progress |
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop        | F-01, S-01    | US-01, FR-002, FR-004        | done     |
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence    | F-01, S-01    | US-01, FR-005, FR-006        | in-progress |
-| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-02, S-01    | US-01, FR-003                | proposed |
+| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-02, S-01    | US-01, FR-003                | in-progress |
 | S-05 | record-feedback           | accept or dismiss today's recommendation with a note and see history    | S-03          | US-02, FR-007, FR-008        | proposed |
 | S-06 | edit-delete-feedback      | edit or delete a past feedback entry                                    | S-05          | US-02, FR-009, FR-010        | proposed |
 | F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push       | F-01          | FR-003, FR-015               | in-progress |
@@ -158,7 +158,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** — (proposed 2026-09-23, confirm in the plan: "same season" = ±14 days around the same day of year in earlier years; sufficient = at least 20 days with data in that window, else the trailing 30-day fallback)
 - **Risk:** The only domain logic computed in this app; history starts mid-2026, so the fallback path is the one that runs first and must be tested.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-05: Record feedback
 
