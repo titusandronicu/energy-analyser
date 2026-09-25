@@ -229,15 +229,15 @@ Additive grant and policy; no data changes. Rollback: drop the policy and revoke
 
 #### Manual
 
-- [ ] 2.3 Card reads well in Polish at phone width in seasonal, fallback and insufficient states
+- [x] 2.3 Card reads well in Polish at phone width in seasonal, fallback and insufficient states
 
 ### Phase 3: Production rollout
 
 #### Automated
 
-- [ ] 3.1 CI ci and smoke jobs pass on the PR
-- [x] 3.2 Production grants and policy verified by SQL
+- [x] 3.1 CI ci and smoke jobs pass on the PR — 61c816e
+- [x] 3.2 Production grants and policy verified by SQL — 61c816e
 
 #### Manual
 
-- [ ] 3.3 Production dashboard shows the card with the fallback notice
+- [x] 3.3 Production dashboard shows the card with the fallback notice

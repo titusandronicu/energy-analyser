@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DailyEnergyRow } from "@/types";
-import { asNumber, kwhLabel, MISSING } from "@/lib/format/values";
+import { asNumber, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
 import { addDays, formatDayMonth, utcMsToDayKey, warsawParts } from "@/lib/format/warsaw-time";
 
-// Enough history for a seasonal window a year back (365 days + 14 days + slack).
+// Enough history for a seasonal window a year back (365 days + 14 days + slack). The seasonal baseline therefore
+// only ever reaches one earlier year, even when older data exists.
 export const HISTORY_DAYS = 400;
 // Yesterday may be missing (late push); the newest day with a load within this many days stands in for it.
 export const LOOKBACK_DAYS = 7;
@@ -60,6 +61,12 @@ function mean(values: number[]): number | null {
   return values.length === 0 ? null : values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
+function statusOf(load: number, baseline: number): UsageStatus {
+  if (load > baseline * (1 + STATUS_THRESHOLD) + EPSILON) return "above";
+  if (load < baseline * (1 - STATUS_THRESHOLD) - EPSILON) return "below";
+  return "normal";
+}
+
 // "+12%", "−8%" (minus sign), "0%"; MISSING without a usable baseline.
 function deltaLabel(value: number | null, baseline: number | null): string {
   if (value === null || baseline === null || baseline === 0) return MISSING;
@@ -67,13 +74,15 @@ function deltaLabel(value: number | null, baseline: number | null): string {
   // Round half away from zero, symmetric for increases and decreases.
   const percent = Math.sign(raw) * Math.round(Math.abs(raw) + EPSILON);
   if (percent === 0) return "0%";
-  return percent > 0 ? `+${String(percent)}%` : `−${String(Math.abs(percent))}%`;
-}
-
-function statusOf(load: number, baseline: number): UsageStatus {
-  if (load > baseline * (1 + STATUS_THRESHOLD) + EPSILON) return "above";
-  if (load < baseline * (1 - STATUS_THRESHOLD) - EPSILON) return "below";
-  return "normal";
+  const sign = percent > 0 ? "+" : "−";
+  const threshold = STATUS_THRESHOLD * 100;
+  if (Math.abs(percent) !== threshold) return `${sign}${String(Math.abs(percent))}%`;
+  // At the threshold a whole percent could read "+15%" next to either status, so show one decimal: exactly ±15%
+  // is "15,0%" (normal) and anything past it at least "15,1%", decided by the same rule as the status.
+  const tenths = Math.round(Math.abs(raw) * 10 + EPSILON) / 10;
+  const shown =
+    statusOf(value, baseline) === "normal" ? Math.min(tenths, threshold) : Math.max(tenths, threshold + 0.1);
+  return `${sign}${oneDecimal.format(shown)}%`;
 }
 
 export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsightView {
@@ -99,9 +108,10 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
   const comparedDay = compared === null ? undefined : days.get(compared);
   if (compared === null || comparedDay === undefined) return { kind: "insufficient" };
 
-  // Seasonal: ±14 days around the compared day's month-day in every earlier year that has data. The anchor is
-  // at least a year back, so the window never reaches the compared day or the fallback window. Starting one
-  // year before the earliest data covers a window around New Year that spills into the earliest year.
+  // Seasonal: ±14 days around the compared day's month-day in every earlier year that has data (with
+  // HISTORY_DAYS of history that is one year). The anchor is at least a year back, so the window never reaches
+  // the compared day or the fallback window. Starting one year before the earliest data covers a window around
+  // New Year that spills into the earliest year.
   const comparedYear = Number(compared.slice(0, 4));
   const earliestYear = Math.min(...[...days.keys()].map((d) => Number(d.slice(0, 4))));
   const seasonal: string[] = [];

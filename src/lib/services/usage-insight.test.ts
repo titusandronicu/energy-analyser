@@ -1,7 +1,8 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { DailyEnergyRow } from "@/types";
 import { addDays } from "@/lib/format/warsaw-time";
-import { toUsageInsightView } from "./usage-insight";
+import { HISTORY_DAYS, loadDailyEnergy, toUsageInsightView } from "./usage-insight";
 
 // 12:00 in Warsaw (CEST) on 25 September 2026: today is 2026-09-25, yesterday 2026-09-24.
 const now = new Date("2026-09-25T10:00:00Z");
@@ -47,6 +48,16 @@ describe("toUsageInsightView", () => {
     expect(v.isYesterday).toBe(false);
     expect(v.dayLabel).toBe("22 września");
     expect(v.baseline).toEqual({ kind: "fallback", days: 10 });
+  });
+
+  it("takes yesterday from the Warsaw date just after midnight", () => {
+    // 22:30 UTC on 24 September is 00:30 on 25 September in Warsaw (CEST): yesterday is 24 September.
+    const justAfterMidnight = new Date("2026-09-24T22:30:00Z");
+    const rows = [row(TODAY, 50), row(YESTERDAY, 10), ...daysBefore(YESTERDAY, 7, 10)];
+    const v = insight(rows, justAfterMidnight);
+    expect(v.isYesterday).toBe(true);
+    expect(v.dayLabel).toBe("24 września");
+    expect(v.load.deltaLabel).toBe("0%");
   });
 
   it("uses a day exactly 7 days back", () => {
@@ -148,11 +159,16 @@ describe("toUsageInsightView", () => {
     expect(insight(rows, leap).baseline).toEqual({ kind: "seasonal", days: 29 });
   });
 
+  // At ±15% the label shows one decimal so it never contradicts the status.
   it.each([
-    [34.5, "+15%", "normal"],
-    [25.5, "−15%", "normal"],
-    [34.51, "+15%", "above"],
-    [25.49, "−15%", "below"],
+    [34.5, "+15,0%", "normal"],
+    [25.5, "−15,0%", "normal"],
+    [34.51, "+15,1%", "above"],
+    [25.49, "−15,1%", "below"],
+    [34.53, "+15,1%", "above"],
+    [34.47, "+14,9%", "normal"],
+    [34.2, "+14%", "normal"],
+    [34.8, "+16%", "above"],
     [30, "0%", "normal"],
   ])("labels load %d against a mean of 30 as %s %s", (load, deltaLabel, status) => {
     const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 30, 30)];
@@ -166,7 +182,7 @@ describe("toUsageInsightView", () => {
     [3, 3.45],
   ])("keeps exactly +15%% normal against a mean of %d despite floating point error", (mean, load) => {
     const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 7, mean)];
-    expect(insight(rows).load).toMatchObject({ deltaLabel: "+15%", status: "normal" });
+    expect(insight(rows).load).toMatchObject({ deltaLabel: "+15,0%", status: "normal" });
   });
 
   it("skips days without a load everywhere", () => {
@@ -209,5 +225,36 @@ describe("toUsageInsightView", () => {
       kwhLabel: "4,0 kWh",
       deltaLabel: "—",
     });
+  });
+});
+
+describe("loadDailyEnergy", () => {
+  // Records the arguments of the query chain and resolves with the given rows.
+  function mockClient(data: DailyEnergyRow[]) {
+    const calls: Record<string, unknown[]> = {};
+    const chain = {
+      from: (...args: unknown[]) => ((calls.from = args), chain),
+      select: (...args: unknown[]) => ((calls.select = args), chain),
+      gte: (...args: unknown[]) => ((calls.gte = args), chain),
+      order: (...args: unknown[]) => ((calls.order = args), chain),
+      overrideTypes: () => Promise.resolve({ data, error: null }),
+    };
+    return { client: chain as unknown as SupabaseClient, calls };
+  }
+
+  it(`reads the last ${String(HISTORY_DAYS)} Warsaw days, newest first`, async () => {
+    const rows = [row(YESTERDAY, 10)];
+    const { client, calls } = mockClient(rows);
+    await expect(loadDailyEnergy(client, now)).resolves.toEqual(rows);
+    expect(calls.from).toEqual(["daily_energy"]);
+    // 400 days before 2026-09-25 (Warsaw); the seasonal window around 2025-09-24 starts on 2025-09-10.
+    expect(calls.gte).toEqual(["day", "2025-08-21"]);
+    expect(calls.order).toEqual(["day", { ascending: false }]);
+  });
+
+  it("counts the cutoff from the Warsaw date just after midnight", async () => {
+    const { client, calls } = mockClient([]);
+    await loadDailyEnergy(client, new Date("2026-09-24T22:30:00Z"));
+    expect(calls.gte).toEqual(["day", "2025-08-21"]);
   });
 });
