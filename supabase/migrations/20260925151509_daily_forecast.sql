@@ -1,11 +1,14 @@
 -- Per-day PV forecast: daily_history entries may carry pv_forecast_kwh, the day's PV forecast as
--- known in the morning. It follows the same latest-captured_at-wins rule as the other daily totals.
+-- known in the morning. It follows the same latest-captured_at-wins rule as the other daily totals,
+-- except that a push without a forecast for a day keeps the one already stored (a morning forecast
+-- never legitimately becomes unknown, and S-11 depends on that history).
 
 alter table public.daily_energy add column pv_forecast_kwh numeric;
 
 -- ingest_push is unchanged from 20260923101001_push_ingestion.sql except that daily_energy rows also
 -- store pv_forecast_kwh.
--- Stores one validated v1 payload (validated by the API layer before this call).
+-- Stores one v1 payload. POST /api/ingest validates it against the contract before this call; a
+-- direct RPC call is not schema-validated, so the ingest token is the trust boundary.
 -- Returns {"status":"created"} or {"status":"duplicate"}; raises P0401 for an unknown or revoked
 -- token and P0409 when the same capture time arrives with different content.
 create or replace function public.ingest_push(p_token text, p_payload jsonb)
@@ -65,7 +68,7 @@ begin
     load_kwh = excluded.load_kwh,
     grid_import_kwh = excluded.grid_import_kwh,
     grid_export_kwh = excluded.grid_export_kwh,
-    pv_forecast_kwh = excluded.pv_forecast_kwh,
+    pv_forecast_kwh = coalesce(excluded.pv_forecast_kwh, public.daily_energy.pv_forecast_kwh),
     captured_at = excluded.captured_at,
     updated_at = now(),
     push_id = excluded.push_id

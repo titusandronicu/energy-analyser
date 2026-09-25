@@ -134,4 +134,6 @@ drop policy "owners can read ingest pushes" on public.ingest_pushes;
 revoke select (source, captured_at, received_at, payload) on public.ingest_pushes from authenticated;
 ```
 
+For `20260925151509_daily_forecast.sql`, re-run the `ingest_push` definition from `20260923101001_push_ingestion.sql` as `create or replace function` (with its revoke/grant lines). The `pv_forecast_kwh` column can stay; the old function never reads it, and the old contract rejects the field before it reaches the database.
+
 Roll the app back first (see Rollback) so no deployed code still reads the view. Owners can read the retained raw push payloads (`payload`, 14 days) from `ingest_pushes` directly, not only through `live_state`; `token_id` and `payload_hash` stay unreadable.

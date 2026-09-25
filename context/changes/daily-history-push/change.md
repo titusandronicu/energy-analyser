@@ -1,7 +1,7 @@
 ---
 change_id: daily-history-push
 title: The home lab pushes per-day energy totals and the day's PV forecast
-status: implementing
+status: impl_reviewed
 created: 2026-09-25
 updated: 2026-09-25
 archived_at: null
