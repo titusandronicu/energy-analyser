@@ -43,10 +43,10 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | in-progress |
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop        | F-01, S-01    | US-01, FR-002, FR-004        | done     |
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence    | F-01, S-01    | US-01, FR-005, FR-006        | in-progress |
-| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-02, S-01    | US-01, FR-003                | in-progress |
+| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-02, S-01    | US-01, FR-003                | done |
 | S-05 | record-feedback           | accept or dismiss today's recommendation with a note and see history    | S-03          | US-02, FR-007, FR-008        | proposed |
 | S-06 | edit-delete-feedback      | edit or delete a past feedback entry                                    | S-05          | US-02, FR-009, FR-010        | proposed |
-| F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push       | F-01          | FR-003, FR-015               | in-progress |
+| F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push       | F-01          | FR-003, FR-015               | done |
 | S-07 | bill-forecast             | see the projected cost of the current month with a range                | F-01, S-01    | US-03, FR-011                | proposed |
 | S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff     | F-01, S-01    | US-03, FR-012                | blocked  |
 | S-09 | consumption-plan-actions  | see the lab's consumption-plan actions next to today's recommendation  | S-03          | US-01, FR-013                | proposed |
@@ -106,7 +106,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Mostly a homelab-2 change (the app already accepts `daily_history`); the per-day forecast field is new to the contract, so it lands here rather than in S-11.
-- **Status:** in-progress
+- **Status:** done
 
 ## Slices
 
@@ -158,7 +158,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** — (proposed 2026-09-23, confirm in the plan: "same season" = ±14 days around the same day of year in earlier years; sufficient = at least 20 days with data in that window, else the trailing 30-day fallback)
 - **Risk:** The only domain logic computed in this app; history starts mid-2026, so the fallback path is the one that runs first and must be tested.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-05: Record feedback
 
@@ -312,3 +312,5 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 - **F-01: (foundation) the app accepts a versioned, bearer-token-authenticated, idempotent push from the home lab and stores it without a service-role key; payload sections for state, recommendation and history are added by the slices that first consume them.** — Archived 2026-09-23 → `context/archive/2026-09-23-push-ingestion-endpoint/`. Lesson: —.
 - **S-02: user can see current PV/battery/grid state pushed by the home lab, and last-known data with a visible staleness indicator when pushes stop.** — Archived 2026-09-25 → `context/archive/2026-09-25-live-state-with-staleness/`. Lesson: —.
+- **F-02: (foundation) the home lab derives per-day totals (PV, load, grid import/export, and the day's PV forecast) and sends the last 35 days in every push; the app stores them per day.** — Archived 2026-09-25 → `context/archive/2026-09-25-daily-history-push/`. Lesson: —.
+- **S-04: user can see whether recent usage/generation is normal, above or below a season-adjusted baseline, with a visible notice when the flat 30-day fallback is used.** — Archived 2026-09-25 → `context/archive/2026-09-25-seasonal-usage-insight/`. Lesson: —.
