@@ -238,14 +238,14 @@ Additive view, policy and column grants; no data changes. Production shows the e
 
 #### Manual
 
-- [ ] 2.3 Live-state card reads well in Polish at phone width in fresh, stale, degraded and empty states
+- [x] 2.3 Live-state card reads well in Polish at phone width in fresh, stale, degraded and empty states
 
 ### Phase 3: Production rollout
 
 #### Automated
 
-- [ ] 3.1 CI `ci` and `smoke` jobs pass on the PR
+- [x] 3.1 CI `ci` and `smoke` jobs pass on the PR — a33bd20
 
 #### Manual
 
-- [ ] 3.2 Production dashboard shows the live-state card after deploy
+- [x] 3.2 Production dashboard shows the live-state card after deploy
