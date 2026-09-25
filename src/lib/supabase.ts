@@ -1,7 +1,7 @@
 import { createServerClient, parseCookieHeader } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { AstroCookies } from "astro";
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from "astro:env/server";
+import { APP_ORIGIN, SUPABASE_ANON_KEY, SUPABASE_URL } from "astro:env/server";
 
 function assertAnonKey(key: string) {
   if (key.startsWith("sb_secret_")) {
@@ -39,6 +39,13 @@ export function createClient(requestHeaders: Headers, cookies: AstroCookies) {
   }
   assertAnonKey(SUPABASE_ANON_KEY);
   return createServerClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    // Session cookies are only ever read server-side (there is no browser Supabase client), so keep them away
+    // from page scripts; mark them Secure when the app is served over HTTPS (APP_ORIGIN in production).
+    cookieOptions: {
+      httpOnly: true,
+      secure: APP_ORIGIN?.startsWith("https://") ?? false,
+      sameSite: "lax",
+    },
     cookies: {
       getAll() {
         return parseCookieHeader(requestHeaders.get("Cookie") ?? "");

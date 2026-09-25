@@ -229,6 +229,12 @@ None. One Supabase auth call per request or confirm.
 
 No database migration. Production needs the two email templates set in the Supabase dashboard **before** the deploy: until then, emails use Supabase's default template, whose PKCE-style link the new `/auth/confirm` route rejects. The existing owner account stays; its password becomes unused.
 
+## Implementation Notes
+
+- **Email body verified in CI, not locally (1.4).** Locally the Supabase CLI bind-mounts the email template from the Mac, which doesn't exist on the remote Docker host, so the local email had no link. The CI smoke job (`063f7b0`) signs in through the real template.
+- **Production templates superseded (3.3, 3.4).** The production email templates were never set, so emails used Supabase's default link (via its `/verify`, back to the Site URL with a PKCE `?code=`). Together with the built-in mailer's ~2 emails/hour limit, that made the magic link unusable in practice. Two follow-ups replaced the plan's production steps (PR #16, `2813f43`): `/` forwards `?code=` to `/auth/confirm`, which exchanges it (same browser only), and **email + password sign-in was restored** at the owner's request as an alternative, still with no sign-up form. The owner signed in with a password on production on 2026-09-23. Setting the templates stays recommended for cross-device links.
+- **Double submit fixed (PR #13).** A native form POST isn't tracked by `useFormStatus`, so one tap sent two emails and used up the hourly limit.
+
 ## References
 
 - Roadmap item: `context/foundation/roadmap.md` (S-01)
@@ -251,7 +257,7 @@ No database migration. Production needs the two email templates set in the Supab
 
 #### Manual
 
-- [ ] 1.4 Local curl request produces a Polish email in Mailpit whose link lands on /dashboard with a session
+- [x] 1.4 Local curl request produces a Polish email in Mailpit whose link lands on /dashboard with a session — 063f7b0
 
 ### Phase 2: Sign-in UI and removal of the password flow
 
@@ -263,7 +269,7 @@ No database migration. Production needs the two email templates set in the Supab
 
 #### Manual
 
-- [ ] 2.4 Sign-in and check-email pages read well in Polish at phone width; invalid-link error shown
+- [x] 2.4 Sign-in and check-email pages read well in Polish at phone width; invalid-link error shown — 2813f43
 
 ### Phase 3: End-to-end verification and production rollout
 
