@@ -328,6 +328,17 @@
                 "type": "null"
               }
             ]
+          },
+          "pv_forecast_kwh": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": ["day", "pv_kwh", "load_kwh", "grid_import_kwh", "grid_export_kwh"],

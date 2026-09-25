@@ -100,4 +100,22 @@ describe("ingest contract v1", () => {
   it("rejects negative energy totals", () => {
     expect(firstIssuePath(withChanges((p) => (sections(p).days[0].pv_kwh = -1)))).toBe("daily_history.0.pv_kwh");
   });
+
+  it("accepts a day with a PV forecast", () => {
+    const payload = withChanges((p) => (sections(p).days[0].pv_forecast_kwh = 12.5));
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it("accepts a day without a PV forecast", () => {
+    const payload = withChanges((p) => {
+      for (const d of sections(p).days) delete d.pv_forecast_kwh;
+    });
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it("rejects a negative PV forecast", () => {
+    expect(firstIssuePath(withChanges((p) => (sections(p).days[0].pv_forecast_kwh = -1)))).toBe(
+      "daily_history.0.pv_forecast_kwh",
+    );
+  });
 });
