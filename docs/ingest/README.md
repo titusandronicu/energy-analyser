@@ -17,6 +17,8 @@ Content-Type: application/json
 - Cadence: one push per refresh (the lab's refresh job runs every 5 minutes).
 - `captured_at`: the lab's snapshot time, ISO 8601 with offset. It must be at most 5 minutes in the future and at most 14 days old. It is the push's identity: one push per `captured_at`.
 - `state` is required. Include `recommendation` when there is a narrated recommendation, and `daily_history` with recent days (at most 62, one entry per Europe/Warsaw calendar day). Sending the same recommendation or day again is fine.
+- `daily_history` should hold complete past days plus today. Today's entry is partial; each later push replaces it until the day is over.
+- `pv_forecast_kwh` (optional, may be `null`) in a `daily_history` entry is the PV forecast for that day as known in the morning.
 - Every object is strict: unknown keys are rejected with 422. Add a field only after this contract gains it.
 
 ## Never send

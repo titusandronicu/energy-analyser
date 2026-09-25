@@ -46,7 +46,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-02, S-01    | US-01, FR-003                | proposed |
 | S-05 | record-feedback           | accept or dismiss today's recommendation with a note and see history    | S-03          | US-02, FR-007, FR-008        | proposed |
 | S-06 | edit-delete-feedback      | edit or delete a past feedback entry                                    | S-05          | US-02, FR-009, FR-010        | proposed |
-| F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push       | F-01          | FR-003, FR-015               | ready    |
+| F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push       | F-01          | FR-003, FR-015               | in-progress |
 | S-07 | bill-forecast             | see the projected cost of the current month with a range                | F-01, S-01    | US-03, FR-011                | proposed |
 | S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff     | F-01, S-01    | US-03, FR-012                | blocked  |
 | S-09 | consumption-plan-actions  | see the lab's consumption-plan actions next to today's recommendation  | S-03          | US-01, FR-013                | proposed |
@@ -106,7 +106,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Mostly a homelab-2 change (the app already accepts `daily_history`); the per-day forecast field is new to the contract, so it lands here rather than in S-11.
-- **Status:** ready
+- **Status:** in-progress
 
 ## Slices
 

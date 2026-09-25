@@ -49,12 +49,14 @@ const recommendation = z.strictObject({
 });
 
 // `day` is the Europe/Warsaw calendar date as the lab computes it; the app never re-derives it.
+// `pv_forecast_kwh` is that day's PV forecast as known in the morning.
 const dailyEnergy = z.strictObject({
   day: z.iso.date(),
   pv_kwh: energyKwh,
   load_kwh: energyKwh,
   grid_import_kwh: energyKwh,
   grid_export_kwh: energyKwh,
+  pv_forecast_kwh: energyKwh.optional(),
 });
 
 export const ingestPayloadV1 = z.strictObject({
