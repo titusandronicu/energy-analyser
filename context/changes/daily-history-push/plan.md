@@ -233,7 +233,7 @@ Additive column and a function replacement with the same signature; no data chan
 #### Automated
 
 - [ ] 2.1 CI ci and smoke jobs pass on the PR
-- [ ] 2.2 Production has the column and no new advisor finding
+- [x] 2.2 Production has the column and no new advisor finding
 
 #### Manual
 
