@@ -8,7 +8,7 @@ Recorded: 2026-09-23, from the private home-lab repository's inventory (last upd
 
 | Component | State | What it provides |
 |---|---|---|
-| **Home Assistant** | Live, production | Live PV / battery / grid / load telemetry. Deye inverter integrated via Solarman (local). Solar forecast integration. HA conversation agent. |
+| **Home Assistant** | Live, production | Live PV / battery / grid / load telemetry. Deye inverter integrated via Solarman (local). HA conversation agent. The solar forecast integration was not recreated when HA moved hosts (~2026-07-21); see *Lab state (2026-09-25)*. |
 | **Deye inverter** | Live | Telemetry through Home Assistant. Read-only settings snapshots (reserve, Grid Charge, Time-of-Use) are collected for analysis, never written. |
 | **PGE billing data** | Live | PGE eBOK CSV import with validation (hourly readings, time-of-use aggregates), G11 tariff bill calculation, current-month bill forecast from daily grid import. |
 | **Solar Energy Analyser** (lab page) | Live, lab status | Overview page (live energy, balance, bill and advisory status, stale data suppressed), PGE CSV upload, PGE vs Deye drift cross-check, advisory cards. Polish UI. |
@@ -58,3 +58,16 @@ What Energy Analyser adds that does **not** exist yet:
 | The push step (homelab-2 change) | Ingestion endpoint + payload contract; feedback CRUD (FR-007–010) |
 
 `context_type` stays `greenfield`: this repository is new code, and the home lab is an external data source.
+
+## Lab state (2026-09-25)
+
+Found and changed while building F-02 (daily history) and S-04 (seasonal insight). Details and runbooks live in the private home-lab repo.
+
+| Area | State | Effect on Energy Analyser |
+|---|---|---|
+| **Push** | Every 5-minute push carries live state, the latest recommendation and the last 35 days of per-day totals (plus the morning PV forecast when known). Day totals use only samples whose counter sensors were present, ignore late dips and midnight carry-overs, and incomplete past days are sent empty. | `daily_energy` fills from 2026-07-26; 13 outage days are missing for good. |
+| **Solar forecast** | Missing in Home Assistant since the move to the new host (~2026-07-21): every snapshot is marked `degraded` and every forecast field is null. | Recommendations carry no forecast; `pv_forecast_kwh` stays empty; FR-006 and S-11 wait on it. Owner action: add Forecast.Solar or Solcast in HA. |
+| **Lab host outages** | The virtualisation host's network card hung (2026-09-13 → 19 and 09-21 → 25), leaving the lab up but offline, with no data and no alert. Fixed 2026-09-25 (segmentation offload off, persisted). | Outage days are absent from history; the seasonal insight uses the days it has and says how many. |
+| **Monitoring** | Uptime Kuma (upgraded to 2.5.5, managed as code) receives a heartbeat after every successful push and pings the lab hosts; alerts go to Telegram. A second, unused Kuma instance was retired. | Silence from the lab now alerts within 15 minutes; the app's own staleness notices (S-02) remain the user-facing signal. |
+| **Drift control** | The lab's live scripts had diverged from the repo; they were reconciled, and the lab runbooks now diff the host against the repo before any install. | Contract changes must land in the app first, then in the lab (a field the app does not know yet is rejected with 422). |
+
