@@ -96,6 +96,12 @@ const steps = [
     () => request("/dashboard", { readBody: true }),
     { status: 200, contains: ["Stan na żywo", "3,1 kW"], notContains: "Dane nieaktualne" },
   ],
+  [
+    // The fixture carries only two days of history, so the card shows its heading, not a flag.
+    "dashboard shows the usage insight card",
+    () => request("/dashboard", { readBody: true }),
+    { status: 200, contains: "Zużycie wczoraj", notContains: "Nie udało się wczytać porównania" },
+  ],
   ["used sign-in link is rejected", () => request(signinLink), { status: 302, location: "/auth/signin?error=" }],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
@@ -173,9 +179,31 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     },
     { status: 401 },
   ]);
+  steps.push([
+    "anon cannot read daily energy directly",
+    async () => {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/daily_energy?select=day`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      return { status: response.status, location: "" };
+    },
+    { status: 401 },
+  ]);
   // Password alternative: create a local user with a password through Supabase, then sign in via the app.
   const passwordEmail = `smoke-pw-${Date.now()}@example.com`;
   const passwordValue = "Smoke-Test-Passw0rd!";
+  // Signed-in REST read as the password user; returns the status only.
+  const ownerRead = async (path) => {
+    const session = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: passwordEmail, password: passwordValue }),
+    }).then((response) => response.json());
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${String(session.access_token)}` },
+    });
+    return { status: response.status, location: "" };
+  };
   steps.push(
     [
       "local password user is created",
@@ -192,17 +220,17 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     [
       // Column grants: even a signed-in owner (every local user is one) can't read the token or hash columns.
       "signed-in user cannot read push token columns",
-      async () => {
-        const session = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-          method: "POST",
-          headers: { apikey: SUPABASE_ANON_KEY, "Content-Type": "application/json" },
-          body: JSON.stringify({ email: passwordEmail, password: passwordValue }),
-        }).then((response) => response.json());
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/ingest_pushes?select=token_id,payload_hash`, {
-          headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${String(session.access_token)}` },
-        });
-        return { status: response.status, location: "" };
-      },
+      () => ownerRead("ingest_pushes?select=token_id,payload_hash"),
+      { status: 403 },
+    ],
+    [
+      "signed-in owner can read daily energy totals",
+      () => ownerRead("daily_energy?select=day,load_kwh,grid_import_kwh"),
+      { status: 200 },
+    ],
+    [
+      "signed-in owner cannot read daily energy push_id",
+      () => ownerRead("daily_energy?select=push_id"),
       { status: 403 },
     ],
     [

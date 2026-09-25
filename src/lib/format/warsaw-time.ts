@@ -23,3 +23,27 @@ export function warsawParts(date: Date) {
 export function formatWarsawDateTime(date: Date): string {
   return warsawParts(date).label;
 }
+
+// Calendar arithmetic on day keys ("YYYY-MM-DD"). A day key is a plain calendar date, so it is handled in UTC
+// where every day has 24 hours; DST in Warsaw can't shift it.
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+export function dayKeyToUtcMs(dayKey: string): number {
+  const [year, month, day] = dayKey.split("-").map(Number);
+  return Date.UTC(year, month - 1, day);
+}
+
+export function utcMsToDayKey(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+export function addDays(dayKey: string, days: number): string {
+  return utcMsToDayKey(dayKeyToUtcMs(dayKey) + days * DAY_MS);
+}
+
+const dayMonth = new Intl.DateTimeFormat("pl-PL", { timeZone: "UTC", day: "numeric", month: "long" });
+
+// "24 września" for "2026-09-24" (day and genitive month, no year).
+export function formatDayMonth(dayKey: string): string {
+  return dayMonth.format(new Date(dayKeyToUtcMs(dayKey)));
+}
