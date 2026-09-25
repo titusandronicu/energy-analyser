@@ -65,6 +65,9 @@ describe("toLiveStateView", () => {
     [1500, { value: "1,5 kW", direction: "pobór z sieci" }],
     [-1500, { value: "1,5 kW", direction: "oddawanie do sieci" }],
     [0, { value: "0,0 kW", direction: null }],
+    [30, { value: "0,0 kW", direction: null }],
+    [-49, { value: "0,0 kW", direction: null }],
+    [-50, { value: "0,1 kW", direction: "oddawanie do sieci" }],
     [null, { value: "—", direction: null }],
   ])("labels grid %j", (grid_w, expected) => {
     expect(view(row({}, { grid_w })).grid).toEqual(expected);
@@ -74,6 +77,8 @@ describe("toLiveStateView", () => {
     [800, { value: "0,8 kW", direction: "rozładowanie" }],
     [-800, { value: "0,8 kW", direction: "ładowanie" }],
     [0, { value: "0,0 kW", direction: null }],
+    [-20, { value: "0,0 kW", direction: null }],
+    [50, { value: "0,1 kW", direction: "rozładowanie" }],
     [null, { value: "—", direction: null }],
   ])("labels battery %j", (battery_w, expected) => {
     expect(view(row({}, { battery_w })).battery).toEqual({ ...expected, socLabel: "74%" });
