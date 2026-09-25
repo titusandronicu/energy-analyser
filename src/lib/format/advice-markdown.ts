@@ -54,7 +54,7 @@ export function parseAdviceMarkdown(text: string): Block[] {
     const item = bullet ?? numbered;
     if (item) {
       const ordered = numbered !== null;
-      if (!list || list.ordered !== ordered) {
+      if (list?.ordered !== ordered) {
         flush();
         list = { ordered, items: [] };
       }
