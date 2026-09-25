@@ -91,6 +91,11 @@ const steps = [
     () => request("/dashboard", { readBody: true }),
     { status: 200, contains: freshMarker, notContains: "Nieaktualna" },
   ],
+  [
+    "dashboard shows the fresh live state",
+    () => request("/dashboard", { readBody: true }),
+    { status: 200, contains: ["Stan na żywo", "3,1 kW"], notContains: "Dane nieaktualne" },
+  ],
   ["used sign-in link is rejected", () => request(signinLink), { status: 302, location: "/auth/signin?error=" }],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
@@ -158,6 +163,16 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     },
     { status: 401 },
   ]);
+  steps.push([
+    "anon cannot read live state directly",
+    async () => {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/live_state?select=state`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      return { status: response.status, location: "" };
+    },
+    { status: 401 },
+  ]);
   // Password alternative: create a local user with a password through Supabase, then sign in via the app.
   const passwordEmail = `smoke-pw-${Date.now()}@example.com`;
   const passwordValue = "Smoke-Test-Passw0rd!";
@@ -192,7 +207,7 @@ for (const [name, run, expected] of steps) {
   const ok =
     actual.status === expected.status &&
     (expected.location === undefined || actual.location.startsWith(expected.location)) &&
-    (expected.contains === undefined || Boolean(actual.body?.includes(expected.contains))) &&
+    [expected.contains ?? []].flat().every((text) => Boolean(actual.body?.includes(text))) &&
     (expected.notContains === undefined || !actual.body?.includes(expected.notContains));
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
   if (!ok) {

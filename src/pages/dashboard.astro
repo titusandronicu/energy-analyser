@@ -1,20 +1,35 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import LiveStateCard from "@/components/LiveStateCard.astro";
 import RecommendationCard from "@/components/RecommendationCard.astro";
+import { loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
 import { loadLatestRecommendation, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 import { createClient } from "@/lib/supabase";
 
 const { user } = Astro.locals;
 
-let view: RecommendationView | null;
-try {
-  const supabase = createClient(Astro.request.headers, Astro.cookies);
-  view = toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, new Date());
-} catch (error) {
-  // eslint-disable-next-line no-console -- server-side detail; the page shows a generic load error
-  console.error(error);
-  view = null;
+// Each card loads on its own: a failure shows that card's load error (null) and leaves the other intact.
+async function orLoadError<T>(load: () => Promise<T>): Promise<T | null> {
+  try {
+    return await load();
+  } catch (error) {
+    // eslint-disable-next-line no-console -- server-side detail; the page shows a generic load error
+    console.error(error);
+    return null;
+  }
 }
+
+const now = new Date();
+const [liveView, view]: [LiveStateView | null, RecommendationView | null] = await Promise.all([
+  orLoadError(async () => {
+    const supabase = createClient(Astro.request.headers, Astro.cookies);
+    return toLiveStateView(supabase ? await loadLiveState(supabase) : null, now);
+  }),
+  orLoadError(async () => {
+    const supabase = createClient(Astro.request.headers, Astro.cookies);
+    return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
+  }),
+]);
 ---
 
 <Layout title="Energy Analyser">
@@ -32,7 +47,23 @@ try {
         </div>
       </header>
 
+      <LiveStateCard view={liveView} />
       <RecommendationCard view={view} />
     </div>
   </div>
 </Layout>
+
+<script>
+  // Reload every 5 minutes so new data and staleness show up in an open tab; background tabs never reload.
+  const RELOAD_AFTER_MS = 5 * 60 * 1000;
+  const loadedAt = Date.now();
+
+  function reloadIfDue() {
+    if (document.visibilityState === "visible" && Date.now() - loadedAt >= RELOAD_AFTER_MS) {
+      window.location.reload();
+    }
+  }
+
+  setTimeout(reloadIfDue, RELOAD_AFTER_MS);
+  document.addEventListener("visibilitychange", reloadIfDue);
+</script>

@@ -11,3 +11,11 @@ export interface RecommendationRow {
   forecast: unknown;
   facts: unknown;
 }
+
+// The newest homelab snapshot as public.live_state exposes it. `state` is the pushed jsonb (validated by the
+// ingest contract on the way in), so readers still treat its shape as untrusted.
+export interface LiveStateRow {
+  captured_at: string;
+  received_at: string;
+  state: unknown;
+}

@@ -56,6 +56,11 @@ function warsawParts(date: Date) {
   };
 }
 
+// "23 września 2026, 12:00" in Europe/Warsaw; shared by the dashboard cards.
+export function formatWarsawDateTime(date: Date): string {
+  return warsawParts(date).label;
+}
+
 // Stale when generated before the start of today in Europe/Warsaw, or more than two hours ago.
 export function isStaleRecommendation(generatedAt: Date, now: Date): boolean {
   if (now.getTime() - generatedAt.getTime() > STALE_AFTER_MS) return true;
@@ -92,7 +97,7 @@ export function toRecommendationView(row: RecommendationRow | null, now: Date): 
   return {
     kind: "recommendation",
     text: row.text.trim(),
-    generatedAtLabel: warsawParts(generatedAt).label,
+    generatedAtLabel: formatWarsawDateTime(generatedAt),
     isStale: isStaleRecommendation(generatedAt, now),
     forecast: {
       todayLabel: kwhLabel(forecast.today_kwh),
