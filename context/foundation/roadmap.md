@@ -4,7 +4,7 @@ version: 1
 status: draft
 created: 2026-09-23
 updated: 2026-09-25
-prd_version: 1
+prd_version: 2
 main_goal: speed
 top_blocker: time
 milestone_id: mvp-daily-advice
@@ -22,10 +22,10 @@ milestone_status: open
 
 **M-1: MVP daily advice** — Status: open
 
-- **Intent:** The owner opens the app with an access key and sees near-live state, a season-aware insight and today's battery recommendation, all from data the home lab pushes, and can keep a feedback history on those recommendations.
-- **Source materials:** `context/foundation/prd.md` (v1), with `context/foundation/existing-system.md` for what the home lab already provides.
+- **Intent:** The owner opens the app with an access key and sees near-live state, a season-aware insight and today's battery recommendation, all from data the home lab pushes, and can keep a feedback history on those recommendations. Extended 2026-09-25 (PRD v2): the cost, usage and context features of the lab's old analyser page move into the app, replacing its sample figures with real aggregates.
+- **Source materials:** `context/foundation/prd-v2.md` (v2; v1 is `prd.md`), with `context/foundation/existing-system.md` for what the home lab already provides.
 - **Done when:** every F-NN and S-NN below is `done`.
-- **Scope anchors:** FR-001–FR-010, US-01, US-02 (the full v1 PRD).
+- **Scope anchors:** FR-001–FR-017, US-01–US-04 (the full v2 PRD).
 
 ## Vision recap
 
@@ -43,9 +43,17 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | in-progress |
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop        | F-01, S-01    | US-01, FR-002, FR-004        | done     |
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence    | F-01, S-01    | US-01, FR-005, FR-006        | in-progress |
-| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-01, S-01    | US-01, FR-003                | proposed |
+| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-02, S-01    | US-01, FR-003                | proposed |
 | S-05 | record-feedback           | accept or dismiss today's recommendation with a note and see history    | S-03          | US-02, FR-007, FR-008        | proposed |
 | S-06 | edit-delete-feedback      | edit or delete a past feedback entry                                    | S-05          | US-02, FR-009, FR-010        | proposed |
+| F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push       | F-01          | FR-003, FR-015               | ready    |
+| S-07 | bill-forecast             | see the projected cost of the current month with a range                | F-01, S-01    | US-03, FR-011                | proposed |
+| S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff     | F-01, S-01    | US-03, FR-012                | blocked  |
+| S-09 | consumption-plan-actions  | see the lab's consumption-plan actions next to today's recommendation  | S-03          | US-01, FR-013                | proposed |
+| S-10 | usage-profile             | see how consumption spreads across the day, week and unusual hours      | F-01, S-01    | US-04, FR-014                | proposed |
+| S-11 | forecast-accuracy         | see how accurate the PV forecast has been, next to the recommendation   | F-02, S-03    | US-01, FR-015, FR-006        | proposed |
+| S-12 | inverter-schedule-view    | see the inverter's current schedule next to the recommendation          | S-03          | US-01, FR-016                | proposed |
+| S-13 | pipeline-health           | see why advice or live data is missing or degraded                     | S-02, S-03    | US-01, FR-017, FR-004        | proposed |
 
 ## Streams
 
@@ -55,7 +63,9 @@ Navigation aid — groups items that share a Prerequisites chain. Canonical orde
 | ------ | ------------------ | ----------------------------------- | --------------------------------------------------------------------- |
 | A      | Advice loop        | `F-01` → `S-03` → `S-05` → `S-06`   | The shortest path to the north star, then the CRUD surface on top of it. |
 | B      | Access             | `S-01`                              | No prerequisites; run it in parallel with F-01. Every page-facing slice needs it. |
-| C      | State and insight  | `S-02` → `S-04`                     | Joins Stream A at `F-01`; can run alongside S-03 once F-01 and S-01 land. |
+| C      | State and insight  | `S-02` → `F-02` → `S-04` → `S-11`   | Daily history unblocks the seasonal insight and forecast accuracy; S-11 also needs S-03. |
+| D      | Cost and usage     | `S-07` → `S-08` → `S-10`            | Money feedback from lab aggregates; S-08 waits for the full tariff on the lab. |
+| E      | Advice context     | `S-09` → `S-12` → `S-13`            | Joins Stream A at S-03: context around today's recommendation. |
 
 ## Baseline
 
@@ -84,6 +94,19 @@ Foundations below assume these are present and do NOT re-scaffold them.
   - Where is the matching homelab-2 push change tracked, and does it land before S-02/S-03 need real data? — Owner: user. Block: no.
 - **Risk:** Sequenced first because three slices consume it and the write path (no service-role key, rotatable token, origin-check exemption) is the least familiar piece; scope stops at the envelope so it does not become a whole data layer.
 - **Status:** done
+
+### F-02: Daily history push
+
+- **Outcome:** (foundation) the home lab derives per-day totals (PV, load, grid import/export, and the day's PV forecast) and sends the last 35 days in every push; the app stores them per day.
+- **Change ID:** daily-history-push
+- **PRD refs:** FR-003 (v2 note), FR-015; issue #21
+- **Unlocks:** S-04, S-11; verification path: a push with `daily_history` fills one row per day
+- **Prerequisites:** F-01
+- **Parallel with:** S-05, S-07, S-09, S-10, S-12
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Mostly a homelab-2 change (the app already accepts `daily_history`); the per-day forecast field is new to the contract, so it lands here rather than in S-11.
+- **Status:** ready
 
 ## Slices
 
@@ -130,7 +153,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Outcome:** user can see whether recent usage/generation is normal, above or below a season-adjusted baseline, with a visible notice when the flat 30-day fallback is used.
 - **Change ID:** seasonal-usage-insight
 - **PRD refs:** US-01, FR-003
-- **Prerequisites:** F-01, S-01
+- **Prerequisites:** F-02, S-01
 - **Parallel with:** S-02, S-03, S-05, S-06
 - **Blockers:** —
 - **Unknowns:** — (proposed 2026-09-23, confirm in the plan: "same season" = ±14 days around the same day of year in earlier years; sufficient = at least 20 days with data in that window, else the trailing 30-day fallback)
@@ -161,6 +184,91 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Risk:** Completes the CRUD surface; low risk once S-05's ownership rules are in place.
 - **Status:** proposed
 
+### S-07: Bill forecast
+
+- **Outcome:** user can see the projected cost of the current month in PLN, with a range and the number of days it is based on.
+- **Change ID:** bill-forecast
+- **PRD refs:** US-03, FR-011
+- **Prerequisites:** F-01, S-01
+- **Parallel with:** S-04, S-05, S-09, S-10, S-12
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** The lab already computes the forecast every 5 minutes; the slice adds a contract section and a card, so it is the cheapest cost feedback.
+- **Status:** proposed
+
+### S-08: Closed-period bill
+
+- **Outcome:** user can see the actual cost of the last closed billing period under the full tariff (energy and fixed charges).
+- **Change ID:** closed-period-bill
+- **PRD refs:** US-03, FR-012
+- **Prerequisites:** F-01, S-01, full G11 tariff deployed on the lab
+- **Parallel with:** S-07, S-10
+- **Blockers:** —
+- **Unknowns:**
+  - Deploy the full G11 tariff code to the lab (the server still runs the flat-rate version) and regenerate the closed-period figure on a schedule — Owner: user. Block: yes.
+- **Risk:** Wrong money figures destroy trust faster than missing ones; blocked until the lab computes them with the real tariff.
+- **Status:** blocked
+
+### S-09: Consumption-plan actions
+
+- **Outcome:** user can see the lab's consumption-plan recommendations as manual actions next to today's recommendation, without inverter setting values.
+- **Change ID:** consumption-plan-actions
+- **PRD refs:** US-01, FR-013
+- **Prerequisites:** S-03
+- **Parallel with:** S-07, S-10, S-12
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** The lab's plan cards include setting values; the contract must carry titles, facts and actions only.
+- **Status:** proposed
+
+### S-10: Usage profile
+
+- **Outcome:** user can see average consumption across the day, day/night and weekday/weekend shares, and unusual consumption by hour of the day, from aggregates only.
+- **Change ID:** usage-profile
+- **PRD refs:** US-04, FR-014
+- **Prerequisites:** F-01, S-01
+- **Parallel with:** S-07, S-09, S-12
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Built from imported PGE data in the lab; only hour-of-day aggregates may leave, never single readings or timestamps.
+- **Status:** proposed
+
+### S-11: Forecast accuracy
+
+- **Outcome:** user can see how accurate the PV forecast has been over recent days, next to today's recommendation.
+- **Change ID:** forecast-accuracy
+- **PRD refs:** US-01, FR-015, FR-006
+- **Prerequisites:** F-02, S-03
+- **Parallel with:** S-12, S-13
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Computed in the app from pushed daily forecast and actual PV; history is short at first, so the view must state how many days it covers.
+- **Status:** proposed
+
+### S-12: Inverter schedule view
+
+- **Outcome:** user can see the inverter's current charging schedule (slots, grid charging, target SOC) as last read by the lab, next to today's recommendation.
+- **Change ID:** inverter-schedule-view
+- **PRD refs:** US-01, FR-016
+- **Prerequisites:** S-03
+- **Parallel with:** S-09, S-11, S-13
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Display only; the lab's settings read includes entity names and a LAN address, so only the slot summary may be pushed.
+- **Status:** proposed
+
+### S-13: Pipeline health
+
+- **Outcome:** user can see why the recommendation or live data is missing or degraded (fallback narration used, a lab step failed) as plain status messages.
+- **Change ID:** pipeline-health
+- **PRD refs:** US-01, FR-017, FR-004
+- **Prerequisites:** S-02, S-03
+- **Parallel with:** S-11, S-12
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Fixed status codes only; raw provider errors can contain URLs or prompt fragments.
+- **Status:** proposed
+
 ## Backlog Handoff
 
 | Roadmap ID | Change ID                 | Suggested issue title                                        | Ready for `/10x-plan` | Notes |
@@ -169,9 +277,17 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | S-01       | access-key-sign-in        | Replace email/password with access-key sign-in               | yes                   | Run `/10x-plan access-key-sign-in` |
 | S-02       | live-state-with-staleness | Show pushed live state with staleness indicator              | no                    | Needs F-01, S-01 |
 | S-03       | todays-recommendation     | Show today's narrated battery recommendation                 | no                    | Needs F-01, S-01; north star |
-| S-04       | seasonal-usage-insight    | Season-adjusted usage insight with 30-day fallback           | no                    | Needs F-01, S-01 |
+| S-04       | seasonal-usage-insight    | Season-adjusted usage insight with 30-day fallback           | no                    | Needs F-02, S-01 |
 | S-05       | record-feedback           | Accept/dismiss feedback on a recommendation + history        | no                    | Needs S-03 |
 | S-06       | edit-delete-feedback      | Edit and delete feedback entries                             | no                    | Needs S-05 |
+| F-02       | daily-history-push        | Lab pushes the last 35 days of per-day energy totals         | yes                   | Run `/10x-plan daily-history-push`; mostly homelab-2 (issue #21) |
+| S-07       | bill-forecast             | Show the projected cost of the current month                 | no                    | Needs S-01 done |
+| S-08       | closed-period-bill        | Show the closed-period cost under the full tariff            | no                    | Blocked: full G11 tariff not deployed on the lab |
+| S-09       | consumption-plan-actions  | Show consumption-plan manual actions next to the advice      | no                    | Needs S-03 done |
+| S-10       | usage-profile             | Show the usage profile (day, week, unusual hours)            | no                    | Needs S-01 done |
+| S-11       | forecast-accuracy         | Show recent PV forecast accuracy                             | no                    | Needs F-02, S-03 |
+| S-12       | inverter-schedule-view    | Show the inverter's current schedule (read-only)             | no                    | Needs S-03 done |
+| S-13       | pipeline-health           | Show why advice or live data is degraded                     | no                    | Needs S-02, S-03 |
 
 ## Open Roadmap Questions
 
@@ -181,7 +297,10 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 - **Custom weather-forecast modelling** — Why parked: PRD Non-Goals; the lab's existing forecast source is consumed.
 - **Multi-user / multi-household support** — Why parked: PRD Non-Goals; single-tenant by design.
-- **PGE bill reconciliation (predicted vs actual)** — Why parked: PRD Non-Goals (v2); the lab already has most of it.
+- **PGE bill reconciliation (predicted vs actual) and the PGE vs Deye cross-check** — Why parked: PRD v2 Non-Goals; the projection and closed-period cost (S-07, S-08) are in scope, the comparison is not.
+- **PGE CSV upload in the app** — Why parked: PRD v2 Non-Goals; raw bill exports stay in the lab.
+- **Dynamic buy/sell prices and PGE payment due date** — Why parked: considered from the lab review on 2026-09-25 but not taken into PRD v2.
+- **Any device control (time-of-use changes, grid charging, Solar Accelerator strategy)** — Why parked: PRD guardrail; the app never writes to the inverter or Home Assistant.
 - **Live LLM generation on page view** — Why parked: PRD Non-Goals; the recommendation is pre-computed.
 - **Feedback-driven recommendation learning** — Why parked: PRD Non-Goals (v1 feedback is reference-only).
 - **Pre-issued reusable access link** — Why parked: a link that works on every visit is a password in a URL, and minting one without the forbidden service-role key needs its own token store; the magic link plus a long session covers the single owner for v1.
