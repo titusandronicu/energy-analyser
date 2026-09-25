@@ -33,31 +33,74 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
+          # Fail fast on a dead connection instead of hanging on the default TCP timeout.
+          printf 'Host production\n  HostName %s\n  Port %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  ConnectTimeout 20\n  ServerAliveInterval 15\n  ServerAliveCountMax 4\n' \
+            "$SSH_HOST" "$SSH_PORT" "$SSH_USER" > ~/.ssh/config
+          chmod 600 ~/.ssh/config
+      - name: Wait for SSH
+        # The Micr.us SSH port occasionally times out for a minute or two; retry before touching anything.
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if ssh production true; then exit 0; fi
+            echo "SSH attempt $attempt failed; retrying in $((attempt * 15)) s" >&2
+            sleep $((attempt * 15))
+          done
+          echo "::error::The production host did not accept SSH after 5 attempts" >&2
+          exit 1
       - name: Upload Compose configuration
-        env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_USER: ${{ secrets.SSH_USER }}
-        run: scp -i ~/.ssh/deploy_key -P "$SSH_PORT" compose.yaml "$SSH_USER@$SSH_HOST:/opt/energy-analyser/compose.yaml.next"
+        run: |
+          for attempt in 1 2 3; do
+            scp compose.yaml production:/opt/energy-analyser/compose.yaml.next && exit 0
+            sleep $((attempt * 10))
+          done
+          exit 1
       - name: Deploy and roll back automatically on failed health check
         env:
           RELEASE_SHA: ${{ inputs.sha }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_PORT: ${{ secrets.SSH_PORT }}
-          SSH_USER: ${{ secrets.SSH_USER }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" \
-            "RELEASE_SHA='$RELEASE_SHA' bash -s" <<'REMOTE'
+          ssh production "RELEASE_SHA='$RELEASE_SHA' bash -s" <<'REMOTE'
           set -Eeuo pipefail
           cd /opt/energy-analyser
           test -f .env.runtime
           test "$(stat -c '%a' .env.runtime)" = "600"
+
+          REPO=ghcr.io/titusandronicu/energy-analyser
+          MIN_FREE_MB=1024
+          # Removes this app's images except the given image IDs, plus dangling layers. Never fails the deploy.
+          prune_app_images() {
+            local keep=" $* "
+            docker image ls --no-trunc --format '{{.ID}}' "$REPO" | sort -u | while read -r id; do
+              case "$keep" in *" $id "*) ;; *) docker image rm "$id" >/dev/null 2>&1 || true ;; esac
+            done
+            docker image prune -f >/dev/null 2>&1 || true
+          }
+          running_image() {
+            local container
+            container=$(docker compose --env-file release.env ps -q app 2>/dev/null || true)
+            if test -n "$container"; then docker inspect --format '{{.Image}}' "$container" 2>/dev/null || true; fi
+          }
+
+          # Make room before pulling: keep only the image the running container uses (the rollback target).
+          previous_image=$(running_image)
+          prune_app_images "$previous_image"
+          free_mb=$(df -Pm /var/lib | awk 'NR == 2 { print $4 }')
+          echo "Free disk before pull: ${free_mb} MB"
+          if test "$free_mb" -lt "$MIN_FREE_MB"; then
+            df -h / /var/lib >&2
+            docker system df >&2 || true
+            echo "::error::Only ${free_mb} MB free on the production host (need ${MIN_FREE_MB} MB). Nothing was changed; free disk space and re-run." >&2
+            exit 1
+          fi
+
           if test -f compose.yaml; then cp compose.yaml compose.yaml.previous; fi
           if test -f release.env; then cp release.env release.env.previous; fi
           mv compose.yaml.next compose.yaml
@@ -79,6 +122,9 @@ jobs:
               "fetch('http://['+process.env.HOST+']:20170/api/health').then(r=>r.json()).then(j=>process.stdout.write(j.version)).catch(()=>process.exit(1))" 2>/dev/null || true)
             if test "$version" = "$RELEASE_SHA"; then
               trap - ERR
+              # Keep the new image and the previous one for a quick manual rollback; drop the rest.
+              prune_app_images "$(running_image)" "$previous_image"
+              echo "Free disk after deploy: $(df -Pm /var/lib | awk 'NR == 2 { print $4 }') MB"
               exit 0
             fi
             sleep 2
