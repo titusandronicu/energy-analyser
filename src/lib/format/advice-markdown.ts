@@ -32,8 +32,9 @@ export function parseInline(line: string): Segment[] {
 
 export function parseAdviceMarkdown(text: string): Block[] {
   const blocks: Block[] = [];
-  let paragraph: Segment[][] | null = null;
-  let list: { ordered: boolean; items: Segment[][] } | null = null;
+  // Declared with `as` so TypeScript doesn't narrow them to null; flush() reassigns them.
+  let paragraph = null as Segment[][] | null;
+  let list = null as { ordered: boolean; items: Segment[][] } | null;
 
   const flush = () => {
     if (paragraph) blocks.push({ type: "paragraph", lines: paragraph });
@@ -54,7 +55,7 @@ export function parseAdviceMarkdown(text: string): Block[] {
     const item = bullet ?? numbered;
     if (item) {
       const ordered = numbered !== null;
-      if (!list || list.ordered !== ordered) {
+      if (list?.ordered !== ordered) {
         flush();
         list = { ordered, items: [] };
       }
