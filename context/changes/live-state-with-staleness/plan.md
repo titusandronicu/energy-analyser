@@ -233,8 +233,8 @@ Additive view, policy and column grants; no data changes. Production shows the e
 
 #### Automated
 
-- [x] 2.1 Lint, type check, build and unit tests pass
-- [ ] 2.2 CI `smoke` job passes including the live-state steps
+- [x] 2.1 Lint, type check, build and unit tests pass — f6d18b4
+- [x] 2.2 CI `smoke` job passes including the live-state steps — f6d18b4
 
 #### Manual
 
