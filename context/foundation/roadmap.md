@@ -23,7 +23,7 @@ milestone_status: open
 **M-1: MVP daily advice** — Status: open
 
 - **Intent:** The owner opens the app with an access key and sees near-live state, a season-aware insight and today's battery recommendation, all from data the home lab pushes, and can keep a feedback history on those recommendations. Extended 2026-09-25 (PRD v2): the cost, usage and context features of the lab's old analyser page move into the app, replacing its sample figures with real aggregates.
-- **Source materials:** `context/foundation/prd-v2.md` (v2; v1 is `prd.md`), with `context/foundation/existing-system.md` for what the home lab already provides.
+- **Source materials:** `context/foundation/prd-v3.md` (v3; v2 is `prd-v2.md`, v1 is `prd.md`), with `context/foundation/existing-system.md` for what the home lab already provides.
 - **Done when:** every F-NN and S-NN below is `done`.
 - **Scope anchors:** FR-001–FR-017, US-01–US-04 (the full v2 PRD).
 
