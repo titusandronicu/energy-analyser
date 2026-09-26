@@ -245,8 +245,8 @@ None: no schema, contract or stored-data change. Rollback is reverting the PR.
 
 #### Automated
 
-- [x] 3.1 Build passes
-- [x] 3.2 Lint, type check and unit tests pass
+- [x] 3.1 Build passes — a1f2022
+- [x] 3.2 Lint, type check and unit tests pass — a1f2022
 - [ ] 3.3 CI passes on the PR
 
 #### Manual
