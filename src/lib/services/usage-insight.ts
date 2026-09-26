@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DailyEnergyRow } from "@/types";
+import { formatPeriod } from "@/lib/format/period";
+import type { Status } from "@/lib/format/status";
 import { asNumber, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
 import { addDays, formatDayMonth, utcMsToDayKey, warsawParts } from "@/lib/format/warsaw-time";
 
@@ -14,20 +16,23 @@ export const FALLBACK_DAYS = 30;
 export const MIN_FALLBACK_DAYS = 7;
 // Load more than 15% above/below the baseline mean counts as above/below; exactly ±15% is normal.
 export const STATUS_THRESHOLD = 0.15;
+// Load more than 40% above the baseline mean is a problem; exactly +40% stays "above" (worth watching).
+export const FAR_ABOVE_THRESHOLD = 0.4;
 // Absorbs floating point error so an exact ±15% (e.g. 34.5 against a mean of 30) stays normal.
 const EPSILON = 1e-9;
 
 export type UsageStatus = "above" | "below" | "normal";
 
 export type UsageInsightView =
-  | { kind: "insufficient" }
+  | { kind: "insufficient"; status: Status; reason: string }
   | {
       kind: "insight";
+      status: Status;
       dayLabel: string;
       isYesterday: boolean;
       load: { kwhLabel: string; deltaLabel: string; status: UsageStatus };
       purchase: { kwhLabel: string; deltaLabel: string };
-      baseline: { kind: "seasonal" | "fallback"; days: number };
+      baseline: { kind: "seasonal" | "fallback"; days: number; periodLabel: string };
     };
 
 // Daily totals for the last HISTORY_DAYS Warsaw days, newest first; RLS returns nothing for non-owners. Errors
@@ -65,6 +70,21 @@ function statusOf(load: number, baseline: number): UsageStatus {
   if (load > baseline * (1 + STATUS_THRESHOLD) + EPSILON) return "above";
   if (load < baseline * (1 - STATUS_THRESHOLD) - EPSILON) return "below";
   return "normal";
+}
+
+// The owner's rule: normal or below is good, above is worth watching, far above is a problem.
+function loadStatus(load: number, baseline: number | null): Status {
+  const status = baseline === null || baseline === 0 ? "normal" : statusOf(load, baseline);
+  if (status === "normal") return { tone: "good", label: "w normie" };
+  if (status === "below") return { tone: "good", label: "poniżej normy" };
+  if (baseline !== null && load > baseline * (1 + FAR_ABOVE_THRESHOLD) + EPSILON) {
+    return { tone: "problem", label: "dużo powyżej normy" };
+  }
+  return { tone: "watch", label: "powyżej normy" };
+}
+
+function insufficient(reason: string): UsageInsightView {
+  return { kind: "insufficient", status: { tone: "insufficient", label: "" }, reason };
 }
 
 // "+12%", "−8%" (minus sign), "0%"; MISSING without a usable baseline.
@@ -106,7 +126,9 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
     }
   }
   const comparedDay = compared === null ? undefined : days.get(compared);
-  if (compared === null || comparedDay === undefined) return { kind: "insufficient" };
+  if (compared === null || comparedDay === undefined) {
+    return insufficient(`brak zużycia z ostatnich ${String(LOOKBACK_DAYS)} dni`);
+  }
 
   // Seasonal: ±14 days around the compared day's month-day in every earlier year that has data (with
   // HISTORY_DAYS of history that is one year). The anchor is at least a year back, so the window never reaches
@@ -135,7 +157,11 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
       const key = addDays(compared, -offset);
       if (days.has(key)) baselineDays.push(key);
     }
-    if (baselineDays.length < MIN_FALLBACK_DAYS) return { kind: "insufficient" };
+    if (baselineDays.length < MIN_FALLBACK_DAYS) {
+      return insufficient(
+        `potrzeba co najmniej ${String(MIN_FALLBACK_DAYS)} dni z ostatnich ${String(FALLBACK_DAYS)}, jest ${String(baselineDays.length)}`,
+      );
+    }
   }
 
   const baseline = baselineDays.map((key) => days.get(key)).filter((d): d is Day => d !== undefined);
@@ -144,6 +170,7 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
 
   return {
     kind: "insight",
+    status: loadStatus(comparedDay.load, loadMean),
     dayLabel: formatDayMonth(compared),
     isYesterday: compared === yesterday,
     load: {
@@ -155,6 +182,10 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
       kwhLabel: kwhLabel(comparedDay.purchase),
       deltaLabel: deltaLabel(comparedDay.purchase, purchaseMean),
     },
-    baseline: { kind: baselineKind, days: baseline.length },
+    baseline: {
+      kind: baselineKind,
+      days: baseline.length,
+      periodLabel: formatPeriod(baselineDays, today.slice(0, 4)).label,
+    },
   };
 }

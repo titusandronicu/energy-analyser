@@ -224,22 +224,22 @@ None: no schema, contract or stored-data change. Rollback is reverting the PR.
 
 #### Automated
 
-- [x] 1.1 Unit tests for statusText and formatPeriod pass
-- [x] 1.2 Lint passes
-- [x] 1.3 Type check passes
+- [x] 1.1 Unit tests for statusText and formatPeriod pass — eb29db9
+- [x] 1.2 Lint passes — eb29db9
+- [x] 1.3 Type check passes — eb29db9
 
 #### Manual
 
-- [x] 1.4 The glossary wording reads as plain Polish to the owner
+- [x] 1.4 The glossary wording reads as plain Polish to the owner — eb29db9
 
 ### Phase 2: View models
 
 #### Automated
 
-- [ ] 2.1 Live state threshold and period tests pass
-- [ ] 2.2 Usage insight status, period and insufficient-reason tests pass
-- [ ] 2.3 Recommendation status, certainty and forecast-day tests pass
-- [ ] 2.4 Lint and type check pass
+- [x] 2.1 Live state threshold and period tests pass
+- [x] 2.2 Usage insight status, period and insufficient-reason tests pass
+- [x] 2.3 Recommendation status, certainty and forecast-day tests pass
+- [x] 2.4 Lint and type check pass
 
 ### Phase 3: Cards and docs
 

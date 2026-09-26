@@ -25,6 +25,16 @@ describe("formatPeriod", () => {
     expect(formatPeriod(["2026-09-01", "2026-09-18"])).toEqual({ days: 2, label: "2 dni: 1–18 września" });
   });
 
+  it("names the year once for a range entirely in another year than the current one", () => {
+    expect(formatPeriod(["2025-09-10", "2025-09-29"], "2026")).toEqual({
+      days: 2,
+      label: "2 dni: 10–29 września 2025",
+    });
+    expect(formatPeriod(["2025-08-27", "2025-09-25"], "2026").label).toBe("2 dni: 27 sierpnia – 25 września 2025");
+    expect(formatPeriod(["2025-09-24"], "2026").label).toBe("1 dzień: 24 września 2025");
+    expect(formatPeriod(["2026-09-10", "2026-09-29"], "2026").label).toBe("2 dni: 10–29 września");
+  });
+
   it("adds the year to both ends across New Year", () => {
     expect(formatPeriod(["2026-12-20", "2027-01-18"])).toEqual({
       days: 2,

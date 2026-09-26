@@ -4,7 +4,8 @@ import { formatDayMonth } from "@/lib/format/warsaw-time";
 // "18 dni: 27 sierpnia – 25 września".
 // The range runs from the first to the last day even when days in between are missing; the year is shown on
 // both ends only when the range spans two years.
-export function formatPeriod(dayKeys: string[]): { days: number; label: string } {
+// With `currentYear`, a range entirely in another year also names that year once ("10–29 września 2025").
+export function formatPeriod(dayKeys: string[], currentYear?: string): { days: number; label: string } {
   const unique = [...new Set(dayKeys)].sort();
   if (unique.length === 0) {
     throw new Error("formatPeriod needs at least one day");
@@ -14,12 +15,14 @@ export function formatPeriod(dayKeys: string[]): { days: number; label: string }
   const count = `${days} ${days === 1 ? "dzień" : "dni"}`;
   const first = unique[0];
   const last = unique[unique.length - 1];
-  if (first === last) {
-    return { days, label: `${count}: ${formatDayMonth(first)}` };
-  }
-
   const firstYear = first.slice(0, 4);
   const lastYear = last.slice(0, 4);
+  const otherYear = currentYear !== undefined && firstYear === lastYear && firstYear !== currentYear;
+  const year = otherYear ? ` ${firstYear}` : "";
+  if (first === last) {
+    return { days, label: `${count}: ${formatDayMonth(first)}${year}` };
+  }
+
   let range: string;
   if (firstYear !== lastYear) {
     range = `${formatDayMonth(first)} ${firstYear} – ${formatDayMonth(last)} ${lastYear}`;
@@ -29,5 +32,5 @@ export function formatPeriod(dayKeys: string[]): { days: number; label: string }
   } else {
     range = `${formatDayMonth(first)} – ${formatDayMonth(last)}`;
   }
-  return { days, label: `${count}: ${range}` };
+  return { days, label: `${count}: ${range}${firstYear === lastYear ? year : ""}` };
 }

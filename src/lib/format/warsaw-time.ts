@@ -1,7 +1,8 @@
 // Europe/Warsaw date helpers shared by the dashboard cards.
 const TIME_ZONE = "Europe/Warsaw";
 
-// `dayKey` ("2026-09-23") compares calendar days; `label` ("23 września 2026, 12:00") is what the cards show.
+// `dayKey` ("2026-09-23") compares calendar days; `label` ("23 września 2026, 12:00") is what the cards show;
+// `time` ("12:00") is its clock part.
 export function warsawParts(date: Date) {
   const parts = new Intl.DateTimeFormat("pl-PL", {
     timeZone: TIME_ZONE,
@@ -14,9 +15,11 @@ export function warsawParts(date: Date) {
   }).formatToParts(date);
   const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((p) => p.type === type)?.value ?? "";
   const monthNumber = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, month: "2-digit" }).format(date);
+  const time = `${get("hour")}:${get("minute")}`;
   return {
     dayKey: `${get("year")}-${monthNumber}-${get("day").padStart(2, "0")}`,
-    label: `${get("day")} ${get("month")} ${get("year")}, ${get("hour")}:${get("minute")}`,
+    label: `${get("day")} ${get("month")} ${get("year")}, ${time}`,
+    time,
   };
 }
 
