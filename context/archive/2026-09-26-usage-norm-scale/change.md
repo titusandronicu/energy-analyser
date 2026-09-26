@@ -1,9 +1,10 @@
 ---
 change_id: usage-norm-scale
 title: Usage norm as a median, with low / normal / high ranges and a sense of scale
-status: impl_reviewed
+status: archived
 created: 2026-09-26
 updated: 2026-09-26
+archived_at: 2026-09-26T19:36:22Z
 ---
 
 ## Notes
