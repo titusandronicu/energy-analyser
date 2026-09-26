@@ -1,0 +1,22 @@
+---
+import { GLOSSARY, type GlossaryTerm } from "@/lib/format/glossary";
+
+interface Props {
+  terms: GlossaryTerm[];
+}
+
+// A native <details> works on a phone without any client-side script.
+const { terms } = Astro.props;
+---
+
+<details class="text-sm text-blue-100/80">
+  <summary class="cursor-pointer text-blue-100">Co to znaczy?</summary>
+  <dl class="mt-2 space-y-2">
+    {terms.map((key) => (
+      <div>
+        <dt class="font-medium text-blue-100">{GLOSSARY[key].term}</dt>
+        <dd>{GLOSSARY[key].explanation}</dd>
+      </div>
+    ))}
+  </dl>
+</details>
