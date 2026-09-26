@@ -22,10 +22,10 @@ milestone_status: open
 
 **M-1: MVP daily advice** — Status: open
 
-- **Intent:** The owner opens the app with an access key and sees near-live state, a season-aware insight and today's battery recommendation, all from data the home lab pushes. Extended 2026-09-25 (PRD v2): the cost, usage and context features of the lab's old analyser page move into the app. Extended 2026-09-26 (PRD v3): every figure states the period behind it and nothing is guessed from too little data; a calendar shows days, months and years with good / neutral / bad ratings, lab-written summaries and the owner's notes; recommendation feedback is dropped.
+- **Intent:** The owner opens the app with an access key and sees near-live state, a season-aware insight and today's battery recommendation, all from data the home lab pushes. Extended 2026-09-25 (PRD v2): the cost, usage and context features of the lab's old analyser page move into the app. Extended 2026-09-26 (PRD v3): every figure states the period behind it and nothing is guessed from too little data; a calendar shows days, months and years with good / neutral / bad ratings, lab-written summaries and the owner's notes; everything is written for someone without energy knowledge, with colours and remarks on consumption trends; recommendation feedback is dropped.
 - **Source materials:** `context/foundation/prd-v3.md` (v3; v2 is `prd-v2.md`, v1 is `prd.md`), with `context/foundation/existing-system.md` for what the home lab already provides.
 - **Done when:** every F-NN and S-NN below is `done`.
-- **Scope anchors:** FR-001–FR-006, FR-011–FR-028, US-01, US-03–US-06 (the full v3 PRD; FR-007–FR-010 and US-02 were removed in v3).
+- **Scope anchors:** FR-001–FR-006, FR-011–FR-031, US-01, US-03–US-06 (the full v3 PRD; FR-007–FR-010 and US-02 were removed in v3).
 
 ## Vision recap
 
@@ -42,18 +42,19 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | F-01 | push-ingestion-endpoint   | (foundation) the home lab can push an authenticated, versioned payload      | —                    | NFR (secrets, raw data)           | done     |
 | F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push           | F-01                 | FR-003, FR-015                    | done     |
 | F-03 | history-backfill          | (foundation) the lab's full daily history is in the app                     | F-02                 | FR-024                            | ready    |
-| F-04 | lab-period-summaries      | (foundation) the lab writes and pushes day and month summaries              | F-02                 | FR-023                            | ready    |
-| F-05 | solar-forecast-source     | (foundation) Home Assistant has a solar forecast again and the lab pushes it | F-02                | FR-006, FR-015, FR-020            | ready    |
+| F-04 | lab-period-summaries      | (foundation) the lab writes plain-language texts for today, days and months | F-02                 | FR-023, FR-030                    | ready    |
+| F-05 | solar-forecast-source     | (foundation) Home Assistant has a solar forecast again and the lab pushes it | F-02                | FR-006, FR-015, FR-020            | in-progress |
 | S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session          | —                    | FR-001                            | done     |
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop            | F-01, S-01           | US-01, FR-002, FR-004             | done     |
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence        | F-01, S-01           | US-01, FR-005, FR-006             | done     |
 | S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline       | F-02, S-01           | US-01, FR-003                     | done     |
-| S-14 | data-period-transparency  | see the period behind every card, and "not enough data yet" instead of guesses | S-03, S-04        | US-01, FR-018, FR-019             | ready    |
+| S-14 | data-period-transparency  | read every card without energy knowledge: plain words, colours, its data period, no guesses | S-03, S-04 | US-01, FR-018, FR-019, FR-029 | ready    |
 | S-15 | history-calendar          | browse days and months: production, forecast vs actual, recommendations     | S-14                 | US-05, FR-021                     | proposed |
 | S-17 | period-ratings            | see a good / neutral / bad rating for each completed day and month          | S-15                 | US-05, FR-022                     | proposed |
+| S-20 | consumption-trends        | see a remark when consumption rises or falls noticeably over weeks and months | S-14, S-15         | US-05, FR-031                     | proposed |
 | S-19 | day-notes                 | add, view, edit and delete notes on calendar days                           | S-15                 | US-06, FR-025, FR-026, FR-027, FR-028 | proposed |
 | S-16 | calendar-year-view        | browse whole years in the calendar, back to the start of the lab's history  | F-03, S-15           | US-05, FR-021, FR-024             | proposed |
-| S-18 | period-summaries          | read the lab's summary of what happened on a day or in a month              | F-04, S-15           | US-05, FR-023                     | proposed |
+| S-18 | period-summaries          | read plain-language explanations of today and summaries of past days and months | F-04, S-15        | US-01, US-05, FR-023, FR-030      | proposed |
 | S-11 | forecast-accuracy         | see how accurate the PV forecast has been and how certain today's forecast is | F-05, S-14         | US-01, FR-015, FR-020, FR-006     | proposed |
 | S-07 | bill-forecast             | see the projected cost of the current month with a range                    | F-01, S-01           | US-03, FR-011                     | proposed |
 | S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff         | F-01, S-01           | US-03, FR-012                     | blocked  |
@@ -70,7 +71,7 @@ Navigation aid — groups items that share a Prerequisites chain. Canonical orde
 | ------ | ---------------------------- | ------------------------------------------------------- | ---- |
 | A      | Delivered core               | `F-01` → `S-01` → `S-02` → `S-03` → `F-02` → `S-04`     | Done; everything below builds on it. |
 | B      | Trust in the numbers         | `S-14` → `F-05` → `S-11`                                | The owner's first priority. S-11 needs a week or two of forecasts after F-05 before certainty means anything. |
-| C      | History calendar             | `S-15` → `S-17` → `S-19` → `S-16`                       | The main v3 surface; S-16 also needs F-03 from Stream D. |
+| C      | History calendar             | `S-15` → `S-17` → `S-20` → `S-19` → `S-16`              | The main v3 surface; S-16 also needs F-03 from Stream D. |
 | D      | Lab history and summaries    | `F-03` → `F-04` → `S-18`                                | homelab-2 work that runs alongside Streams B and C; S-18 joins Stream C at S-15. |
 | E      | v2 cost and context          | `S-07` → `S-08` → `S-09` → `S-10` → `S-12` → `S-13`     | Sequenced after the v3 work by the owner's decision (2026-09-26); done as time allows before the deadline. |
 
@@ -130,9 +131,9 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### F-04: Lab period summaries
 
-- **Outcome:** (foundation) after each completed day and month, the home lab has its LLM chain narrate a facts bundle of what happened, taking Polish seasons into account and giving no advice, and pushes the summary; the app stores it per period.
+- **Outcome:** (foundation) the home lab has its LLM chain (local model first, the existing cloud fallback when it fails) write plain-language texts for someone without energy knowledge: a short explanation of what today's figures mean, and after each completed day and month a summary of what happened that takes Polish seasons into account, points out consumption patterns and gives no advice; it pushes them and the app stores them per period.
 - **Change ID:** lab-period-summaries
-- **PRD refs:** FR-023
+- **PRD refs:** FR-023, FR-030
 - **Unlocks:** S-18
 - **Prerequisites:** F-02
 - **Parallel with:** F-03, F-05, S-14, S-15, S-17
@@ -153,7 +154,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Home Assistant has had no solar forecast since its host move (~2026-07-21): production has 0 of 53 days with a forecast. It is a homelab-2 and Home Assistant configuration change; certainty needs a week or two of forecasts after it lands.
-- **Status:** ready
+- **Status:** in-progress
 
 ## Slices
 
@@ -205,17 +206,17 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Risk:** The first domain logic computed in this app; its season window and sufficiency rule are reused by S-14 and S-17.
 - **Status:** done
 
-### S-14: Data period transparency
+### S-14: Clarity for a non-expert
 
-- **Outcome:** user can see, on every card, the period and number of days behind each figure, and sees "not enough data yet" instead of a verdict or prediction when there is too little data.
+- **Outcome:** user can read every existing card without energy knowledge: plain words with technical terms explained where they appear, a colour plus text label for good / worth watching / problem / not enough data, the period and number of days behind each figure, and "not enough data yet" instead of a verdict or prediction when there is too little data.
 - **Change ID:** data-period-transparency
-- **PRD refs:** US-01, FR-018, FR-019
+- **PRD refs:** US-01, FR-018, FR-019, FR-029; NFR (plain language)
 - **Prerequisites:** S-03, S-04
 - **Parallel with:** F-03, F-04, F-05
 - **Blockers:** —
 - **Unknowns:**
   - What is the minimum amount of data per card (S-04 already uses 20 days in the season window)? Set in the plan. — Owner: user. Block: no.
-- **Risk:** Small and first by the owner's decision; it sets the "period + minimum data" rule every later card reuses, so getting the wording right once matters more than its size.
+- **Risk:** First by the owner's decision; it sets the plain-language, colour and "period + minimum data" rules every later card reuses, so getting them right once matters more than its size.
 - **Status:** ready
 
 ### S-15: History calendar
@@ -243,13 +244,26 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Risk:** The rating is computed in the app, like S-04's insight; with history starting 2026-07-26, season norms are thin until F-03 lands, so the minimum-data rule decides what is shown.
 - **Status:** proposed
 
+### S-20: Consumption trends
+
+- **Outcome:** user can see a plain remark when consumption rises or falls noticeably over weeks and months, compared with earlier periods and, once the history reaches back far enough, the same season a year before.
+- **Change ID:** consumption-trends
+- **PRD refs:** US-05, FR-031
+- **Prerequisites:** S-14, S-15
+- **Parallel with:** S-19, S-16, S-18
+- **Blockers:** —
+- **Unknowns:**
+  - What counts as "noticeable" (percentage and minimum period) — set in the plan. — Owner: user. Block: no.
+- **Risk:** Computed in the app like S-04; with history from 2026-07-26 only recent-period comparisons work until F-03 adds earlier years, so S-14's minimum-data rule decides which remarks appear.
+- **Status:** proposed
+
 ### S-19: Day notes
 
 - **Outcome:** user can add a note to a calendar day, see it on that day and see which days in a month or year have notes, and edit or delete it.
 - **Change ID:** day-notes
 - **PRD refs:** US-06, FR-025, FR-026, FR-027, FR-028
 - **Prerequisites:** S-15
-- **Parallel with:** S-17, S-16, S-18
+- **Parallel with:** S-17, S-20, S-16, S-18
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The app's only create/update/delete surface and its first client write; the owner-only table approach from the dropped S-05 (branch `feat/record-feedback`) can be reused.
@@ -269,9 +283,9 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### S-18: Period summaries
 
-- **Outcome:** user can read the home lab's short summary of what happened on a completed day or in a completed month, next to its rating in the calendar.
+- **Outcome:** user can read on the dashboard a short plain-language explanation of what today's figures mean, and in the calendar the home lab's summary of what happened on a completed day or in a completed month, next to its rating.
 - **Change ID:** period-summaries
-- **PRD refs:** US-05, FR-023
+- **PRD refs:** US-01, US-05, FR-023, FR-030
 - **Prerequisites:** F-04, S-15
 - **Parallel with:** S-16, S-17, S-19
 - **Blockers:** —
@@ -371,18 +385,19 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | F-01       | push-ingestion-endpoint   | Authenticated, idempotent push ingestion endpoint (v1 envelope)   | no                    | Done |
 | F-02       | daily-history-push        | Lab pushes the last 35 days of per-day energy totals              | no                    | Done |
 | F-03       | history-backfill          | One-time backfill of the lab's full daily history                 | yes                   | Run `/10x-plan history-backfill`; mostly homelab-2 |
-| F-04       | lab-period-summaries      | Lab narrates and pushes day and month summaries                   | yes                   | Run `/10x-plan lab-period-summaries`; mostly homelab-2 |
+| F-04       | lab-period-summaries      | Lab writes plain-language texts for today, days and months        | yes                   | Run `/10x-plan lab-period-summaries`; mostly homelab-2 |
 | F-05       | solar-forecast-source     | Restore the Home Assistant solar forecast and push it             | yes                   | Run `/10x-plan solar-forecast-source`; homelab-2 + HA config |
 | S-01       | access-key-sign-in        | Replace email/password with access-key sign-in                    | no                    | Done |
 | S-02       | live-state-with-staleness | Show pushed live state with staleness indicator                   | no                    | Done |
 | S-03       | todays-recommendation     | Show today's narrated battery recommendation                      | no                    | Done |
 | S-04       | seasonal-usage-insight    | Season-adjusted usage insight with 30-day fallback                | no                    | Done |
-| S-14       | data-period-transparency  | State the data period on every card; no verdicts from thin data   | yes                   | Run `/10x-plan data-period-transparency` |
+| S-14       | data-period-transparency  | Clarity for a non-expert: plain words, colours, data period, no guesses | yes             | Run `/10x-plan data-period-transparency` |
 | S-15       | history-calendar          | Calendar with day and month views of production and advice        | no                    | Needs S-14 |
 | S-17       | period-ratings            | Good / neutral / bad ratings for days and months                  | no                    | Needs S-15 |
+| S-20       | consumption-trends        | Remarks when consumption rises or falls over weeks and months      | no                    | Needs S-14, S-15 |
 | S-19       | day-notes                 | Notes on calendar days (create, view, edit, delete)               | no                    | Needs S-15 |
 | S-16       | calendar-year-view        | Year view in the calendar                                         | no                    | Needs F-03, S-15 |
-| S-18       | period-summaries          | Show the lab's day and month summaries                            | no                    | Needs F-04, S-15 |
+| S-18       | period-summaries          | Show today's plain explanation and the day/month summaries        | no                    | Needs F-04, S-15 |
 | S-11       | forecast-accuracy         | Show forecast accuracy and today's forecast certainty             | no                    | Needs F-05 and ~1–2 weeks of forecasts, S-14 |
 | S-07       | bill-forecast             | Show the projected cost of the current month                      | yes                   | After the v3 work |
 | S-08       | closed-period-bill        | Show the closed-period cost under the full tariff                 | no                    | Blocked: full G11 tariff not deployed on the lab |
