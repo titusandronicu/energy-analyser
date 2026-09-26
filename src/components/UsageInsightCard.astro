@@ -3,7 +3,8 @@ import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { GLOSSARY } from "@/lib/format/glossary";
 import { LOAD_FAILED } from "@/lib/format/status";
-import type { UsageBand, UsageInsightView } from "@/lib/services/usage-insight";
+import type { UsageInsightView } from "@/lib/services/usage-insight";
+import { cn } from "@/lib/utils";
 
 interface Props {
   view: UsageInsightView | null;
@@ -14,19 +15,9 @@ const { view } = Astro.props;
 // "Yesterday" only when the compared day is yesterday; the error and insufficient states keep it too.
 const heading = view?.kind === "insight" && !view.isYesterday ? "Zużycie dzienne" : "Zużycie wczoraj";
 const status = view === null ? LOAD_FAILED : view.status;
-
-const BAND_NAME: Record<UsageBand, string> = {
-  low: "Niskie",
-  normal: "W normie",
-  high: "Wysokie",
-  very_high: "Bardzo wysokie",
-};
-const BAND_VERDICT: Record<UsageBand, string> = {
-  low: "To mniej niż zwykle",
-  normal: "To tyle, co zwykle",
-  high: "To więcej niż zwykle",
-  very_high: "To dużo więcej niż zwykle",
-};
+// "prąd, który …": the glossary sentence continues the "Kupione z sieci:" label, so it starts in lower case.
+const purchaseExplanation =
+  GLOSSARY.grid_import.explanation.charAt(0).toLowerCase() + GLOSSARY.grid_import.explanation.slice(1);
 ---
 
 <section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
@@ -81,30 +72,32 @@ const BAND_VERDICT: Record<UsageBand, string> = {
           <summary class="cursor-pointer py-1 text-blue-100">Co to znaczy?</summary>
           <div class="mt-2 space-y-3">
             <p>
-              {view.isYesterday ? "Wczoraj" : `Dnia ${view.dayLabel}`} dom zużył <strong>{view.load.kwhLabel}</strong>{" "}
-              prądu. Zwykle zużywa <strong>{view.meaning.normKwhLabel}</strong> dziennie — to mediana z{" "}
-              {view.baseline.periodLabel}, czyli połowa tych dni była niższa, a połowa wyższa.
+              {view.isYesterday ? "Wczoraj" : view.dayLabel} dom zużył <strong>{view.load.kwhLabel}</strong> prądu.
+              Zwykle zużywa <strong>{view.meaning.normKwhLabel}</strong> dziennie — to mediana z{" "}
+              {view.baseline.periodLabel}, czyli w połowie tych dni zużycie było niższe, a w połowie wyższe.
             </p>
             <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1" data-testid="usage-ranges">
               {view.meaning.ranges.map((range) => {
                 const current = range.band === view.meaning?.band;
                 return (
-                  <div class:list={["contents", current ? "font-semibold text-white" : "text-blue-100/70"]}>
-                    <dt>{BAND_NAME[range.band]}</dt>
+                  <div class:list={cn("contents", current ? "font-semibold text-white" : "text-blue-100/70")}>
+                    <dt>{range.name}</dt>
                     <dd>
                       {range.label}
-                      {current && <span class="font-normal text-blue-100/80"> ← ten dzień</span>}
+                      {current && (
+                        <span class="font-normal text-blue-100/80">
+                          {" "}
+                          <span aria-hidden="true">←</span> ten dzień
+                        </span>
+                      )}
                     </dd>
                   </div>
                 );
               })}
             </dl>
-            <p>
-              {BAND_VERDICT[view.meaning.band]}
-              {view.load.deltaLabel !== "—" && ` (${view.load.deltaLabel} wobec normy)`}.
-            </p>
+            <p data-testid="usage-verdict">{view.meaning.verdictSentence}</p>
             <p class="text-blue-100/70">
-              <span class="text-blue-100">Kupione z sieci</span> — {GLOSSARY.grid_import.explanation}
+              <span class="text-blue-100">Kupione z sieci:</span> {purchaseExplanation}
             </p>
             <p class="text-xs text-blue-100/60" data-testid="usage-reference">
               {view.meaning.referenceSentence}

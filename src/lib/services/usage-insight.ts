@@ -30,7 +30,9 @@ export type UsageBand = "low" | "normal" | "high" | "very_high";
 export interface UsageMeaning {
   normKwhLabel: string;
   band: UsageBand;
-  ranges: { band: UsageBand; label: string }[];
+  ranges: { band: UsageBand; name: string; label: string }[];
+  // "To więcej niż zwykle (+23% wobec normy)."
+  verdictSentence: string;
   referenceSentence: string;
 }
 
@@ -105,22 +107,55 @@ const BAND_STATUS: Record<UsageBand, Status> = {
   very_high: { tone: "problem", label: "dużo powyżej normy" },
 };
 
+const BAND_NAME: Record<UsageBand, string> = {
+  low: "Niskie",
+  normal: "W normie",
+  high: "Wysokie",
+  very_high: "Bardzo wysokie",
+};
+
+const BAND_VERDICT: Record<UsageBand, string> = {
+  low: "To mniej niż zwykle",
+  normal: "To tyle, co zwykle",
+  high: "To więcej niż zwykle",
+  very_high: "To dużo więcej niż zwykle",
+};
+
+const twoDecimals = new Intl.NumberFormat("pl-PL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+// The range edges in kWh: low / normal, normal / high, high / very high.
+function rangeEdges(norm: number): [number, number, number] {
+  return [norm * (1 - STATUS_THRESHOLD), norm * (1 + STATUS_THRESHOLD), norm * (1 + FAR_ABOVE_THRESHOLD)];
+}
+
+// "34,5 kWh", or "34,52 kWh" when one decimal would print the same number as a range edge the day is not on, so
+// the day's figure never seems to sit outside the range marked for it (the same idea as deltaLabel at ±15%).
+function dayKwhLabel(load: number, norm: number | null): string {
+  if (norm === null || norm === 0) return kwhLabel(load);
+  const shown = oneDecimal.format(load);
+  const collides = rangeEdges(norm).some(
+    (edge) => oneDecimal.format(edge) === shown && Math.abs(load - edge) > EPSILON,
+  );
+  return collides ? `${twoDecimals.format(load)} kWh` : kwhLabel(load);
+}
+
 // "30,9 kWh" etc.; the edges shown are the thresholds, and a day exactly on an edge takes the milder range.
 function meaningOf(load: number, norm: number | null, dayKey: string): UsageMeaning | null {
   if (norm === null || norm === 0) return null;
   const kwh = (value: number) => oneDecimal.format(value);
-  const low = norm * (1 - STATUS_THRESHOLD);
-  const high = norm * (1 + STATUS_THRESHOLD);
-  const veryHigh = norm * (1 + FAR_ABOVE_THRESHOLD);
+  const [low, high, veryHigh] = rangeEdges(norm);
+  const band = bandOf(load, norm);
+  const range = (b: UsageBand, label: string) => ({ band: b, name: BAND_NAME[b], label });
   return {
     normKwhLabel: kwhLabel(norm),
-    band: bandOf(load, norm),
+    band,
     ranges: [
-      { band: "low", label: `poniżej ${kwh(low)} kWh` },
-      { band: "normal", label: `${kwh(low)}–${kwh(high)} kWh` },
-      { band: "high", label: `${kwh(high)}–${kwh(veryHigh)} kWh` },
-      { band: "very_high", label: `powyżej ${kwh(veryHigh)} kWh` },
+      range("low", `poniżej ${kwh(low)} kWh`),
+      range("normal", `${kwh(low)}–${kwh(high)} kWh`),
+      range("high", `${kwh(high)}–${kwh(veryHigh)} kWh`),
+      range("very_high", `powyżej ${kwh(veryHigh)} kWh`),
     ],
+    verdictSentence: `${BAND_VERDICT[band]} (${deltaLabel(load, norm)} wobec normy).`,
     referenceSentence: referenceUsageSentence(dayKey),
   };
 }
@@ -137,13 +172,25 @@ function deltaLabel(value: number | null, baseline: number | null): string {
   const percent = Math.sign(raw) * Math.round(Math.abs(raw) + EPSILON);
   if (percent === 0) return "0%";
   const sign = percent > 0 ? "+" : "−";
+  const whole = Math.abs(percent);
   const threshold = STATUS_THRESHOLD * 100;
-  if (Math.abs(percent) !== threshold) return `${sign}${String(Math.abs(percent))}%`;
-  // At the threshold a whole percent could read "+15%" next to either status, so show one decimal: exactly ±15%
-  // is "15,0%" (normal) and anything past it at least "15,1%", decided by the same rule as the status.
+  const farAbove = FAR_ABOVE_THRESHOLD * 100;
+  // At a threshold a whole percent could read "+15%" (or "+40%") next to either status, so show one decimal:
+  // exactly on the line is "15,0%" / "40,0%" (the milder status) and anything past it at least "15,1%" / "40,1%",
+  // decided by the same rule as the status.
+  let edge: number;
+  let milder: boolean;
+  if (whole === threshold) {
+    edge = threshold;
+    milder = statusOf(value, baseline) === "normal";
+  } else if (percent > 0 && whole === farAbove) {
+    edge = farAbove;
+    milder = bandOf(value, baseline) !== "very_high";
+  } else {
+    return `${sign}${String(whole)}%`;
+  }
   const tenths = Math.round(Math.abs(raw) * 10 + EPSILON) / 10;
-  const shown =
-    statusOf(value, baseline) === "normal" ? Math.min(tenths, threshold) : Math.max(tenths, threshold + 0.1);
+  const shown = milder ? Math.min(tenths, edge) : Math.max(tenths, edge + 0.1);
   return `${sign}${oneDecimal.format(shown)}%`;
 }
 
@@ -216,7 +263,7 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
     dayLabel: formatDayMonth(compared),
     isYesterday: compared === yesterday,
     load: {
-      kwhLabel: kwhLabel(comparedDay.load),
+      kwhLabel: dayKwhLabel(comparedDay.load, loadNorm),
       deltaLabel: deltaLabel(comparedDay.load, loadNorm),
       status: loadNorm === null || loadNorm === 0 ? "normal" : statusOf(comparedDay.load, loadNorm),
     },
