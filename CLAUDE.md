@@ -37,6 +37,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 
 - The home lab pushes data to `POST /api/ingest` (`src/pages/api/ingest.ts` → `src/lib/services/ingest.ts`), authenticated with a bearer token. The payload contract is `src/lib/ingest/contract.ts`; the handoff for the home lab is `docs/ingest/README.md`.
 - Writes go through the `public.ingest_push` `SECURITY DEFINER` function (anon role, token checked against SHA-256 hashes in `ingest_tokens`). Reads are owner-only: users in `public.app_owners` may read `recommendations` and, through column grants, `ingest_pushes` (`source`, `captured_at`, `received_at`, `payload`; never `token_id` or `payload_hash`). The dashboard reads the newest snapshot through the `security_invoker` view `public.live_state`, but owners can also read the retained raw payloads from the table directly. Anon and non-owners read nothing.
+- External prerequisites (Home Assistant integrations, lab jobs, LLM configuration, secrets, one-time production steps) are listed in `docs/prerequisites.md`; a change that adds or alters one updates that file in the same PR.
 - Tokens: `scripts/create-ingest-token.mjs` mints one and prints only its hash `insert`; `scripts/push-fixture.mjs` verifies an environment (state only by default). `supabase/seed.sql` holds a public local/CI-only token.
 
 ### Key conventions

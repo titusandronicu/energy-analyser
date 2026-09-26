@@ -1,12 +1,25 @@
 # Energy Analyser
 
-Astro 7 application for a single owner to review household energy data and recommendations. This first production release contains Supabase authentication and the deployment path only; Home Assistant, Deye, scheduling and LLM integrations are intentionally not implemented yet.
+A web app for the owner of a home solar system (PV panels, a battery, the grid, a Deye inverter, a PGE G11 tariff). It answers two everyday questions in plain Polish: _what should the battery do today?_ and _was recent usage normal?_ The home lab collects the data and runs the advisory logic; this app signs the owner in, stores what the lab pushes, applies its own season-aware rules and presents the result. It never controls any device.
+
+What works today: magic-link sign-in, live state with a staleness warning, a season-adjusted usage insight, and today's recommendation narrated by an LLM from verified facts. Next (PRD v3): every figure explained for a non-expert with its data period and colours, a history calendar with good / neutral / bad ratings, lab-written summaries, consumption trends and notes on days.
+
+## How it works
+
+| Document                                                                                                  | What it covers                                                                                                  |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| [docs/architecture.md](docs/architecture.md)                                                              | Data flow from Home Assistant through the home lab to the app, the security model, the two LLMs                 |
+| [docs/logic.md](docs/logic.md)                                                                            | The rules and thresholds: staleness, the seasonal baseline, daily totals, planned ratings and trends            |
+| [docs/decisions.md](docs/decisions.md)                                                                    | Dated product and technical decisions with the reason for each                                                  |
+| [docs/prerequisites.md](docs/prerequisites.md)                                                            | Everything outside this repo: Home Assistant integrations, lab jobs, LLM configuration, secrets, one-time steps |
+| [docs/ingest/README.md](docs/ingest/README.md)                                                            | The push contract the home lab follows                                                                          |
+| [context/foundation/prd-v3.md](context/foundation/prd-v3.md), [roadmap.md](context/foundation/roadmap.md) | Product requirements and the ordered work                                                                       |
 
 ## Stack
 
 - Astro 7 SSR with the standalone Node adapter
 - React 19, TypeScript and Tailwind CSS 4
-- Supabase Auth
+- Supabase Postgres (row-level security) and Auth
 - Node.js 22 and Docker Compose
 - GitHub Actions, GHCR and Micr.us
 
