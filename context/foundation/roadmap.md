@@ -43,7 +43,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push           | F-01                 | FR-003, FR-015                    | done     |
 | F-03 | history-backfill          | (foundation) the ten lab days before the first push are in the app         | F-02                 | FR-024                            | ready    |
 | F-04 | lab-period-summaries      | (foundation) the lab writes plain-language texts for today, days and months | F-02                 | FR-023, FR-030                    | ready    |
-| F-05 | solar-forecast-source     | (foundation) Home Assistant has a solar forecast again and the lab pushes it | F-02                | FR-006, FR-015, FR-020            | in-progress |
+| F-05 | solar-forecast-source     | (foundation) Home Assistant has a solar forecast again and the lab pushes it | F-02                | FR-006, FR-015, FR-020            | done     |
 | S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session          | —                    | FR-001                            | done     |
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop            | F-01, S-01           | US-01, FR-002, FR-004             | done     |
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence        | F-01, S-01           | US-01, FR-005, FR-006             | done     |
@@ -152,7 +152,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Home Assistant has had no solar forecast since its host move (~2026-07-21): production has 0 of 53 days with a forecast. It is a homelab-2 and Home Assistant configuration change; certainty needs a week or two of forecasts after it lands. Follow-up found in review: Forecast.Solar comparison values were kept only in the live snapshot, so homelab-2 #28 adds them to lab history.
-- **Status:** in-progress
+- **Status:** done
 
 ## Slices
 
@@ -422,3 +422,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-04: user can see whether recent usage/generation is normal, above or below a season-adjusted baseline, with a visible notice when the flat 30-day fallback is used.** — Archived 2026-09-25 → `context/archive/2026-09-25-seasonal-usage-insight/`. Lesson: —.
 - **S-01: user can open the app from an access-key link and land in an authenticated session that sees only their own data.** — Archived 2026-09-26 → `context/archive/2026-09-23-access-key-sign-in/`. Lesson: —.
 - **S-03: user can see today's plain-language battery recommendation narrated by the home lab from its facts bundle (the verified numbers the deterministic engine computed), with forecast confidence stated explicitly and no controls to apply it.** — Archived 2026-09-26 → `context/archive/2026-09-23-todays-recommendation/`. Lesson: —.
+- **F-05: (foundation) Home Assistant has a working solar forecast integration again, and the lab fills the daily PV forecast and the recommendation's forecast in every push.** — Archived 2026-09-26 → `context/archive/2026-09-26-solar-forecast-source/`. Lesson: —.

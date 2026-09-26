@@ -1,10 +1,10 @@
 ---
 change_id: solar-forecast-source
 title: Restore the solar forecast in the lab's pushes, with Solcast as the source
-status: implementing
+status: archived
 created: 2026-09-26
 updated: 2026-09-26
-archived_at: null
+archived_at: 2026-09-26T09:33:22Z
 ---
 
 ## Notes
