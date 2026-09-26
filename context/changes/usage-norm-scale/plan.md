@@ -168,8 +168,8 @@ Added 2026-09-26 after `/10x-impl-review` (`reviews/impl-review.md`) and `/10x-p
 
 #### Automated
 
-- [x] 3.1 Edge-safe kWh and percentage figures
-- [x] 3.2 Meaning text in the view model
-- [x] 3.3 Docs in step
-- [x] 3.4 Unit tests pass
-- [x] 3.5 Lint, types and build pass
+- [x] 3.1 Edge-safe kWh and percentage figures — 3f277fd
+- [x] 3.2 Meaning text in the view model — 3f277fd
+- [x] 3.3 Docs in step — 3f277fd
+- [x] 3.4 Unit tests pass — 3f277fd
+- [x] 3.5 Lint, types and build pass — 3f277fd
