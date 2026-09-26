@@ -20,3 +20,6 @@ export function statusText(status: Status): string {
   const text = status.label ? `${word} · ${status.label}` : word;
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+// A card whose data failed to load: the page never throws a 500 for a data problem.
+export const LOAD_FAILED: Status = { tone: "problem", label: "nie udało się wczytać" };

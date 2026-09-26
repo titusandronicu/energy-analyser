@@ -4,18 +4,19 @@ The rules Energy Analyser and the home lab apply to the data, with the exact thr
 
 ## Where each rule runs
 
-| Rule                                          | Runs in                                       | Source                                                               |
-| --------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- |
-| Live state and its staleness                  | App                                           | `src/lib/services/live-state.ts`                                     |
-| Usage insight (season-adjusted baseline)      | App                                           | `src/lib/services/usage-insight.ts`                                  |
-| Recommendation staleness and labels           | App                                           | `src/lib/services/recommendation.ts`                                 |
-| Daily totals per day, which days are complete | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py` |
-| Facts bundle and battery recommendation       | Lab (deterministic rules, then LLM narration) | homelab-2 `build-energy-agent-briefing.py`, `run-energy-advisory.py` |
-| PV forecast                                   | Solcast via Home Assistant, read by the lab   | homelab-2 `collect-ha-snapshot.py`                                   |
+| Rule                                           | Runs in                                       | Source                                                               |
+| ---------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- |
+| Live state and its staleness                   | App                                           | `src/lib/services/live-state.ts`                                     |
+| Usage insight (season-adjusted baseline)       | App                                           | `src/lib/services/usage-insight.ts`                                  |
+| Recommendation staleness and labels            | App                                           | `src/lib/services/recommendation.ts`                                 |
+| Status colours, period text, term explanations | App                                           | `src/lib/format/status.ts`, `period.ts`, `glossary.ts`               |
+| Daily totals per day, which days are complete  | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py` |
+| Facts bundle and battery recommendation        | Lab (deterministic rules, then LLM narration) | homelab-2 `build-energy-agent-briefing.py`, `run-energy-advisory.py` |
+| PV forecast                                    | Solcast via Home Assistant, read by the lab   | homelab-2 `collect-ha-snapshot.py`                                   |
 
 ## Live state
 
-- The lab pushes every 5 minutes. A snapshot older than **15 minutes** is shown as stale with its age ("5 min", "2 godz.", "3 dni"), never hidden.
+- The lab pushes every 5 minutes. A snapshot older than **15 minutes** is shown as stale with its age ("5 min", "2 godz.", "3 dni"), never hidden; older than **2 hours** it is a problem (the lab has most likely stopped pushing). See [Status colours and data periods](#status-colours-and-data-periods).
 - Flows below **50 W** count as noise and show as "0,0 kW" without a direction word.
 - Sign conventions: grid positive = buying from the grid, negative = selling; battery positive = discharging, negative = charging. The app shows the value unsigned with a direction word.
 
@@ -26,8 +27,9 @@ The app compares the most recent complete day's consumption with a baseline and 
 1. **Compared day:** yesterday, or the newest day with a consumption value within the last **7 days** if yesterday is missing. Today is never compared (it is not over).
 2. **Seasonal baseline first:** all days within **±14 days** of the same date in earlier years (up to one year back, since the app loads **400 days** of history). It is used when it has at least **20 days** with data.
 3. **Fallback:** otherwise the previous **30 days**, used when at least **7** of them have data, and the card says plainly that the fallback is in use.
-4. **Not enough data:** with fewer than 7 fallback days, no verdict is shown.
-5. **Verdict:** more than **15%** above or below the baseline mean is _above_ / _below_; exactly ±15% is still _normal_.
+4. **Not enough data:** with fewer than 7 fallback days, or no day with consumption in the last 7 days, no verdict is shown; the card says what is missing.
+5. **Verdict:** more than **15%** above or below the baseline mean is _above_ / _below_; exactly ±15% is still _normal_. More than **40%** above is _far above_; exactly +40% is still _above_.
+6. The card names the baseline days it used ("średnia z 18 dni: 27 sierpnia – 25 września").
 
 Why seasonal: a flat recent average mislabels normal seasonal change (winter heating, summer air conditioning) as anomalies. The app's history starts on 2026-07-26 and the lab's on 2026-07-16 (the backfill, roadmap F-03, adds those ten days), so the fallback is what runs until about July 2027, when a year of history exists.
 
@@ -35,7 +37,29 @@ Why seasonal: a flat recent average mislabels normal seasonal change (winter hea
 
 - The lab's deterministic rules compute a facts bundle; the stronger LLM narrates it in Polish without adding numbers. The app shows the narration with the forecast and the facts it is based on.
 - The recommendation is **stale** when it was generated more than **2 hours** ago (the lab narrates about hourly, so two missed runs) or before the start of today.
-- Forecast confidence is shown as _niska / średnia / wysoka_ when the lab provides it, otherwise _nieznana_. **Planned (S-11):** certainty computed from past forecast accuracy and Solcast's low/high range. Accuracy counts days from **2026-09-27**: the stored forecast for 2026-09-26 came from Forecast.Solar, which overshoots.
+- The forecast figures name their days: "dziś" and "jutro" are the day the advice was generated and the day after.
+- Forecast certainty is always shown as not known yet ("jeszcze nie wiadomo — prognozy zbierane od 27 września"); the lab's optional `confidence` is ignored because it never states its basis. **Planned (S-11):** certainty computed from past forecast accuracy and Solcast's low/high range. Accuracy counts days from **2026-09-27** (`FORECAST_HISTORY_START`): the stored forecast for 2026-09-26 came from Forecast.Solar, which overshoots.
+
+## Status colours and data periods
+
+Every card shows a status badge under its heading: a colour **and** a word, so the text alone carries the meaning.
+
+| Tone         | Colour | Word            |
+| ------------ | ------ | --------------- |
+| good         | green  | dobrze          |
+| watch        | amber  | warto sprawdzić |
+| problem      | red    | problem         |
+| insufficient | grey   | za mało danych  |
+
+The badge reads "<word> · <detail>", e.g. "Warto sprawdzić · dane sprzed 40 min". Exactly at a line is always the milder status. A card whose data failed to load shows "Problem · nie udało się wczytać".
+
+- **Live state:** good ("aktualne") up to **15 minutes** old; watch ("dane sprzed …") over 15 minutes; problem ("brak nowych danych od …") over **2 hours**. A fresh snapshot the lab marks degraded is watch ("niepełne dane z Home Assistant"); staleness wins over degraded. Nothing received yet is insufficient.
+- **Usage insight:** normal or below the norm is good ("w normie" / "poniżej normy"); more than **15%** above is watch ("powyżej normy"); more than **40%** above is problem ("dużo powyżej normy"). The grid-purchase figure shows its change against the norm but is not rated (ratings are S-17).
+- **Recommendation:** good ("aktualna") when generated today within **2 hours**; watch ("sprzed …") when from today but older; problem ("z <day> — dotyczy innego dnia") when generated before today. Nothing received yet is insufficient.
+- **Forecast certainty:** always insufficient, "jeszcze nie wiadomo", until S-11 computes it from forecast accuracy.
+- **Not enough data:** the usage card says what it needs: "brak zużycia z ostatnich 7 dni", or "potrzeba co najmniej 7 dni z ostatnich 30, jest <n>". No verdict is guessed from too little data.
+- **Period text:** every derived figure says which days it rests on, as "<count> <dzień|dni>: <first> – <last>", e.g. "1 dzień: 24 września", "18 dni: 27 sierpnia – 25 września", "2 dni: 23–24 września". The range runs from the first to the last day used even when days in between are missing. The year is shown on both ends when the range spans two years, and once when the whole range is in an earlier year ("20 dni: 10–29 września 2025"). Live "today" totals say "dziś od północy do <HH:MM>" (or the capture's date when it is from an earlier day).
+- **Terms:** each card has a folded "Co to znaczy?" box explaining its technical terms in one sentence each (`src/lib/format/glossary.ts`).
 
 ## Daily totals (lab → app)
 
@@ -46,8 +70,6 @@ Why seasonal: a flat recent average mislabels normal seasonal change (winter hea
 
 ## Planned rules (PRD v3)
 
-- **Period and minimum data (S-14):** every figure says which period and how many days it is based on; with too little data a card says "not enough data yet" instead of guessing. No prediction or rating from a single day.
-- **Colours (S-14):** green = good, amber = worth watching, red = a problem, grey = not enough data, always with a text label.
 - **Day and month ratings (S-17):** good / neutral / bad from **self-sufficiency** = `1 − grid import ÷ consumption` for the period, clamped to **0–100%** (grid import can exceed consumption when the battery charges from the grid), for complete days with consumption above zero only. Compared with the season-adjusted norm when it has enough days (same window and minimum as the usage insight), otherwise with the recent trailing norm, and the card says which one it used. Until about July 2027 every rating uses the recent norm. Thresholds and the recent window length are set when the slice is planned. Ratings describe; they never advise.
 - **Consumption trends (S-20):** a remark when consumption rises or falls noticeably over weeks and months, against earlier periods; against the same season a year before only once that history exists (about July 2027).
 - **Texts for a non-expert (F-04, S-18):** a plain explanation of today and summaries of past days and months, written by the stronger model from the local model's observations, taking Polish seasons into account, without advice.

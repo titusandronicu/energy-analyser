@@ -1,4 +1,7 @@
 ---
+import StatusBadge from "@/components/StatusBadge.astro";
+import TermsExplained from "@/components/TermsExplained.astro";
+import { LOAD_FAILED } from "@/lib/format/status";
 import type { LiveStateView } from "@/lib/services/live-state";
 
 interface Props {
@@ -7,52 +10,38 @@ interface Props {
 
 // null means loading failed; the page never throws a 500 for a data problem.
 const { view } = Astro.props;
+// The badge says how fresh the reading is (or why there is none); the notices below only add what it can't.
+const status = view === null ? LOAD_FAILED : view.status;
 ---
 
 <section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
-  <h2 class="mb-4 text-lg font-semibold text-blue-100">Stan na żywo</h2>
+  <h2 class="mb-2 text-lg font-semibold text-blue-100">Stan na żywo</h2>
+  <div class="mb-4">
+    <StatusBadge status={status} testId="live-status" />
+  </div>
 
-  {view === null && (
-    <p class="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">
-      Nie udało się wczytać stanu. Spróbuj odświeżyć stronę.
-    </p>
-  )}
-
-  {view?.kind === "empty" && <p class="text-blue-100/70">Brak danych — laboratorium jeszcze nie przesłało odczytów.</p>}
+  {view === null && <p class="text-sm text-blue-100/70">Spróbuj odświeżyć stronę.</p>}
 
   {view?.kind === "state" && (
     <div class="space-y-4">
-      {view.isStale && (
-        <p
-          class="rounded-lg border border-amber-400/40 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
-          data-testid="live-stale-warning"
-        >
-          Dane nieaktualne — ostatni odczyt {view.ageLabel} temu.
-        </p>
-      )}
-
-      {view.isDegraded && (
-        <p class="rounded-lg border border-amber-400/40 bg-amber-900/30 px-3 py-2 text-sm text-amber-200">
-          Niepełne dane z Home Assistant — część odczytów może być niedostępna.
-        </p>
-      )}
+      {view.isDegraded && <p class="text-sm text-blue-100/70">Część odczytów z Home Assistant może być niedostępna.</p>}
 
       <dl class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
         <div class="rounded-lg bg-white/5 p-3">
-          <dt class="text-blue-100/60">Produkcja PV</dt>
+          <dt class="text-blue-100/60">Prąd z paneli teraz</dt>
           <dd class="text-lg font-medium">{view.pv}</dd>
         </div>
         <div class="rounded-lg bg-white/5 p-3">
-          <dt class="text-blue-100/60">Zużycie domu</dt>
+          <dt class="text-blue-100/60">Dom zużywa teraz</dt>
           <dd class="text-lg font-medium">{view.homeLoad}</dd>
         </div>
         <div class="rounded-lg bg-white/5 p-3">
-          <dt class="text-blue-100/60">Sieć</dt>
+          <dt class="text-blue-100/60">Sieć teraz</dt>
           <dd class="text-lg font-medium">{view.grid.value}</dd>
           {view.grid.direction && <dd class="text-xs text-blue-100/70">{view.grid.direction}</dd>}
         </div>
         <div class="rounded-lg bg-white/5 p-3">
-          <dt class="text-blue-100/60">Bateria</dt>
+          <dt class="text-blue-100/60">Bateria teraz</dt>
           <dd class="text-lg font-medium">{view.battery.value}</dd>
           {view.battery.direction && <dd class="text-xs text-blue-100/70">{view.battery.direction}</dd>}
         </div>
@@ -62,22 +51,29 @@ const { view } = Astro.props;
         </div>
       </dl>
 
-      <dl class="grid grid-cols-3 gap-3 rounded-lg bg-white/5 p-3 text-sm">
-        <div>
-          <dt class="text-blue-100/60">PV dziś</dt>
-          <dd class="font-medium">{view.today.pv}</dd>
-        </div>
-        <div>
-          <dt class="text-blue-100/60">Kupione dziś</dt>
-          <dd class="font-medium">{view.today.bought}</dd>
-        </div>
-        <div>
-          <dt class="text-blue-100/60">Sprzedane dziś</dt>
-          <dd class="font-medium">{view.today.sold}</dd>
-        </div>
-      </dl>
+      <div class="space-y-2 rounded-lg bg-white/5 p-3 text-sm">
+        <p class="text-xs text-blue-100/60" data-testid="live-today-period">
+          {view.today.periodLabel.charAt(0).toUpperCase() + view.today.periodLabel.slice(1)}
+        </p>
+        <dl class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div>
+            <dt class="text-blue-100/60">Z paneli dziś</dt>
+            <dd class="font-medium">{view.today.pv}</dd>
+          </div>
+          <div>
+            <dt class="text-blue-100/60">Kupione z sieci dziś</dt>
+            <dd class="font-medium">{view.today.bought}</dd>
+          </div>
+          <div>
+            <dt class="text-blue-100/60">Sprzedane do sieci dziś</dt>
+            <dd class="font-medium">{view.today.sold}</dd>
+          </div>
+        </dl>
+      </div>
 
       <p class="text-xs text-blue-100/50">Odczyt z {view.capturedAtLabel}</p>
+
+      <TermsExplained terms={["pv", "kw", "kwh", "battery_soc", "grid_import", "grid_export"]} />
     </div>
   )}
 </section>

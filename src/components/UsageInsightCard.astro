@@ -1,10 +1,8 @@
 ---
-import {
-  FALLBACK_DAYS,
-  SEASONAL_WINDOW_DAYS,
-  type UsageInsightView,
-  type UsageStatus,
-} from "@/lib/services/usage-insight";
+import StatusBadge from "@/components/StatusBadge.astro";
+import TermsExplained from "@/components/TermsExplained.astro";
+import { LOAD_FAILED } from "@/lib/format/status";
+import type { UsageInsightView } from "@/lib/services/usage-insight";
 
 interface Props {
   view: UsageInsightView | null;
@@ -14,25 +12,22 @@ interface Props {
 const { view } = Astro.props;
 // "Yesterday" only when the compared day is yesterday; the error and insufficient states keep it too.
 const heading = view?.kind === "insight" && !view.isYesterday ? "Zużycie dzienne" : "Zużycie wczoraj";
-
-// The text carries the meaning; the colour only supports it.
-const STATUS: Record<UsageStatus, { label: string; tone: string }> = {
-  above: { label: "powyżej normy", tone: "border-amber-400/40 bg-amber-900/30 text-amber-200" },
-  below: { label: "poniżej normy", tone: "border-emerald-400/40 bg-emerald-900/30 text-emerald-200" },
-  normal: { label: "w normie", tone: "border-white/15 bg-white/5 text-blue-100" },
-};
+const status = view === null ? LOAD_FAILED : view.status;
 ---
 
 <section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
-  <h2 class="mb-4 text-lg font-semibold text-blue-100">{heading}</h2>
+  <h2 class="mb-2 text-lg font-semibold text-blue-100">{heading}</h2>
+  <div class="mb-4">
+    <StatusBadge status={status} testId="usage-status" />
+  </div>
 
-  {view === null && (
-    <p class="rounded-lg border border-red-500/30 bg-red-900/30 px-3 py-2 text-sm text-red-300">
-      Nie udało się wczytać porównania. Spróbuj odświeżyć stronę.
+  {view === null && <p class="text-sm text-blue-100/70">Spróbuj odświeżyć stronę.</p>}
+
+  {view?.kind === "insufficient" && (
+    <p class="text-sm text-blue-100/70" data-testid="usage-insufficient-reason">
+      {view.reason.charAt(0).toUpperCase() + view.reason.slice(1)}.
     </p>
   )}
-
-  {view?.kind === "insufficient" && <p class="text-blue-100/70">Za mało historii do porównania.</p>}
 
   {view?.kind === "insight" && (
     <div class="space-y-4">
@@ -41,39 +36,31 @@ const STATUS: Record<UsageStatus, { label: string; tone: string }> = {
         {!view.isYesterday && <span class="text-blue-100/60"> — brak danych z wczoraj.</span>}
       </p>
 
-      {view.baseline.kind === "fallback" && (
-        <p
-          class="rounded-lg border border-amber-400/40 bg-amber-900/30 px-3 py-2 text-sm text-amber-200"
-          data-testid="usage-fallback-notice"
-        >
-          Za mało danych z tej pory roku — porównanie ze średnią z ostatnich {FALLBACK_DAYS} dni ({view.baseline.days}{" "}
-          dni).
-        </p>
-      )}
-
       <dl class="grid grid-cols-2 gap-3 text-sm">
         <div class="rounded-lg bg-white/5 p-3">
           <dt class="text-blue-100/60">Zużycie domu</dt>
           <dd class="text-lg font-medium">{view.load.kwhLabel}</dd>
-          <dd class="mt-1 flex flex-wrap items-center gap-2 text-xs">
-            <span class:list={["rounded-full border px-2 py-0.5", STATUS[view.load.status].tone]}>
-              {STATUS[view.load.status].label}
-            </span>
-            <span class="text-blue-100/70">{view.load.deltaLabel} wobec średniej</span>
-          </dd>
+          <dd class="mt-1 text-xs text-blue-100/70">{view.load.deltaLabel} wobec normy</dd>
         </div>
         <div class="rounded-lg bg-white/5 p-3">
-          <dt class="text-blue-100/60">Zakup z sieci</dt>
+          <dt class="text-blue-100/60">Kupione z sieci</dt>
           <dd class="text-lg font-medium">{view.purchase.kwhLabel}</dd>
-          <dd class="mt-1 text-xs text-blue-100/70">{view.purchase.deltaLabel} wobec średniej</dd>
+          <dd class="mt-1 text-xs text-blue-100/70">{view.purchase.deltaLabel} wobec normy</dd>
         </div>
       </dl>
 
-      {view.baseline.kind === "seasonal" && (
-        <p class="text-xs text-blue-100/50">
-          Porównanie: ta sama pora roku (±{SEASONAL_WINDOW_DAYS} dni, {view.baseline.days} dni).
+      {view.baseline.kind === "seasonal" ? (
+        <p class="text-xs text-blue-100/60" data-testid="usage-baseline">
+          Norma: ta sama pora roku, średnia z {view.baseline.periodLabel}.
+        </p>
+      ) : (
+        <p class="text-xs text-blue-100/60" data-testid="usage-fallback-notice">
+          Norma: średnia z {view.baseline.periodLabel}. Z tej pory roku jest jeszcze za mało danych, więc porównujemy z
+          ostatnimi dniami.
         </p>
       )}
+
+      <TermsExplained terms={["kwh", "norm", "grid_import"]} />
     </div>
   )}
 </section>
