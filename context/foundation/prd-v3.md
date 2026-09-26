@@ -39,10 +39,10 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 ## Success Criteria
 
 ### Primary
-- End-to-end flow works: opening the app with the access key shows current state (near-live Home Assistant telemetry pushed from the home lab) plus one derived insight against the historical baseline (computed in this app from pushed history), and an LLM-narrated battery-setting recommendation for today, informed by a weather forecast (narrated in the home lab and pushed with its facts bundle).
+- End-to-end flow works: opening the app with the access key shows current state (near-live Home Assistant telemetry pushed from the home lab) plus one derived insight against the historical baseline (computed in this app from pushed history), and an LLM-narrated battery-setting recommendation for today, informed by a solar (PV) production forecast (narrated in the home lab and pushed with its facts bundle).
 
 ### Secondary
-- The battery recommendation already incorporates a weather forecast in v1, rather than being deferred to v2.
+- The battery recommendation already incorporates a solar (PV) production forecast in v1, rather than being deferred to v2.
 - The user sees the expected cost of the current month before the PGE bill arrives, and the actual cost of the last closed period, instead of learning it a month later from the bill.
 
 ### Guardrails
@@ -65,13 +65,24 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 - If no fresh push has arrived (Home Assistant or the home-lab pipeline is down), last-known state is shown with a visible staleness indicator instead of an error page
 - The recommendation is advisory text only — no controls to apply it directly to the inverter/HA
 - Every card is readable without energy knowledge: plain words, technical terms explained where they appear, and a colour plus text label saying whether the figure is good, worth watching or a problem
-- Manual actions from the home lab's consumption plan are listed next to the recommendation as steps for the user to take themselves, without inverter setting values
-- The inverter's current schedule and the recent forecast accuracy are shown next to the recommendation, so the user can compare the advice with what is set and how reliable the forecast has been
-- When the recommendation or live data is degraded, a plain status message says why
+- The recent forecast accuracy is shown next to the recommendation, so the user can see how reliable the forecast has been
 
 ### US-02: (removed in v3)
 
 Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: the system now rates days and months itself (US-05), and the owner's own input moves to notes on days (US-06).
+
+### US-07: User sees the context around today's recommendation (stretch)
+
+- **Given** a user with a valid access key, and the home lab pushing its consumption plan, inverter schedule and pipeline status
+- **When** they read today's recommendation
+- **Then** they see the manual actions from the lab's consumption plan, the inverter's current schedule, and why anything is missing or degraded
+
+#### Acceptance Criteria
+- Manual actions from the home lab's consumption plan are listed next to the recommendation as steps for the user to take themselves, without inverter setting values
+- The inverter's current schedule is shown next to the recommendation, so the user can compare the advice with what is set
+- When the recommendation or live data is degraded, a plain status message says why
+
+> Note (v3.1, 2026-09-26): these criteria were part of US-01 until v3.1. They depend on stretch slices sequenced last (S-09, S-12, S-13), so US-01 (the north star) could not be accepted by the deadline while it carried them.
 
 ### US-03: User checks what this month and the last period cost
 
@@ -94,24 +105,24 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
 - Only aggregates are shown — no individual hourly readings, meter or customer identifiers
 - The profile states the period and number of days it covers
 
-### US-05: User browses past days, months and years
+### US-05: User browses past days and months
 
 - **Given** a user with a valid access key and pushed daily history
-- **When** they open the calendar and pick a day, a month or a year
+- **When** they open the calendar and pick a day or a month
 - **Then** they see that period's production, consumption and grid exchange, the forecast against what actually happened, the recommendations from that period, a good / neutral / bad rating with its basis, and the home lab's summary of what happened
 
 #### Acceptance Criteria
-- The user can move between days, months and years without typing dates
+- The user can move between days and months without typing dates
 - Every figure and rating states the period and number of days it is based on
 - A rating or summary is only shown for a period with enough data; otherwise the view says there is not enough data yet
 - Ratings and summaries describe what happened; they never give advice or suggest changes
-- Periods before the app started receiving pushes are available through a one-time backfill from the home lab
+- Days the home lab recorded before the app started receiving pushes (from 2026-07-16) are available through a one-time backfill
 
 ### US-06: User keeps notes on days
 
 - **Given** a user viewing a day in the calendar
 - **When** they add, edit or delete a note on that day ("away on holiday", "heat pump installed")
-- **Then** the note is saved and shows on that day and in the month and year views, so unusual ratings have a recorded explanation
+- **Then** the note is saved and shows on that day and in the month view, so unusual ratings have a recorded explanation
 
 #### Acceptance Criteria
 - Notes are scoped to the single logged-in user's account
@@ -152,7 +163,10 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
   > Socratic: Counter-argument considered: "an LLM could hallucinate or misstate the underlying
   > facts with confident tone." Resolution: LLM constrained to narration-only over a verified
   > facts bundle; it cannot introduce facts the deterministic engine didn't compute.
-- FR-006: The battery recommendation incorporates a weather forecast as an input, stating forecast confidence/uncertainty explicitly rather than as flat fact. Priority: nice-to-have
+- FR-006: The battery recommendation incorporates a solar (PV) production forecast as an input, stating forecast confidence/uncertainty explicitly rather than as flat fact. Priority: must-have
+  > Correction (v3.1, 2026-09-26): priority raised from nice-to-have. The success criteria already
+  > required the forecast in v1, and FR-020 (must-have) depends on it. "Weather forecast" meant the
+  > PV production forecast (Solcast via Home Assistant since 2026-09-26).
   > Socratic: Counter-argument considered: "multi-day weather forecasts are often wrong — a
   > confidently-wrong forecast-based tip could be worse than no tip." Resolution: recommendation
   > must surface forecast confidence/uncertainty explicitly, not state it as fact.
@@ -160,11 +174,11 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
 ### Energy cost & usage (v2 — surfaced from the home lab)
 - FR-011: User can view the projected cost of the current month in PLN, with a range and the number of days it is based on, computed by the home lab from its aggregates. Priority: must-have
 - FR-012: User can view the actual cost of the last closed billing period under the full tariff (energy and fixed charges), regenerated by the home lab instead of a hand-made one-off figure. Priority: must-have
-- FR-013: User can see the home lab's consumption-plan recommendations as manual actions (what to check or change, and why) next to today's battery recommendation, without inverter setting values. Priority: must-have
+- FR-013: User can see the home lab's consumption-plan recommendations as manual actions (what to check or change, and why) next to today's battery recommendation, without inverter setting values. Priority: nice-to-have (stretch, US-07)
 - FR-014: User can view a usage profile — average consumption across the day, day/night and weekday/weekend shares, and the count of unusual consumption by hour of the day — built from aggregates only. Priority: must-have
 - FR-015: User can see how accurate the PV production forecast has been over recent days (forecast vs actual), next to today's recommendation, so its stated confidence has a visible basis. Priority: must-have
-- FR-016: User can see the inverter's current charging schedule (time slots, grid charging on/off, target state of charge), as last read by the home lab, next to today's recommendation — display only, never changed from the app. Priority: must-have
-- FR-017: User can see why the recommendation or live data is missing or degraded — for example that a fallback narration was used or a lab step failed — as plain status messages, without raw error details. Priority: must-have
+- FR-016: User can see the inverter's current charging schedule (time slots, grid charging on/off, target state of charge), as last read by the home lab, next to today's recommendation — display only, never changed from the app. Priority: nice-to-have (stretch, US-07)
+- FR-017: User can see why the recommendation or live data is missing or degraded — for example that a fallback narration was used or a lab step failed — as plain status messages, without raw error details. Priority: nice-to-have (stretch, US-07)
   > Note (v2, 2026-09-25): FR-011–014 surface features that already run in the lab's old
   > analyser page, replacing its sample figures with real aggregates. The home lab computes
   > them; the app displays them. FR-015–017 come from a second review of the lab's running
@@ -180,18 +194,25 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
   > F-02 already stores (pv_forecast_kwh against pv_kwh).
 
 ### History, ratings and summaries (v3)
-- FR-021: User can open a calendar with day, month and year views, each showing PV production, consumption, grid import/export, forecast against actual, and the recommendations from that period. Priority: must-have
-- FR-022: Each completed day and month gets a good / neutral / bad rating computed in the app from self-sufficiency (the share of consumption covered by PV and the battery rather than grid import) compared with the season-adjusted norm, with the basis shown. Thresholds are set when the slice is planned. Priority: must-have
+- FR-021: User can open a calendar with day and month views, each showing PV production, consumption, grid import/export, forecast against actual, and the recommendations from that period. Priority: must-have
+- FR-022: Each completed day and month gets a good / neutral / bad rating computed in the app from self-sufficiency (the share of consumption covered by PV and the battery rather than grid import) compared with a norm, with the basis shown. The norm is the season-adjusted one when enough same-season history exists; otherwise the recent trailing period, and the rating says plainly that the recent norm is in use (the same rule as FR-003). Thresholds are set when the slice is planned. Priority: must-have
 - FR-023: Each completed day and month shows a short summary written by the home lab: an LLM narrates a facts bundle of what happened, taking Polish seasons into account, without advice or suggested changes. It is generated and pushed by the lab ahead of the visit, like the daily recommendation. Priority: must-have
-- FR-024: The home lab backfills its full daily history once, so year views and season comparisons work from the start rather than filling in over time. Priority: must-have
+- FR-024: The home lab backfills the days it recorded before the app's pushes started (2026-07-16 to 2026-07-25) once, so the calendar and norms use every day the lab has. Priority: must-have
   > Note (v3, 2026-09-26): FR-021–024 replace recommendation feedback (FR-007–010) as the way
   > the owner reviews how days went. The rating is deterministic so it is explainable; the
   > summary only narrates, as FR-005 does for the recommendation.
+  > Correction (v3.1, 2026-09-26): the lab's full history starts on 2026-07-16 (PGE data reaches
+  > back to February 2026 but holds grid import/export only, not production or consumption). No
+  > same-season data from a year before exists until about July 2027, so: ratings use the recent
+  > norm with a visible notice until then (FR-022); the backfill covers only the ten days before the
+  > first push (FR-024); the year view is deferred until a second year of history exists (FR-021).
 
 ### Plain language for a non-expert (v3)
 - FR-029: Every card and rating marks its status with a colour and a text label (green = good, amber = worth watching, red = a problem, grey = not enough data), never with colour alone. Priority: must-have
 - FR-030: The dashboard shows a short plain-language explanation of what today's figures mean for the owner, written ahead of the visit by the home lab's stronger (cloud) model in the existing narration chain. The local model only gathers frequent short observations through the day, which the stronger model interprets; the explanation narrates the same verified facts and introduces no numbers of its own. Priority: must-have
 - FR-031: The app remarks when consumption rises or falls noticeably over weeks and months, against earlier periods and the same season a year before when that history exists (for example "consumption is 15% higher than in the same three months last year"), and the day and month summaries (FR-023) point out such patterns. Priority: must-have
+  > Note (v3.1, 2026-09-26): comparisons with the same season a year before become possible only
+  > from about July 2027; until then remarks compare with earlier weeks and months.
   > Note (v3, 2026-09-26): added after the owner asked that the app assume no energy
   > knowledge, mark information with colours and remark on consumption growing over time.
   > LLM split (owner's decision, 2026-09-26): the local model probes often (short observations
@@ -201,7 +222,7 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
 
 ### Notes on days (CRUD, v3)
 - FR-025: User can add a note to a calendar day. Priority: must-have
-- FR-026: User can view notes on the day, and see which days in a month or year have notes. Priority: must-have
+- FR-026: User can view notes on the day, and see which days in a month have notes. Priority: must-have
 - FR-027: User can edit a note. Priority: must-have
 - FR-028: User can delete a note. Priority: must-have
   > Correction (v3, 2026-09-26): FR-007–010 (accept/dismiss feedback on recommendations) were
@@ -224,13 +245,13 @@ Given live and historical PV/battery/grid data plus a weather forecast, the app 
 
 The rule consumes recent and historical PV generation, battery state, and grid import/export readings, the user's existing billing/tariff history, and a short-range weather forecast for the user's location. Its output is a flagged anomaly status for the current period (normal / above-baseline / below-baseline) plus one recommended battery setting for today, phrased in plain language with an explicit confidence note when the weather forecast informs it. When same-season historical data is missing or insufficient, the comparison falls back to a flat trailing-30-day average and visibly discloses that the fallback is in use. The user encounters this on opening the app: the anomaly flag and the recommendation appear together on the main view, without needing to run a report or select a date range — the decision is presented, not buried in raw numbers.
 
-Day and month ratings (FR-022) use the same daily totals: self-sufficiency is `1 − grid import ÷ consumption` for the period, compared with the season-adjusted norm for that time of year. The rating says good, neutral or bad, states the period and number of days behind the norm, and is withheld when there is not enough data (FR-019). It describes; it never advises.
+Day and month ratings (FR-022) use the same daily totals: self-sufficiency is `1 − grid import ÷ consumption` for the period, clamped to 0–100% (grid import can exceed consumption on a day the battery charges from the grid) and computed only for complete days with consumption above zero. It is compared with the season-adjusted norm for that time of year when enough same-season history exists, otherwise with the recent trailing norm, and the rating says which norm it used. The rating says good, neutral or bad, states the period and number of days behind the norm, and is withheld when there is not enough data (FR-019). It describes; it never advises.
 
 Cost and usage views (FR-011–014) present figures the home lab has already computed from the user's real tariff and billing history; the app adds no pricing logic of its own, and states the period each figure covers.
 
 ## Access Control
 
-Access key (magic link) — no account-creation form, no roles, but opening the link **establishes an authenticated session**: the user is logged in for that session and sees only their own resources (current state, insight, recommendations, history, notes). This is a real login mechanism, not just an anonymous page gate — it satisfies "access tied to a logged-in user" without the overhead of a username/password flow. Single user by design.
+Access key (magic link) — no account-creation form, no roles, but opening the link **establishes an authenticated session** (an email + password sign-in for the same single account is kept as an alternative; see docs/decisions.md, 2026-09-23): the user is logged in for that session and sees only their own resources (current state, insight, recommendations, history, notes). This is a real login mechanism, not just an anonymous page gate — it satisfies "access tied to a logged-in user" without the overhead of a username/password flow. Single user by design.
 
 ## Non-Goals
 
@@ -252,6 +273,8 @@ None open. Five questions raised on 2026-09-23 by reviewing this PRD against the
 3. **Where does the app run relative to the data?** The app stays on the public VPS. The home lab pushes public-safe data outbound, and no v1 feature connects into the home network (FR-002, FR-004). Tailscale via Micr.us is kept as an optional private channel for flexibility, not as a data dependency.
 4. **Bill reconciliation?** Stays a non-goal. Superseded in part on 2026-09-25: PRD v2 moves the current-month projection and closed-period cost into scope (FR-011, FR-012); predicted-vs-actual reconciliation stays out.
 5. **Brownfield?** No. This repo is new code; the home lab is an external data source that pushes in. `context_type` stays `greenfield`.
+
+v3.1 (2026-09-26): a review against the goal and the lab's real data found that no same-season history from a year before exists (the lab's history starts on 2026-07-16). Ratings use a disclosed recent norm until it does, the backfill shrinks to ten days, and the year view is deferred. US-01 lost the criteria that depend on stretch slices (moved to US-07, FR-013/016/017 now nice-to-have), and FR-006 became must-have, consistent with the success criteria. Decisions taken with the owner.
 
 v3 (2026-09-26): after using the app, the owner asked for a history calendar, good / neutral / bad ratings of days and months with lab-written summaries that consider Polish seasons, a clear statement of the period behind every figure, no guessing from too little data, and visible prediction certainty. US-02 and FR-007–010 (recommendation feedback) were removed; US-05, US-06 and FR-018–031 added. Decisions taken with the owner: ratings use self-sufficiency against the season norm; ratings carry no advice; the app assumes no energy knowledge, marks status with colour plus a label, remarks on consumption trends, and user-facing texts are written by the lab's stronger model from frequent local-model observations; the lab backfills its full history once; notes on days keep the CRUD surface. No new open questions: rating thresholds and the minimum-data amounts are set per slice.
 
