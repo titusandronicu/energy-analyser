@@ -15,3 +15,10 @@
 - **Problem:** Rules and decisions lived only in plans, reviews and conversations, so a reader of the repository could not follow how the app reasons or why it is built this way.
 - **Rule:** A change that adds or alters a rule or threshold updates `docs/logic.md`; a change that makes a product or technical decision adds a dated entry to `docs/decisions.md`; a change to the data flow, security model or LLM roles updates `docs/architecture.md`. Planned rules move from "planned" to the built sections when their slice is archived.
 - **Applies to:** every change in this repository, reviewed in `/10x-impl-review`.
+
+## Plan before implementing, even straight after research
+
+- **Context:** `context/archive/2026-09-26-usage-norm-scale/` (plan.md written retrospectively; reviews/impl-review.md F2).
+- **Problem:** After `/10x-research`, an "implement" request went straight to code. The research's open questions were settled by the agent's defaults instead of the owner, there was no plan review, no Progress or manual-check list, and the review later found edge-case issues (rounded kWh against range edges, +40% wording) a plan review would likely have caught.
+- **Rule:** An "implement" request after research goes through `/10x-plan` (a short plan is fine), `/10x-plan-review` and `/10x-implement`. Before planning, the open questions in research.md are put to the owner; a default is used only when the owner explicitly says so, and the plan records which were defaults.
+- **Applies to:** every change in this repository, including small, single-card changes.

@@ -92,7 +92,25 @@ The data was read with one read-only SELECT through the Supabase CLI on 2026-09-
   - This is an engineering estimate, not a measured Polish statistic.
   - It is built from space-heat demand of 55–80 kWh/m² (PORT PC, Q3 2024), a seasonal COP of 3.0–3.4 (Fraunhofer ISE field test, Nov 2025), and 1,000–1,330 kWh of heat-pump hot water.
 - **Seasonal profile of that estimate:** January about 29 kWh a day, July about 10.5, September about 12.8 (5.5% of the year).
-  - Modelled from Enea's G11 standard profile 2025 plus Eurostat heating degree-days for 2015–2025.
+  - Modelled from Enea's G11 standard profile 2025 plus Eurostat heating degree-days for 2015–2025: appliances 2,800 kWh on the G11 shape, heat-pump hot water 1,150 kWh spread flat, space heating 3,000 kWh spread by degree-days.
+  - Monthly table (share of 7,000 kWh a year → kWh a day, rounded as stored in `src/lib/format/reference-usage.ts`; added 2026-09-26 during the implementation review, F7):
+
+    | Month | Share of year | kWh a day | Stored |
+    | ----- | ------------- | --------- | ------ |
+    | Jan   | 13.0%         | 29.4      | 29     |
+    | Feb   | 11.1%         | 27.8      | 28     |
+    | Mar   | 10.8%         | 24.4      | 24     |
+    | Apr   | 8.5%          | 19.8      | 20     |
+    | May   | 6.5%          | 14.7      | 15     |
+    | Jun   | 4.7%          | 11.0      | 11     |
+    | Jul   | 4.6%          | 10.4      | 10     |
+    | Aug   | 4.7%          | 10.6      | 11     |
+    | Sep   | 5.5%          | 12.8      | 13     |
+    | Oct   | 8.1%          | 18.3      | 18     |
+    | Nov   | 10.3%         | 24.0      | 24     |
+    | Dec   | 12.3%         | 27.8      | 28     |
+
+  - Sources: GUS, _Zużycie energii w gospodarstwach domowych w 2021 r._ (2023); PORT PC heating-cost calculator note, Q3 2024; Fraunhofer ISE WP-QS heat-pump field test (Nov 2025); Enea Operator IRiESD annex 4 standard profiles 2025 (G11); Eurostat `nrg_chdd_m` heating degree-days for Poland, 2015–2025.
 - **Official bands:**
   - Eurostat consumption bands: DC 2,500–5,000 kWh a year is the "medium household"; DD is 5,000–15,000.
   - Price-freeze limits of 2,000–4,000 kWh are policy caps, not statistics.
@@ -145,7 +163,7 @@ Not applicable. There is no earlier research.md on the norm statistic.
 
 1. **Inconsistent early rows (07-26 to 08-03).** Should the lab correct them, or should the app exclude them? They are the only cause of a mean/median disagreement so far. They will leave the 30-day window by themselves, but they will affect the seasonal baseline in 2027. This is a lab prerequisite (lessons.md "Name every prerequisite").
 2. **Why is consumption about 2.8 times the public heat-pump estimate in September?** An electric car, air conditioning, a pool, or hot water on resistance heating? This matters for how the public comparison line is worded. It is an owner question, not a code question.
-3. **Should the card show the public comparison line at all?** If so, with which wording and which monthly figure (the seasonal table above)?
+3. **Should the card show the public comparison line at all?** If so, with which wording and which monthly figure (the monthly table above)?
 4. **Fewer than 7 own days.** Keep "not enough data" (recommended, per FR-019), or show public ranges marked as an estimate? This is an owner decision.
 5. **Does the purchase delta use the median too** (recommended, for consistency)? Or does it stay as the mean, since it is not rated (`docs/logic.md:57`)?
 6. **Wording:** should the card say "mediana" or plain "typowy dzień" ("zwykle zużywasz"), given the no-energy-knowledge requirement?

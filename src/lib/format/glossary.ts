@@ -31,7 +31,7 @@ export const GLOSSARY: Record<GlossaryTerm, { term: string; explanation: string 
   norm: {
     term: "Norma",
     explanation:
-      "Typowe zużycie z podobnych dni, z którymi porównujemy (mediana: połowa tych dni była niższa, połowa wyższa) — pokazuje, czy dzień był zwykły, czy nie.",
+      "Typowe zużycie z podobnych dni, z którymi porównujemy (mediana: w połowie tych dni zużycie było niższe, w połowie wyższe) — pokazuje, czy dzień był zwykły, czy nie.",
   },
   forecast: {
     term: "Prognoza produkcji z paneli",

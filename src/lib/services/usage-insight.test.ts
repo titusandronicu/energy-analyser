@@ -44,11 +44,12 @@ describe("toUsageInsightView", () => {
         normKwhLabel: "10,0 kWh",
         band: "high",
         ranges: [
-          { band: "low", label: "poniżej 8,5 kWh" },
-          { band: "normal", label: "8,5–11,5 kWh" },
-          { band: "high", label: "11,5–14,0 kWh" },
-          { band: "very_high", label: "powyżej 14,0 kWh" },
+          { band: "low", name: "Niskie", label: "poniżej 8,5 kWh" },
+          { band: "normal", name: "W normie", label: "8,5–11,5 kWh" },
+          { band: "high", name: "Wysokie", label: "11,5–14,0 kWh" },
+          { band: "very_high", name: "Bardzo wysokie", label: "powyżej 14,0 kWh" },
         ],
+        verdictSentence: "To więcej niż zwykle (+23% wobec normy).",
         referenceSentence:
           "Dla porównania: typowy dom w Polsce o powierzchni ok. 140 m² ogrzewany pompą ciepła zużywa we wrześniu ok. 13 kWh dziennie (szacunek z danych GUS i branżowych).",
       },
@@ -330,6 +331,35 @@ describe("toUsageInsightView", () => {
     const v = insight([row(YESTERDAY, load), ...daysBefore(YESTERDAY, 30, 30)]);
     expect(v.meaning?.band).toBe(band);
     expect(v.status).toEqual(status);
+  });
+
+  // One decimal would print these days as the edge itself ("34,5 kWh" in "34,5–42,0"), so they get two.
+  it.each([
+    [34.52, "34,52 kWh", "high"],
+    [25.46, "25,46 kWh", "low"],
+    [42.04, "42,04 kWh", "very_high"],
+    [34.5, "34,5 kWh", "normal"],
+    [42, "42,0 kWh", "high"],
+    [33, "33,0 kWh", "normal"],
+  ])("shows load %d against a median of 30 as %s in the %s range", (load, kwhLabel, band) => {
+    const v = insight([row(YESTERDAY, load), ...daysBefore(YESTERDAY, 30, 30)]);
+    expect(v.load.kwhLabel).toBe(kwhLabel);
+    expect(v.meaning?.band).toBe(band);
+  });
+
+  // Exactly +40% is still "high", so a whole "+40%" must not sit next to "dużo więcej".
+  it.each([
+    [42, "+40,0%", "To więcej niż zwykle (+40,0% wobec normy)."],
+    [42.01, "+40,1%", "To dużo więcej niż zwykle (+40,1% wobec normy)."],
+    [42.1, "+40,3%", "To dużo więcej niż zwykle (+40,3% wobec normy)."],
+    [41.9, "+39,7%", "To więcej niż zwykle (+39,7% wobec normy)."],
+    [42.3, "+41%", "To dużo więcej niż zwykle (+41% wobec normy)."],
+    [25, "−17%", "To mniej niż zwykle (−17% wobec normy)."],
+    [30, "0%", "To tyle, co zwykle (0% wobec normy)."],
+  ])("describes load %d against a median of 30 as %s", (load, deltaLabel, verdictSentence) => {
+    const v = insight([row(YESTERDAY, load), ...daysBefore(YESTERDAY, 30, 30)]);
+    expect(v.load.deltaLabel).toBe(deltaLabel);
+    expect(v.meaning?.verdictSentence).toBe(verdictSentence);
   });
 
   it("names the compared day's month in the comparison", () => {
