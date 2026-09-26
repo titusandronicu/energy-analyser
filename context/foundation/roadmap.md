@@ -131,7 +131,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### F-04: Lab period summaries
 
-- **Outcome:** (foundation) the home lab has its LLM chain (local model first, the existing cloud fallback when it fails) write plain-language texts for someone without energy knowledge: a short explanation of what today's figures mean, and after each completed day and month a summary of what happened that takes Polish seasons into account, points out consumption patterns and gives no advice; it pushes them and the app stores them per period.
+- **Outcome:** (foundation) the home lab has its stronger model (the existing narration chain) interpret the local model's frequent observations into plain-language texts for someone without energy knowledge: a short explanation of what today's figures mean, and after each completed day and month a summary of what happened that takes Polish seasons into account, points out consumption patterns and gives no advice; it pushes them and the app stores them per period.
 - **Change ID:** lab-period-summaries
 - **PRD refs:** FR-023, FR-030
 - **Unlocks:** S-18

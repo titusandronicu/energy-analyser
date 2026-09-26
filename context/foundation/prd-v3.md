@@ -190,12 +190,14 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
 
 ### Plain language for a non-expert (v3)
 - FR-029: Every card and rating marks its status with a colour and a text label (green = good, amber = worth watching, red = a problem, grey = not enough data), never with colour alone. Priority: must-have
-- FR-030: The dashboard shows a short plain-language explanation of what today's figures mean for the owner, written ahead of the visit by the home lab's LLM chain: the local model first, the existing cloud fallback when it fails. It narrates the same verified facts and introduces no numbers of its own. Priority: must-have
+- FR-030: The dashboard shows a short plain-language explanation of what today's figures mean for the owner, written ahead of the visit by the home lab's stronger (cloud) model in the existing narration chain. The local model only gathers frequent short observations through the day, which the stronger model interprets; the explanation narrates the same verified facts and introduces no numbers of its own. Priority: must-have
 - FR-031: The app remarks when consumption rises or falls noticeably over weeks and months, against earlier periods and the same season a year before when that history exists (for example "consumption is 15% higher than in the same three months last year"), and the day and month summaries (FR-023) point out such patterns. Priority: must-have
   > Note (v3, 2026-09-26): added after the owner asked that the app assume no energy
-  > knowledge, use the local LLM for easy-to-read text, mark information with colours and
-  > remark on consumption growing over time. The summaries in FR-023 follow the same plain
-  > style and the same local-first chain.
+  > knowledge, mark information with colours and remark on consumption growing over time.
+  > LLM split (owner's decision, 2026-09-26): the local model probes often (short observations
+  > every ~12 minutes, as the lab's micro-analysis already does) and the stronger model
+  > interprets them into the user-facing texts; the live provider configuration stays as it
+  > is. The summaries in FR-023 follow the same plain style and the same split.
 
 ### Notes on days (CRUD, v3)
 - FR-025: User can add a note to a calendar day. Priority: must-have
@@ -251,7 +253,7 @@ None open. Five questions raised on 2026-09-23 by reviewing this PRD against the
 4. **Bill reconciliation?** Stays a non-goal. Superseded in part on 2026-09-25: PRD v2 moves the current-month projection and closed-period cost into scope (FR-011, FR-012); predicted-vs-actual reconciliation stays out.
 5. **Brownfield?** No. This repo is new code; the home lab is an external data source that pushes in. `context_type` stays `greenfield`.
 
-v3 (2026-09-26): after using the app, the owner asked for a history calendar, good / neutral / bad ratings of days and months with lab-written summaries that consider Polish seasons, a clear statement of the period behind every figure, no guessing from too little data, and visible prediction certainty. US-02 and FR-007–010 (recommendation feedback) were removed; US-05, US-06 and FR-018–031 added. Decisions taken with the owner: ratings use self-sufficiency against the season norm; ratings carry no advice; the app assumes no energy knowledge, marks status with colour plus a label, remarks on consumption trends, and plain-language texts come from the lab's local model with the existing cloud fallback; the lab backfills its full history once; notes on days keep the CRUD surface. No new open questions: rating thresholds and the minimum-data amounts are set per slice.
+v3 (2026-09-26): after using the app, the owner asked for a history calendar, good / neutral / bad ratings of days and months with lab-written summaries that consider Polish seasons, a clear statement of the period behind every figure, no guessing from too little data, and visible prediction certainty. US-02 and FR-007–010 (recommendation feedback) were removed; US-05, US-06 and FR-018–031 added. Decisions taken with the owner: ratings use self-sufficiency against the season norm; ratings carry no advice; the app assumes no energy knowledge, marks status with colour plus a label, remarks on consumption trends, and user-facing texts are written by the lab's stronger model from frequent local-model observations; the lab backfills its full history once; notes on days keep the CRUD surface. No new open questions: rating thresholds and the minimum-data amounts are set per slice.
 
 v2 (2026-09-25): FR-011–017, US-03 and US-04 added to surface the lab's existing cost and usage features in the app, following a comparison of the lab's old analyser page with this app. The narrowed bill non-goal and the daily-history note on FR-003 come from the same review. No new open questions.
 

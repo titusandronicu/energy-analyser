@@ -43,7 +43,11 @@ Narration runs in the lab (`scripts/run-energy-advisory.py`), never in this app.
 | `HA_CONVERSATION_AGENT_ID` | `conversation.google_ai_conversation` | Cloud via Home Assistant. |
 | `LLM_LANGUAGE` | `pl` | All user-facing text is Polish. |
 
-**Required for PRD v3 (FR-023, FR-030):** plain-language explanations and day/month summaries use the **local model first**, with the existing cloud chain only as fallback (owner's decision, 2026-09-26). That needs a local-first provider order for those texts (F-04), and a check that the chosen Ollama model writes acceptable plain Polish; `gemma3:4b` and `qwen3:4b` are the candidates installed. Whether the daily recommendation also moves to local-first is an open decision for the owner.
+**How the two models split the work (owner's decision, 2026-09-26; configuration unchanged):**
+
+- **Local model (Ollama) probes often.** `run-local-micro-analysis.py` runs from the refresh job whenever the last observation is older than about 12 minutes and writes short notes to `web/memory/energy/local-micro-analysis.md` (and `.json`/`.jsonl`). It sees the snapshot, the consumption plan and PGE anomalies, and never talks to the user.
+- **Stronger model interprets.** The hourly advisory (`run-energy-advisory.py`, provider order above) reads those notes plus the verified facts and writes every user-facing text: the daily recommendation now, and the plain-language explanation of today and the day/month summaries in PRD v3 (FR-023, FR-030; roadmap F-04).
+- If the cloud providers fail, the chain still falls back to local Ollama, so a text may occasionally come from the small model; the recommendation records its `provider` and `model`.
 
 ## Secrets and where they live
 
@@ -68,7 +72,7 @@ Narration runs in the lab (`scripts/run-energy-advisory.py`), never in this app.
 | Item | Needs outside this repo |
 | --- | --- |
 | F-03 history backfill | The lab's history must reach back far enough per day (Deye/HA recorder, PGE imports); a one-off lab push path, since the contract takes at most 62 days per push. |
-| F-04 lab texts (today, days, months) | Local-first provider order for these texts; an Ollama model with acceptable plain Polish; a new optional contract section. |
+| F-04 lab texts (today, days, months) | The existing narration chain (stronger model) plus the local micro-analysis notes; a new optional contract section. |
 | F-05 solar forecast | Solcast integration and site (done 2026-09-26); Forecast.Solar for comparison (done). |
 | S-07 bill forecast | Lab bill-forecast job running (`build-current-month-bill-forecast.py`). |
 | S-08 closed-period bill | Full G11 tariff deployed in the lab (blocked). |
