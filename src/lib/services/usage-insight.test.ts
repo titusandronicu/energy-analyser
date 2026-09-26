@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { DailyEnergyRow } from "@/types";
 import { addDays } from "@/lib/format/warsaw-time";
-import { HISTORY_DAYS, loadDailyEnergy, toUsageInsightView } from "./usage-insight";
+import { HISTORY_DAYS, loadDailyEnergy, median, toUsageInsightView } from "./usage-insight";
 
 // 12:00 in Warsaw (CEST) on 25 September 2026: today is 2026-09-25, yesterday 2026-09-24.
 const now = new Date("2026-09-25T10:00:00Z");
@@ -40,6 +40,18 @@ describe("toUsageInsightView", () => {
       load: { kwhLabel: "12,3 kWh", deltaLabel: "+23%", status: "above" },
       purchase: { kwhLabel: "4,0 kWh", deltaLabel: "−20%" },
       baseline: { kind: "fallback", days: 30, periodLabel: "30 dni: 25 sierpnia – 23 września" },
+      meaning: {
+        normKwhLabel: "10,0 kWh",
+        band: "high",
+        ranges: [
+          { band: "low", label: "poniżej 8,5 kWh" },
+          { band: "normal", label: "8,5–11,5 kWh" },
+          { band: "high", label: "11,5–14,0 kWh" },
+          { band: "very_high", label: "powyżej 14,0 kWh" },
+        ],
+        referenceSentence:
+          "Dla porównania: typowy dom w Polsce o powierzchni ok. 140 m² ogrzewany pompą ciepła zużywa we wrześniu ok. 13 kWh dziennie (szacunek z danych GUS i branżowych).",
+      },
     });
   });
 
@@ -179,7 +191,7 @@ describe("toUsageInsightView", () => {
     [34.2, "+14%", "normal"],
     [34.8, "+16%", "above"],
     [30, "0%", "normal"],
-  ])("labels load %d against a mean of 30 as %s %s", (load, deltaLabel, status) => {
+  ])("labels load %d against a median of 30 as %s %s", (load, deltaLabel, status) => {
     const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 30, 30)];
     expect(insight(rows).load).toMatchObject({ deltaLabel, status });
   });
@@ -189,8 +201,8 @@ describe("toUsageInsightView", () => {
     [50, 57.5],
     [100, 115],
     [3, 3.45],
-  ])("keeps exactly +15%% normal against a mean of %d despite floating point error", (mean, load) => {
-    const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 7, mean)];
+  ])("keeps exactly +15%% normal against a median of %d despite floating point error", (norm, load) => {
+    const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 7, norm)];
     expect(insight(rows).load).toMatchObject({ deltaLabel: "+15,0%", status: "normal" });
   });
 
@@ -203,7 +215,7 @@ describe("toUsageInsightView", () => {
     [34.8, { tone: "watch", label: "powyżej normy" }],
     [42, { tone: "watch", label: "powyżej normy" }],
     [42.3, { tone: "problem", label: "dużo powyżej normy" }],
-  ])("rates load %d against a mean of 30 as %j", (load, status) => {
+  ])("rates load %d against a median of 30 as %j", (load, status) => {
     const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 30, 30)];
     expect(insight(rows).status).toEqual(status);
   });
@@ -212,8 +224,8 @@ describe("toUsageInsightView", () => {
     [50, 70],
     [3, 4.2],
     [0.7, 0.98],
-  ])("keeps exactly +40%% worth watching against a mean of %d despite floating point error", (mean, load) => {
-    const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 7, mean)];
+  ])("keeps exactly +40%% worth watching against a median of %d despite floating point error", (norm, load) => {
+    const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 7, norm)];
     expect(insight(rows).status).toEqual({ tone: "watch", label: "powyżej normy" });
   });
 
@@ -255,7 +267,7 @@ describe("toUsageInsightView", () => {
     expect(insight(rows).baseline.days).toBe(7);
   });
 
-  it("averages purchases over the baseline days that have one", () => {
+  it("takes the purchase median over the baseline days that have one", () => {
     const rows = [
       row(YESTERDAY, 10, 6),
       ...daysBefore(YESTERDAY, 4, 10, 4),
@@ -275,6 +287,73 @@ describe("toUsageInsightView", () => {
       kwhLabel: "4,0 kWh",
       deltaLabel: "—",
     });
+  });
+
+  it("uses the median, so a few unusual days do not move the norm", () => {
+    // 7 ordinary days at 36 and 3 glitch days at 10: the mean would be 28.2 and call 36 "above".
+    const rows = [
+      row(YESTERDAY, 36, 16),
+      ...daysBefore(YESTERDAY, 7, 36, 16),
+      ...daysBefore(addDays(YESTERDAY, -7), 3, 10, 30),
+    ];
+    const v = insight(rows);
+    expect(v.status).toEqual({ tone: "good", label: "w normie" });
+    expect(v.load).toMatchObject({ deltaLabel: "0%", status: "normal" });
+    expect(v.purchase.deltaLabel).toBe("0%");
+    expect(v.meaning).toMatchObject({ normKwhLabel: "36,0 kWh", band: "normal" });
+  });
+
+  it("takes the mean of the two middle days for an even count", () => {
+    const rows = [row(YESTERDAY, 11), ...daysBefore(YESTERDAY, 4, 8), ...daysBefore(addDays(YESTERDAY, -4), 4, 12)];
+    // Baseline 8,8,8,8,12,12,12,12: median 10.
+    expect(insight(rows).meaning?.normKwhLabel).toBe("10,0 kWh");
+    expect(insight(rows).load.deltaLabel).toBe("+10%");
+  });
+
+  it("shows a missing purchase change when most baseline days bought nothing", () => {
+    const rows = [
+      row(YESTERDAY, 10, 3),
+      ...daysBefore(YESTERDAY, 5, 10, 0),
+      ...daysBefore(addDays(YESTERDAY, -5), 2, 10, 4),
+    ];
+    expect(insight(rows).purchase).toEqual({ kwhLabel: "3,0 kWh", deltaLabel: "—" });
+  });
+
+  it.each([
+    [25, "low", { tone: "good", label: "poniżej normy" }],
+    [30, "normal", { tone: "good", label: "w normie" }],
+    [34.5, "normal", { tone: "good", label: "w normie" }],
+    [34.8, "high", { tone: "watch", label: "powyżej normy" }],
+    [42, "high", { tone: "watch", label: "powyżej normy" }],
+    [42.3, "very_high", { tone: "problem", label: "dużo powyżej normy" }],
+  ])("puts load %d in the %s range, matching the badge", (load, band, status) => {
+    const v = insight([row(YESTERDAY, load), ...daysBefore(YESTERDAY, 30, 30)]);
+    expect(v.meaning?.band).toBe(band);
+    expect(v.status).toEqual(status);
+  });
+
+  it("names the compared day's month in the comparison", () => {
+    const jan = new Date("2027-01-06T10:00:00Z");
+    const rows = [row("2027-01-05", 40), ...daysBefore("2027-01-05", 30, 40)];
+    expect(insight(rows, jan).meaning?.referenceSentence).toContain("zużywa w styczniu ok. 29 kWh dziennie");
+  });
+
+  it("draws no ranges around a zero norm", () => {
+    const v = insight([row(YESTERDAY, 2), ...daysBefore(YESTERDAY, 7, 0)]);
+    expect(v.meaning).toBeNull();
+    expect(v.status).toEqual({ tone: "good", label: "w normie" });
+  });
+});
+
+describe("median", () => {
+  it.each([
+    [[], null],
+    [[5], 5],
+    [[3, 1, 2], 2],
+    [[4, 1, 3, 2], 2.5],
+    [[10, 36, 36, 36, 10, 36, 36], 36],
+  ])("of %j is %s", (values, expected) => {
+    expect(median(values)).toBe(expected);
   });
 });
 
