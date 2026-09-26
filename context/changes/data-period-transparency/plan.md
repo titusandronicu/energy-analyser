@@ -251,5 +251,5 @@ None: no schema, contract or stored-data change. Rollback is reverting the PR.
 
 #### Manual
 
-- [ ] 3.4 On a phone, the owner can read each card without help
-- [ ] 3.5 Each badge's word matches its colour on all three cards
+- [x] 3.4 On a phone, the owner can read each card without help — fc848d8
+- [x] 3.5 Each badge's word matches its colour on all three cards — fc848d8

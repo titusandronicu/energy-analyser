@@ -396,6 +396,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 1. **How are the push contract versions kept in step between this repo and homelab-2?** — Owner: user. Block: none. Practice since F-02: optional fields are added to the app contract first and deployed before the lab sends them. F-03, F-04 and F-05 follow the same practice.
 2. **Should the daily advice also go to Telegram?** — Owner: user. Block: none. Raised 2026-09-25; lab-side and not in the PRD, so it would be a homelab-2 change or a PRD update, not an M-1 slice.
 3. **Does all of M-1 fit before the 2026-11-04 deadline?** — Owner: user. Block: none. v3.1 (2026-09-26) sets the line: S-07 moved up; US-07 (S-09, S-12, S-13) is stretch; S-10 is last. Revisit after S-15.
+4. **How should the cards give numbers a sense of scale?** — Owner: user. Block: none. Raised 2026-09-26 after S-14: the term explanations say what kWh means but not whether a figure is a lot. The owner wants to know how much a kWh is in everyday terms, what is a good or bad value, and how much a typical household uses per day or month. Decide whether this belongs in S-07 (cost), S-17 (ratings) or a slice of its own, and where the typical-household figure comes from.
 
 ## Parked
 
