@@ -1,10 +1,10 @@
 ---
 change_id: data-period-transparency
 title: Clarity for a non-expert — status colours, data periods and plain words on every card
-status: implementing
+status: archived
 created: 2026-09-26
 updated: 2026-09-26
-archived_at: null
+archived_at: 2026-09-26T15:16:41Z
 ---
 
 ## Notes
