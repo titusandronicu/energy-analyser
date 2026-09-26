@@ -60,6 +60,8 @@ The badge reads "<word> · <detail>", e.g. "Warto sprawdzić · dane sprzed 40 m
 - **Not enough data:** the usage card says what it needs: "brak zużycia z ostatnich 7 dni", or "potrzeba co najmniej 7 dni z ostatnich 30, jest <n>". No verdict is guessed from too little data.
 - **Period text:** every derived figure says which days it rests on, as "<count> <dzień|dni>: <first> – <last>", e.g. "1 dzień: 24 września", "18 dni: 27 sierpnia – 25 września", "2 dni: 23–24 września". The range runs from the first to the last day used even when days in between are missing. The year is shown on both ends when the range spans two years, and once when the whole range is in an earlier year ("20 dni: 10–29 września 2025"). Live "today" totals say "dziś od północy do <HH:MM>" (or the capture's date when it is from an earlier day).
 - **Terms:** each card has a folded "Co to znaczy?" box explaining its technical terms in one sentence each (`src/lib/format/glossary.ts`).
+- **Readability:** badge text and the small grey notes keep at least **4.5:1** contrast against the glass card (WCAG 1.4.3; badges measure 7:1 or more, grey notes use `text-blue-100/70`, not `/50`, which measured about 4:1). The "Co to znaczy?" and "Na podstawie" toggles are at least 24 px tall for a thumb (WCAG 2.5.8).
+- **Advice from an earlier day:** the recommendation view says so explicitly (`isFromEarlierDay`); the card names the forecast days by date instead of "dziś"/"jutro" from that flag, not from the badge colour.
 
 ## Daily totals (lab → app)
 

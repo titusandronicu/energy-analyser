@@ -30,6 +30,8 @@ export type RecommendationView =
       text: string;
       generatedAtLabel: string;
       isStale: boolean;
+      // Generated before today in Warsaw: its "today" and "tomorrow" are other days than the reader's.
+      isFromEarlierDay: boolean;
       forecast: {
         todayLabel: string;
         tomorrowLabel: string;
@@ -54,17 +56,21 @@ export async function loadLatestRecommendation(client: SupabaseClient): Promise<
   return data[0] ?? null;
 }
 
+function isFromEarlierDay(generatedAt: Date, now: Date): boolean {
+  return warsawParts(generatedAt).dayKey < warsawParts(now).dayKey;
+}
+
 // Stale when generated before the start of today in Europe/Warsaw, or more than two hours ago.
 export function isStaleRecommendation(generatedAt: Date, now: Date): boolean {
   if (now.getTime() - generatedAt.getTime() > STALE_AFTER_MS) return true;
-  return warsawParts(generatedAt).dayKey < warsawParts(now).dayKey;
+  return isFromEarlierDay(generatedAt, now);
 }
 
 // Good when from today within two hours, worth watching when from today but older, a problem when from an
 // earlier Warsaw day (the advice was about another day).
 function recommendationStatus(generatedAt: Date, now: Date): Status {
   const generatedDay = warsawParts(generatedAt).dayKey;
-  if (generatedDay < warsawParts(now).dayKey) {
+  if (isFromEarlierDay(generatedAt, now)) {
     return { tone: "problem", label: `z ${formatDayMonth(generatedDay)} — dotyczy innego dnia` };
   }
   const ageMs = now.getTime() - generatedAt.getTime();
@@ -96,6 +102,7 @@ export function toRecommendationView(row: RecommendationRow | null, now: Date): 
     text: row.text.trim(),
     generatedAtLabel: formatWarsawDateTime(generatedAt),
     isStale: isStaleRecommendation(generatedAt, now),
+    isFromEarlierDay: isFromEarlierDay(generatedAt, now),
     forecast: {
       todayLabel: kwhLabel(forecast.today_kwh),
       tomorrowLabel: kwhLabel(forecast.tomorrow_kwh),

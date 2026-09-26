@@ -5,12 +5,13 @@ interface Props {
   terms: GlossaryTerm[];
 }
 
-// A native <details> works on a phone without any client-side script.
+// A native <details> works on a phone without any client-side script; py-1 keeps the summary's tap target
+// at least 24px tall (WCAG 2.5.8).
 const { terms } = Astro.props;
 ---
 
 <details class="text-sm text-blue-100/80">
-  <summary class="cursor-pointer text-blue-100">Co to znaczy?</summary>
+  <summary class="cursor-pointer py-1 text-blue-100">Co to znaczy?</summary>
   <dl class="mt-2 space-y-2">
     {terms.map((key) => (
       <div>

@@ -42,6 +42,14 @@ describe("formatPeriod", () => {
     });
   });
 
+  it("says dni for every count but one, whatever the CLDR plural category (few, many)", () => {
+    const days = (n: number) => Array.from({ length: n }, (_, i) => `2026-08-${String(i + 1).padStart(2, "0")}`);
+    expect(formatPeriod(days(2)).label).toMatch(/^2 dni: /);
+    expect(formatPeriod(days(5)).label).toMatch(/^5 dni: /);
+    expect(formatPeriod(days(21)).label).toMatch(/^21 dni: /);
+    expect(formatPeriod(days(22)).label).toMatch(/^22 dni: /);
+  });
+
   it("throws on an empty list", () => {
     expect(() => formatPeriod([])).toThrow();
   });

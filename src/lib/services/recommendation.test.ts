@@ -61,6 +61,7 @@ describe("toRecommendationView", () => {
       text: "Utrzymaj rezerwę baterii na 20%.\nNie ładuj z sieci.",
       generatedAtLabel: "23 września 2026, 12:00",
       isStale: false,
+      isFromEarlierDay: false,
       forecast: {
         todayLabel: "18,6 kWh",
         tomorrowLabel: "9,2 kWh",
@@ -91,6 +92,15 @@ describe("toRecommendationView", () => {
   ])("rates a recommendation generated at %s as %j", (generated_at, status, clock = "2026-09-23T11:00:00Z") => {
     const view = toRecommendationView(row({ generated_at }), at(clock));
     expect(view.kind === "recommendation" && view.status).toEqual(status);
+  });
+
+  it("marks advice generated before today in Warsaw as from an earlier day, whatever its age", () => {
+    // 23:30 Warsaw on the 22nd, read an hour later at 00:30 on the 23rd.
+    const late = toRecommendationView(row({ generated_at: "2026-09-22T21:30:00Z" }), at("2026-09-22T22:30:00Z"));
+    expect(late.kind === "recommendation" && late.isFromEarlierDay).toBe(true);
+    // 00:10 Warsaw on the 23rd, read the same Warsaw day, five hours later.
+    const early = toRecommendationView(row({ generated_at: "2026-09-22T22:10:00Z" }), at("2026-09-23T03:10:00Z"));
+    expect(early.kind === "recommendation" && early.isFromEarlierDay).toBe(false);
   });
 
   it("dates the forecast history from 27 September 2026", () => {
