@@ -280,6 +280,6 @@ No database migration. Production needs the two email templates set in the Supab
 
 #### Manual
 
-- [ ] 3.3 Production email templates set in the Supabase dashboard
-- [ ] 3.4 Owner signs in on production with a link opened on a different device
-- [ ] 3.5 Session still active after reopening the browser the next day
+- [x] 3.3 Production email templates set in the Supabase dashboard (owner-confirmed 2026-09-26)
+- [x] 3.4 Owner signs in on production with a link opened on a different device (owner-confirmed 2026-09-26)
+- [x] 3.5 Session still active after reopening the browser the next day (owner-confirmed 2026-09-26)

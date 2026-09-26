@@ -274,4 +274,4 @@ The additive migration doesn't touch existing data. In production, run it before
 
 - [x] 3.2 Migration applied in production and owner row inserted — 5300552
 - [ ] 3.3 Production dashboard shows the empty state after deploy
-- [ ] 3.4 Production dashboard shows the lab's latest recommendation once the homelab-2 push is live
+- [x] 3.4 Production dashboard shows the lab's latest recommendation once the homelab-2 push is live (owner-confirmed 2026-09-26)
