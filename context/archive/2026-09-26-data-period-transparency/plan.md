@@ -247,9 +247,9 @@ None: no schema, contract or stored-data change. Rollback is reverting the PR.
 
 - [x] 3.1 Build passes — a1f2022
 - [x] 3.2 Lint, type check and unit tests pass — a1f2022
-- [ ] 3.3 CI passes on the PR
+- [x] 3.3 CI passes on the PR — 499c758
 
 #### Manual
 
-- [ ] 3.4 On a phone, the owner can read each card without help
-- [ ] 3.5 Each badge's word matches its colour on all three cards
+- [x] 3.4 On a phone, the owner can read each card without help — fc848d8
+- [x] 3.5 Each badge's word matches its colour on all three cards — fc848d8

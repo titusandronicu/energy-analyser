@@ -28,8 +28,13 @@ The app compares the most recent complete day's consumption with a baseline and 
 2. **Seasonal baseline first:** all days within **±14 days** of the same date in earlier years (up to one year back, since the app loads **400 days** of history). It is used when it has at least **20 days** with data.
 3. **Fallback:** otherwise the previous **30 days**, used when at least **7** of them have data, and the card says plainly that the fallback is in use.
 4. **Not enough data:** with fewer than 7 fallback days, or no day with consumption in the last 7 days, no verdict is shown; the card says what is missing.
-5. **Verdict:** more than **15%** above or below the baseline mean is _above_ / _below_; exactly ±15% is still _normal_. More than **40%** above is _far above_; exactly +40% is still _above_.
-6. The card names the baseline days it used ("średnia z 18 dni: 27 sierpnia – 25 września").
+5. **Norm:** the **median** of the baseline days' consumption (for an even count, the mean of the two middle days). Grid purchase uses the median of the baseline days that have one; a median of 0 shows "—" instead of a change.
+6. **Verdict:** more than **15%** above or below the norm is _above_ / _below_; exactly ±15% is still _normal_. More than **40%** above is _far above_; exactly +40% is still _above_.
+7. The card names the baseline days it used ("mediana z 18 dni: 27 sierpnia – 25 września").
+8. **Meaning of the day ("Co to znaczy?"):** the day's kWh, the norm in kWh, and four ranges whose edges are the verdict thresholds: _niskie_ below 0.85 × norm, _w normie_ 0.85–1.15 ×, _wysokie_ 1.15–1.40 ×, _bardzo wysokie_ above 1.40 ×. The range marked "ten dzień" is always the one the badge shows. A zero norm draws no ranges and the card shows the glossary instead.
+9. **Comparison with a typical house:** one line with the estimated daily use of a ~140 m² Polish house with an air-source heat pump in the compared day's month (29, 28, 24, 20, 15, 11, 10, 11, 13, 18, 24, 28 kWh for January–December; `src/lib/format/reference-usage.ts`). It is context only and never enters the norm or the verdict.
+
+Why the median: the mean was a default, never a decision. On the real data (2026-08-26 to 2026-09-25) the two disagreed on 3 of 19 days, each time because a few inconsistent early rows (2026-07-26 to 2026-08-03) pulled the mean down; one unusual day moves a median far less. Why the typical house stays out of the norm: this house used about 36 kWh a day in September 2026 against about 13 kWh for the estimate, so blending the estimate in would mark ordinary days as above the norm. The norm corrects itself over time from the house's own days: the 30-day window moves daily, and the seasonal baseline takes over once a year of history exists.
 
 Why seasonal: a flat recent average mislabels normal seasonal change (winter heating, summer air conditioning) as anomalies. The app's history starts on 2026-07-26 and the lab's on 2026-07-16 (the backfill, roadmap F-03, adds those ten days), so the fallback is what runs until about July 2027, when a year of history exists.
 

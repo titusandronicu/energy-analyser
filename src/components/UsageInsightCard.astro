@@ -1,8 +1,9 @@
 ---
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
+import { GLOSSARY } from "@/lib/format/glossary";
 import { LOAD_FAILED } from "@/lib/format/status";
-import type { UsageInsightView } from "@/lib/services/usage-insight";
+import type { UsageBand, UsageInsightView } from "@/lib/services/usage-insight";
 
 interface Props {
   view: UsageInsightView | null;
@@ -13,6 +14,19 @@ const { view } = Astro.props;
 // "Yesterday" only when the compared day is yesterday; the error and insufficient states keep it too.
 const heading = view?.kind === "insight" && !view.isYesterday ? "Zużycie dzienne" : "Zużycie wczoraj";
 const status = view === null ? LOAD_FAILED : view.status;
+
+const BAND_NAME: Record<UsageBand, string> = {
+  low: "Niskie",
+  normal: "W normie",
+  high: "Wysokie",
+  very_high: "Bardzo wysokie",
+};
+const BAND_VERDICT: Record<UsageBand, string> = {
+  low: "To mniej niż zwykle",
+  normal: "To tyle, co zwykle",
+  high: "To więcej niż zwykle",
+  very_high: "To dużo więcej niż zwykle",
+};
 ---
 
 <section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
@@ -51,16 +65,53 @@ const status = view === null ? LOAD_FAILED : view.status;
 
       {view.baseline.kind === "seasonal" ? (
         <p class="text-xs text-blue-100/60" data-testid="usage-baseline">
-          Norma: ta sama pora roku, średnia z {view.baseline.periodLabel}.
+          Norma: ta sama pora roku, mediana z {view.baseline.periodLabel}.
         </p>
       ) : (
         <p class="text-xs text-blue-100/60" data-testid="usage-fallback-notice">
-          Norma: średnia z {view.baseline.periodLabel}. Z tej pory roku jest jeszcze za mało danych, więc porównujemy z
+          Norma: mediana z {view.baseline.periodLabel}. Z tej pory roku jest jeszcze za mało danych, więc porównujemy z
           ostatnimi dniami.
         </p>
       )}
 
-      <TermsExplained terms={["kwh", "norm", "grid_import"]} />
+      {view.meaning === null ? (
+        <TermsExplained terms={["kwh", "norm", "grid_import"]} />
+      ) : (
+        <details class="text-sm text-blue-100/80" data-testid="usage-meaning">
+          <summary class="cursor-pointer py-1 text-blue-100">Co to znaczy?</summary>
+          <div class="mt-2 space-y-3">
+            <p>
+              {view.isYesterday ? "Wczoraj" : `Dnia ${view.dayLabel}`} dom zużył <strong>{view.load.kwhLabel}</strong>{" "}
+              prądu. Zwykle zużywa <strong>{view.meaning.normKwhLabel}</strong> dziennie — to mediana z{" "}
+              {view.baseline.periodLabel}, czyli połowa tych dni była niższa, a połowa wyższa.
+            </p>
+            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1" data-testid="usage-ranges">
+              {view.meaning.ranges.map((range) => {
+                const current = range.band === view.meaning?.band;
+                return (
+                  <div class:list={["contents", current ? "font-semibold text-white" : "text-blue-100/70"]}>
+                    <dt>{BAND_NAME[range.band]}</dt>
+                    <dd>
+                      {range.label}
+                      {current && <span class="font-normal text-blue-100/80"> ← ten dzień</span>}
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+            <p>
+              {BAND_VERDICT[view.meaning.band]}
+              {view.load.deltaLabel !== "—" && ` (${view.load.deltaLabel} wobec normy)`}.
+            </p>
+            <p class="text-blue-100/70">
+              <span class="text-blue-100">Kupione z sieci</span> — {GLOSSARY.grid_import.explanation}
+            </p>
+            <p class="text-xs text-blue-100/60" data-testid="usage-reference">
+              {view.meaning.referenceSentence}
+            </p>
+          </div>
+        </details>
+      )}
     </div>
   )}
 </section>

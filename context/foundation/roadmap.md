@@ -48,7 +48,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop            | F-01, S-01           | US-01, FR-002, FR-004             | done     |
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence        | F-01, S-01           | US-01, FR-005, FR-006             | done     |
 | S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline       | F-02, S-01           | US-01, FR-003                     | done     |
-| S-14 | data-period-transparency  | read every card without energy knowledge: plain words, colours, its data period, no guesses | S-03, S-04 | US-01, FR-018, FR-019, FR-029 | in-progress |
+| S-14 | data-period-transparency  | read every card without energy knowledge: plain words, colours, its data period, no guesses | S-03, S-04 | US-01, FR-018, FR-019, FR-029 | done |
 | S-07 | bill-forecast             | see the projected cost of the current month with a range                    | F-01, S-01           | US-03, FR-011                     | proposed |
 | S-15 | history-calendar          | browse days and months: production, forecast vs actual, recommendations     | S-14                 | US-05, FR-021                     | proposed |
 | S-17 | period-ratings            | see a good / neutral / bad rating for each completed day and month          | S-15                 | US-05, FR-022                     | proposed |
@@ -215,7 +215,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Unknowns:**
   - What is the minimum amount of data per card (S-04 already uses 20 days in the season window)? Set in the plan. — Owner: user. Block: no.
 - **Risk:** First by the owner's decision; it sets the plain-language, colour and "period + minimum data" rules every later card reuses, so getting them right once matters more than its size.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-15: History calendar
 
@@ -396,6 +396,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 1. **How are the push contract versions kept in step between this repo and homelab-2?** — Owner: user. Block: none. Practice since F-02: optional fields are added to the app contract first and deployed before the lab sends them. F-03, F-04 and F-05 follow the same practice.
 2. **Should the daily advice also go to Telegram?** — Owner: user. Block: none. Raised 2026-09-25; lab-side and not in the PRD, so it would be a homelab-2 change or a PRD update, not an M-1 slice.
 3. **Does all of M-1 fit before the 2026-11-04 deadline?** — Owner: user. Block: none. v3.1 (2026-09-26) sets the line: S-07 moved up; US-07 (S-09, S-12, S-13) is stretch; S-10 is last. Revisit after S-15.
+4. **How should the cards give numbers a sense of scale?** — Owner: user. Block: none. Raised 2026-09-26 after S-14: the term explanations say what kWh means but not whether a figure is a lot. The owner wants to know how much a kWh is in everyday terms, what is a good or bad value, and how much a typical household uses per day or month. Decide whether this belongs in S-07 (cost), S-17 (ratings) or a slice of its own, and where the typical-household figure comes from.
 
 ## Parked
 
@@ -423,3 +424,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-01: user can open the app from an access-key link and land in an authenticated session that sees only their own data.** — Archived 2026-09-26 → `context/archive/2026-09-23-access-key-sign-in/`. Lesson: —.
 - **S-03: user can see today's plain-language battery recommendation narrated by the home lab from its facts bundle (the verified numbers the deterministic engine computed), with forecast confidence stated explicitly and no controls to apply it.** — Archived 2026-09-26 → `context/archive/2026-09-23-todays-recommendation/`. Lesson: —.
 - **F-05: (foundation) Home Assistant has a working solar forecast integration again, and the lab fills the daily PV forecast and the recommendation's forecast in every push.** — Archived 2026-09-26 → `context/archive/2026-09-26-solar-forecast-source/`. Lesson: —.
+- **S-14: user can read every existing card without energy knowledge: plain words with technical terms explained where they appear, a colour plus text label for good / worth watching / problem / not enough data, the period and number of days behind each figure, and "not enough data yet" instead of a verdict or prediction when there is too little data.** — Archived 2026-09-26 → `context/archive/2026-09-26-data-period-transparency/`. Lesson: —.
