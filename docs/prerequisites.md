@@ -71,7 +71,7 @@ Narration runs in the lab (`scripts/run-energy-advisory.py`), never in this app.
 
 | Item                                 | Needs outside this repo                                                                                                                                           |
 | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| F-03 history backfill                | The lab's `energy-history.jsonl` (starts 2026-07-16); one push of the push script with enough `--days`, within the contract's 62-day limit. |
+| F-03 history backfill                | The lab's `energy-history.jsonl` (starts 2026-07-16; keeps 25,920 rows, so the oldest days drop from about 2026-10-28); a date-range option in `push-energy-analyser.py`, since `--days` reaches back at most 62 days. |
 | F-04 lab texts (today, days, months) | The existing narration chain (stronger model) plus the local micro-analysis notes; a new optional contract section.                                               |
 | F-05 solar forecast                  | Solcast integration and site (done 2026-09-26); Forecast.Solar for comparison (done).                                                                             |
 | S-07 bill forecast                   | Lab bill-forecast job running (`build-current-month-bill-forecast.py`).                                                                                           |

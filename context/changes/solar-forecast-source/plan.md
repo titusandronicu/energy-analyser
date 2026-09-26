@@ -186,4 +186,4 @@ Additive for the history file and the snapshot; the push contract is unchanged. 
 
 #### Manual
 
-- [ ] 2.4 Dashboard forecast is plausible next to recent September production
+- [x] 2.4 Dashboard forecast is plausible next to recent September production — confirmed by the owner 2026-09-26
