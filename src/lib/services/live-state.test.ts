@@ -35,12 +35,16 @@ function view(r: LiveStateRow, clock: Date = now) {
 
 describe("toLiveStateView", () => {
   it("returns the empty state without a row", () => {
-    expect(toLiveStateView(null, now)).toEqual({ kind: "empty" });
+    expect(toLiveStateView(null, now)).toEqual({
+      kind: "empty",
+      status: { tone: "insufficient", label: "laboratorium jeszcze nic nie przesłało" },
+    });
   });
 
   it("builds the Polish card for a fresh snapshot", () => {
     expect(toLiveStateView(row(), now)).toEqual({
       kind: "state",
+      status: { tone: "good", label: "aktualne" },
       capturedAtLabel: "25 września 2026, 12:00",
       ageLabel: "5 min",
       isStale: false,
@@ -49,7 +53,7 @@ describe("toLiveStateView", () => {
       homeLoad: "0,9 kW",
       grid: { value: "1,2 kW", direction: "oddawanie do sieci" },
       battery: { value: "1,4 kW", direction: "ładowanie", socLabel: "74%" },
-      today: { pv: "12,3 kWh", bought: "1,2 kWh", sold: "5,0 kWh" },
+      today: { pv: "12,3 kWh", bought: "1,2 kWh", sold: "5,0 kWh", periodLabel: "dziś od północy do 12:00" },
     });
   });
 
@@ -59,6 +63,49 @@ describe("toLiveStateView", () => {
 
   it("is stale at 15 minutes and 1 second", () => {
     expect(view(row(), at("2026-09-25T10:15:01Z")).isStale).toBe(true);
+  });
+
+  it.each([
+    ["2026-09-25T10:15:00Z", { tone: "good", label: "aktualne" }],
+    ["2026-09-25T10:15:01Z", { tone: "watch", label: "dane sprzed 15 min" }],
+    ["2026-09-25T12:00:00Z", { tone: "watch", label: "dane sprzed 2 godz." }],
+    ["2026-09-25T12:00:01Z", { tone: "problem", label: "brak nowych danych od 2 godz." }],
+    ["2026-09-27T10:00:00Z", { tone: "problem", label: "brak nowych danych od 2 dni" }],
+  ])("rates a snapshot captured at 10:00 UTC, seen at %s, as %j", (clock, status) => {
+    expect(view(row(), at(clock)).status).toEqual(status);
+  });
+
+  it("rates a fresh but degraded snapshot as worth watching", () => {
+    expect(view(row({}, { source_health: "degraded" })).status).toEqual({
+      tone: "watch",
+      label: "niepełne dane z Home Assistant",
+    });
+  });
+
+  it("lets staleness win over a degraded source", () => {
+    const degraded = row({}, { source_health: "degraded" });
+    expect(view(degraded, at("2026-09-25T10:40:00Z")).status).toEqual({ tone: "watch", label: "dane sprzed 40 min" });
+    expect(view(degraded, at("2026-09-25T13:00:00Z")).status).toEqual({
+      tone: "problem",
+      label: "brak nowych danych od 3 godz.",
+    });
+  });
+
+  it("states the today period up to the Warsaw capture time", () => {
+    // 22:05 UTC is 00:05 on 26 September in Warsaw (CEST); 07:30 UTC in winter (CET) is 08:30.
+    expect(view(row({ captured_at: "2026-09-25T22:05:00Z" }), at("2026-09-25T22:06:00Z")).today.periodLabel).toBe(
+      "dziś od północy do 00:05",
+    );
+    expect(view(row({ captured_at: "2026-12-10T07:30:00Z" }), at("2026-12-10T07:31:00Z")).today.periodLabel).toBe(
+      "dziś od północy do 08:30",
+    );
+  });
+
+  it("names the capture day when the snapshot is from an earlier Warsaw day", () => {
+    // 21:50 UTC is 23:50 on 25 September in Warsaw; read at 00:10 on the 26th.
+    expect(view(row({ captured_at: "2026-09-25T21:50:00Z" }), at("2026-09-25T22:10:00Z")).today.periodLabel).toBe(
+      "25 września od północy do 23:50",
+    );
   });
 
   it.each([
@@ -109,7 +156,7 @@ describe("toLiveStateView", () => {
     expect(v.pv).toBe("—");
     expect(v.homeLoad).toBe("—");
     expect(v.battery.socLabel).toBe("—");
-    expect(v.today).toEqual({ pv: "—", bought: "—", sold: "—" });
+    expect(v.today).toMatchObject({ pv: "—", bought: "—", sold: "—" });
   });
 
   it.each([null, "text", 42, [], [1, 2]])("renders dashes for malformed state %j", (malformed) => {
@@ -120,7 +167,7 @@ describe("toLiveStateView", () => {
       homeLoad: "—",
       grid: { value: "—", direction: null },
       battery: { value: "—", direction: null, socLabel: "—" },
-      today: { pv: "—", bought: "—", sold: "—" },
+      today: { pv: "—", bought: "—", sold: "—", periodLabel: "dziś od północy do 12:00" },
     });
     expect(v.capturedAtLabel).toBe("25 września 2026, 12:00");
   });

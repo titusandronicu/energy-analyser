@@ -34,11 +34,12 @@ describe("toUsageInsightView", () => {
     const rows = [row(YESTERDAY, 12.34, 4), ...daysBefore(YESTERDAY, 30, 10, 5)];
     expect(toUsageInsightView(rows, now)).toEqual({
       kind: "insight",
+      status: { tone: "watch", label: "powyżej normy" },
       dayLabel: "24 września",
       isYesterday: true,
       load: { kwhLabel: "12,3 kWh", deltaLabel: "+23%", status: "above" },
       purchase: { kwhLabel: "4,0 kWh", deltaLabel: "−20%" },
-      baseline: { kind: "fallback", days: 30 },
+      baseline: { kind: "fallback", days: 30, periodLabel: "30 dni: 25 sierpnia – 23 września" },
     });
   });
 
@@ -47,7 +48,7 @@ describe("toUsageInsightView", () => {
     const v = insight(rows);
     expect(v.isYesterday).toBe(false);
     expect(v.dayLabel).toBe("22 września");
-    expect(v.baseline).toEqual({ kind: "fallback", days: 10 });
+    expect(v.baseline).toMatchObject({ kind: "fallback", days: 10 });
   });
 
   it("takes yesterday from the Warsaw date just after midnight", () => {
@@ -66,10 +67,13 @@ describe("toUsageInsightView", () => {
   });
 
   it("is insufficient without a load in the last 7 days", () => {
-    expect(toUsageInsightView([row("2026-09-17", 10), ...daysBefore("2026-09-17", 30, 10)], now)).toEqual({
+    const expected = {
       kind: "insufficient",
-    });
-    expect(toUsageInsightView([], now)).toEqual({ kind: "insufficient" });
+      status: { tone: "insufficient", label: "" },
+      reason: "brak zużycia z ostatnich 7 dni",
+    };
+    expect(toUsageInsightView([row("2026-09-17", 10), ...daysBefore("2026-09-17", 30, 10)], now)).toEqual(expected);
+    expect(toUsageInsightView([], now)).toEqual(expected);
   });
 
   it("never compares today", () => {
@@ -83,7 +87,7 @@ describe("toUsageInsightView", () => {
   it("chooses the seasonal baseline with at least 20 year-ago days", () => {
     const rows = [row(YESTERDAY, 10), ...daysBefore(YESTERDAY, 30, 30), ...seasonalWindow("2025-09-24", 10, null, 20)];
     const v = insight(rows);
-    expect(v.baseline).toEqual({ kind: "seasonal", days: 20 });
+    expect(v.baseline).toMatchObject({ kind: "seasonal", days: 20 });
     expect(v.load).toEqual({ kwhLabel: "10,0 kWh", deltaLabel: "0%", status: "normal" });
   });
 
@@ -95,7 +99,7 @@ describe("toUsageInsightView", () => {
       row("2025-10-09", 1000),
     ];
     const v = insight(rows);
-    expect(v.baseline).toEqual({ kind: "seasonal", days: 29 });
+    expect(v.baseline).toMatchObject({ kind: "seasonal", days: 29 });
     expect(v.load.status).toBe("normal");
   });
 
@@ -106,20 +110,25 @@ describe("toUsageInsightView", () => {
       ...seasonalWindow("2025-09-24", 1000, null, 19),
     ];
     const v = insight(rows);
-    expect(v.baseline).toEqual({ kind: "fallback", days: 30 });
+    expect(v.baseline).toMatchObject({ kind: "fallback", days: 30 });
     expect(v.load.status).toBe("normal");
   });
 
   it("uses only the 30 days before the compared day for the fallback", () => {
     const rows = [row(YESTERDAY, 10), ...daysBefore(YESTERDAY, 30, 10), row(addDays(YESTERDAY, -31), 1000)];
-    expect(insight(rows).baseline).toEqual({ kind: "fallback", days: 30 });
+    expect(insight(rows).baseline).toMatchObject({ kind: "fallback", days: 30 });
   });
 
   it("is insufficient with fewer than 7 fallback days", () => {
     expect(toUsageInsightView([row(YESTERDAY, 10), ...daysBefore(YESTERDAY, 6, 10)], now)).toEqual({
       kind: "insufficient",
+      status: { tone: "insufficient", label: "" },
+      reason: "potrzeba co najmniej 7 dni z ostatnich 30, jest 6",
     });
-    expect(insight([row(YESTERDAY, 10), ...daysBefore(YESTERDAY, 7, 10)]).baseline).toEqual({
+    expect(toUsageInsightView([row(YESTERDAY, 10)], now)).toMatchObject({
+      reason: "potrzeba co najmniej 7 dni z ostatnich 30, jest 0",
+    });
+    expect(insight([row(YESTERDAY, 10), ...daysBefore(YESTERDAY, 7, 10)]).baseline).toMatchObject({
       kind: "fallback",
       days: 7,
     });
@@ -129,7 +138,7 @@ describe("toUsageInsightView", () => {
     // Yesterday missing: the compared day is 22 September; 23 September and today come after it.
     const rows = [row(TODAY, 1000), row("2026-09-23", null), row("2026-09-22", 10), ...daysBefore("2026-09-22", 7, 10)];
     const v = insight(rows);
-    expect(v.baseline).toEqual({ kind: "fallback", days: 7 });
+    expect(v.baseline).toMatchObject({ kind: "fallback", days: 7 });
     expect(v.load.deltaLabel).toBe("0%");
   });
 
@@ -143,20 +152,20 @@ describe("toUsageInsightView", () => {
     ];
     const v = insight(rows, jan);
     expect(v.dayLabel).toBe("5 stycznia");
-    expect(v.baseline).toEqual({ kind: "seasonal", days: 29 });
+    expect(v.baseline).toMatchObject({ kind: "seasonal", days: 29 });
     expect(v.load.deltaLabel).toBe("−50%");
   });
 
   it("falls back when the only data near the month-day is from the compared day's own year", () => {
     const jan = new Date("2027-01-06T10:00:00Z");
     const rows = [row("2027-01-05", 10), ...daysBefore("2027-01-05", 30, 10)];
-    expect(insight(rows, jan).baseline).toEqual({ kind: "fallback", days: 30 });
+    expect(insight(rows, jan).baseline).toMatchObject({ kind: "fallback", days: 30 });
   });
 
   it("maps 29 February to 28 February in a non-leap year", () => {
     const leap = new Date("2028-03-01T10:00:00Z"); // compared day 2028-02-29
     const rows = [row("2028-02-29", 10), ...seasonalWindow("2027-02-28", 10)];
-    expect(insight(rows, leap).baseline).toEqual({ kind: "seasonal", days: 29 });
+    expect(insight(rows, leap).baseline).toMatchObject({ kind: "seasonal", days: 29 });
   });
 
   // At ±15% the label shows one decimal so it never contradicts the status.
@@ -185,6 +194,44 @@ describe("toUsageInsightView", () => {
     expect(insight(rows).load).toMatchObject({ deltaLabel: "+15,0%", status: "normal" });
   });
 
+  // The owner's rule: normal or below is good, above +15% worth watching, above +40% a problem; exactly at a line
+  // is the milder status.
+  it.each([
+    [30, { tone: "good", label: "w normie" }],
+    [25, { tone: "good", label: "poniżej normy" }],
+    [34.5, { tone: "good", label: "w normie" }],
+    [34.8, { tone: "watch", label: "powyżej normy" }],
+    [42, { tone: "watch", label: "powyżej normy" }],
+    [42.3, { tone: "problem", label: "dużo powyżej normy" }],
+  ])("rates load %d against a mean of 30 as %j", (load, status) => {
+    const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 30, 30)];
+    expect(insight(rows).status).toEqual(status);
+  });
+
+  it.each([
+    [50, 70],
+    [3, 4.2],
+    [0.7, 0.98],
+  ])("keeps exactly +40%% worth watching against a mean of %d despite floating point error", (mean, load) => {
+    const rows = [row(YESTERDAY, load), ...daysBefore(YESTERDAY, 7, mean)];
+    expect(insight(rows).status).toEqual({ tone: "watch", label: "powyżej normy" });
+  });
+
+  it("names the seasonal baseline days", () => {
+    const rows = [row(YESTERDAY, 10), ...seasonalWindow("2025-09-24", 10, null, 20)];
+    expect(insight(rows).baseline).toEqual({ kind: "seasonal", days: 20, periodLabel: "20 dni: 10–29 września 2025" });
+  });
+
+  it("names the fallback days actually used, gaps included", () => {
+    // 10 days before 22 September, plus one day at the far end of the 30-day window (23 August).
+    const rows = [row("2026-09-22", 10), ...daysBefore("2026-09-22", 10, 10), row("2026-08-23", 10)];
+    expect(insight(rows).baseline).toEqual({
+      kind: "fallback",
+      days: 11,
+      periodLabel: "11 dni: 23 sierpnia – 21 września",
+    });
+  });
+
   it("skips days without a load everywhere", () => {
     const rows = [
       row(YESTERDAY, 10),
@@ -193,7 +240,10 @@ describe("toUsageInsightView", () => {
       ...seasonalWindow("2025-09-24", 10).map((r, i) => (i < 10 ? { ...r, load_kwh: null } : r)),
     ];
     // 19 seasonal days with a load (< 20) and 6 fallback days (< 7): nothing to compare against.
-    expect(toUsageInsightView(rows, now)).toEqual({ kind: "insufficient" });
+    expect(toUsageInsightView(rows, now)).toMatchObject({
+      kind: "insufficient",
+      reason: "potrzeba co najmniej 7 dni z ostatnich 30, jest 6",
+    });
   });
 
   it("ignores non-numeric totals", () => {

@@ -1,10 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LiveStateRow } from "@/types";
 import { asNumber, asRecord, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
-import { formatWarsawDateTime } from "@/lib/format/warsaw-time";
+import type { Status } from "@/lib/format/status";
+import { formatDayMonth, warsawParts } from "@/lib/format/warsaw-time";
 
 // The lab pushes every few minutes; a snapshot older than 15 minutes no longer describes "now".
 export const LIVE_STALE_AFTER_MS = 15 * 60 * 1000;
+// After two hours without a snapshot the lab has most likely stopped pushing: a problem, not just old data.
+export const LIVE_PROBLEM_AFTER_MS = 2 * 60 * 60 * 1000;
 // Below this a flow is noise (inverter idle draw, meter jitter): it shows as "0,0 kW" with no direction word.
 export const MIN_FLOW_W = 50;
 const MINUTE_MS = 60 * 1000;
@@ -17,9 +20,10 @@ export interface FlowLabel {
 }
 
 export type LiveStateView =
-  | { kind: "empty" }
+  | { kind: "empty"; status: Status }
   | {
       kind: "state";
+      status: Status;
       capturedAtLabel: string;
       ageLabel: string;
       isStale: boolean;
@@ -28,7 +32,7 @@ export type LiveStateView =
       homeLoad: string;
       grid: FlowLabel;
       battery: FlowLabel & { socLabel: string };
-      today: { pv: string; bought: string; sold: string };
+      today: { pv: string; bought: string; sold: string; periodLabel: string };
     };
 
 // Newest homelab snapshot via the live_state view; RLS returns nothing for non-owners. Errors are thrown
@@ -65,20 +69,32 @@ export function formatAge(ageMs: number): string {
   return days === 1 ? "1 dzień" : `${String(days)} dni`;
 }
 
+// Staleness wins over degraded: an old snapshot says nothing about the source's health now. Exactly at a line is
+// the milder status.
+function liveStatus(ageMs: number, isDegraded: boolean): Status {
+  if (ageMs > LIVE_PROBLEM_AFTER_MS) return { tone: "problem", label: `brak nowych danych od ${formatAge(ageMs)}` };
+  if (ageMs > LIVE_STALE_AFTER_MS) return { tone: "watch", label: `dane sprzed ${formatAge(ageMs)}` };
+  if (isDegraded) return { tone: "watch", label: "niepełne dane z Home Assistant" };
+  return { tone: "good", label: "aktualne" };
+}
+
 export function toLiveStateView(row: LiveStateRow | null, now: Date): LiveStateView {
-  if (!row) return { kind: "empty" };
+  if (!row) return { kind: "empty", status: { tone: "insufficient", label: "laboratorium jeszcze nic nie przesłało" } };
 
   const capturedAt = new Date(row.captured_at);
+  const captured = warsawParts(capturedAt);
   const ageMs = now.getTime() - capturedAt.getTime();
   const state = asRecord(row.state);
   const soc = asNumber(state.battery_soc_pct);
+  const isDegraded = state.source_health === "degraded";
 
   return {
     kind: "state",
-    capturedAtLabel: formatWarsawDateTime(capturedAt),
+    status: liveStatus(ageMs, isDegraded),
+    capturedAtLabel: captured.label,
     ageLabel: formatAge(ageMs),
     isStale: ageMs > LIVE_STALE_AFTER_MS,
-    isDegraded: state.source_health === "degraded",
+    isDegraded,
     pv: kwLabel(asNumber(state.pv_w)),
     homeLoad: kwLabel(asNumber(state.home_load_w)),
     grid: flow(state.grid_w, "pobór z sieci", "oddawanie do sieci"),
@@ -90,6 +106,10 @@ export function toLiveStateView(row: LiveStateRow | null, now: Date): LiveStateV
       pv: kwhLabel(state.pv_today_kwh),
       bought: kwhLabel(state.grid_import_today_kwh),
       sold: kwhLabel(state.grid_export_today_kwh),
+      // The lab's "today" totals run from Warsaw midnight to the capture time, on the capture's day.
+      periodLabel: `${
+        captured.dayKey === warsawParts(now).dayKey ? "dziś" : formatDayMonth(captured.dayKey)
+      } od północy do ${captured.time}`,
     },
   };
 }
