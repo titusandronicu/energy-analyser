@@ -42,7 +42,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | F-01 | push-ingestion-endpoint   | (foundation) the home lab can push an authenticated, versioned payload  | —             | NFR (secrets, raw data)      | done     |
 | S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | done        |
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop        | F-01, S-01    | US-01, FR-002, FR-004        | done     |
-| S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence    | F-01, S-01    | US-01, FR-005, FR-006        | in-progress |
+| S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence    | F-01, S-01    | US-01, FR-005, FR-006        | done        |
 | S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-02, S-01    | US-01, FR-003                | done |
 | S-05 | record-feedback           | accept or dismiss today's recommendation with a note and see history    | S-03          | US-02, FR-007, FR-008        | proposed |
 | S-06 | edit-delete-feedback      | edit or delete a past feedback entry                                    | S-05          | US-02, FR-009, FR-010        | proposed |
@@ -146,7 +146,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
   - Confirm in the plan that the lab's facts bundle carries forecast confidence (owner expects it does, 2026-09-23); if not, FR-006 splits out. — Owner: user. Block: no.
 - **Decided (2026-09-23):** the recommendation is shown in Polish as narrated by the lab; the app UI is Polish.
 - **Risk:** The north star; placed as early as F-01 and S-01 allow. FR-006 is nice-to-have and gets split out if the lab does not supply confidence yet.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-04: Seasonal usage insight
 
@@ -316,3 +316,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **F-02: (foundation) the home lab derives per-day totals (PV, load, grid import/export, and the day's PV forecast) and sends the last 35 days in every push; the app stores them per day.** — Archived 2026-09-25 → `context/archive/2026-09-25-daily-history-push/`. Lesson: —.
 - **S-04: user can see whether recent usage/generation is normal, above or below a season-adjusted baseline, with a visible notice when the flat 30-day fallback is used.** — Archived 2026-09-25 → `context/archive/2026-09-25-seasonal-usage-insight/`. Lesson: —.
 - **S-01: user can open the app from an access-key link and land in an authenticated session that sees only their own data.** — Archived 2026-09-26 → `context/archive/2026-09-23-access-key-sign-in/`. Lesson: —.
+- **S-03: user can see today's plain-language battery recommendation narrated by the home lab from its facts bundle (the verified numbers the deterministic engine computed), with forecast confidence stated explicitly and no controls to apply it.** — Archived 2026-09-26 → `context/archive/2026-09-23-todays-recommendation/`. Lesson: —.
