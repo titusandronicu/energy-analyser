@@ -3,7 +3,7 @@ project: energy-analyser
 version: 1
 status: draft
 created: 2026-09-23
-updated: 2026-09-25
+updated: 2026-09-26
 prd_version: 2
 main_goal: speed
 top_blocker: time
@@ -40,7 +40,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | ID   | Change ID                 | Outcome (user can …)                                                    | Prerequisites | PRD refs                     | Status   |
 | ---- | ------------------------- | ----------------------------------------------------------------------- | ------------- | ---------------------------- | -------- |
 | F-01 | push-ingestion-endpoint   | (foundation) the home lab can push an authenticated, versioned payload  | —             | NFR (secrets, raw data)      | done     |
-| S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | in-progress |
+| S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | done        |
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop        | F-01, S-01    | US-01, FR-002, FR-004        | done     |
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence    | F-01, S-01    | US-01, FR-005, FR-006        | in-progress |
 | S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-02, S-01    | US-01, FR-003                | done |
@@ -120,7 +120,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** — (resolved 2026-09-23: emailed magic link with a long-lived session; a pre-issued reusable link is parked, see ## Parked)
 - **Risk:** Replaces the starter's email/password flow; kept first and small because every page-facing slice relies on the session.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-02: Live state with staleness
 
@@ -315,3 +315,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-02: user can see current PV/battery/grid state pushed by the home lab, and last-known data with a visible staleness indicator when pushes stop.** — Archived 2026-09-25 → `context/archive/2026-09-25-live-state-with-staleness/`. Lesson: —.
 - **F-02: (foundation) the home lab derives per-day totals (PV, load, grid import/export, and the day's PV forecast) and sends the last 35 days in every push; the app stores them per day.** — Archived 2026-09-25 → `context/archive/2026-09-25-daily-history-push/`. Lesson: —.
 - **S-04: user can see whether recent usage/generation is normal, above or below a season-adjusted baseline, with a visible notice when the flat 30-day fallback is used.** — Archived 2026-09-25 → `context/archive/2026-09-25-seasonal-usage-insight/`. Lesson: —.
+- **S-01: user can open the app from an access-key link and land in an authenticated session that sees only their own data.** — Archived 2026-09-26 → `context/archive/2026-09-23-access-key-sign-in/`. Lesson: —.

@@ -1,10 +1,10 @@
 ---
 change_id: access-key-sign-in
 title: Replace password sign-in with an emailed magic link and long-lived session
-status: impl_reviewed
+status: archived
 created: 2026-09-23
-updated: 2026-09-25
-archived_at: null
+updated: 2026-09-26
+archived_at: 2026-09-26T06:21:18Z
 ---
 
 ## Notes
