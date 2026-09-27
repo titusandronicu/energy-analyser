@@ -99,7 +99,9 @@ The collector records the PGE Sensor values the credit needs, without personal d
 - Row shape: `{reference_period, consumed_kwh, feed_in_kwh, factor, left_kwh, invoice_gross_pln, first_seen_at}`. Values only — no names, PPE, e-mail or invoice number.
 - A row is written only when consumed, fed-in and factor are all present. A partial or `unavailable` reading never writes a row.
 - Retention: 36 rows (three years), oldest dropped, following the history-file convention in the energy-app README.
-- A missing or unreadable file is not an error: it means no history, and the forecast falls back to the snapshot's current values.
+- `refresh-energy-agent-data.sh` calls the writer right after the `append-energy-history.py` step, guarded with `|| echo "refresh: warning: PGE settlement history failed" >&2`, taking its path from `PGE_SETTLEMENT_HISTORY` (default `$STACK_DIR/web/data/pge-settlement-history.jsonl`). _Added after review finding F2: without it the writer is dead code and the forecast's preferred source is never produced._
+- A **missing** file is not an error: it means no history, and the forecast falls back to the snapshot's current values.
+- A file that is **there but unreadable** (a bad byte, a permission flip, a directory in its place) is never treated as empty and never replaced. Every append rewrites the whole file, so treating it as empty would destroy the only record of closed periods; it reports on stderr and exits 0 instead. _Corrected after the Phase 1 implementation review (F1), which reproduced a 3-period history collapsing to one row on a single bad byte._
 
 #### 3. Collector tests
 
@@ -120,6 +122,7 @@ The collector records the PGE Sensor values the credit needs, without personal d
 - Lab tests pass: `make test-solar-analyser`
 - A privacy test proves names, PPE and invoice numbers never reach the snapshot output or the settlement history
 - A second run with the same `reference_period` appends nothing, and a new period appends exactly one row
+- `sh -n` passes on `refresh-energy-agent-data.sh`, and its settlement-history call is guarded
 
 #### Manual Verification:
 
@@ -205,6 +208,7 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
 **Contract**:
 - Lines 65-69 pass `--history` and `--snapshot` instead of `--database` / `--bill`.
 - The call is guarded so a non-zero exit logs `refresh: bill forecast failed` and the refresh continues.
+- The settlement-history call added in Phase 1 stays in place and keeps its guard.
 
 #### 5. Telegram bot guards on `status`
 
@@ -381,6 +385,7 @@ Record the rule and decisions in energy-analyser, un-park S-07, and open the fol
 - [x] 1.1 Lab tests pass: `make test-solar-analyser` — homelab-2@159a060
 - [x] 1.2 A privacy test proves names, PPE and invoice numbers never reach the snapshot output or the settlement history — homelab-2@159a060
 - [x] 1.4 A second run with the same `reference_period` appends nothing, and a new period appends exactly one row — homelab-2@159a060
+- [x] 1.5 `sh -n` passes on `refresh-energy-agent-data.sh`, and its settlement-history call is guarded — homelab-2@c17c421
 
 #### Manual
 
