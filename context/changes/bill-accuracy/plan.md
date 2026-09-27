@@ -389,7 +389,7 @@ Record the rule and decisions in energy-analyser, un-park S-07, and open the fol
 
 #### Manual
 
-- [ ] 1.3 After deploy (Phase 3), one real snapshot on docker-core carries consumed 423, fed-in 342, factor 0.8 and left-over 0 for the 01.08–31.08.2026 period
+- [x] 1.3 After deploy (Phase 3), one real snapshot on docker-core carries consumed 423, fed-in 342, factor 0.8 and left-over 0 for the 01.08–31.08.2026 period — homelab-2@362e9d3
 
 ### Phase 2: Credit-aware forecast
 
@@ -406,15 +406,15 @@ Record the rule and decisions in energy-analyser, un-park S-07, and open the fol
 
 #### Automated
 
-- [ ] 3.1 After one refresh, `current-month-bill-forecast.json` on docker-core has `status: "ok"`, `method: "net_metering_credit_estimate"`, and `closed_month_check.diff_pct` within ±5 for 01.08–31.08.2026
-- [ ] 3.2 The refresh log shows no `bill forecast failed`, and the push after it succeeded (runbook check)
+- [x] 3.1 After one refresh, `current-month-bill-forecast.json` on docker-core has `status: "ok"`, `method: "net_metering_credit_estimate"`, and `closed_month_check.diff_pct` within ±5 for 01.08–31.08.2026 — homelab-2@362e9d3
+- [x] 3.2 The refresh log shows no `bill forecast failed`, and the push after it succeeded (runbook check) — homelab-2@362e9d3
 
 #### Manual
 
-- [ ] 3.3 The owner accepts the September projection (expected around 250 PLN, not 610) as plausible against their PGE experience
-- [ ] 3.4 The HA daily report no longer mentions net-billing after the next scheduled run
+- [x] 3.3 The owner accepts the September projection (expected around 250 PLN, not 610) as plausible against their PGE experience — homelab-2@362e9d3
+- [x] 3.4 The HA daily report no longer mentions net-billing after the next scheduled run — homelab-2@362e9d3
 - [ ] 3.5 Telegram `/energy` shows the bill forecast line, and on a `no_data` body shows the reason instead of a 0.00 PLN figure
-- [ ] 3.6 The lab page's current-month forecast card still renders with the new output
+- [x] 3.6 The lab page's current-month forecast card still renders with the new output — homelab-2@362e9d3
 
 ### Phase 4: Docs and follow-ups
 

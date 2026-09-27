@@ -51,3 +51,9 @@ Ran the repo's own `build_daily_history` against the real `energy-history.jsonl`
 - **Range width (F9).** Point estimate 258 PLN. Lockstep as planned: **143–402 PLN** (−45%/+56%, width 259). Import band alone: 226–290 (±12%). Half ratio band: 184–346. Errors combined in quadrature: **155–361** (±40%, width 205). With the July reference (lag 2, ±40% band): 392 PLN, range 253–562.
 
 Owner decision 2026-09-27: wM-Bus is parked as future development (roadmap Parked). This change uses the inverter's grid power for daily export, checked against the eBOK CSV. The PGE CSVs are hourly, so the meter is a remotely read AMI meter (model not yet checked).
+
+### Phase 3 deploy, 2026-09-27: telegram-home is not built from the repo
+
+Found while verifying criterion 3.5. The `telegram-home` image on docker-core (built 2026-09-07) runs a `bot.py` of 949 lines against the repo's 887, and about 101 of those lines exist nowhere in homelab-2's git history on any branch: the `CAMERA_NIGHT_ALERT_*` night-window alerts for the zone-less backyard camera, and the battery-plan polling and acknowledgement flow (`BATTERY_PLAN_POLL_INTERVAL`, `PENDING_BATTERY_PLAN`, `battery_plan_ack`). Rebuilding from the repo would delete both features, so the Phase 2 bot change was **not** deployed.
+
+Consequence: `/energy` still prints a forecast line, and it is now credit-aware because the output keys were kept compatible — but the live bot formats it as `float(bill.get('projected_bill_gross_pln') or 0):.2f` (live line 317), so the `no_data` half of 3.5 (show the reason, not 0.00 PLN) is not in the lab. Owner's decision 2026-09-27: defer it. The follow-up change backports the live drift into homelab-2 first (AGENTS.md requires it), then rebuilds with the Phase 2 bot change on top. 3.5 stays unchecked until then.
