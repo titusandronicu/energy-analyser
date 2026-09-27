@@ -3,7 +3,7 @@ project: energy-analyser
 version: 2
 status: draft
 created: 2026-09-23
-updated: 2026-09-26
+updated: 2026-09-27
 prd_version: 3
 main_goal: speed
 top_blocker: time
@@ -411,6 +411,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Live LLM generation on page view** — Why parked: PRD Non-Goals; the recommendation and the period summaries are pre-computed by the lab.
 - **Advice from ratings or summaries** — Why parked: PRD v3 Non-Goals; ratings and summaries describe what happened and never suggest changes.
 - **Pre-issued reusable access link** — Why parked: a link that works on every visit is a password in a URL; the magic link plus a long session covers the single owner.
+- **Meter-grade live data over wM-Bus** — Why parked: owner's decision 2026-09-27, future development. The PGE smart meter's wM-Bus/HAN interface would give live import and export straight from the billing meter (read with `wmbusmeters` or ESPHome + an 868 MHz receiver), replacing the inverter as the export source. Needs the meter model checked, a request to PGE Dystrybucja to enable it and issue the key, and a receiver near the meter. MojeIRE (CSIRE) 15-minute data is the official alternative once its consumer API is published. Details: `context/changes/bill-accuracy/change.md`.
 - **On-demand features over the Tailscale channel** — Why parked: infrastructure.md keeps Tailscale off the v1 critical path.
 
 ## Milestone History

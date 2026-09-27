@@ -41,3 +41,5 @@ PGE Sensor v1.5.1 exposes more than the lab collects: `pge_consumed_energy` (423
 - MojeIRE (CSIRE, PSE): official 15-min import and export for households, CSV/PDF download behind login.gov.pl; consumer API announced, not published; full go-live 2026-10-19. https://www.pse.pl/oire/portale-csire/q-a-portale-csire
 - wM-Bus on the PGE meter: ask PGE Dystrybucja to enable wM-Bus and issue the key; read with wmbusmeters (amiplus driver, A+/A- registers) or ESPHome + an 868 MHz receiver. Live, meter-grade import and export. https://github.com/wmbusmeters/wmbusmeters/pull/2081
 - Candidates for the plan: manual eBOK CSV (now), inverter grid power integrated from snapshots/HA statistics (no new hardware, accuracy to verify against the CSV), wM-Bus (best, needs a PGE request and a receiver), MojeIRE (later).
+
+Owner decision 2026-09-27: wM-Bus is parked as future development (roadmap Parked). This change uses the inverter's grid power for daily export, checked against the eBOK CSV. The PGE CSVs are hourly, so the meter is a remotely read AMI meter (model not yet checked).
