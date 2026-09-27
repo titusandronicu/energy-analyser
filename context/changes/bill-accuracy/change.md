@@ -1,7 +1,7 @@
 ---
 change_id: bill-accuracy
 title: Make the lab's current-month bill forecast match PGE invoices
-status: preparing
+status: implementing
 created: 2026-09-27
 updated: 2026-09-27
 archived_at: null
@@ -41,5 +41,13 @@ PGE Sensor v1.5.1 exposes more than the lab collects: `pge_consumed_energy` (423
 - MojeIRE (CSIRE, PSE): official 15-min import and export for households, CSV/PDF download behind login.gov.pl; consumer API announced, not published; full go-live 2026-10-19. https://www.pse.pl/oire/portale-csire/q-a-portale-csire
 - wM-Bus on the PGE meter: ask PGE Dystrybucja to enable wM-Bus and issue the key; read with wmbusmeters (amiplus driver, A+/A- registers) or ESPHome + an 868 MHz receiver. Live, meter-grade import and export. https://github.com/wmbusmeters/wmbusmeters/pull/2081
 - Candidates for the plan: manual eBOK CSV (now), inverter grid power integrated from snapshots/HA statistics (no new hardware, accuracy to verify against the CSV), wM-Bus (best, needs a PGE request and a receiver), MojeIRE (later).
+
+### Day count and range under the shared day rule (measured 2026-09-27, read-only)
+
+Ran the repo's own `build_daily_history` against the real `energy-history.jsonl` (4399 September rows pulled read-only from docker-core; the file is world-readable, no sudo needed). Settles the two figures the plan review left blank.
+
+- **Day count.** 18 of the 26 past September days have rows at all (the 14–18 and 22–24 gaps have none). Of those, 3 are null under the push rule (13, 19, 21 — last usable sample before 23:00), leaving **n = 15** against the current forecast's 16. So the stricter rule costs one day, and nothing else: `50/√15 = 12.9` is below the 15% floor, so uncertainty stays **15.0%** and confidence stays **high** (the 7- and 14-day thresholds are clear). The F5 risk was real but lands benignly.
+- **Projection.** Mean daily import 18.31 kWh (min 12.9, max 23.9) → 549 kWh for 30 days. With the August reference (ratio 0.809): **258 PLN**, against 648 PLN for the current no-credit method. That matches the plan's expected "around 250".
+- **Range width (F9).** Point estimate 258 PLN. Lockstep as planned: **143–402 PLN** (−45%/+56%, width 259). Import band alone: 226–290 (±12%). Half ratio band: 184–346. Errors combined in quadrature: **155–361** (±40%, width 205). With the July reference (lag 2, ±40% band): 392 PLN, range 253–562.
 
 Owner decision 2026-09-27: wM-Bus is parked as future development (roadmap Parked). This change uses the inverter's grid power for daily export, checked against the eBOK CSV. The PGE CSVs are hourly, so the meter is a remotely read AMI meter (model not yet checked).
