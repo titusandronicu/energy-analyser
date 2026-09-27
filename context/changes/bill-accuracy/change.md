@@ -1,7 +1,7 @@
 ---
 change_id: bill-accuracy
 title: Make the lab's current-month bill forecast match PGE invoices
-status: impl_reviewed
+status: implementing
 created: 2026-09-27
 updated: 2026-09-27
 archived_at: null

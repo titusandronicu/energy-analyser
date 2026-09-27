@@ -185,14 +185,14 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
   - `ok` is `abs(diff_pct) <= 5`. A false `ok` is reported and logged only: it never changes `status`, never blocks the refresh and never suppresses the projection. The diff also moves when PGE changes prices — the implied August rate was 1.14 against today's 1.0991, so August sits at −2.6% before any formula error.
 - `projected_bill_gross_pln` is the credited estimate.
 - Range: the import and export-ratio errors are treated as **independent** and combined in quadrature, not in lockstep (owner's decision 2026-09-27; the lockstep worst case assumed both hit their extreme together and gave −45%/+56%, which double-counts, because `u` is sampling noise and `r` is seasonal).
-  - `u` is the existing `max(15, min(40, 50/√n))`; `r` is the ratio band: 0.25 while `reference_lag_months` ≤ 1, 0.40 above it.
+  - `u` is the existing `max(15, min(40, 50/√n))`; `r` is the ratio band: 0.25 at `reference_lag_months` 0, 0.40 above it. _Corrected during Phase 2 (owner's decision 2026-09-27): the threshold was ≤ 1, which put the very case F1 was written about on the trusted side. Measured on the real September history, a July reference gives 392 PLN with a 310–475 range that does not contain the eventual 258._
   - `base` = `projected_billable_kwh` = `max(0, import − factor × ratio × import)`.
   - `d_import` = `u × base` (billable is linear in import at a fixed ratio).
   - `d_ratio` = `factor × ratio × r × import`.
   - `spread` = `sqrt(d_import² + d_ratio²)`.
   - low = `max(0, base − spread)` × variable gross rate + fixed gross fees; high = `(base + spread)` × variable gross rate + fixed gross fees.
   - Measured on the real September data (import 549 kWh, ratio 0.809, u = 15%, r = 0.25): base 193.9 kWh, `d_import` 29.1, `d_ratio` 88.8, spread 93.4 → **155–361 PLN around 258**. Evidence and the rejected alternatives are in `change.md`.
-- `confidence` keeps its thresholds (below 7 days, below 14 days), then drops one tier (`high` → `medium` → `low`) when `reference_lag_months` > 1.
+- `confidence` keeps its thresholds (below 7 days, below 14 days), and is forced to `low` whenever `reference_lag_months` > 0, however many days are available. Widening the band alone does not rescue the central figure — at lag 1 the range becomes 277–507 and still excludes 258 — so the weakness is stated rather than implied. PGE issues an invoice about three weeks after a month ends, so this is the normal state from the 1st until roughly the 22nd.
 - `status: "no_data"` with a `reason`:
   - `no_complete_days`
   - `settlement_facts_missing` (factor, consumed or fed-in is missing, or consumed ≤ 0)
@@ -247,7 +247,7 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
 - The August back-test is within 5% of the 214.66 PLN invoice, and the July back-test within 5% of 495.22 PLN (with fixture rates)
 - The forecast writes a `no_data` JSON when the snapshot, history or rates are missing, and exits 0
 - The existing output keys used by `apps/telegram-home/bot.py` are still present, and `python3 -m py_compile` passes on every changed script
-- A reference period two months old yields `reference_lag_months: 2`, the wider ratio band and a confidence one tier lower
+- A stale reference period yields the right `reference_lag_months`, the wider ratio band and a confidence of `low`
 - On a `no_data` body the Telegram formatting path prints the reason, not a 0.00 PLN figure
 
 ---
@@ -395,12 +395,12 @@ Record the rule and decisions in energy-analyser, un-park S-07, and open the fol
 
 #### Automated
 
-- [ ] 2.1 Lab tests pass: `make test-solar-analyser`
-- [ ] 2.2 The August back-test is within 5% of the 214.66 PLN invoice, and the July back-test within 5% of 495.22 PLN (with fixture rates)
-- [ ] 2.3 The forecast writes a `no_data` JSON when the snapshot, history or rates are missing, and exits 0
-- [ ] 2.4 The existing output keys used by `apps/telegram-home/bot.py` are still present, and `python3 -m py_compile` passes on every changed script
-- [ ] 2.5 A reference period two months old yields `reference_lag_months: 2`, the wider ratio band and a confidence one tier lower
-- [ ] 2.6 On a `no_data` body the Telegram formatting path prints the reason, not a 0.00 PLN figure
+- [x] 2.1 Lab tests pass: `make test-solar-analyser` — homelab-2@8df3680
+- [x] 2.2 The August back-test is within 5% of the 214.66 PLN invoice, and the July back-test within 5% of 495.22 PLN (with fixture rates) — homelab-2@8df3680
+- [x] 2.3 The forecast writes a `no_data` JSON when the snapshot, history or rates are missing, and exits 0 — homelab-2@8df3680
+- [x] 2.4 The existing output keys used by `apps/telegram-home/bot.py` are still present, and `python3 -m py_compile` passes on every changed script — homelab-2@8df3680
+- [x] 2.5 A stale reference period yields the right `reference_lag_months`, the wider ratio band and a confidence of `low` — homelab-2@8df3680
+- [x] 2.6 On a `no_data` body the Telegram formatting path prints the reason, not a 0.00 PLN figure — homelab-2@8df3680
 
 ### Phase 3: Deploy and verify in the lab
 
