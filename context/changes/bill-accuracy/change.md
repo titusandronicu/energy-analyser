@@ -34,3 +34,10 @@ PGE Sensor v1.5.1 exposes more than the lab collects: `pge_consumed_energy` (423
 - Use PGE Sensor for billing from now on (closed-month consumption, feed-in, 0.8 credit, invoice amount, billing period).
 - It has no hourly or daily data: it reads the mBOK *sales* API every 8 h (latest invoice, balance, and for prosumers the invoice's energy-storage record). Hourly meter data lives with PGE Dystrybucja (eLicznik / eBOK CSV), a separate service.
 - Within a month: daily/hourly import and load from the Deye snapshots (import reliable since early August); export needs another source (open).
+
+### Export / hourly data sources (web research 2026-09-27, search-index only: the Mac's DNS filter blocked direct fetches)
+
+- "eLicznik" is Tauron's portal; no PGE Dystrybucja meter-data integration exists for HA (only an outage one). PGE's eBOK has no public API or scraper.
+- MojeIRE (CSIRE, PSE): official 15-min import and export for households, CSV/PDF download behind login.gov.pl; consumer API announced, not published; full go-live 2026-10-19. https://www.pse.pl/oire/portale-csire/q-a-portale-csire
+- wM-Bus on the PGE meter: ask PGE Dystrybucja to enable wM-Bus and issue the key; read with wmbusmeters (amiplus driver, A+/A- registers) or ESPHome + an 868 MHz receiver. Live, meter-grade import and export. https://github.com/wmbusmeters/wmbusmeters/pull/2081
+- Candidates for the plan: manual eBOK CSV (now), inverter grid power integrated from snapshots/HA statistics (no new hardware, accuracy to verify against the CSV), wM-Bus (best, needs a PGE request and a receiver), MojeIRE (later).
