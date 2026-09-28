@@ -1,7 +1,7 @@
 ---
 change_id: bill-forecast
 title: Projected cost of the current month with a range (S-07)
-status: new
+status: implementing
 created: 2026-09-27
 updated: 2026-09-28
 archived_at: null

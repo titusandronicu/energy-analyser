@@ -1,0 +1,24 @@
+{
+  "contract_version": 1,
+  "source": "homelab",
+  "captured_at": "2026-09-23T12:00:00+02:00",
+  "state": {
+    "pv_w": 3120,
+    "home_load_w": 860,
+    "grid_w": -1750,
+    "battery_w": -510,
+    "battery_soc_pct": 74,
+    "pv_today_kwh": 11.4,
+    "grid_import_today_kwh": 1.2,
+    "grid_export_today_kwh": 4.8,
+    "source_health": "ok"
+  },
+  "bill_forecast": {
+    "status": "no_data",
+    "reason": "rates_unavailable",
+    "message": "Nie udało się odczytać cennika taryfy G11.",
+    "generated_at": "2026-09-23T11:55:00+02:00",
+    "month": "2026-09",
+    "method": "net_metering_credit_estimate"
+  }
+}

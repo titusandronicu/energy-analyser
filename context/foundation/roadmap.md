@@ -49,7 +49,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence                        | F-01, S-01    | US-01, FR-005, FR-006                 | done     |
 | S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline                       | F-02, S-01    | US-01, FR-003                         | done     |
 | S-14 | data-period-transparency  | read every card without energy knowledge: plain words, colours, its data period, no guesses | S-03, S-04    | US-01, FR-018, FR-019, FR-029         | done     |
-| S-07 | bill-forecast             | see the projected cost of the current month with a range                                    | F-01, S-01    | US-03, FR-011                         | proposed |
+| S-07 | bill-forecast             | see the projected cost of the current month with a range                                    | F-01, S-01    | US-03, FR-011                         | in-progress |
 | S-15 | history-calendar          | browse days and months: production, forecast vs actual, recommendations                     | S-14          | US-05, FR-021                         | proposed |
 | S-17 | period-ratings            | see a good / neutral / bad rating for each completed day and month                          | S-15          | US-05, FR-022                         | proposed |
 | S-20 | consumption-trends        | see a remark when consumption rises or falls noticeably over weeks and months               | S-14, S-15    | US-05, FR-031                         | proposed |
@@ -301,7 +301,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The lab already computes the forecast every 5 minutes; the slice adds a contract section and a card. Moved right after S-14 (v3.1, owner's decision 2026-09-26): late cost feedback is the first problem the PRD names, and the slice is cheap. It must follow S-14's period and plain-language rules. Parked 2026-09-27 on `bill-accuracy`: the lab figure this card would have displayed priced every imported kWh at full rate (about 509 PLN for August against the 214.66 PLN invoiced). Unparked 2026-09-28 — the credit-aware forecast is deployed and the lab output now carries `settlement` and `closed_month_check`.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-08: Closed-period bill
 
