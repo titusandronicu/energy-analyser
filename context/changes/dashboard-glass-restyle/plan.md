@@ -300,32 +300,32 @@ Not applicable — no data model or schema changes. Rolling back is reverting th
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test`
-- [x] 3.2 Linting and type checks pass: `npm run lint`
-- [x] 3.3 Production build succeeds: `npm run build`
-- [x] 3.4 The smoke test passes against a running server with the recomposed dashboard: `npm run smoke`
+- [x] 3.1 Unit tests pass: `npm test` — 3a564ba
+- [x] 3.2 Linting and type checks pass: `npm run lint` — 3a564ba
+- [x] 3.3 Production build succeeds: `npm run build` — 3a564ba
+- [x] 3.4 The smoke test passes against a running server with the recomposed dashboard: `npm run smoke` — 3a564ba
 
 #### Manual
 
-- [x] 3.5 On `/dashboard`, cards render in order: live state, bill forecast, then a 2:1 grid with the recommendation on the left and usage insight + forecast stacked on the right
-- [x] 3.6 The header shows the glass treatment and remains readable (opaque fallback works when `backdrop-filter` is unsupported)
-- [x] 3.7 The PV-forecast figures and confidence badge render in their own block beside "Zużycie wczoraj," not inside the recommendation narrative
-- [x] 3.8 The "Pokaż szczegóły"/"Ukryj szczegóły" control toggles the findings list, updates its label, and sets `aria-expanded` correctly
-- [x] 3.9 At 1440px and 390px, there is no horizontal overflow, clipped label, or overlapping control — check the longer Polish labels specifically
-- [x] 3.10 kW and kWh remain visually distinct and correctly labelled; no missing value renders as zero
+- [x] 3.5 On `/dashboard`, cards render in order: live state, bill forecast, then a 2:1 grid with the recommendation on the left and usage insight + forecast stacked on the right — 3a564ba
+- [x] 3.6 The header shows the glass treatment and remains readable (opaque fallback works when `backdrop-filter` is unsupported) — 3a564ba
+- [x] 3.7 The PV-forecast figures and confidence badge render in their own block beside "Zużycie wczoraj," not inside the recommendation narrative — 3a564ba
+- [x] 3.8 The "Pokaż szczegóły"/"Ukryj szczegóły" control toggles the findings list, updates its label, and sets `aria-expanded` correctly — 3a564ba
+- [x] 3.9 At 1440px and 390px, there is no horizontal overflow, clipped label, or overlapping control — check the longer Polish labels specifically — 3a564ba
+- [x] 3.10 kW and kWh remain visually distinct and correctly labelled; no missing value renders as zero — 3a564ba
 
 ### Phase 4: States & accessibility verification
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass: `npm test`
-- [ ] 4.2 Linting and type checks pass: `npm run lint`
-- [ ] 4.3 Production build succeeds: `npm run build`
+- [x] 4.1 Unit tests pass: `npm test`
+- [x] 4.2 Linting and type checks pass: `npm run lint`
+- [x] 4.3 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 4.4 Tab through the full page keyboard-only: every interactive element shows a visible focus indicator and has an accessible name
-- [ ] 4.5 Push each card into its existing load-failure, empty/insufficient, and stale/no-data-reason states and confirm legibility against the new dark palette
-- [ ] 4.6 Every status remains understandable with colour ignored
-- [ ] 4.7 No animation beyond the brief's declared 120-180ms interaction feedback; reduced-motion is respected
-- [ ] 4.8 Re-check both 1440px and 390px one final time against the fully-states-verified page
+- [x] 4.4 Tab through the full page keyboard-only: every interactive element shows a visible focus indicator and has an accessible name
+- [x] 4.5 Push each card into its existing load-failure, empty/insufficient, and stale/no-data-reason states and confirm legibility against the new dark palette
+- [x] 4.6 Every status remains understandable with colour ignored
+- [x] 4.7 No animation beyond the brief's declared 120-180ms interaction feedback; reduced-motion is respected
+- [x] 4.8 Re-check both 1440px and 390px one final time against the fully-states-verified page

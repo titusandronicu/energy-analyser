@@ -140,3 +140,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Unlayered on purpose: button.tsx's focus-visible:ring-* utilities don't compile to a visible ring in this
+   Tailwind v4 setup (the theme's ring color token is itself named "ring"), and its `outline-none` utility lives
+   in the higher-priority `utilities` layer, so a `@layer base` rule here would lose to it. An unlayered rule
+   beats every layered rule regardless of specificity, guaranteeing a visible focus indicator everywhere. */
+:focus-visible {
+  outline-width: 2px !important;
+  outline-style: solid !important;
+  outline-color: var(--color-ring) !important;
+  outline-offset: 2px !important;
+}
