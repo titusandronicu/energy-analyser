@@ -432,8 +432,8 @@ Record the rule and decisions in energy-analyser, un-park S-07, and open the fol
 
 #### Automated
 
-- [ ] 4.1 `npx prettier --check .` passes, and `npm test` still passes in energy-analyser
+- [x] 4.1 `npx prettier --check .` passes, and `npm test` still passes in energy-analyser
 
 #### Manual
 
-- [ ] 4.2 The owner reads the `docs/logic.md` bill rule and finds it understandable without energy knowledge
+- [x] 4.2 The owner reads the `docs/logic.md` bill rule and finds it understandable without energy knowledge

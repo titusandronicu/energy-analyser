@@ -3,7 +3,7 @@ project: energy-analyser
 version: 2
 status: draft
 created: 2026-09-23
-updated: 2026-09-27
+updated: 2026-09-28
 prd_version: 3
 main_goal: speed
 top_blocker: time
@@ -300,7 +300,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Parallel with:** F-05, S-15
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** The lab already computes the forecast every 5 minutes; the slice adds a contract section and a card. Moved right after S-14 (v3.1, owner's decision 2026-09-26): late cost feedback is the first problem the PRD names, and the slice is cheap. It must follow S-14's period and plain-language rules.
+- **Risk:** The lab already computes the forecast every 5 minutes; the slice adds a contract section and a card. Moved right after S-14 (v3.1, owner's decision 2026-09-26): late cost feedback is the first problem the PRD names, and the slice is cheap. It must follow S-14's period and plain-language rules. Parked 2026-09-27 on `bill-accuracy`: the lab figure this card would have displayed priced every imported kWh at full rate (about 509 PLN for August against the 214.66 PLN invoiced). Unparked 2026-09-28 — the credit-aware forecast is deployed and the lab output now carries `settlement` and `closed_month_check`.
 - **Status:** proposed
 
 ### S-08: Closed-period bill
@@ -397,6 +397,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 2. **Should the daily advice also go to Telegram?** — Owner: user. Block: none. Raised 2026-09-25; lab-side and not in the PRD, so it would be a homelab-2 change or a PRD update, not an M-1 slice.
 3. **Does all of M-1 fit before the 2026-11-04 deadline?** — Owner: user. Block: none. v3.1 (2026-09-26) sets the line: S-07 moved up; US-07 (S-09, S-12, S-13) is stretch; S-10 is last. Revisit after S-15.
 4. **How should the cards give numbers a sense of scale?** — Owner: user. Block: none. Raised 2026-09-26 after S-14: the term explanations say what kWh means but not whether a figure is a lot. The owner wants to know how much a kWh is in everyday terms, what is a good or bad value, and how much a typical household uses per day or month. Decide whether this belongs in S-07 (cost), S-17 (ratings) or a slice of its own, and where the typical-household figure comes from. _Partly answered 2026-09-26 by `usage-norm-scale` (archived): the usage card shows low / normal / high / very high kWh ranges from the home's own median and a typical ~140 m² heat-pump house for the month (estimate, sources in `docs/logic.md`). Still open: how much a kWh is in everyday terms, and the cost and rating cards (S-07, S-17)._
+5. **Why does PGE record export the inverter doesn't see?** — Owner: user. Block: none. Raised 2026-09-28 from `bill-accuracy`: PGE settled **342 kWh** fed in for August where the Deye export counter reads **94.7** — and its summed grid power agrees at about 95, so this is not a counter-versus-power artefact. PGE also records export at night, when the panels cannot be producing; a phase imbalance between what the meter settles and what the inverter reports is one candidate. The money is real: August's 342 kWh credited 274 kWh, worth about 300 PLN at the G11 rate, and until this is explained the in-month credit has to be estimated from the last settled month's ratio instead of measured. Source: `context/changes/bill-accuracy/frame.md`; followed up in `context/changes/grid-export-mismatch/`.
 
 ## Parked
 

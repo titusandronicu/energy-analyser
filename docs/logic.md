@@ -4,15 +4,16 @@ The rules Energy Analyser and the home lab apply to the data, with the exact thr
 
 ## Where each rule runs
 
-| Rule                                           | Runs in                                       | Source                                                               |
-| ---------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------- |
-| Live state and its staleness                   | App                                           | `src/lib/services/live-state.ts`                                     |
-| Usage insight (season-adjusted baseline)       | App                                           | `src/lib/services/usage-insight.ts`                                  |
-| Recommendation staleness and labels            | App                                           | `src/lib/services/recommendation.ts`                                 |
-| Status colours, period text, term explanations | App                                           | `src/lib/format/status.ts`, `period.ts`, `glossary.ts`               |
-| Daily totals per day, which days are complete  | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py` |
-| Facts bundle and battery recommendation        | Lab (deterministic rules, then LLM narration) | homelab-2 `build-energy-agent-briefing.py`, `run-energy-advisory.py` |
-| PV forecast                                    | Solcast via Home Assistant, read by the lab   | homelab-2 `collect-ha-snapshot.py`                                   |
+| Rule                                           | Runs in                                       | Source                                                                            |
+| ---------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
+| Live state and its staleness                   | App                                           | `src/lib/services/live-state.ts`                                                  |
+| Usage insight (season-adjusted baseline)       | App                                           | `src/lib/services/usage-insight.ts`                                               |
+| Recommendation staleness and labels            | App                                           | `src/lib/services/recommendation.ts`                                              |
+| Status colours, period text, term explanations | App                                           | `src/lib/format/status.ts`, `period.ts`, `glossary.ts`                            |
+| Daily totals per day, which days are complete  | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py`              |
+| Current-month bill forecast                    | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/build-current-month-bill-forecast.py` |
+| Facts bundle and battery recommendation        | Lab (deterministic rules, then LLM narration) | homelab-2 `build-energy-agent-briefing.py`, `run-energy-advisory.py`              |
+| PV forecast                                    | Solcast via Home Assistant, read by the lab   | homelab-2 `collect-ha-snapshot.py`                                                |
 
 ## Live state
 
@@ -74,6 +75,28 @@ The badge reads "<word> · <detail>", e.g. "Warto sprawdzić · dane sprzed 40 m
 - A past day counts only when its counters were read correctly (`counters_ok`) and the data covers the day to its end; incomplete days are sent with empty totals rather than wrong ones.
 - The day's PV forecast is the first forecast reading at or after **06:00** local time.
 - Forecast source since 2026-09-26: **Solcast** (forecast plus low/high estimates, recorded in the lab's history). Forecast.Solar is kept only for comparison; it overshot real production on this flat array. Its today/tomorrow values are recorded in the lab's history once homelab-2 #28 is installed, so the two sources can be compared.
+
+## Bill forecast (lab)
+
+The lab has computed this since 2026-09-27 and writes it with every 5-minute refresh; the Telegram bot and the lab page read it today. The app card that will show it (S-07) is **planned** — the rule below is built, the screen for it is not.
+
+The house is a prosumer on Poland's older settlement scheme, **net-metering** ("opust"). Energy sent to the grid is not sold for money: it is banked. For every kWh fed in, **0.8** kWh may later be taken back without paying the energy charge, and credit left unused carries over to the following months. So the invoice is not "everything you took × the price". It is "everything you took, minus the credit you had banked, × the price", plus the fixed monthly fees, which are due whatever the meter says.
+
+- **Imported energy** for the month = the mean grid import of the month's complete days so far × the number of days in the month. A day counts only under the same completeness rule as [Daily totals](#daily-totals-lab--app), and today is never counted. A day reading above **200 kWh** is dropped as a counter glitch.
+- **Credit** = 0.8 × the export ratio × the imported energy, plus credit carried in. The **export ratio** is the exported ÷ imported energy of the last month PGE actually settled, because the inverter's own export counter cannot be used here (94.7 kWh against PGE's 342 for August).
+- **Billable energy** = imported − credit, never below zero. Credit beyond this month's import is reported separately (`credit_left_kwh`), never as a negative bill.
+- **Bill** = billable energy × the variable gross rate + the fixed gross fees, both taken from the lab's G11 tariff table: **1.0991 PLN/kWh** and **44.62 PLN** a month, last checked against a real invoice on **2026-09-27**.
+- **Carried credit.** The connector reports left-over credit as fed-in kWh _before_ the factor, so it is counted as 0.8 × the left-over figure. It has been **0** every month so far, so this reading is recorded as an assumption (`carried_credit_basis`) and is to be re-checked the first time it is not 0.
+- **Confidence** follows the day count: **low** below **7** complete days, **medium** below **14**, **high** at 14 or more. It is forced down to **low** whenever the reference month lags (below), and whenever the closed-month check misses by more than **25%**.
+- **No figure rather than a wrong one.** Instead of guessing, the forecast publishes `status: "no_data"` with a reason: `no_complete_days` (this month has no finished day yet, or the daily history could not be read), `settlement_facts_missing` (the factor, consumed or fed-in energy is missing, the settled month is under **50 kWh**, or the export ratio is above **2.0**), `rates_unavailable` (the tariff table could not be read). Everything reading the file checks `status` before it reads a number.
+
+**The reference month lags, and the figure re-bases when a new invoice arrives.** PGE issues an invoice about three weeks after the month it covers, and the connector only ever holds the latest one. So from the 1st of a month until roughly the 22nd, the newest settled month is the month _before_ last — and a month-old ratio can be far off: July's was 0.53 against August's 0.81, which on the same 549 kWh moves the estimate from 258 PLN to 392 PLN. The forecast records the gap as `reference_lag_months` (**0** when the reference is the month immediately before this one). Above 0 it widens the range, forces confidence to **low**, and ignores carried credit altogether, because the month in between has already drawn on that credit by an amount PGE has not reported yet. As soon as the new invoice arrives the forecast re-bases on it, so the figure can move noticeably around the 22nd of a month.
+
+**The range.** Two errors are combined as independent (added in quadrature), not assumed to strike together: `u`, the sampling noise of a short month, is `max(15%, min(40%, 50 ÷ √days))`; `r`, how far the export ratio may have moved since it was measured, is **25%** at lag 0 and **40%** above it. The spread is `√((u × (billable + carried))² + (0.8 × ratio × r × imported)²)`, and the two ends are priced from billable − spread (never below zero) and billable + spread. On the real September data — 549 kWh imported, ratio 0.809, 15 complete days — that is **155–361 PLN around 258**.
+
+**The closed-month check.** Every run re-prices the reference month from the consumed and fed-in energy PGE actually settled and compares it with that month's invoice (`closed_month_check`, `ok` within **±5%**). It tests the arithmetic, not the estimate: it cannot detect a wrong export ratio, and it drifts when PGE changes prices — August's implied rate was 1.14 PLN/kWh against today's 1.0991, which puts the check at −2.6% before any error of the formula. A failing check is always reported and never suppresses the projection.
+
+Why credit the export at all: it is the whole difference between a plausible bill and a wrong one. Pricing every imported kWh put August at about 509 PLN against the 214.66 PLN actually invoiced; crediting it gives about 209 PLN, and July comes out at about 489 PLN against 495.22. Why estimate the export from last month's ratio instead of measuring it: PGE settled 342 kWh fed in for August where the inverter's counter read 94.7, and PGE records export at night, when the panels cannot be producing. Until that is explained (`context/changes/grid-export-mismatch/`) the house has no trustworthy in-month export figure of its own, and the last settled month's ratio is the closest honest stand-in — which is exactly why its age is published and why it drags the confidence down.
 
 ## Planned rules (PRD v3)
 
