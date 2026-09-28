@@ -231,29 +231,29 @@ Not applicable — no data model or schema changes, only new derived fields on a
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Linting and type checks pass: `npm run lint`
-- [x] 2.3 Production build succeeds: `npm run build`
-- [x] 2.4 The smoke test passes with the new diagram present: `npm run smoke`
+- [x] 2.1 Unit tests pass: `npm test` — 68e83f2
+- [x] 2.2 Linting and type checks pass: `npm run lint` — 68e83f2
+- [x] 2.3 Production build succeeds: `npm run build` — 68e83f2
+- [x] 2.4 The smoke test passes with the new diagram present: `npm run smoke` — 68e83f2
 
 #### Manual
 
-- [x] 2.5 On `/dashboard`, `Stan na żywo` shows four icon-led nodes (PV/home/battery/grid) instead of the old plain grid, each with its correct existing value and direction text
-- [x] 2.6 The battery node's icon matches its actual charge level and charging state (e.g. charging shows the charging icon regardless of level)
-- [x] 2.7 At 1440px and 390px, the diagram has no horizontal overflow or clipped label
+- [x] 2.5 On `/dashboard`, `Stan na żywo` shows four icon-led nodes (PV/home/battery/grid) instead of the old plain grid, each with its correct existing value and direction text — 68e83f2
+- [x] 2.6 The battery node's icon matches its actual charge level and charging state (e.g. charging shows the charging icon regardless of level) — 68e83f2
+- [x] 2.7 At 1440px and 390px, the diagram has no horizontal overflow or clipped label — 68e83f2
 
 ### Phase 3: Pulse animation and reduced motion
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm test`
-- [ ] 3.2 Linting and type checks pass: `npm run lint`
-- [ ] 3.3 Production build succeeds: `npm run build`
+- [x] 3.1 Unit tests pass: `npm test`
+- [x] 3.2 Linting and type checks pass: `npm run lint`
+- [x] 3.3 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 3.4 On `/dashboard` with a fresh push, nodes with real flow show a visible ambient pulse; a node with no flow shows no pulse
-- [ ] 3.5 Emulating `prefers-reduced-motion: reduce`, every node matches Phase 2's static appearance exactly — no pulse anywhere
+- [x] 3.4 On `/dashboard` with a fresh push, nodes with real flow show a visible ambient pulse; a node with no flow shows no pulse
+- [x] 3.5 Emulating `prefers-reduced-motion: reduce`, every node matches Phase 2's static appearance exactly — no pulse anywhere
 
 ### Phase 4: States and verification
 

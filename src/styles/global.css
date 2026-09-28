@@ -132,6 +132,27 @@
   }
 }
 
+/* Ambient "this is alive" signal for flow nodes with real flow (live-state-flow-visual). The reduced-motion
+   override below is unconditional so every future reuse of this utility inherits the same guarantee, rather
+   than each call site having to re-implement it. */
+@keyframes flow-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@utility animate-flow-pulse {
+  animation: flow-pulse 2.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-flow-pulse {
+    animation: none;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

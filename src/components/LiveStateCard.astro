@@ -14,6 +14,7 @@ import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED } from "@/lib/format/status";
+import { MIN_FLOW_W } from "@/lib/services/live-state";
 import type { LiveStateView } from "@/lib/services/live-state";
 
 interface Props {
@@ -59,21 +60,36 @@ const BatteryIcon = view?.kind === "state" ? batteryIcon(view.battery) : Battery
 
       <dl class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4 sm:gap-0 sm:divide-x sm:divide-white/10">
         <div class="flex flex-col items-center gap-2 rounded-lg bg-white/5 p-3 text-center sm:rounded-none sm:bg-transparent sm:px-4">
-          <span class="flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100">
+          <span
+            class:list={[
+              "flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100",
+              Math.abs(view.pvWatts ?? 0) >= MIN_FLOW_W && "animate-flow-pulse",
+            ]}
+          >
             <Sun className="size-5" aria-hidden="true" />
           </span>
           <dt class="text-blue-100/60">Prąd z paneli teraz</dt>
           <dd class="text-lg font-medium">{view.pv}</dd>
         </div>
         <div class="flex flex-col items-center gap-2 rounded-lg bg-white/5 p-3 text-center sm:rounded-none sm:bg-transparent sm:px-4">
-          <span class="flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100">
+          <span
+            class:list={[
+              "flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100",
+              Math.abs(view.homeLoadWatts ?? 0) >= MIN_FLOW_W && "animate-flow-pulse",
+            ]}
+          >
             <Home className="size-5" aria-hidden="true" />
           </span>
           <dt class="text-blue-100/60">Dom zużywa teraz</dt>
           <dd class="text-lg font-medium">{view.homeLoad}</dd>
         </div>
         <div class="flex flex-col items-center gap-2 rounded-lg bg-white/5 p-3 text-center sm:rounded-none sm:bg-transparent sm:px-4">
-          <span class="flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100">
+          <span
+            class:list={[
+              "flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100",
+              view.battery.direction !== null && "animate-flow-pulse",
+            ]}
+          >
             <BatteryIcon className="size-5" aria-hidden="true" />
           </span>
           <dt class="text-blue-100/60">Bateria teraz</dt>
@@ -84,7 +100,12 @@ const BatteryIcon = view?.kind === "state" ? batteryIcon(view.battery) : Battery
           </dd>
         </div>
         <div class="flex flex-col items-center gap-2 rounded-lg bg-white/5 p-3 text-center sm:rounded-none sm:bg-transparent sm:px-4">
-          <span class="flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100">
+          <span
+            class:list={[
+              "flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100",
+              view.grid.direction !== null && "animate-flow-pulse",
+            ]}
+          >
             <Zap className="size-5" aria-hidden="true" />
           </span>
           <dt class="text-blue-100/60">Sieć teraz</dt>
