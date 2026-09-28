@@ -481,12 +481,12 @@ The migration adds a view only — no table, no data movement, no backfill — s
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass, covering all three `no_data` reasons, both freshness boundaries, both day-count boundaries, all three verdict boundaries, the absent-invoice case, the plausibility ceiling and a wrong-month body: `npm test`
-- [ ] 3.2 Linting and type checks pass: `npm run lint`
+- [x] 3.1 Unit tests pass, covering all three `no_data` reasons, both freshness boundaries, both day-count boundaries, all three verdict boundaries, the absent-invoice case, the plausibility ceiling and a wrong-month body: `npm test`
+- [x] 3.2 Linting and type checks pass: `npm run lint`
 
 #### Manual
 
-- [ ] 3.3 The Polish copy for every refusal reason reads as an explanation a non-expert can act on, not a status code
+- [x] 3.3 The Polish copy for every refusal reason reads as an explanation a non-expert can act on, not a status code
 
 ### Phase 4: Card, dashboard and docs
 

@@ -54,3 +54,16 @@ const dayMonth = new Intl.DateTimeFormat("pl-PL", { timeZone: "UTC", day: "numer
 export function formatDayMonth(dayKey: string): string {
   return dayMonth.format(new Date(dayKeyToUtcMs(dayKey)));
 }
+
+const monthYear = new Intl.DateTimeFormat("pl-PL", { timeZone: "UTC", month: "long", year: "numeric" });
+
+// "wrzesień 2026" for the month key "2026-09" (nominative month, so it reads after "za" or "na").
+// The caller checks the key first: a month key comes from pushed jsonb, and an unparsable one would throw here.
+export function formatMonth(monthKey: string): string {
+  return monthYear.format(new Date(dayKeyToUtcMs(`${monthKey}-01`)));
+}
+
+// The Warsaw calendar month ("2026-09") a moment falls in, for comparing a pushed month against "this month".
+export function warsawMonthKey(date: Date): string {
+  return warsawParts(date).dayKey.slice(0, 7);
+}
