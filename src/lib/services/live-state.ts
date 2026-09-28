@@ -10,13 +10,21 @@ export const LIVE_STALE_AFTER_MS = 15 * 60 * 1000;
 export const LIVE_PROBLEM_AFTER_MS = 2 * 60 * 60 * 1000;
 // Below this a flow is noise (inverter idle draw, meter jitter): it shows as "0,0 kW" with no direction word.
 export const MIN_FLOW_W = 50;
+// Battery charge-level bands for the flow diagram's icon (live-state-flow-visual): purely which icon shows,
+// never a displayed number or verdict. Exactly on a line takes the higher (milder) level.
+export const BATTERY_FULL_AT = 80;
+export const BATTERY_LOW_AT = 30;
+export const BATTERY_WARNING_AT = 10;
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
 
+export type BatteryChargeLevel = "full" | "medium" | "low" | "warning";
+
 export interface FlowLabel {
   value: string;
   direction: string | null;
+  watts: number | null;
 }
 
 export type LiveStateView =
@@ -29,9 +37,11 @@ export type LiveStateView =
       isStale: boolean;
       isDegraded: boolean;
       pv: string;
+      pvWatts: number | null;
       homeLoad: string;
+      homeLoadWatts: number | null;
       grid: FlowLabel;
-      battery: FlowLabel & { socLabel: string };
+      battery: FlowLabel & { socLabel: string; socPct: number | null; chargeLevel: BatteryChargeLevel | null };
       today: { pv: string; bought: string; sold: string; periodLabel: string };
     };
 
@@ -57,7 +67,16 @@ function kwLabel(watts: number | null): string {
 function flow(value: unknown, positive: string, negative: string): FlowLabel {
   const watts = asNumber(value);
   const direction = watts === null || Math.abs(watts) < MIN_FLOW_W ? null : watts > 0 ? positive : negative;
-  return { value: kwLabel(watts), direction };
+  return { value: kwLabel(watts), direction, watts };
+}
+
+// Which icon the flow diagram shows for the battery; null exactly when the percentage itself is unknown.
+function chargeLevelOf(socPct: number | null): BatteryChargeLevel | null {
+  if (socPct === null) return null;
+  if (socPct >= BATTERY_FULL_AT) return "full";
+  if (socPct >= BATTERY_LOW_AT) return "medium";
+  if (socPct >= BATTERY_WARNING_AT) return "low";
+  return "warning";
 }
 
 // "5 min" under an hour, "2 godz." under a day, "3 dni" beyond. A capture time in the future counts as 0.
@@ -87,6 +106,8 @@ export function toLiveStateView(row: LiveStateRow | null, now: Date): LiveStateV
   const state = asRecord(row.state);
   const soc = asNumber(state.battery_soc_pct);
   const isDegraded = state.source_health === "degraded";
+  const pvWatts = asNumber(state.pv_w);
+  const homeLoadWatts = asNumber(state.home_load_w);
 
   return {
     kind: "state",
@@ -95,12 +116,16 @@ export function toLiveStateView(row: LiveStateRow | null, now: Date): LiveStateV
     ageLabel: formatAge(ageMs),
     isStale: ageMs > LIVE_STALE_AFTER_MS,
     isDegraded,
-    pv: kwLabel(asNumber(state.pv_w)),
-    homeLoad: kwLabel(asNumber(state.home_load_w)),
+    pv: kwLabel(pvWatts),
+    pvWatts,
+    homeLoad: kwLabel(homeLoadWatts),
+    homeLoadWatts,
     grid: flow(state.grid_w, "pobór z sieci", "oddawanie do sieci"),
     battery: {
       ...flow(state.battery_w, "rozładowanie", "ładowanie"),
       socLabel: soc === null ? MISSING : `${wholeNumber.format(soc)}%`,
+      socPct: soc,
+      chargeLevel: chargeLevelOf(soc),
     },
     today: {
       pv: kwhLabel(state.pv_today_kwh),

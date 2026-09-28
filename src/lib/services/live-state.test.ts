@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LiveStateRow } from "@/types";
 import { formatAge, toLiveStateView } from "./live-state";
+import type { BatteryChargeLevel } from "./live-state";
 
 const state = {
   pv_w: 3420,
@@ -50,9 +51,18 @@ describe("toLiveStateView", () => {
       isStale: false,
       isDegraded: false,
       pv: "3,4 kW",
+      pvWatts: 3420,
       homeLoad: "0,9 kW",
-      grid: { value: "1,2 kW", direction: "oddawanie do sieci" },
-      battery: { value: "1,4 kW", direction: "ładowanie", socLabel: "74%" },
+      homeLoadWatts: 850,
+      grid: { value: "1,2 kW", direction: "oddawanie do sieci", watts: -1200 },
+      battery: {
+        value: "1,4 kW",
+        direction: "ładowanie",
+        watts: -1370,
+        socLabel: "74%",
+        socPct: 74,
+        chargeLevel: "medium",
+      },
       today: { pv: "12,3 kWh", bought: "1,2 kWh", sold: "5,0 kWh", periodLabel: "dziś od północy do 12:00" },
     });
   });
@@ -109,26 +119,43 @@ describe("toLiveStateView", () => {
   });
 
   it.each([
-    [1500, { value: "1,5 kW", direction: "pobór z sieci" }],
-    [-1500, { value: "1,5 kW", direction: "oddawanie do sieci" }],
-    [0, { value: "0,0 kW", direction: null }],
-    [30, { value: "0,0 kW", direction: null }],
-    [-49, { value: "0,0 kW", direction: null }],
-    [-50, { value: "0,1 kW", direction: "oddawanie do sieci" }],
-    [null, { value: "—", direction: null }],
+    [1500, { value: "1,5 kW", direction: "pobór z sieci", watts: 1500 }],
+    [-1500, { value: "1,5 kW", direction: "oddawanie do sieci", watts: -1500 }],
+    [0, { value: "0,0 kW", direction: null, watts: 0 }],
+    [30, { value: "0,0 kW", direction: null, watts: 30 }],
+    [-49, { value: "0,0 kW", direction: null, watts: -49 }],
+    [-50, { value: "0,1 kW", direction: "oddawanie do sieci", watts: -50 }],
+    [null, { value: "—", direction: null, watts: null }],
   ])("labels grid %j", (grid_w, expected) => {
     expect(view(row({}, { grid_w })).grid).toEqual(expected);
   });
 
   it.each([
-    [800, { value: "0,8 kW", direction: "rozładowanie" }],
-    [-800, { value: "0,8 kW", direction: "ładowanie" }],
-    [0, { value: "0,0 kW", direction: null }],
-    [-20, { value: "0,0 kW", direction: null }],
-    [50, { value: "0,1 kW", direction: "rozładowanie" }],
-    [null, { value: "—", direction: null }],
+    [800, { value: "0,8 kW", direction: "rozładowanie", watts: 800 }],
+    [-800, { value: "0,8 kW", direction: "ładowanie", watts: -800 }],
+    [0, { value: "0,0 kW", direction: null, watts: 0 }],
+    [-20, { value: "0,0 kW", direction: null, watts: -20 }],
+    [50, { value: "0,1 kW", direction: "rozładowanie", watts: 50 }],
+    [null, { value: "—", direction: null, watts: null }],
   ])("labels battery %j", (battery_w, expected) => {
-    expect(view(row({}, { battery_w })).battery).toEqual({ ...expected, socLabel: "74%" });
+    expect(view(row({}, { battery_w })).battery).toEqual({
+      ...expected,
+      socLabel: "74%",
+      socPct: 74,
+      chargeLevel: "medium",
+    });
+  });
+
+  it.each([
+    [79, "medium"],
+    [80, "full"],
+    [29, "low"],
+    [30, "medium"],
+    [9, "warning"],
+    [10, "low"],
+    [null, null],
+  ])("charges battery_soc_pct %j as level %j", (battery_soc_pct, chargeLevel) => {
+    expect(view(row({}, { battery_soc_pct })).battery.chargeLevel).toBe(chargeLevel as BatteryChargeLevel | null);
   });
 
   it.each([
@@ -154,8 +181,12 @@ describe("toLiveStateView", () => {
       ),
     );
     expect(v.pv).toBe("—");
+    expect(v.pvWatts).toBeNull();
     expect(v.homeLoad).toBe("—");
+    expect(v.homeLoadWatts).toBeNull();
     expect(v.battery.socLabel).toBe("—");
+    expect(v.battery.socPct).toBeNull();
+    expect(v.battery.chargeLevel).toBeNull();
     expect(v.today).toMatchObject({ pv: "—", bought: "—", sold: "—" });
   });
 
@@ -164,9 +195,11 @@ describe("toLiveStateView", () => {
     expect(v).toMatchObject({
       isDegraded: false,
       pv: "—",
+      pvWatts: null,
       homeLoad: "—",
-      grid: { value: "—", direction: null },
-      battery: { value: "—", direction: null, socLabel: "—" },
+      homeLoadWatts: null,
+      grid: { value: "—", direction: null, watts: null },
+      battery: { value: "—", direction: null, watts: null, socLabel: "—", socPct: null, chargeLevel: null },
       today: { pv: "—", bought: "—", sold: "—", periodLabel: "dziś od północy do 12:00" },
     });
     expect(v.capturedAtLabel).toBe("25 września 2026, 12:00");
