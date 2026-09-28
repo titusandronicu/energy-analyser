@@ -292,27 +292,27 @@ Not applicable — no data model or schema changes. Rolling back is reverting th
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Linting and type checks pass: `npm run lint`
-- [x] 2.3 Production build succeeds: `npm run build`
+- [x] 2.1 Unit tests pass: `npm test` — f497e79
+- [x] 2.2 Linting and type checks pass: `npm run lint` — f497e79
+- [x] 2.3 Production build succeeds: `npm run build` — f497e79
 
 ### Phase 3: Single view — recompose the dashboard
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm test`
-- [ ] 3.2 Linting and type checks pass: `npm run lint`
-- [ ] 3.3 Production build succeeds: `npm run build`
-- [ ] 3.4 The smoke test passes against a running server with the recomposed dashboard: `npm run smoke`
+- [x] 3.1 Unit tests pass: `npm test`
+- [x] 3.2 Linting and type checks pass: `npm run lint`
+- [x] 3.3 Production build succeeds: `npm run build`
+- [x] 3.4 The smoke test passes against a running server with the recomposed dashboard: `npm run smoke`
 
 #### Manual
 
-- [ ] 3.5 On `/dashboard`, cards render in order: live state, bill forecast, then a 2:1 grid with the recommendation on the left and usage insight + forecast stacked on the right
-- [ ] 3.6 The header shows the glass treatment and remains readable (opaque fallback works when `backdrop-filter` is unsupported)
-- [ ] 3.7 The PV-forecast figures and confidence badge render in their own block beside "Zużycie wczoraj," not inside the recommendation narrative
-- [ ] 3.8 The "Pokaż szczegóły"/"Ukryj szczegóły" control toggles the findings list, updates its label, and sets `aria-expanded` correctly
-- [ ] 3.9 At 1440px and 390px, there is no horizontal overflow, clipped label, or overlapping control — check the longer Polish labels specifically
-- [ ] 3.10 kW and kWh remain visually distinct and correctly labelled; no missing value renders as zero
+- [x] 3.5 On `/dashboard`, cards render in order: live state, bill forecast, then a 2:1 grid with the recommendation on the left and usage insight + forecast stacked on the right
+- [x] 3.6 The header shows the glass treatment and remains readable (opaque fallback works when `backdrop-filter` is unsupported)
+- [x] 3.7 The PV-forecast figures and confidence badge render in their own block beside "Zużycie wczoraj," not inside the recommendation narrative
+- [x] 3.8 The "Pokaż szczegóły"/"Ukryj szczegóły" control toggles the findings list, updates its label, and sets `aria-expanded` correctly
+- [x] 3.9 At 1440px and 390px, there is no horizontal overflow, clipped label, or overlapping control — check the longer Polish labels specifically
+- [x] 3.10 kW and kWh remain visually distinct and correctly labelled; no missing value renders as zero
 
 ### Phase 4: States & accessibility verification
 

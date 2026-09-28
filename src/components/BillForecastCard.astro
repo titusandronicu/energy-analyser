@@ -1,4 +1,5 @@
 ---
+import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED } from "@/lib/format/status";
@@ -50,7 +51,7 @@ const checkLine =
     : `Sprawdzenie wyliczenia na zamkniętym miesiącu (${check.monthLabel}): ten sam wzór daje ${check.computedLabel} przy rachunku ${check.invoiceLabel}, czyli ${check.diffLabel}. ${check.ok ? "Wyliczenie się zgadza" : "Różnica jest większa niż zwykle"} — to test samej arytmetyki, nie trafności prognozy.`;
 ---
 
-<section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
+<Panel>
   <h2 class="mb-2 text-lg font-semibold text-blue-100">Prognoza rachunku</h2>
   <div class="mb-4">
     <StatusBadge status={status} testId="bill-status" />
@@ -113,4 +114,4 @@ const checkLine =
   <p class="mt-4 text-xs text-blue-100/70">
     To szacunek z dotychczasowego zużycia i cen z taryfy, a nie faktura z PGE.
   </p>
-</section>
+</Panel>

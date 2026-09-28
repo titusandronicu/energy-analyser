@@ -1,4 +1,5 @@
 ---
+import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED } from "@/lib/format/status";
@@ -14,7 +15,7 @@ const { view } = Astro.props;
 const status = view === null ? LOAD_FAILED : view.status;
 ---
 
-<section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
+<Panel>
   <h2 class="mb-2 text-lg font-semibold text-blue-100">Stan na żywo</h2>
   <div class="mb-4">
     <StatusBadge status={status} testId="live-status" />
@@ -26,7 +27,7 @@ const status = view === null ? LOAD_FAILED : view.status;
     <div class="space-y-4">
       {view.isDegraded && <p class="text-sm text-blue-100/70">Część odczytów z Home Assistant może być niedostępna.</p>}
 
-      <dl class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
+      <dl class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <div class="rounded-lg bg-white/5 p-3">
           <dt class="text-blue-100/60">Prąd z paneli teraz</dt>
           <dd class="text-lg font-medium">{view.pv}</dd>
@@ -43,11 +44,10 @@ const status = view === null ? LOAD_FAILED : view.status;
         <div class="rounded-lg bg-white/5 p-3">
           <dt class="text-blue-100/60">Bateria teraz</dt>
           <dd class="text-lg font-medium">{view.battery.value}</dd>
-          {view.battery.direction && <dd class="text-xs text-blue-100/70">{view.battery.direction}</dd>}
-        </div>
-        <div class="rounded-lg bg-white/5 p-3">
-          <dt class="text-blue-100/60">Naładowanie baterii</dt>
-          <dd class="text-lg font-medium">{view.battery.socLabel}</dd>
+          <dd class="text-xs text-blue-100/70">
+            Naładowanie: {view.battery.socLabel}
+            {view.battery.direction && ` · ${view.battery.direction}`}
+          </dd>
         </div>
       </dl>
 
@@ -76,4 +76,4 @@ const status = view === null ? LOAD_FAILED : view.status;
       <TermsExplained terms={["pv", "kw", "kwh", "battery_soc", "grid_import", "grid_export"]} />
     </div>
   )}
-</section>
+</Panel>

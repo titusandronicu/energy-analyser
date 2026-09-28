@@ -1,4 +1,5 @@
 ---
+import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { GLOSSARY } from "@/lib/format/glossary";
@@ -20,7 +21,7 @@ const purchaseExplanation =
   GLOSSARY.grid_import.explanation.charAt(0).toLowerCase() + GLOSSARY.grid_import.explanation.slice(1);
 ---
 
-<section class="rounded-2xl border border-white/10 bg-white/10 p-6 text-white backdrop-blur-xl">
+<Panel>
   <h2 class="mb-2 text-lg font-semibold text-blue-100">{heading}</h2>
   <div class="mb-4">
     <StatusBadge status={status} testId="usage-status" />
@@ -107,4 +108,4 @@ const purchaseExplanation =
       )}
     </div>
   )}
-</section>
+</Panel>
