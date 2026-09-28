@@ -246,14 +246,14 @@ Not applicable — no data model or schema changes, only new derived fields on a
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test`
-- [x] 3.2 Linting and type checks pass: `npm run lint`
-- [x] 3.3 Production build succeeds: `npm run build`
+- [x] 3.1 Unit tests pass: `npm test` — 2bd644c
+- [x] 3.2 Linting and type checks pass: `npm run lint` — 2bd644c
+- [x] 3.3 Production build succeeds: `npm run build` — 2bd644c
 
 #### Manual
 
-- [x] 3.4 On `/dashboard` with a fresh push, nodes with real flow show a visible ambient pulse; a node with no flow shows no pulse
-- [x] 3.5 Emulating `prefers-reduced-motion: reduce`, every node matches Phase 2's static appearance exactly — no pulse anywhere
+- [x] 3.4 On `/dashboard` with a fresh push, nodes with real flow show a visible ambient pulse; a node with no flow shows no pulse — 2bd644c
+- [x] 3.5 Emulating `prefers-reduced-motion: reduce`, every node matches Phase 2's static appearance exactly — no pulse anywhere — 2bd644c
 
 ### Phase 4: States and verification
 
@@ -266,6 +266,6 @@ Not applicable — no data model or schema changes, only new derived fields on a
 
 #### Manual
 
-- [ ] 4.5 Force each live-state status (`good`/`watch`/`problem`) via a backdated or missing push and confirm the diagram (or its `LOAD_FAILED`/empty fallback text, unchanged from today) renders correctly for each
-- [ ] 4.6 Confirm the degraded-source notice still appears above the diagram when `isDegraded` is true
-- [ ] 4.7 Re-check both 1440px and 390px one final time against the fully-verified page
+- [x] 4.5 Force each live-state status (`good`/`watch`/`problem`) via a backdated or missing push and confirm the diagram (or its `LOAD_FAILED`/empty fallback text, unchanged from today) renders correctly for each
+- [x] 4.6 Confirm the degraded-source notice still appears above the diagram when `isDegraded` is true
+- [x] 4.7 Re-check both 1440px and 390px one final time against the fully-verified page
