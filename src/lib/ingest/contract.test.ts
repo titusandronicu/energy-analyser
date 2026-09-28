@@ -195,6 +195,22 @@ describe("ingest contract v1", () => {
     );
   });
 
+  it("rejects a month outside 01-12", () => {
+    expect(firstIssuePath(withChanges((p) => (okForecast(p).month = "2026-13")))).toBe("bill_forecast.month");
+    expect(firstIssuePath(withChanges((p) => (okForecast(p).month = "2026-00")))).toBe("bill_forecast.month");
+  });
+
+  it("rejects a repeated day in observed_days", () => {
+    expect(
+      firstIssuePath(
+        withChanges((p) => {
+          const forecast = okForecast(p);
+          forecast.observed_days = [forecast.observed_days[0], { ...forecast.observed_days[0] }];
+        }),
+      ),
+    ).toBe("bill_forecast.observed_days");
+  });
+
   it("accepts a payload without a bill forecast", () => {
     const payload = withChanges((p) => delete p.bill_forecast);
     expect(validateIngestPayload(payload, now).success).toBe(true);

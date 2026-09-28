@@ -94,7 +94,7 @@ Money and energy fields the app displays are `z.number().nonnegative()`. The **`
 
 ```ts
 const billForecast = z.discriminatedUnion("status", [
-  z.strictObject({ status: z.literal("ok"), /* … full body … */ }),
+  z.strictObject({ status: z.literal("ok") /* … full body … */ }),
   z.strictObject({
     status: z.literal("no_data"),
     reason: z.enum(["no_complete_days", "settlement_facts_missing", "rates_unavailable"]),
@@ -140,7 +140,7 @@ A new `--file <path>` flag reads the body from an arbitrary file instead of the 
 
 **Intent**: Give the manual test steps the bodies they need, as tracked files rather than throwaway edits, so the checks are repeatable by the next person.
 
-**Contract**: One file per case the Testing Strategy exercises: the three `no_data` reasons, a backdated `generated_at`, 6 and 7 complete days, three bodies around the ±20% verdict line, one without `closed_month_check`, and one above the plausibility ceiling. Each is a complete v1 payload so `--file` can send it unmodified.
+**Contract**: One file per case the Testing Strategy exercises: the three `no_data` reasons, a backdated `generated_at`, 6 and 7 complete days, three bodies around the ±20% verdict line, one without `closed_month_check`, and one above the plausibility ceiling. Each is a complete v1 payload so `--file` can send it whole. Note `--file` still rewrites `captured_at` and `bill_forecast.generated_at`, so the deliberately-stale variant needs `--keep-generated-at`; the script says so on every rewrite.
 
 #### 6. Contract tests
 
@@ -163,7 +163,7 @@ The settlement case is deliberately the opposite way round from the displayed fi
 
 #### Manual Verification:
 
-- `node scripts/push-fixture.mjs --file scripts/fixtures/bill-forecast/<case>.json` sends each variant body and is accepted
+- `node scripts/push-fixture.mjs --file scripts/fixtures/bill-forecast/<case>.json` sends each variant body and is accepted, with `--keep-generated-at` for `stale-generated-at.json`
 - `node scripts/push-fixture.mjs` against a local server still sends only the `state` section
 - `node scripts/push-fixture.mjs --full` is accepted with the new section present and its `generated_at` rewritten to now
 
@@ -241,6 +241,7 @@ Turn the raw section into a view object carrying every decision from planning, w
 - `FORECAST_STALE_AFTER_MS = 30 * 60 * 1000` — judged against the body's own `generated_at`, not `captured_at`.
 - `MIN_COMPLETE_DAYS = 7` — below it the grey "za mało danych" state (`change.md:14`).
 - A settlement sign guard: a negative `reference_consumed_kwh`, `reference_feed_in_kwh` or `export_ratio` blanks the figure, since zod deliberately lets those through to keep a bad disclosure from breaking ingestion.
+- A range-ordering guard: `range_gross_pln.low > high` blanks the figure. Left out of zod for the same reason as the sign guard — a reversed range is a lab bug, and a refine would 422 the whole push.
 - `MAX_PLAUSIBLE_BILL_PLN = 7000` — derived from the lab's own bounds: it drops a day above 200 kWh as a counter glitch (`docs/logic.md:85`), and 200 × 31 × 1.0991 + 44.62 ≈ 6859. A central figure or range end above this blanks the figure rather than rejecting the push.
 - `BILL_AMBER_RATIO = 1.2` — the colour bands from `change.md:14`.
 
@@ -266,7 +267,7 @@ The day label comes from `formatPeriod` over the dates in `observed_days`; becau
 
 **Intent**: Cover every path, following the fixed-clock factory style of `src/lib/services/live-state.test.ts:17-34`.
 
-**Contract**: Cases for each of the three `no_data` reasons; a forecast at exactly 30 minutes (not stale) and at 30 minutes plus a second (stale); 6 and 7 complete days; the verdict at equal, at exactly +20% and above +20%; `closed_month_check` absent; a range end above the plausibility ceiling; an empty `observed_days`; each confidence level, including a `low` whose label names the reference month; a body whose `month` is not the current Warsaw month, keeping the figure and dropping the badge to `problem`; a null row; and non-numeric values rendering `MISSING`.
+**Contract**: Cases for each of the three `no_data` reasons; a forecast at exactly 30 minutes (not stale) and at 30 minutes plus a second (stale); 6 and 7 complete days; the verdict at equal, at exactly +20% and above +20%; `closed_month_check` absent; a range end above the plausibility ceiling; an empty `observed_days`; each confidence level, including a `low` whose label names the reference month; a body whose `month` is not the current Warsaw month, keeping the figure and dropping the badge to `problem`; a reversed `range_gross_pln`; a null row; and non-numeric values rendering `MISSING`.
 
 ### Success Criteria:
 
@@ -329,7 +330,7 @@ Render the view model and record the rules in the project docs.
 
 **Intent**: Keep the docs in step with the code, as `context/foundation/lessons.md:12-17` requires.
 
-**Contract**: In `docs/logic.md`, flip `:81` from "the screen for it is not" to the built state, and add an App row to the routing table at `:7-16` for the card's own rules (freshness, minimum days, verdict bands, plausibility ceiling) pointing at `src/lib/services/bill-forecast.ts`. In `docs/decisions.md`, one dated 2026-09-28 entry per decision taken here: range as the headline, a lagging reference disclosed rather than hidden, the verdict reference and its absent case, the 30-minute freshness rule, the split of validation between contract and mapper, and the closed-month check confined to the details block. In `docs/ingest/README.md`, add the section to the payload list at `:19-21` and the storage line at `:43`.
+**Contract**: In `docs/logic.md`, flip `:81` from "the screen for it is not" to the built state, and add an App row to the routing table at `:7-16` for the card's own rules (freshness, minimum days, verdict bands, plausibility ceiling) pointing at `src/lib/services/bill-forecast.ts`. In `docs/decisions.md`, one dated 2026-09-28 entry per decision taken here: range as the headline, a lagging reference disclosed rather than hidden, the verdict reference and its absent case, the 30-minute freshness rule, the split of validation between contract and mapper, and the closed-month check confined to the details block. In `docs/ingest/README.md`, add the section to the payload list at `:19-21`, the storage line at `:43`, and the fixture-push workflow at `:52` — that line still documents only `--full` and claims the script sends only `state`, so `--file` and `--keep-generated-at` belong there where an operator will look.
 
 ### Success Criteria:
 
@@ -370,7 +371,7 @@ With the contract deployed, have the lab send the section and confirm the card a
 
 #### 0. Preflight before the lab sends anything
 
-**Intent**: Prove the real file parses before it can take ingestion down. A strict-contract 422 rejects the *whole* payload, so a single undeclared or mistyped key stops live state and the recommendation updating in production until the lab is reverted. This is the plan's weakest assumption, so it gets a gate rather than a hope.
+**Intent**: Prove the real file parses before it can take ingestion down. A strict-contract 422 rejects the _whole_ payload, so a single undeclared or mistyped key stops live state and the recommendation updating in production until the lab is reverted. This is the plan's weakest assumption, so it gets a gate rather than a hope.
 
 **Contract**: Take a copy of the lab's current `current-month-bill-forecast.json`, wrap it as a `bill_forecast` section in a complete v1 body under `scripts/fixtures/bill-forecast/`, and run it through the deployed contract — `npx vitest`-style `ingestPayloadV1.safeParse`, or one `scripts/push-fixture.mjs --file` call against a local server. Reconcile every mismatch in the zod section before touching the lab. Rollback for this phase is reverting the push script's forecast block; the app side needs no rollback because the section is optional.
 
@@ -452,16 +453,16 @@ The migration adds a view only — no table, no data movement, no backfill — s
 
 #### Automated
 
-- [x] 1.1 `npm run contract:export` leaves no diff in `docs/ingest/contract-v1.schema.json`
-- [x] 1.2 Unit tests pass: `npm test`
-- [x] 1.3 Linting passes: `npm run lint`
-- [x] 1.4 Production build succeeds: `npm run build`
+- [x] 1.1 `npm run contract:export` leaves no diff in `docs/ingest/contract-v1.schema.json` — 2246377
+- [x] 1.2 Unit tests pass: `npm test` — 2246377
+- [x] 1.3 Linting passes: `npm run lint` — 2246377
+- [x] 1.4 Production build succeeds: `npm run build` — 2246377
 
 #### Manual
 
-- [x] 1.5 `node scripts/push-fixture.mjs --file scripts/fixtures/bill-forecast/<case>.json` sends each variant body and is accepted
-- [x] 1.6 `node scripts/push-fixture.mjs` against a local server still sends only the `state` section
-- [x] 1.7 `node scripts/push-fixture.mjs --full` is accepted with the new section present and its `generated_at` rewritten to now
+- [x] 1.5 `node scripts/push-fixture.mjs --file scripts/fixtures/bill-forecast/<case>.json` sends each variant body and is accepted, with `--keep-generated-at` for `stale-generated-at.json` — 2246377
+- [x] 1.6 `node scripts/push-fixture.mjs` against a local server still sends only the `state` section — 2246377
+- [x] 1.7 `node scripts/push-fixture.mjs --full` is accepted with the new section present and its `generated_at` rewritten to now — 2246377
 
 ### Phase 2: Read path
 

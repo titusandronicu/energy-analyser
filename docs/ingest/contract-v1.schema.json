@@ -398,7 +398,7 @@
             },
             "month": {
               "type": "string",
-              "pattern": "^\\d{4}-\\d{2}$"
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
             },
             "confidence": {
               "type": "string",
@@ -486,7 +486,7 @@
                 },
                 "reference_period": {
                   "type": "string",
-                  "pattern": "^\\d{4}-\\d{2}$"
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                 },
                 "reference_lag_months": {
                   "type": "integer",
@@ -564,7 +564,7 @@
               "properties": {
                 "period": {
                   "type": "string",
-                  "pattern": "^\\d{4}-\\d{2}$"
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
                 },
                 "computed_gross_pln": {
                   "type": "number",
@@ -646,7 +646,7 @@
             },
             "month": {
               "type": "string",
-              "pattern": "^\\d{4}-\\d{2}$"
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
             },
             "method": {
               "type": "string",

@@ -16,16 +16,16 @@ The dashboard carries a fourth card, "Prognoza rachunku", second in the column a
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) |
-| --- | --- | --- |
-| Headline figure | The range leads; central estimate secondary | US-03's acceptance criterion asks for "a range rather than a single exact figure", and a single number with a ±40% error reads far more precise than it is. |
-| Lagging reference month | Show the figure, disclosed, naming the reference month | `reference_lag_months > 0` forces `low` confidence for roughly three weeks of every month, so hiding the figure then would leave the card blank for most of its life. |
-| Colour verdict reference | `closed_month_check.invoice_gross_pln`; no verdict when the key is absent | The bands were already fixed in `change.md:14`, and falling back to our own arithmetic would silently change what the colour means. |
-| Freshness rule | The body's own `generated_at` past 30 minutes blanks the figure | A stale file can still say `status: "ok"` — nginx once served a 2.4x-overstated figure inside a fresh push. |
-| Where validation lives | Shape in zod; plausibility and settlement signs in the mapper | The contract is strict, so a rejection 422s the whole push and stops live state and the recommendation updating — and `reference_feed_in_kwh` has been observed negative, so the settlement block stays permissive in zod and is sign-checked in the mapper. |
-| Closed-month check | One line inside the basis details, worded as a test of the arithmetic | The reviews require it always be reported, but predicted-vs-actual reconciliation is a PRD non-goal. |
-| Scope | App side ships and deploys first, then the lab push | `docs/ingest/README.md:58-62` requires the app to be live before the lab sends a new optional field. |
-| Recomputation | None; whole-złoty display | `prd-v3.md:268` — the app adds no pricing logic of its own; whole złoty because a ±40% estimate quoted to the grosz asserts false precision. |
+| Decision                 | Choice                                                                    | Why (1 sentence)                                                                                                                                                                                                                                             |
+| ------------------------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Headline figure          | The range leads; central estimate secondary                               | US-03's acceptance criterion asks for "a range rather than a single exact figure", and a single number with a ±40% error reads far more precise than it is.                                                                                                  |
+| Lagging reference month  | Show the figure, disclosed, naming the reference month                    | `reference_lag_months > 0` forces `low` confidence for roughly three weeks of every month, so hiding the figure then would leave the card blank for most of its life.                                                                                        |
+| Colour verdict reference | `closed_month_check.invoice_gross_pln`; no verdict when the key is absent | The bands were already fixed in `change.md:14`, and falling back to our own arithmetic would silently change what the colour means.                                                                                                                          |
+| Freshness rule           | The body's own `generated_at` past 30 minutes blanks the figure           | A stale file can still say `status: "ok"` — nginx once served a 2.4x-overstated figure inside a fresh push.                                                                                                                                                  |
+| Where validation lives   | Shape in zod; plausibility and settlement signs in the mapper             | The contract is strict, so a rejection 422s the whole push and stops live state and the recommendation updating — and `reference_feed_in_kwh` has been observed negative, so the settlement block stays permissive in zod and is sign-checked in the mapper. |
+| Closed-month check       | One line inside the basis details, worded as a test of the arithmetic     | The reviews require it always be reported, but predicted-vs-actual reconciliation is a PRD non-goal.                                                                                                                                                         |
+| Scope                    | App side ships and deploys first, then the lab push                       | `docs/ingest/README.md:58-62` requires the app to be live before the lab sends a new optional field.                                                                                                                                                         |
+| Recomputation            | None; whole-złoty display                                                 | `prd-v3.md:268` — the app adds no pricing logic of its own; whole złoty because a ±40% estimate quoted to the grosz asserts false precision.                                                                                                                 |
 
 ## Scope
 
@@ -39,13 +39,13 @@ The S-02 chain with one correction: strict contract section → `security_invoke
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Contract section | `bill_forecast` on the v1 payload, schema exported, example plus a `--file` flag and variant fixture bodies | The field list must match the running lab script, not the archived plan, which diverges from it in five places; a strict contract makes any mismatch a 422. |
-| 2. Read path | Migration view, row type, loader | Forgetting `security_invoker` would bypass RLS and the column grants; dropping the key-presence predicate would blank the card on any push that omits the section. |
-| 3. View model | Mapper holding every threshold and all six refusal paths, unit-tested | `formatPeriod` throws on an empty list, and the refusal checks break if reordered. |
-| 4. Card, dashboard, docs | The visible card plus the project docs | The card must stay a dumb renderer; any threshold that creeps into the markup escapes the tests. |
-| 5. Lab push and production | The lab sends the section; the card shows the real figure | Needs a production deploy before the lab changes, so the two repos must land in order; a field mismatch would 422 every push, which is why the phase opens with a preflight parse. |
+| Phase                      | What it delivers                                                                                            | Key risk                                                                                                                                                                           |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Contract section        | `bill_forecast` on the v1 payload, schema exported, example plus a `--file` flag and variant fixture bodies | The field list must match the running lab script, not the archived plan, which diverges from it in five places; a strict contract makes any mismatch a 422.                        |
+| 2. Read path               | Migration view, row type, loader                                                                            | Forgetting `security_invoker` would bypass RLS and the column grants; dropping the key-presence predicate would blank the card on any push that omits the section.                 |
+| 3. View model              | Mapper holding every threshold and all six refusal paths, unit-tested                                       | `formatPeriod` throws on an empty list, and the refusal checks break if reordered.                                                                                                 |
+| 4. Card, dashboard, docs   | The visible card plus the project docs                                                                      | The card must stay a dumb renderer; any threshold that creeps into the markup escapes the tests.                                                                                   |
+| 5. Lab push and production | The lab sends the section; the card shows the real figure                                                   | Needs a production deploy before the lab changes, so the two repos must land in order; a field mismatch would 422 every push, which is why the phase opens with a preflight parse. |
 
 **Prerequisites:** F-01 and S-01 (done); `bill-accuracy` deployed on the lab (done, 2026-09-28); write access to homelab-2 and a production deploy window between phases 4 and 5; the Home Assistant PGE connector supplying the settlement facts.
 

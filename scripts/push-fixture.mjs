@@ -27,9 +27,14 @@ if (fileFlag !== -1 && (!filePath || filePath.startsWith("--"))) {
 }
 
 // A named file is always sent whole: its point is the sections the default push strips.
-const fixture = JSON.parse(
-  readFileSync(filePath ?? new URL("../docs/ingest/example-v1.json", import.meta.url), "utf8"),
-);
+const source = filePath ?? new URL("../docs/ingest/example-v1.json", import.meta.url);
+let fixture;
+try {
+  fixture = JSON.parse(readFileSync(source, "utf8"));
+} catch (error) {
+  console.error(`cannot read ${filePath ?? "docs/ingest/example-v1.json"}: ${error.message}`);
+  process.exit(1);
+}
 const {
   recommendation: _recommendation,
   daily_history: _dailyHistory,
@@ -49,6 +54,11 @@ const payload = {
   captured_at: capturedAt,
   ...(rewriteGeneratedAt ? { bill_forecast: { ...body.bill_forecast, generated_at: capturedAt } } : {}),
 };
+
+// Say so out loud: a silent rewrite makes the stale-forecast variants look like they were exercised.
+if (rewriteGeneratedAt) {
+  console.log("bill_forecast.generated_at rewritten to now (use --keep-generated-at to preserve it)");
+}
 
 const response = await fetch(new URL("/api/ingest", BASE_URL), {
   method: "POST",

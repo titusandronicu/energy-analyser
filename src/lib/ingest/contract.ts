@@ -10,6 +10,9 @@ export const MAX_CAPTURE_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
 const reading = z.number().nullable();
 const energyKwh = z.number().nonnegative().nullable();
+// Non-null counterpart of `energyKwh`, for the bill forecast's kWh and PLN figures. Hoisted so the
+// deliberate bare `z.number()` inside `settlement` reads as the exception it is.
+const nonNegative = z.number().nonnegative();
 const factValue = z.union([z.number(), z.string().max(500), z.boolean(), z.null()]);
 const factRecord = z.record(z.string().max(100), factValue);
 
@@ -59,7 +62,9 @@ const dailyEnergy = z.strictObject({
   pv_forecast_kwh: energyKwh.optional(),
 });
 
-const monthKey = z.string().regex(/^\d{4}-\d{2}$/);
+// The month part is validated like `z.iso.date()` does it, so "2026-13" is a rejection rather than
+// something the card later reports as the wrong month.
+const monthKey = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 
 // The lab's estimate of this month's PGE invoice (docs/logic.md, "Bill forecast (lab)").
 // Split on `status` so a `no_data` body can never carry a figure: the app must not be able to read
@@ -77,17 +82,24 @@ const billForecast = z.discriminatedUnion("status", [
     confidence: z.enum(["low", "medium", "high"]),
     completed_days_used: z.number().int().nonnegative(),
     // `{date, grid_import_kwh}` per complete day the estimate rests on; the card names the period from it.
-    observed_days: z.array(z.strictObject({ date: z.iso.date(), grid_import_kwh: z.number().nonnegative() })).max(31),
-    average_daily_import_kwh: z.number().nonnegative(),
-    projected_import_kwh: z.number().nonnegative(),
-    projected_bill_gross_pln: z.number().nonnegative(),
+    // Days must be unique, as in `daily_history` below: a repeated date would skew the period label and
+    // the day count the card derives from this array. A duplicate is a sender bug with no valid form.
+    observed_days: z
+      .array(z.strictObject({ date: z.iso.date(), grid_import_kwh: nonNegative }))
+      .max(31)
+      .refine((days) => new Set(days.map((d) => d.date)).size === days.length, {
+        message: "observed_days dates must be unique",
+      }),
+    average_daily_import_kwh: nonNegative,
+    projected_import_kwh: nonNegative,
+    projected_bill_gross_pln: nonNegative,
     range_gross_pln: z.strictObject({
-      low: z.number().nonnegative(),
-      high: z.number().nonnegative(),
+      low: nonNegative,
+      high: nonNegative,
     }),
-    projected_credit_kwh: z.number().nonnegative(),
-    projected_billable_kwh: z.number().nonnegative(),
-    credit_left_kwh: z.number().nonnegative(),
+    projected_credit_kwh: nonNegative,
+    projected_billable_kwh: nonNegative,
+    credit_left_kwh: nonNegative,
     settlement: z.strictObject({
       factor: z.number(),
       reference_period: monthKey,
@@ -103,16 +115,16 @@ const billForecast = z.discriminatedUnion("status", [
     pricing: z.strictObject({
       source: z.string().max(200),
       rates_verified_on: z.iso.date(),
-      variable_gross_pln_per_kwh: z.number().nonnegative(),
-      fixed_gross_pln_per_month: z.number().nonnegative(),
+      variable_gross_pln_per_kwh: nonNegative,
+      fixed_gross_pln_per_month: nonNegative,
     }),
     // Absent when the reference period carries no invoice total, so readers treat it as optional.
     // `diff_pct` is signed by nature.
     closed_month_check: z
       .strictObject({
         period: monthKey,
-        computed_gross_pln: z.number().nonnegative(),
-        invoice_gross_pln: z.number().nonnegative(),
+        computed_gross_pln: nonNegative,
+        invoice_gross_pln: nonNegative,
         diff_pct: z.number(),
         ok: z.boolean(),
       })

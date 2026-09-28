@@ -1,4 +1,5 @@
 <!-- PLAN-REVIEW-REPORT -->
+
 # Plan Review: Bill Forecast Card (S-07)
 
 - **Plan**: `context/changes/bill-forecast/plan.md`
@@ -9,13 +10,13 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| End-State Alignment | WARNING |
-| Lean Execution | PASS |
-| Architectural Fitness | FAIL |
-| Blind Spots | FAIL |
-| Plan Completeness | WARNING |
+| Dimension             | Verdict |
+| --------------------- | ------- |
+| End-State Alignment   | WARNING |
+| Lean Execution        | PASS    |
+| Architectural Fitness | FAIL    |
+| Blind Spots           | FAIL    |
+| Plan Completeness     | WARNING |
 
 Overall REVISE rather than RETHINK despite two FAILs: the approach is right and
 every fix is one clause, additive, or a wording correction. But F1 and F2 both
@@ -140,7 +141,7 @@ sit in phases 1–2 and should be fixed before any code is written.
 - **Dimension**: Plan Completeness
 - **Location**: What We're NOT Doing; brief's Key Decisions vs Phase 3 item #2
 - **Detail**: "What We're NOT Doing" says no rounding and the brief has a "Rounding | None" row, but Phase 3 specifies `plnLabel` at whole złoty, which rounds 258.43 to "258 zł". Same word, two meanings — display precision versus recomputing the figure.
-- **Fix**: Reword both to say no *recomputation or re-scaling*, and state whole-złoty display precision as the deliberate choice it is.
+- **Fix**: Reword both to say no _recomputation or re-scaling_, and state whole-złoty display precision as the deliberate choice it is.
 - **Decision**: FIXED
 
 ### F9 — Two factual errors in the plan's prose

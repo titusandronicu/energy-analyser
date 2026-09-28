@@ -42,7 +42,7 @@ Plan review is done, so nothing gates implementation.
 Phases 1–4 are app-side and must ship **and deploy** before phase 5 changes the
 lab (`docs/ingest/README.md:58-62`). Phase 5 now opens with item #0, a preflight:
 parse the real `current-month-bill-forecast.json` against the deployed contract
-*before* touching the lab. Do not skip it — the contract is `z.strictObject`, so
+_before_ touching the lab. Do not skip it — the contract is `z.strictObject`, so
 one undeclared key 422s the entire push and stops live state and the
 recommendation updating in production.
 
@@ -71,7 +71,7 @@ Don't reopen these; the brief's Key Decisions table carries the one-line why for
 Worth skimming before you start, because Phase 1 roughly doubled:
 
 - **Phase 2** — the view filters on key presence (`and p.payload ? 'bill_forecast'`).
-  `live_state` is *not* a precedent for an optional section; without the
+  `live_state` is _not_ a precedent for an optional section; without the
   predicate, any push omitting the section would blank the card and discard a
   good forecast from minutes earlier.
 - **Phase 1** — now 6 items: a `--file <path>` flag on `push-fixture.mjs`, a
@@ -104,5 +104,5 @@ Worth skimming before you start, because Phase 1 roughly doubled:
 
 Citations to another change's reviews must be fully qualified
 (`context/archive/2026-09-27-bill-accuracy/reviews/…`). A bare
-`reviews/plan-review.md:33` now resolves to *this* change's review, which is a
+`reviews/plan-review.md:33` now resolves to _this_ change's review, which is a
 different document — seven references had to be fixed for exactly this reason.
