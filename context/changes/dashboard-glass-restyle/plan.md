@@ -279,22 +279,22 @@ Not applicable — no data model or schema changes. Rolling back is reverting th
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Production build succeeds: `npm run build`
+- [x] 1.1 Unit tests pass: `npm test` — 4f821ae
+- [x] 1.2 Linting passes: `npm run lint` — 4f821ae
+- [x] 1.3 Production build succeeds: `npm run build` — 4f821ae
 
 #### Manual
 
-- [x] 1.4 Inspecting `:root`'s computed styles in devtools shows `--background`, `--card`, `--primary`, `--ring`, `--border`, `--destructive` matching the brief's hex values, and `--radius-panel` resolving to 20px
-- [x] 1.5 `rounded-panel` is usable as a Tailwind utility class
+- [x] 1.4 Inspecting `:root`'s computed styles in devtools shows `--background`, `--card`, `--primary`, `--ring`, `--border`, `--destructive` matching the brief's hex values, and `--radius-panel` resolving to 20px — 4f821ae
+- [x] 1.5 `rounded-panel` is usable as a Tailwind utility class — 4f821ae
 
 ### Phase 2: Shared components
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Linting and type checks pass: `npm run lint`
-- [ ] 2.3 Production build succeeds: `npm run build`
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Linting and type checks pass: `npm run lint`
+- [x] 2.3 Production build succeeds: `npm run build`
 
 ### Phase 3: Single view — recompose the dashboard
 
