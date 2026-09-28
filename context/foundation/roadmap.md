@@ -70,7 +70,7 @@ Navigation aid — groups items that share a Prerequisites chain. Canonical orde
 | ------ | ----------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A      | Delivered core                | `F-01` → `S-01` → `S-02` → `S-03` → `F-02` → `S-04` | Done; everything below builds on it.                                                                                                                                                                       |
 | B      | Trust in the numbers and cost | `S-14` → `S-07` → `F-05` → `S-11`                   | The owner's first priority. S-07 (cost before the bill) is the PRD's first problem and cheap, so it follows S-14 (v3.1). S-11 needs a week or two of forecasts after F-05 before certainty means anything. |
-| C      | History calendar              | `S-15` → `S-17` → `S-20` → `S-19`                   | The main v3 surface; the year view (S-16) is parked until a second year of history exists.                                                                                                                 |
+| C      | History calendar              | `S-15` → `S-17` → `S-20` → `S-19`                   | The main v3 surface; S-16 (year view) is no longer parked — it ships as a partial-year view; only year-over-year comparison still waits for a second year of history.                                      |
 | D      | Lab history and summaries     | `F-03` → `F-04` → `S-18`                            | homelab-2 work that runs alongside Streams B and C; S-18 joins Stream C at S-15.                                                                                                                           |
 | E      | v2 cost and context           | `S-08` → `S-09` → `S-10` → `S-12` → `S-13`          | Sequenced after the v3 work by the owner's decision (2026-09-26). S-09, S-12 and S-13 are stretch (US-07); S-08 is blocked on the lab; S-10 is must-have but last. S-07 moved to Stream B.                 |
 
@@ -219,7 +219,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### S-15: History calendar
 
-- **Outcome:** user can move between days and months in a calendar and see each period's PV production, consumption, grid import/export, forecast against actual, and the recommendations from that period.
+- **Outcome:** user can move between days, months, quarters, and years in a calendar and see each period's PV production, consumption, grid import/export, forecast against actual, and the recommendations from that period.
 - **Change ID:** history-calendar
 - **PRD refs:** US-05, FR-021
 - **Prerequisites:** S-14
@@ -227,6 +227,18 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The main new surface; it must stay usable on a phone and reuse S-14's period and minimum-data rule rather than invent its own.
+- **Status:** proposed
+
+### S-16: Calendar year view
+
+- **Outcome:** user can open the calendar's year view and see the current year's aggregated PV production, consumption, grid import/export, and forecast-vs-actual totals to date; year-over-year comparison is not available until a second year of history exists (about July 2027).
+- **Change ID:** calendar-year-view
+- **PRD refs:** US-05, FR-021
+- **Prerequisites:** S-15
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Un-parked 2026-09-28 (owner's decision): the lab's history starts on 2026-07-16, so a year view would show only part of 2026 and no year could be compared with another. That constraint is accepted, not a blocker — the partial year shows via the same "not enough data yet" pattern (FR-019) any incomplete period already uses, and the view's existence is no longer gated on a second year of history; only the year-over-year comparison itself still waits for one.
 - **Status:** proposed
 
 ### S-17: Period ratings
@@ -402,7 +414,6 @@ Foundations below assume these are present and do NOT re-scaffold them.
 ## Parked
 
 - **Recommendation feedback: S-05 `record-feedback` and S-06 `edit-delete-feedback`** — Why parked: dropped by the owner on 2026-09-26 (PRD v3 removed US-02 and FR-007–FR-010); the system rates days and months instead (S-17), and notes on days (S-19) are the CRUD surface. S-05's phase 1 stays unmerged on branch `feat/record-feedback` for reference.
-- **S-16 `calendar-year-view`** — Why parked: the lab's history starts on 2026-07-16, so a year view would show only part of 2026 and no year could be compared with another. Revisit when a second year of history exists (about July 2027).
 - **Custom weather-forecast modelling** — Why parked: PRD Non-Goals; the lab's existing forecast source is consumed (F-05 restores it).
 - **Multi-user / multi-household support** — Why parked: PRD Non-Goals; single-tenant by design.
 - **PGE bill reconciliation (predicted vs actual) and the PGE vs Deye cross-check** — Why parked: PRD Non-Goals; the projection and closed-period cost (S-07, S-08) are in scope, the comparison is not.
