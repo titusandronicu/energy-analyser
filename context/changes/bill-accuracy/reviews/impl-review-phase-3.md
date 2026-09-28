@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Bill accuracy
 
 - **Plan**: context/changes/bill-accuracy/plan.md
@@ -12,14 +13,14 @@ Reviewed: `homelab-2@362e9d3` (2 files), `energy-analyser@599ca2f` (plan.md, cha
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | WARNING |
-| Scope Discipline | WARNING |
-| Safety & Quality | WARNING |
-| Architecture | PASS |
-| Pattern Consistency | PASS |
-| Success Criteria | WARNING |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | WARNING |
+| Scope Discipline    | WARNING |
+| Safety & Quality    | WARNING |
+| Architecture        | PASS    |
+| Pattern Consistency | PASS    |
+| Success Criteria    | WARNING |
 
 Every contract bullet of Phase 3 is met, and all twelve checkable claims in the rewritten runbook paragraph were verified line-by-line against the code. The warnings are: one reliability defect introduced by an out-of-contract edit, two inaccurate sentences, two undocumented runbook procedures, and one deliberately deferred criterion.
 

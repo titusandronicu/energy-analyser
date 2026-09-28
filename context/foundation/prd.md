@@ -26,6 +26,7 @@ Generic solar-monitoring apps don't have this owner's exact PGE tariff and billi
 ## User & Persona
 
 Primary persona: the homeowner (you) — sole operator of a home solar PV + battery + grid system (Deye inverter, PGE G11 tariff, Home Assistant as the live telemetry hub). Reaches for this product:
+
 - mid-next-month, when the PGE bill arrives and they want to understand or verify the cost against what actually happened, and
 - day-to-day / seasonally, when deciding how to configure battery reserve/charge behavior ahead of expected weather or a season change.
 
@@ -36,12 +37,15 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 ## Success Criteria
 
 ### Primary
+
 - End-to-end flow works: opening the app with the access key shows current state (near-live Home Assistant telemetry pushed from the home lab) plus one derived insight against the historical baseline (computed in this app from pushed history), and an LLM-narrated battery-setting recommendation for today, informed by a weather forecast (narrated in the home lab and pushed with its facts bundle).
 
 ### Secondary
+
 - The battery recommendation already incorporates a weather forecast in v1, rather than being deferred to v2.
 
 ### Guardrails
+
 - The app never writes to Home Assistant or the inverter — recommendations are advisory-only, for human review.
 - No private-network data or secrets (telemetry, bills, credentials, local network topology) leak into the public repo.
 - The app degrades gracefully when the home lab stops pushing (Home Assistant, the lab pipeline or the connection is down): it shows last-known data with a clear staleness indicator instead of failing.
@@ -55,6 +59,7 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 - **Then** they see current PV/battery/grid state, one derived insight against the historical baseline, and a plain-language battery-setting recommendation for today
 
 #### Acceptance Criteria
+
 - Insight and recommendation are visible without further clicks beyond opening the app
 - The recommendation shown reflects the most recent daily refresh — it is not computed live while the user waits
 - If same-season historical data is insufficient, the insight visibly discloses it is using the flat-30-day fallback baseline
@@ -68,6 +73,7 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 - **Then** the feedback is saved and appears in their feedback history, and can later be edited or deleted
 
 #### Acceptance Criteria
+
 - Feedback entries are scoped to the single logged-in user's session/account
 - Editing or deleting a feedback entry updates or removes it immediately, visible on next view
 - Feedback does not automatically alter future recommendations in v1 — it's recorded for the user's own reference (see Non-Goals)
@@ -75,10 +81,12 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
 ## Functional Requirements
 
 ### Access
+
 - FR-001: User can access the app using an access key (token/link), without creating an account. Priority: must-have
   > Socratic: No counter-argument considered; stands as written.
 
 ### Live state & insight
+
 - FR-002: User can view current PV/battery/grid state from Home Assistant, pushed by the home lab at least every 5 minutes, independently of whether the insight/recommendation panel is available. Priority: must-have
   > Socratic: Counter-argument considered: "live pull adds a failure-prone dependency for
   > something that isn't the differentiator." Resolution: kept, but decoupled — the live-state
@@ -100,6 +108,7 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
   > in Phase 3 (app must not fail hard when Home Assistant is down).
 
 ### Battery recommendation
+
 - FR-005: User can view a plain-language battery-setting recommendation for today, generated via an LLM that narrates a pre-computed, verified facts bundle from the deterministic advisory engine — the LLM does not introduce new numbers or facts of its own. Priority: must-have
   > Socratic: Counter-argument considered: "an LLM could hallucinate or misstate the underlying
   > facts with confident tone." Resolution: LLM constrained to narration-only over a verified
@@ -110,6 +119,7 @@ Scale insight (100x check): at real multi-household scale, the access-key model 
   > must surface forecast confidence/uncertainty explicitly, not state it as fact.
 
 ### Recommendation feedback (CRUD)
+
 - FR-007: User can create a feedback entry on a recommendation — accept or dismiss it, with an optional note. Priority: must-have
 - FR-008: User can view their past feedback entries. Priority: must-have
 - FR-009: User can edit an existing feedback entry (change accept/dismiss status or note). Priority: must-have

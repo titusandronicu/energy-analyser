@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Access-Key Sign-In
 
 - **Plan**: context/changes/access-key-sign-in/plan.md
@@ -10,14 +11,14 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | PASS |
-| Scope Discipline | PASS |
-| Safety & Quality | WARNING |
-| Architecture | PASS |
-| Pattern Consistency | PASS |
-| Success Criteria | PASS |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | PASS    |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | WARNING |
+| Architecture        | PASS    |
+| Pattern Consistency | PASS    |
+| Success Criteria    | PASS    |
 
 Automated checks on `chore/s01-close-out` (includes #13, #16): `npm test` 66/66, `npm run lint` clean, `npx astro check` 0 errors. CI smoke on #16 passed, including the magic-link, code-forwarding and password steps.
 

@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Push Ingestion Endpoint
 
 - **Plan**: context/changes/push-ingestion-endpoint/plan.md
@@ -10,14 +11,14 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | PASS |
-| Scope Discipline | PASS |
-| Safety & Quality | PASS |
-| Architecture | PASS |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | PASS    |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | PASS    |
+| Architecture        | PASS    |
 | Pattern Consistency | WARNING |
-| Success Criteria | PASS |
+| Success Criteria    | PASS    |
 
 Automated checks re-run on `chore/f01-wrap-up`: `npm test` 24/24, `npm run lint`, `npx astro check` (0 errors) and `npm run build` all pass. The CI `ci` and `smoke` jobs passed on PR #9. Production (`9a094c0`) answered 201 created, 200 duplicate and 401 for a wrong token.
 

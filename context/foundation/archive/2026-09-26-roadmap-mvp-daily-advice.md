@@ -37,35 +37,35 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 
 ## At a glance
 
-| ID   | Change ID                 | Outcome (user can …)                                                    | Prerequisites | PRD refs                     | Status   |
-| ---- | ------------------------- | ----------------------------------------------------------------------- | ------------- | ---------------------------- | -------- |
-| F-01 | push-ingestion-endpoint   | (foundation) the home lab can push an authenticated, versioned payload  | —             | NFR (secrets, raw data)      | done     |
-| S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session      | —             | FR-001                       | done        |
-| S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop        | F-01, S-01    | US-01, FR-002, FR-004        | done     |
-| S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence    | F-01, S-01    | US-01, FR-005, FR-006        | done        |
-| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline   | F-02, S-01    | US-01, FR-003                | done |
-| S-05 | record-feedback           | accept or dismiss today's recommendation with a note and see history    | S-03          | US-02, FR-007, FR-008        | proposed |
-| S-06 | edit-delete-feedback      | edit or delete a past feedback entry                                    | S-05          | US-02, FR-009, FR-010        | proposed |
-| F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push       | F-01          | FR-003, FR-015               | done |
-| S-07 | bill-forecast             | see the projected cost of the current month with a range                | F-01, S-01    | US-03, FR-011                | proposed |
-| S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff     | F-01, S-01    | US-03, FR-012                | blocked  |
-| S-09 | consumption-plan-actions  | see the lab's consumption-plan actions next to today's recommendation  | S-03          | US-01, FR-013                | proposed |
-| S-10 | usage-profile             | see how consumption spreads across the day, week and unusual hours      | F-01, S-01    | US-04, FR-014                | proposed |
-| S-11 | forecast-accuracy         | see how accurate the PV forecast has been, next to the recommendation   | F-02, S-03    | US-01, FR-015, FR-006        | proposed |
-| S-12 | inverter-schedule-view    | see the inverter's current schedule next to the recommendation          | S-03          | US-01, FR-016                | proposed |
-| S-13 | pipeline-health           | see why advice or live data is missing or degraded                     | S-02, S-03    | US-01, FR-017, FR-004        | proposed |
+| ID   | Change ID                 | Outcome (user can …)                                                   | Prerequisites | PRD refs                | Status   |
+| ---- | ------------------------- | ---------------------------------------------------------------------- | ------------- | ----------------------- | -------- |
+| F-01 | push-ingestion-endpoint   | (foundation) the home lab can push an authenticated, versioned payload | —             | NFR (secrets, raw data) | done     |
+| S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session     | —             | FR-001                  | done     |
+| S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop       | F-01, S-01    | US-01, FR-002, FR-004   | done     |
+| S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence   | F-01, S-01    | US-01, FR-005, FR-006   | done     |
+| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline  | F-02, S-01    | US-01, FR-003           | done     |
+| S-05 | record-feedback           | accept or dismiss today's recommendation with a note and see history   | S-03          | US-02, FR-007, FR-008   | proposed |
+| S-06 | edit-delete-feedback      | edit or delete a past feedback entry                                   | S-05          | US-02, FR-009, FR-010   | proposed |
+| F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push      | F-01          | FR-003, FR-015          | done     |
+| S-07 | bill-forecast             | see the projected cost of the current month with a range               | F-01, S-01    | US-03, FR-011           | proposed |
+| S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff    | F-01, S-01    | US-03, FR-012           | blocked  |
+| S-09 | consumption-plan-actions  | see the lab's consumption-plan actions next to today's recommendation  | S-03          | US-01, FR-013           | proposed |
+| S-10 | usage-profile             | see how consumption spreads across the day, week and unusual hours     | F-01, S-01    | US-04, FR-014           | proposed |
+| S-11 | forecast-accuracy         | see how accurate the PV forecast has been, next to the recommendation  | F-02, S-03    | US-01, FR-015, FR-006   | proposed |
+| S-12 | inverter-schedule-view    | see the inverter's current schedule next to the recommendation         | S-03          | US-01, FR-016           | proposed |
+| S-13 | pipeline-health           | see why advice or live data is missing or degraded                     | S-02, S-03    | US-01, FR-017, FR-004   | proposed |
 
 ## Streams
 
 Navigation aid — groups items that share a Prerequisites chain. Canonical ordering still lives in the dependency graph below; this table is the proposed reading order across parallel tracks.
 
-| Stream | Theme              | Chain                               | Note                                                                  |
-| ------ | ------------------ | ----------------------------------- | --------------------------------------------------------------------- |
-| A      | Advice loop        | `F-01` → `S-03` → `S-05` → `S-06`   | The shortest path to the north star, then the CRUD surface on top of it. |
-| B      | Access             | `S-01`                              | No prerequisites; run it in parallel with F-01. Every page-facing slice needs it. |
-| C      | State and insight  | `S-02` → `F-02` → `S-04` → `S-11`   | Daily history unblocks the seasonal insight and forecast accuracy; S-11 also needs S-03. |
-| D      | Cost and usage     | `S-07` → `S-08` → `S-10`            | Money feedback from lab aggregates; S-08 waits for the full tariff on the lab. |
-| E      | Advice context     | `S-09` → `S-12` → `S-13`            | Joins Stream A at S-03: context around today's recommendation. |
+| Stream | Theme             | Chain                             | Note                                                                                     |
+| ------ | ----------------- | --------------------------------- | ---------------------------------------------------------------------------------------- |
+| A      | Advice loop       | `F-01` → `S-03` → `S-05` → `S-06` | The shortest path to the north star, then the CRUD surface on top of it.                 |
+| B      | Access            | `S-01`                            | No prerequisites; run it in parallel with F-01. Every page-facing slice needs it.        |
+| C      | State and insight | `S-02` → `F-02` → `S-04` → `S-11` | Daily history unblocks the seasonal insight and forecast accuracy; S-11 also needs S-03. |
+| D      | Cost and usage    | `S-07` → `S-08` → `S-10`          | Money feedback from lab aggregates; S-08 waits for the full tariff on the lab.           |
+| E      | Advice context    | `S-09` → `S-12` → `S-13`          | Joins Stream A at S-03: context around today's recommendation.                           |
 
 ## Baseline
 
@@ -271,23 +271,23 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ## Backlog Handoff
 
-| Roadmap ID | Change ID                 | Suggested issue title                                        | Ready for `/10x-plan` | Notes |
-| ---------- | ------------------------- | ------------------------------------------------------------ | --------------------- | ----- |
-| F-01       | push-ingestion-endpoint   | Authenticated, idempotent push ingestion endpoint (v1 envelope) | yes                | Run `/10x-plan push-ingestion-endpoint` |
-| S-01       | access-key-sign-in        | Replace email/password with access-key sign-in               | yes                   | Run `/10x-plan access-key-sign-in` |
-| S-02       | live-state-with-staleness | Show pushed live state with staleness indicator              | no                    | Needs F-01, S-01 |
-| S-03       | todays-recommendation     | Show today's narrated battery recommendation                 | no                    | Needs F-01, S-01; north star |
-| S-04       | seasonal-usage-insight    | Season-adjusted usage insight with 30-day fallback           | no                    | Needs F-02, S-01 |
-| S-05       | record-feedback           | Accept/dismiss feedback on a recommendation + history        | no                    | Needs S-03 |
-| S-06       | edit-delete-feedback      | Edit and delete feedback entries                             | no                    | Needs S-05 |
-| F-02       | daily-history-push        | Lab pushes the last 35 days of per-day energy totals         | yes                   | Run `/10x-plan daily-history-push`; mostly homelab-2 (issue #21) |
-| S-07       | bill-forecast             | Show the projected cost of the current month                 | no                    | Needs S-01 done |
-| S-08       | closed-period-bill        | Show the closed-period cost under the full tariff            | no                    | Blocked: full G11 tariff not deployed on the lab |
-| S-09       | consumption-plan-actions  | Show consumption-plan manual actions next to the advice      | no                    | Needs S-03 done |
-| S-10       | usage-profile             | Show the usage profile (day, week, unusual hours)            | no                    | Needs S-01 done |
-| S-11       | forecast-accuracy         | Show recent PV forecast accuracy                             | no                    | Needs F-02, S-03 |
-| S-12       | inverter-schedule-view    | Show the inverter's current schedule (read-only)             | no                    | Needs S-03 done |
-| S-13       | pipeline-health           | Show why advice or live data is degraded                     | no                    | Needs S-02, S-03 |
+| Roadmap ID | Change ID                 | Suggested issue title                                           | Ready for `/10x-plan` | Notes                                                            |
+| ---------- | ------------------------- | --------------------------------------------------------------- | --------------------- | ---------------------------------------------------------------- |
+| F-01       | push-ingestion-endpoint   | Authenticated, idempotent push ingestion endpoint (v1 envelope) | yes                   | Run `/10x-plan push-ingestion-endpoint`                          |
+| S-01       | access-key-sign-in        | Replace email/password with access-key sign-in                  | yes                   | Run `/10x-plan access-key-sign-in`                               |
+| S-02       | live-state-with-staleness | Show pushed live state with staleness indicator                 | no                    | Needs F-01, S-01                                                 |
+| S-03       | todays-recommendation     | Show today's narrated battery recommendation                    | no                    | Needs F-01, S-01; north star                                     |
+| S-04       | seasonal-usage-insight    | Season-adjusted usage insight with 30-day fallback              | no                    | Needs F-02, S-01                                                 |
+| S-05       | record-feedback           | Accept/dismiss feedback on a recommendation + history           | no                    | Needs S-03                                                       |
+| S-06       | edit-delete-feedback      | Edit and delete feedback entries                                | no                    | Needs S-05                                                       |
+| F-02       | daily-history-push        | Lab pushes the last 35 days of per-day energy totals            | yes                   | Run `/10x-plan daily-history-push`; mostly homelab-2 (issue #21) |
+| S-07       | bill-forecast             | Show the projected cost of the current month                    | no                    | Needs S-01 done                                                  |
+| S-08       | closed-period-bill        | Show the closed-period cost under the full tariff               | no                    | Blocked: full G11 tariff not deployed on the lab                 |
+| S-09       | consumption-plan-actions  | Show consumption-plan manual actions next to the advice         | no                    | Needs S-03 done                                                  |
+| S-10       | usage-profile             | Show the usage profile (day, week, unusual hours)               | no                    | Needs S-01 done                                                  |
+| S-11       | forecast-accuracy         | Show recent PV forecast accuracy                                | no                    | Needs F-02, S-03                                                 |
+| S-12       | inverter-schedule-view    | Show the inverter's current schedule (read-only)                | no                    | Needs S-03 done                                                  |
+| S-13       | pipeline-health           | Show why advice or live data is degraded                        | no                    | Needs S-02, S-03                                                 |
 
 ## Open Roadmap Questions
 

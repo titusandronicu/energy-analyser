@@ -16,16 +16,16 @@ The owner types their email on a Polish sign-in page and gets a link. They open 
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) |
-| --- | --- | --- |
-| Link flow | Token-hash link verified at `/auth/confirm` (any device) | The default PKCE link only works in the requesting browser, which breaks "request on laptop, open on phone". |
-| Passwords and sign-up | Remove both | Matches the PRD's "no account-creation form" and shrinks the attack surface; recovery goes through the Supabase dashboard. |
-| CI proof | Smoke test reads the email from Mailpit | Exercises the real template and token verification without any service-role key. |
-| Email delivery | Built-in Supabase mailer | The owner's email is a Supabase organisation member, and a few emails a day is well within limits. |
-| `ALLOW_SIGNUP` | Now only lets a magic-link request create a user (true locally/CI, false in production) | Lets smoke sign in fresh users while production only serves the existing owner. |
-| Account enumeration | Always show "check your email", log real errors server-side | Nobody can probe which addresses have accounts. |
-| After sign-in | Always `/dashboard`; `next=` ignored | No open redirect through the confirm link. |
-| Session length | Keep defaults (400-day cookies + refresh in middleware) | Already meets "long-lived session" with no code. |
+| Decision              | Choice                                                                                  | Why (1 sentence)                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Link flow             | Token-hash link verified at `/auth/confirm` (any device)                                | The default PKCE link only works in the requesting browser, which breaks "request on laptop, open on phone".               |
+| Passwords and sign-up | Remove both                                                                             | Matches the PRD's "no account-creation form" and shrinks the attack surface; recovery goes through the Supabase dashboard. |
+| CI proof              | Smoke test reads the email from Mailpit                                                 | Exercises the real template and token verification without any service-role key.                                           |
+| Email delivery        | Built-in Supabase mailer                                                                | The owner's email is a Supabase organisation member, and a few emails a day is well within limits.                         |
+| `ALLOW_SIGNUP`        | Now only lets a magic-link request create a user (true locally/CI, false in production) | Lets smoke sign in fresh users while production only serves the existing owner.                                            |
+| Account enumeration   | Always show "check your email", log real errors server-side                             | Nobody can probe which addresses have accounts.                                                                            |
+| After sign-in         | Always `/dashboard`; `next=` ignored                                                    | No open redirect through the confirm link.                                                                                 |
+| Session length        | Keep defaults (400-day cookies + refresh in middleware)                                 | Already meets "long-lived session" with no code.                                                                           |
 
 ## Scope
 
@@ -46,10 +46,10 @@ owner opens link (any device) ──GET──► /auth/confirm?token_hash=…&ty
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Magic-link request and confirmation | Service, 2 routes, email template, local config | Template or `site_url` mismatch gives broken links |
-| 2. Sign-in UI and removal of the password flow | Polish pages; password and sign-up code deleted | A leftover link or import to a deleted page |
+| Phase                                             | What it delivers                                        | Key risk                                                        |
+| ------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------- |
+| 1. Magic-link request and confirmation            | Service, 2 routes, email template, local config         | Template or `site_url` mismatch gives broken links              |
+| 2. Sign-in UI and removal of the password flow    | Polish pages; password and sign-up code deleted         | A leftover link or import to a deleted page                     |
 | 3. End-to-end verification and production rollout | Mailpit smoke in CI; dashboard templates; owner sign-in | Deploying before the dashboard templates are set breaks sign-in |
 
 **Prerequisites:** local Supabase via the UGREEN relay, with port 54324 (Mailpit) added to `RELAY_PORTS`; access to the Supabase dashboard's email templates.

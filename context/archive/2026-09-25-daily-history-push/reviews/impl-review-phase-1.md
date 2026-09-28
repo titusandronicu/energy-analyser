@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Daily History Push
 
 - **Plan**: context/changes/daily-history-push/plan.md
@@ -10,14 +11,14 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | PASS |
-| Scope Discipline | PASS |
-| Safety & Quality | WARNING |
-| Architecture | PASS |
-| Pattern Consistency | PASS |
-| Success Criteria | PASS |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | PASS    |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | WARNING |
+| Architecture        | PASS    |
+| Pattern Consistency | PASS    |
+| Success Criteria    | PASS    |
 
 Every planned item matches. The new `ingest_push` differs from the original only in the planned forecast lines, and its security settings, error codes, grants and latest-wins clause are unchanged. Gates on d66f079: the migration applies on a clean database; unit tests, lint, type check and build pass; a local full push stored the forecasts (17.5 and 10.4); the break check went red.
 

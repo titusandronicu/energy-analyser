@@ -16,14 +16,14 @@ Each card has a badge such as "Dobrze · w normie" or "Problem · rekomendacja z
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) |
-| --- | --- | --- |
-| Usage colours | ≤ +15% or below = green; above = amber; > +40% = red | Red only for a really unusual day; saving energy is never flagged. |
-| Explaining terms | Plain labels + a folded "Co to znaczy?" per card | Readable at a glance on a phone, with detail one tap away and next to the term. |
-| Live data age | Green ≤ 15 min, amber > 15 min, red > 2 h | Agrees with the recommendation's 2-hour rule; red means the lab is really down. |
-| Forecast certainty | Always grey "not known yet", basis stated; lab's value ignored | No certainty without the days behind it (FR-019/020) until S-11 computes it. |
-| Advice age | Green fresh, amber > 2 h, red from an earlier day | Advice about another day's weather is a problem, not just old. |
-| Where status lives | In the view-model services | Every threshold is unit-tested and the cards only render. |
+| Decision           | Choice                                                         | Why (1 sentence)                                                                |
+| ------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Usage colours      | ≤ +15% or below = green; above = amber; > +40% = red           | Red only for a really unusual day; saving energy is never flagged.              |
+| Explaining terms   | Plain labels + a folded "Co to znaczy?" per card               | Readable at a glance on a phone, with detail one tap away and next to the term. |
+| Live data age      | Green ≤ 15 min, amber > 15 min, red > 2 h                      | Agrees with the recommendation's 2-hour rule; red means the lab is really down. |
+| Forecast certainty | Always grey "not known yet", basis stated; lab's value ignored | No certainty without the days behind it (FR-019/020) until S-11 computes it.    |
+| Advice age         | Green fresh, amber > 2 h, red from an earlier day              | Advice about another day's weather is a problem, not just old.                  |
+| Where status lives | In the view-model services                                     | Every threshold is unit-tested and the cards only render.                       |
 
 ## Scope
 
@@ -37,11 +37,11 @@ Each card has a badge such as "Dobrze · w normie" or "Problem · rekomendacja z
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Shared building blocks | Tones, badge, period text, glossary, tests | Wording that still sounds technical |
-| 2. View models | Status and periods per card with the chosen thresholds | Off-by-one at the 15 min / 2 h / 15% / 40% lines |
-| 3. Cards and docs | Plain cards on the dashboard; logic and decisions docs updated | Cards getting long on a phone |
+| Phase                     | What it delivers                                               | Key risk                                         |
+| ------------------------- | -------------------------------------------------------------- | ------------------------------------------------ |
+| 1. Shared building blocks | Tones, badge, period text, glossary, tests                     | Wording that still sounds technical              |
+| 2. View models            | Status and periods per card with the chosen thresholds         | Off-by-one at the 15 min / 2 h / 15% / 40% lines |
+| 3. Cards and docs         | Plain cards on the dashboard; logic and decisions docs updated | Cards getting long on a phone                    |
 
 **Prerequisites:** none outside the repo; no new lab data, secrets or production steps.
 **Estimated effort:** ~2 sessions across 3 phases.

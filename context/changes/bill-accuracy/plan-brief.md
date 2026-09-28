@@ -19,26 +19,28 @@ The lab's forecast estimates the **invoice amount**. It applies the 0.8 credit, 
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) | Source |
-| --- | --- | --- | --- |
-| Target figure | The PGE invoice amount | That's what the owner compares against | Frame |
-| Billing source | HA PGE Sensor (mBOK) | It has each closed month's settlement facts; the owner chose it | Frame |
-| Settlement model | Net-metering, factor 0.8, monthly, credit carried forward | It reproduces the July and August invoices within 1–3% | Frame |
-| In-month export | Last closed month's export/import ratio | The inverter can't measure export; the ratio uses PGE's own figures | Plan |
-| Import per day | The push script's daily totals | Same numbers the app shows; glitches handled once | Plan |
-| Rates | `solar_analyser.tariffs` | One place for rates; no hand-made June file, no crash | Plan |
-| Invisible export / phase question | Separate change `grid-export-mismatch` | The bill fix shouldn't wait for a physical investigation | Plan |
-| Meter-grade data (wM-Bus, MojeIRE) | Parked | Owner's decision: future development | Plan |
+| Decision                           | Choice                                                    | Why (1 sentence)                                                    | Source |
+| ---------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------- | ------ |
+| Target figure                      | The PGE invoice amount                                    | That's what the owner compares against                              | Frame  |
+| Billing source                     | HA PGE Sensor (mBOK)                                      | It has each closed month's settlement facts; the owner chose it     | Frame  |
+| Settlement model                   | Net-metering, factor 0.8, monthly, credit carried forward | It reproduces the July and August invoices within 1–3%              | Frame  |
+| In-month export                    | Last closed month's export/import ratio                   | The inverter can't measure export; the ratio uses PGE's own figures | Plan   |
+| Import per day                     | The push script's daily totals                            | Same numbers the app shows; glitches handled once                   | Plan   |
+| Rates                              | `solar_analyser.tariffs`                                  | One place for rates; no hand-made June file, no crash               | Plan   |
+| Invisible export / phase question  | Separate change `grid-export-mismatch`                    | The bill fix shouldn't wait for a physical investigation            | Plan   |
+| Meter-grade data (wM-Bus, MojeIRE) | Parked                                                    | Owner's decision: future development                                | Plan   |
 
 ## Scope
 
 **In scope:**
+
 - Collecting the PGE Sensor's settlement facts (no personal data)
 - The credit-aware forecast, its tests and the refresh wiring
 - Deploying to docker-core and fixing the net-billing sentence in the HA prompt
 - The logic, decisions and prerequisites docs, the roadmap entry and the follow-up change
 
 **Out of scope:**
+
 - The app card (S-07)
 - Explaining the invisible export
 - wM-Bus and MojeIRE
@@ -52,12 +54,12 @@ HA PGE Sensor → the collector (new entities; values only) → a snapshot. The 
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Collect settlement facts | PGE Sensor values in every snapshot | Personal data leaking into the snapshot (covered by a test) |
-| 2. Credit-aware forecast | The new calculation, back-tested on the July and August invoices | The ratio shifts with the season (less export in winter) |
-| 3. Deploy and verify | Live output on docker-core; HA prompt fixed | Host changes need the owner's OK; `app-src` may be stale |
-| 4. Docs and follow-ups | Rule, decision, roadmap question 8, `grid-export-mismatch` folder | — |
+| Phase                       | What it delivers                                                  | Key risk                                                    |
+| --------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------- |
+| 1. Collect settlement facts | PGE Sensor values in every snapshot                               | Personal data leaking into the snapshot (covered by a test) |
+| 2. Credit-aware forecast    | The new calculation, back-tested on the July and August invoices  | The ratio shifts with the season (less export in winter)    |
+| 3. Deploy and verify        | Live output on docker-core; HA prompt fixed                       | Host changes need the owner's OK; `app-src` may be stale    |
+| 4. Docs and follow-ups      | Rule, decision, roadmap question 8, `grid-export-mismatch` folder | —                                                           |
 
 **Prerequisites:** the PGE Sensor installed and signed in (it is); operator access to docker-core and the UGREEN; the owner's OK for each host change.
 **Estimated effort:** about 2 sessions; phases 1–2 are code and tests, phases 3–4 are short.

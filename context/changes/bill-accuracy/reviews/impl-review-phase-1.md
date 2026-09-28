@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Bill accuracy
 
 - **Plan**: `context/changes/bill-accuracy/plan.md`
@@ -11,14 +12,14 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | FAIL |
-| Scope Discipline | WARNING |
-| Safety & Quality | FAIL |
-| Architecture | PASS |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | FAIL    |
+| Scope Discipline    | WARNING |
+| Safety & Quality    | FAIL    |
+| Architecture        | PASS    |
 | Pattern Consistency | WARNING |
-| Success Criteria | PASS |
+| Success Criteria    | PASS    |
 
 ## Success criteria verified
 
@@ -117,7 +118,7 @@ All four entity ids exact including the `solar_` prefixes; the three attribute m
 - **Impact**: 🔎 MEDIUM — real tradeoff; pause to reason through it
 - **Dimension**: Safety & Quality (correctness)
 - **Location**: collect-ha-snapshot.py:188-214
-- **Detail**: Returns the first dict, trusting the connector's sort. That sort was verified in the connector source (newest-first by `insertToGridDate`), documented, and openly pinned by a test (a reversed list is asserted to give the *oldest* value), so it is correct today. But the guarantee is borrowed, not enforced: a connector reordering, or upstream's string sort meeting a non-ISO date, silently yields the wrong period's carried credit, which is published and feeds the forecast with nothing to detect it.
+- **Detail**: Returns the first dict, trusting the connector's sort. That sort was verified in the connector source (newest-first by `insertToGridDate`), documented, and openly pinned by a test (a reversed list is asserted to give the _oldest_ value), so it is correct today. But the guarantee is borrowed, not enforced: a connector reordering, or upstream's string sort meeting a non-ISO date, silently yields the wrong period's carried credit, which is published and feeds the forecast with nothing to detect it.
 - **Fix A ⭐ Recommended**: Select by `max()` over entries with a parseable `insertToGridDate`, falling back to position.
   - Strength: Makes the guarantee local; ~5 lines.
   - Tradeoff: More code for a case that cannot happen today.

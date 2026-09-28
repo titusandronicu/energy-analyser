@@ -1,0 +1,2 @@
+# Agent worktrees are full repo checkouts; git excludes them via .git/info/exclude.
+.claude/worktrees/

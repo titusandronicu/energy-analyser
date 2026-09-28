@@ -16,14 +16,14 @@ A "Zużycie wczoraj" card between the live state and the recommendation shows ye
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) |
-| --- | --- | --- |
-| What "usage" means | Flag on home load; grid purchase shown as information | "Did I use normally" and "did I buy normally" are different questions, and cost is the purchase. |
-| Compared period | Yesterday (last complete day); an earlier day within 7 days if yesterday is missing | Matches the PRD's "yesterday"; today is partial. |
-| Threshold | Strictly more than ±15% from the baseline mean; exactly ±15% is normal | Simple and explainable with the few days available. |
-| Same-season baseline | ±14 days around the day's date in earlier years, at least 20 days | Proposed in the roadmap; avoids comparing thin data. |
-| Fallback | The 30 days before the compared day, at least 7 days, with a visible notice | FR-003's cold-start rule; it is the only path until mid-2027. |
-| Where the rules live | TypeScript view model over the owner's last ~400 rows | Rules are unit-tested instead of hidden in SQL; the data is tiny. |
+| Decision             | Choice                                                                              | Why (1 sentence)                                                                                 |
+| -------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| What "usage" means   | Flag on home load; grid purchase shown as information                               | "Did I use normally" and "did I buy normally" are different questions, and cost is the purchase. |
+| Compared period      | Yesterday (last complete day); an earlier day within 7 days if yesterday is missing | Matches the PRD's "yesterday"; today is partial.                                                 |
+| Threshold            | Strictly more than ±15% from the baseline mean; exactly ±15% is normal              | Simple and explainable with the few days available.                                              |
+| Same-season baseline | ±14 days around the day's date in earlier years, at least 20 days                   | Proposed in the roadmap; avoids comparing thin data.                                             |
+| Fallback             | The 30 days before the compared day, at least 7 days, with a visible notice         | FR-003's cold-start rule; it is the only path until mid-2027.                                    |
+| Where the rules live | TypeScript view model over the owner's last ~400 rows                               | Rules are unit-tested instead of hidden in SQL; the data is tiny.                                |
 
 ## Scope
 
@@ -40,11 +40,11 @@ daily_energy (F-02) ──owner RLS + column grants──► loadDailyEnergy ─
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
+| Phase                   | What it delivers                           | Key risk                                                   |
+| ----------------------- | ------------------------------------------ | ---------------------------------------------------------- |
 | 1. Data access and rule | Owner policy and grants; tested view model | Off-by-one in day windows or including today in a baseline |
-| 2. Dashboard card | Polish card and smoke steps | Wording of the fallback notice |
-| 3. Production rollout | Migration applied, file renamed, deployed | None beyond the usual migration-before-deploy order |
+| 2. Dashboard card       | Polish card and smoke steps                | Wording of the fallback notice                             |
+| 3. Production rollout   | Migration applied, file renamed, deployed  | None beyond the usual migration-before-deploy order        |
 
 **Prerequisites:** F-02 done (daily history in production); local Supabase via the UGREEN relay; Supabase connector.
 **Estimated effort:** ~1–2 sessions across 3 phases.

@@ -155,6 +155,7 @@ Render the new view models, switch to plain labels, add the explanations, and mo
 **Intent**: Each card shows its `StatusBadge` under the heading, the period lines, plain labels and a `TermsExplained` box; load failures (`view === null`) show a problem badge "nie udało się wczytać" in place of the red box.
 
 **Contract**:
+
 - Live: labels "Prąd z paneli teraz", "Dom zużywa teraz", "Sieć teraz" (with the direction word), "Bateria teraz", "Naładowanie baterii"; the today row gets its `periodLabel` and labels "Z paneli dziś", "Kupione z sieci dziś", "Sprzedane do sieci dziś"; terms `pv`, `kw`, `kwh`, `battery_soc`, `grid_import`, `grid_export`.
 - Usage: the ad hoc `STATUS` colour map is removed in favour of the badge; the baseline line shows `periodLabel` ("Średnia z 18 dni: 27 sierpnia – 25 września" / seasonal "Ta sama pora roku: …"); the insufficient state shows its reason; terms `kwh`, `norm`, `grid_import`.
 - Recommendation: forecast labels "Prognoza produkcji z paneli — dziś (<day>)" / "— jutro (<day>)"; certainty as a grey badge; terms `forecast`, `forecast_certainty`, `kwh`. The advisory footer stays.

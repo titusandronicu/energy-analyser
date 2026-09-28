@@ -1,4 +1,5 @@
 <!-- PLAN-REVIEW-REPORT -->
+
 # Plan Review: Bill accuracy — make the lab's bill forecast match PGE invoices
 
 - **Plan**: `context/changes/bill-accuracy/plan.md`
@@ -9,13 +10,13 @@
 
 ## Verdicts
 
-| Dimension | Verdict | After fixes |
-|-----------|---------|-------------|
-| End-State Alignment | WARNING | PASS |
-| Lean Execution | PASS | PASS |
-| Architectural Fitness | WARNING | PASS |
-| Blind Spots | FAIL | PASS |
-| Plan Completeness | WARNING | PASS |
+| Dimension             | Verdict | After fixes |
+| --------------------- | ------- | ----------- |
+| End-State Alignment   | WARNING | PASS        |
+| Lean Execution        | PASS    | PASS        |
+| Architectural Fitness | WARNING | PASS        |
+| Blind Spots           | FAIL    | PASS        |
+| Plan Completeness     | WARNING | PASS        |
 
 ## Grounding
 
@@ -29,7 +30,7 @@
 - **Impact**: 🔬 HIGH — architectural stakes; think carefully before deciding
 - **Dimension**: Blind Spots
 - **Location**: Implementation Approach; Phase 2 item 3; Open Risks
-- **Detail**: The PGE Sensor holds only the latest invoice, which arrives ~3 weeks into the following month (August's was due 2026-09-22). So Sept 1–21 used July's ratio (372/702 = 0.53) and only from Sept 22 August's (342/423 = 0.81) — on a 515 kWh projected import, 371 PLN against 245 PLN, a ~126 PLN jump between two refreshes. The plan's stated mitigation does not mitigate: `closed_month_check` prices the closed month's *actual* consumed and fed-in kWh, so it never exercises the estimated ratio. Criterion 3.3 runs after the re-base and passes clean.
+- **Detail**: The PGE Sensor holds only the latest invoice, which arrives ~3 weeks into the following month (August's was due 2026-09-22). So Sept 1–21 used July's ratio (372/702 = 0.53) and only from Sept 22 August's (342/423 = 0.81) — on a 515 kWh projected import, 371 PLN against 245 PLN, a ~126 PLN jump between two refreshes. The plan's stated mitigation does not mitigate: `closed_month_check` prices the closed month's _actual_ consumed and fed-in kWh, so it never exercises the estimated ratio. Criterion 3.3 runs after the re-base and passes clean.
 - **Fix A ⭐ Recommended**: Report `reference_lag_months`, drop `confidence` a tier at lag > 1, widen the ratio band from ±25% to ±40% at lag > 1, document the re-base in `docs/logic.md`.
   - Strength: One block of code, using only facts the snapshot already carries; the jump is explained rather than hidden.
   - Tradeoff: The central figure still moves when the invoice lands.
@@ -40,7 +41,7 @@
   - Tradeoff: Rests on the unexplained 342-vs-95 kWh export gap. If that is per-phase netting (frame hypothesis), PGE's export is not a function of the inverter's totals at all. Belongs after `grid-export-mismatch`.
   - Confidence: LOW.
   - Blind spot: Battery charging sits between PV surplus and export.
-- **Decision**: FIXED via Fix A, plus an owner-requested amendment — the lab now persists each closed-month settlement (`web/data/pge-settlement-history.jsonl`, append-if-new on `reference_period`, 36-row retention) as a new Phase 1 item, so the ratio has a series instead of one number and can prefer the immediately preceding month. Established in review: polling the connector harder cannot shorten the lag (it reads the mBOK *sales* API every 8 h and the lab snapshots every 5 minutes, so a new invoice already arrives within ~8 h; PGE simply does not issue it sooner).
+- **Decision**: FIXED via Fix A, plus an owner-requested amendment — the lab now persists each closed-month settlement (`web/data/pge-settlement-history.jsonl`, append-if-new on `reference_period`, 36-row retention) as a new Phase 1 item, so the ratio has a series instead of one number and can prefer the immediately preceding month. Established in review: polling the connector harder cannot shorten the lag (it reads the mBOK _sales_ API every 8 h and the lab snapshots every 5 minutes, so a new invoice already arrives within ~8 h; PGE simply does not issue it sooner).
 
 ### F2 — Telegram reports "0.00 PLN" as the bill on the `no_data` path
 

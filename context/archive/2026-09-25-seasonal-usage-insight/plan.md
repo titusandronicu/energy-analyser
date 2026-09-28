@@ -64,6 +64,7 @@ Owners can read daily totals, and every comparison rule is implemented and unit-
 **Intent**: Let owners read daily totals, using the same owner check as the other tables.
 
 **Contract**:
+
 - column-level `grant select (day, pv_kwh, load_kwh, grid_import_kwh, grid_export_kwh, pv_forecast_kwh) on public.daily_energy to authenticated`;
 - an owner-only select policy with the `exists (... app_owners ... auth.uid())` check;
 - nothing for `anon`; `captured_at`, `updated_at` and `push_id` stay unreadable.
@@ -75,6 +76,7 @@ Owners can read daily totals, and every comparison rule is implemented and unit-
 **Intent**: Turn daily rows and the current time into what the card shows.
 
 **Contract**:
+
 - `DailyEnergyRow` (`day`, `pv_kwh`, `load_kwh`, `grid_import_kwh`, `grid_export_kwh`, `pv_forecast_kwh`).
 - `loadDailyEnergy(client)` returns the rows for the last 400 days, newest first, and throws on a query error.
 - `toUsageInsightView(rows, now)` returns `{ kind: "insufficient" }` or `{ kind: "insight", dayLabel, isYesterday, load: { kwhLabel, deltaLabel, status }, purchase: { kwhLabel, deltaLabel }, baseline: { kind: "seasonal" | "fallback", days } }`, where:

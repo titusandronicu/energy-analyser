@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Bill accuracy
 
 - **Plan**: `context/changes/bill-accuracy/plan.md`
@@ -11,14 +12,14 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | WARNING |
-| Scope Discipline | PASS |
-| Safety & Quality | FAIL |
-| Architecture | PASS |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | WARNING |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | FAIL    |
+| Architecture        | PASS    |
 | Pattern Consistency | WARNING |
-| Success Criteria | PASS |
+| Success Criteria    | PASS    |
 
 ## Success criteria verified
 

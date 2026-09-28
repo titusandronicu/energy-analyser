@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Daily History Push
 
 - **Plan**: context/changes/daily-history-push/plan.md
@@ -10,14 +11,14 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | WARNING |
-| Scope Discipline | PASS |
-| Safety & Quality | FAIL |
-| Architecture | PASS |
-| Pattern Consistency | PASS |
-| Success Criteria | PASS |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | WARNING |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | FAIL    |
+| Architecture        | PASS    |
+| Pattern Consistency | PASS    |
+| Success Criteria    | PASS    |
 
 The phase 3 code in homelab-2 was reviewed at `origin/energy-push-daily-history`, because PR #19 was merged before its last two commits (fixed by homelab-2 PR #21). The day rules match the plan and the approved adaptations. Tests pass (30 push tests, 36 app tests). Correction (2026-09-25, after triage): the suspected undercounts on 16 August (21.3 vs 25.3) and 3 September (23.4 vs 25.9) were false positives. The higher values came from the 00:00 sample, which still carried the previous day's total. The production values are correct.
 

@@ -59,7 +59,7 @@ Collect the settlement facts first, then change the calculation, then deploy, th
 
 ## Critical Implementation Details
 
-- **Units of the left-over credit.** `settledEnergyAmount` (342) equals the fed-in kWh, and `settled_energy_sum_with_factor` (274) is that figure after the factor, so `leftEnergyAmount` is taken to be fed-in kWh *before* the factor: carried credit = left × factor. It has been 0 so far. Record the assumption in the output (`carried_credit_basis`) and in `docs/logic.md`, and check it the first time it isn't 0.
+- **Units of the left-over credit.** `settledEnergyAmount` (342) equals the fed-in kWh, and `settled_energy_sum_with_factor` (274) is that figure after the factor, so `leftEnergyAmount` is taken to be fed-in kWh _before_ the factor: carried credit = left × factor. It has been 0 so far. Record the assumption in the output (`carried_credit_basis`) and in `docs/logic.md`, and check it the first time it isn't 0.
 - **Reference-month lag.** For most of a month the latest invoice is still the month before last (August's invoice was due 2026-09-22), so the ratio can be two months old, and ratios differ sharply between months: July 372/702 = 0.53 against August 342/423 = 0.81, which on a 515 kWh projected import is 371 PLN against 245 PLN. The forecast therefore reports the lag, degrades confidence and widens the range while the lag is above one month, and `docs/logic.md` states that the figure re-bases when a new invoice arrives. `closed_month_check` cannot catch a wrong ratio: it prices the closed month's actual consumed and fed-in kWh.
 - **Sequencing.** Collector changes deploy before the forecast change. Until the new entities have been collected at least once, the forecast must return `no_data` with reason `settlement_facts_missing`, not crash.
 
@@ -78,6 +78,7 @@ The collector records the PGE Sensor values the credit needs, without personal d
 **Intent**: Add the closed-period consumed and fed-in energy, the billing period, and the energy-credit record, so the forecast can read them from the snapshot.
 
 **Contract**:
+
 - `ENTITY_MAP` gains:
   - `pge_live_consumed_kwh` → `sensor.pge_sensor_pge_consumed_energy`
   - `pge_live_feed_in_kwh` → `sensor.pge_sensor_pge_feed_in_energy`
@@ -95,6 +96,7 @@ The collector records the PGE Sensor values the credit needs, without personal d
 **Intent**: The connector exposes only the **latest** invoice, so each closed month's settlement facts are lost when the next invoice arrives. Persisting them gives the forecast a series instead of one number: it can use the month immediately preceding the current one once that exists, and from about July 2027 the same month a year back (the reasoning that parks the roadmap's S-16 year view). It does not shorten the lag — PGE issues an invoice about three weeks after the month ends, and the connector already surfaces it within 8 h.
 
 **Contract**:
+
 - One row per `reference_period`, appended only when that period is not already present. The refresh runs every 5 minutes and the connector polls every 8 h, so nearly every run is a no-op.
 - Row shape: `{reference_period, consumed_kwh, feed_in_kwh, factor, left_kwh, invoice_gross_pln, first_seen_at}`. Values only — no names, PPE, e-mail or invoice number.
 - A row is written only when consumed, fed-in and factor are all present. A partial or `unavailable` reading never writes a row.
@@ -110,6 +112,7 @@ The collector records the PGE Sensor values the credit needs, without personal d
 **Intent**: Pin the new mapping and the privacy rule.
 
 **Contract**: The cases:
+
 - A state fixture shaped like the real entities (numbers from `change.md`; fake e-mail and PPE in names and attributes) yields the new values.
 - No output contains the fake e-mail, PPE or invoice number.
 - `history` given as a string or a list, and an unparsable one, gives `None`.
@@ -147,6 +150,7 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
 **Intent**: Use the same complete-day totals the app receives, instead of the forecast's own 21:00 rule, so glitches and the minutes after midnight are handled once, in one place.
 
 **Contract**:
+
 - Read the lab's `energy-history.jsonl`, the push script's source.
 - Take `grid_import_kwh` per day from `build_daily_history`, with the push script loaded by path as its tests do.
 - Use complete past days of the current Warsaw month that have a non-null import. Today is excluded.
@@ -162,6 +166,7 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
 **Intent**: Remove the dependency on the stale June file; `tariffs.py` is the single place for rates. Note that `tariffs.py` is hand-maintained too, so the change swaps one manually updated rate source for another and must keep a freshness signal.
 
 **Contract**:
+
 - The variable gross rate per kWh and fixed gross fees per month come from `calculate_bill(Decimal("1000"), pge_g11_positions(), BillingPeriod(days=30, months=Decimal("1")))` — **consumption first** (`billing.py:131-135`) — read off the `Bill` as the **properties** `variable_unit_gross` and `fixed_gross` (`billing.py:90-98`; calling them as methods raises `TypeError: 'decimal.Decimal' object is not callable`). Verified values: 1.0991 PLN/kWh and 44.62 PLN/month.
 - `solar_analyser` is imported via `ENERGY_APP_SRC` / `sys.path`, like `build-deye-consumption-plan.py`.
 - `pricing` gets `source: "solar_analyser.tariffs.pge_g11_positions"` and `rates_verified_on: "2026-09-27"` in place of `source_month`, which is removed (it has no consumers). `rates_verified_on` is the date the rates were last checked against an invoice, so staleness stays visible.
@@ -174,6 +179,7 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
 **Intent**: Estimate the invoice as set out in Implementation Approach, and check the formula against the last closed invoice.
 
 **Contract**:
+
 - Settlement facts come from `web/data/pge-settlement-history.jsonl` (`--settlement-history <path>`) and, as a fallback, the collector's output `web/data/ha-energy-snapshot.json` (`HA_SNAPSHOT_OUTPUT`, `collect-ha-snapshot.py:188-191`, `--snapshot <path>`). The forecast prefers the history row for the month immediately preceding the current one, falls back to the newest row, and falls back to the snapshot's current values when the history has nothing usable. `reference_lag_months` is computed from whichever row is used.
 - Output adds:
   - `method: "net_metering_credit_estimate"`
@@ -206,6 +212,7 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
 **Intent**: Call the forecast with the new inputs, so a forecast failure can't stop the push.
 
 **Contract**:
+
 - Lines 65-69 pass `--history` and `--snapshot` instead of `--database` / `--bill`.
 - The call is guarded so a non-zero exit logs `refresh: bill forecast failed` and the refresh continues.
 - The settlement-history call added in Phase 1 stays in place and keeps its guard.
@@ -217,6 +224,7 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
 **Intent**: Stop the bot presenting a missing forecast as a 0.00 PLN bill. Nothing there reads `status` today, and `:261` formats `float(bill.get('projected_bill_gross_pln') or 0)`, so a `no_data` body prints `Prognoza rachunku None: 0.00 PLN (unknown confidence)` — the first refresh after deploy is expected to do exactly that (Migration Notes).
 
 **Contract**:
+
 - `:250-261` checks `status` first: anything other than `"ok"` prints the `reason` in Polish plain text instead of a number.
 - `:321-331` (`home_context`) passes `status` through, so the LLM never receives all-`None` bill values as if they were figures.
 - No other bot behaviour changes.
@@ -228,6 +236,7 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
 **Intent**: Replace the June-bill fixtures with the credit model, and pin the real August and July back-tests.
 
 **Contract**: Both back-tests pin the rates in the fixture (1.0991 variable, 44.62 fixed) rather than calling `tariffs.py`, so a legitimate rate update cannot break the suite; the live derivation is pinned by its own case below. The cases:
+
 - **August check.** Consumed 423, fed-in 342, factor 0.8 gives `computed_gross_pln` within 5% of 214.66.
 - **July.** 702 / 372 gives a value within 5% of 495.22 (as a closed-month check fixture).
 - **Credit exceeding import.** Only fixed fees are charged, and `credit_left_kwh` > 0.
@@ -267,6 +276,7 @@ Install the collector and forecast on docker-core, fix the net-billing sentence 
 **Intent**: Deploy the changed scripts, and the `solar_analyser` sources if `app-src` is older than `tariffs.py`, using the runbook's copy to `/tmp` and `sudo install` flow. Record the new files in the runbook.
 
 **Contract**:
+
 - The runbook's diff check shows docker-core equal to the repo for `collect-ha-snapshot.py`, `build-current-month-bill-forecast.py` and `refresh-energy-agent-data.sh`.
 - `app-src` has the current `tariffs.py` and `billing.py`.
 - The settlement-history writer, if it is a separate script, is in the install list, and `web/data/pge-settlement-history.jsonl` is recorded as a new data file whose rollback note says leaving it in place is harmless.
@@ -311,6 +321,7 @@ Record the rule and decisions in energy-analyser, un-park S-07, and open the fol
 **Intent**: Keep the course-facing docs in step, as the lessons require.
 
 **Contract**:
+
 - `logic.md` gets a "Bill forecast (lab)" rule under the planned or lab section: the formula, the ratio source, the reference-month lag and the re-base when a new invoice arrives, the range, the carried-credit assumption, and the `no_data` reasons.
 - `decisions.md` gets a dated 2026-09-27 entry:
   - net-metering 0.8, not net-billing
@@ -327,6 +338,7 @@ Record the rule and decisions in energy-analyser, un-park S-07, and open the fol
 **Intent**: Make the next steps visible.
 
 **Contract**:
+
 - The roadmap gets open question **5** — the list at `roadmap.md:394` currently ends at 4 — "Why does PGE record export the inverter doesn't see?", covering the night export, possible phase imbalance and the money at stake, with the source in `frame.md`. (`change.md`'s reference to "open question 6" is stale from the pre-v3 roadmap.)
 - Decide whether S-07's slice (`roadmap.md:294-304`, today "Blockers: —", "Status: proposed") should record that it was parked on this change.
 - The `grid-export-mismatch` folder follows the `/10x-new` semantics, with the evidence from this change in its notes.

@@ -63,6 +63,7 @@ Owner-only read access to the newest snapshot, and all display rules unit-tested
 **Intent**: Expose only the newest snapshot's time, health and state to owners.
 
 **Contract**:
+
 - Column-level `grant select (source, captured_at, received_at, payload) on public.ingest_pushes to authenticated`.
 - Owner-only select policy on `ingest_pushes`, using the same `exists (… app_owners … auth.uid())` check as recommendations.
 - `public.live_state` view `with (security_invoker = true)` returning `captured_at`, `received_at` and `payload -> 'state' as state` for the newest `source = 'homelab'` row. `grant select` on the view to `authenticated`; nothing to `anon`.
@@ -74,6 +75,7 @@ Owner-only read access to the newest snapshot, and all display rules unit-tested
 **Intent**: Turn the newest snapshot and the current time into what the card shows.
 
 **Contract**:
+
 - `LiveStateRow` (`captured_at`, `received_at`, `state: unknown`).
 - `loadLiveState(client) → Promise<LiveStateRow | null>` (throws on a query error).
 - `toLiveStateView(row, now)` → `{ kind: "empty" }` or `{ kind: "state", capturedAtLabel, ageLabel, isStale, isDegraded, pv, homeLoad, grid: { value, direction }, battery: { value, direction, socLabel }, today: { pv, bought, sold } }`, where:

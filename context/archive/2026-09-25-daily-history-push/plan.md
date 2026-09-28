@@ -143,6 +143,7 @@ The homelab-2 push script derives the days from the history file and sends them;
 **Intent**: Turn history rows into contract `daily_history` entries using the agreed rules.
 
 **Contract**: a pure `build_daily_history(rows, now, days=35)`:
+
 - group rows by `generated_at` converted to Europe/Warsaw date;
 - per day, take the latest row with `source_health == "ok"` and all four counters numeric; map `produced_kwh → pv_kwh`, `consumed_kwh → load_kwh`, `bought_kwh → grid_import_kwh`, `exported_kwh → grid_export_kwh`; clamp at 0, round to 3 decimals;
 - skip past days whose latest healthy row is before 21:00 local; always include today if it has a healthy row;

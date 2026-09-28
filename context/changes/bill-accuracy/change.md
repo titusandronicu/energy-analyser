@@ -13,7 +13,7 @@ Raised 2026-09-27 while planning S-07 (bill-forecast), which is parked until thi
 
 Evidence gathered read-only on docker-core (aggregates only):
 
-- Import source: the forecast uses Deye `bought_kwh`. 2026-07-17..31: Deye 140 kWh vs PGE balanced import 406 kWh; on several days Deye *export* matches PGE *import* (swapped counters / CT direction?). Same period as roadmap open question 6. Aug/Sep cannot be checked yet (PGE CSV in the lab ends 2026-07-31).
+- Import source: the forecast uses Deye `bought_kwh`. 2026-07-17..31: Deye 140 kWh vs PGE balanced import 406 kWh; on several days Deye _export_ matches PGE _import_ (swapped counters / CT direction?). Same period as roadmap open question 6. Aug/Sep cannot be checked yet (PGE CSV in the lab ends 2026-07-31).
 - Pricing: every kWh at the June-bill blended rate (1.0991 PLN gross) + 44.62 PLN fixed; no credit for exported energy; `rachunek-current.json` is hand-made (2026-07-21) and a missing file crashes the refresh.
 - Real invoices seen by HA's PGE Sensor: 670.59 PLN / 350.93 kWh (due 2026-07-21), 495.22 PLN / 434.5 kWh (due 2026-08-25), 214.66 PLN / 261.81 kWh (due 2026-09-22). Periods and correction/deposit lines unknown without the PDFs.
 - Day selection: snapshot gaps 2026-09-14..18 and 09-22..24; the Deye day counter also resets mid-day (e.g. 09-26 14:44), so "last sample after 21:00" undercounts.
@@ -32,7 +32,7 @@ PGE Sensor v1.5.1 exposes more than the lab collects: `pge_consumed_energy` (423
 ### Owner decision 2026-09-27: the HA PGE connector is the billing source
 
 - Use PGE Sensor for billing from now on (closed-month consumption, feed-in, 0.8 credit, invoice amount, billing period).
-- It has no hourly or daily data: it reads the mBOK *sales* API every 8 h (latest invoice, balance, and for prosumers the invoice's energy-storage record). Hourly meter data lives with PGE Dystrybucja (eLicznik / eBOK CSV), a separate service.
+- It has no hourly or daily data: it reads the mBOK _sales_ API every 8 h (latest invoice, balance, and for prosumers the invoice's energy-storage record). Hourly meter data lives with PGE Dystrybucja (eLicznik / eBOK CSV), a separate service.
 - Within a month: daily/hourly import and load from the Deye snapshots (import reliable since early August); export needs another source (open).
 
 ### Export / hourly data sources (web research 2026-09-27, search-index only: the Mac's DNS filter blocked direct fetches)
@@ -54,6 +54,6 @@ Owner decision 2026-09-27: wM-Bus is parked as future development (roadmap Parke
 
 ### Phase 3 deploy, 2026-09-27: telegram-home is not built from the repo
 
-Found while verifying criterion 3.5. The `telegram-home` image on docker-core (built 2026-09-07) runs a `bot.py` of 949 lines against the repo's 887 — 101 lines present only on the live side, 62 net. Those live-only lines have no commit in homelab-2's history on any branch: the `CAMERA_NIGHT_ALERT_*` night-window alerts for the zone-less backyard camera, and the bot-side battery-plan polling and acknowledgement client (`BATTERY_PLAN_POLL_INTERVAL`, `PENDING_BATTERY_PLAN`, and the caller of `battery_plan_ack`). The *server* half of that ack flow is in the repo — `handle_battery_plan_ack` at `infra/compose/energy-app/scripts/pge-upload-api.py:116`, added by `1b3ca89` — so only the client is missing. Rebuilding from the repo would delete both live features, so the Phase 2 bot change was **not** deployed.
+Found while verifying criterion 3.5. The `telegram-home` image on docker-core (built 2026-09-07) runs a `bot.py` of 949 lines against the repo's 887 — 101 lines present only on the live side, 62 net. Those live-only lines have no commit in homelab-2's history on any branch: the `CAMERA_NIGHT_ALERT_*` night-window alerts for the zone-less backyard camera, and the bot-side battery-plan polling and acknowledgement client (`BATTERY_PLAN_POLL_INTERVAL`, `PENDING_BATTERY_PLAN`, and the caller of `battery_plan_ack`). The _server_ half of that ack flow is in the repo — `handle_battery_plan_ack` at `infra/compose/energy-app/scripts/pge-upload-api.py:116`, added by `1b3ca89` — so only the client is missing. Rebuilding from the repo would delete both live features, so the Phase 2 bot change was **not** deployed.
 
 Consequence: `/energy` still prints a forecast line, and it is now credit-aware because the output keys were kept compatible — but the live bot formats it as `float(bill.get('projected_bill_gross_pln') or 0):.2f` (live line 317), so the `no_data` half of 3.5 (show the reason, not 0.00 PLN) is not in the lab. Owner's decision 2026-09-27: defer it. The follow-up change backports the live drift into homelab-2 first (AGENTS.md requires it), then rebuilds with the Phase 2 bot change on top. 3.5 stays unchecked until then.
