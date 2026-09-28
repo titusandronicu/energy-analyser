@@ -183,25 +183,25 @@ Rewrite the forecast calculation around the invoice amount, with shared daily to
 - Settlement facts come from `web/data/pge-settlement-history.jsonl` (`--settlement-history <path>`) and, as a fallback, the collector's output `web/data/ha-energy-snapshot.json` (`HA_SNAPSHOT_OUTPUT`, `collect-ha-snapshot.py:188-191`, `--snapshot <path>`). The forecast prefers the history row for the month immediately preceding the current one, falls back to the newest row, and falls back to the snapshot's current values when the history has nothing usable. `reference_lag_months` is computed from whichever row is used.
 - Output adds:
   - `method: "net_metering_credit_estimate"`
-  - `settlement {factor, reference_period, reference_lag_months, reference_consumed_kwh, reference_feed_in_kwh, export_ratio, carried_credit_kwh, carried_credit_basis: "left_kwh_times_factor"}`
+  - `settlement {factor, reference_period, reference_lag_months, reference_consumed_kwh, reference_feed_in_kwh, export_ratio, carried_credit_kwh, carried_credit_basis: "left_kwh_times_factor"}` _Amended during the Phase 2 review (`reviews/impl-review-phase-2.md` F5): the shipped `settlement` also carries `carried_credit_dropped_as_stale` and `factor_implied`, and carried credit is dropped to 0 above `reference_lag_months` 0._
   - `reference_lag_months` = whole Warsaw months between the end of `reference_period` and the start of the current month (0 when the reference is the immediately preceding month).
   - `projected_credit_kwh`, `projected_billable_kwh`, `credit_left_kwh`
-  - `closed_month_check {period, computed_gross_pln, invoice_gross_pln, diff_pct, ok}`
+  - `closed_month_check {period, computed_gross_pln, invoice_gross_pln, diff_pct, ok}` _Amended during the Phase 2 review (`reviews/impl-review-phase-2.md`): the key is omitted entirely when the reference period carries no invoice total._
   - `invoice_gross_pln` comes from the snapshot's existing `pge_live_invoice_amount_pln` (`collect-ha-snapshot.py:76`), the invoice total — **not** `pge_live_balance_pln`, the account balance used for overdue detection (`build-energy-agent-briefing.py:113-128`). A test asserts the balance key is never read.
   - `ok` is `abs(diff_pct) <= 5`. A false `ok` is reported and logged only: it never changes `status`, never blocks the refresh and never suppresses the projection. The diff also moves when PGE changes prices — the implied August rate was 1.14 against today's 1.0991, so August sits at −2.6% before any formula error.
 - `projected_bill_gross_pln` is the credited estimate.
 - Range: the import and export-ratio errors are treated as **independent** and combined in quadrature, not in lockstep (owner's decision 2026-09-27; the lockstep worst case assumed both hit their extreme together and gave −45%/+56%, which double-counts, because `u` is sampling noise and `r` is seasonal).
   - `u` is the existing `max(15, min(40, 50/√n))`; `r` is the ratio band: 0.25 at `reference_lag_months` 0, 0.40 above it. _Corrected during Phase 2 (owner's decision 2026-09-27): the threshold was ≤ 1, which put the very case F1 was written about on the trusted side. Measured on the real September history, a July reference gives 392 PLN with a 310–475 range that does not contain the eventual 258._
   - `base` = `projected_billable_kwh` = `max(0, import − factor × ratio × import)`.
-  - `d_import` = `u × base` (billable is linear in import at a fixed ratio).
+  - `d_import` = `u × base` (billable is linear in import at a fixed ratio). _Amended during the Phase 2 review (`reviews/impl-review-phase-2.md` F5): the shipped formula is `u × (base + carried_credit)`. Identical while carried credit is 0, which it has been every month so far._
   - `d_ratio` = `factor × ratio × r × import`.
   - `spread` = `sqrt(d_import² + d_ratio²)`.
   - low = `max(0, base − spread)` × variable gross rate + fixed gross fees; high = `(base + spread)` × variable gross rate + fixed gross fees.
   - Measured on the real September data (import 549 kWh, ratio 0.809, u = 15%, r = 0.25): base 193.9 kWh, `d_import` 29.1, `d_ratio` 88.8, spread 93.4 → **155–361 PLN around 258**. Evidence and the rejected alternatives are in `change.md`.
-- `confidence` keeps its thresholds (below 7 days, below 14 days), and is forced to `low` whenever `reference_lag_months` > 0, however many days are available. Widening the band alone does not rescue the central figure — at lag 1 the range becomes 277–507 and still excludes 258 — so the weakness is stated rather than implied. PGE issues an invoice about three weeks after a month ends, so this is the normal state from the 1st until roughly the 22nd.
+- `confidence` keeps its thresholds (below 7 days, below 14 days), and is forced to `low` whenever `reference_lag_months` > 0, however many days are available. Widening the band alone does not rescue the central figure — at lag 1 the range becomes 277–507 and still excludes 258 — so the weakness is stated rather than implied. PGE issues an invoice about three weeks after a month ends, so this is the normal state from the 1st until roughly the 22nd. _Amended during the Phase 2 review (`reviews/impl-review-phase-2.md`): confidence is also forced to `low` when the closed-month check misses by more than 25%._
 - `status: "no_data"` with a `reason`:
   - `no_complete_days`
-  - `settlement_facts_missing` (factor, consumed or fed-in is missing, or consumed ≤ 0)
+  - `settlement_facts_missing` (factor, consumed or fed-in is missing, or consumed ≤ 0) _Amended during the Phase 2 review (`reviews/impl-review-phase-2.md` F2): it also fires when the settled month is under 50 kWh or the export ratio is above 2.0._
   - `rates_unavailable`
 - The script catches its own input errors and always writes a JSON file.
 

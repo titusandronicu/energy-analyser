@@ -13,7 +13,7 @@ Raised 2026-09-27 while planning S-07 (bill-forecast), which is parked until thi
 
 Evidence gathered read-only on docker-core (aggregates only):
 
-- Import source: the forecast uses Deye `bought_kwh`. 2026-07-17..31: Deye 140 kWh vs PGE balanced import 406 kWh; on several days Deye _export_ matches PGE _import_ (swapped counters / CT direction?). Same period as roadmap open question 6. Aug/Sep cannot be checked yet (PGE CSV in the lab ends 2026-07-31).
+- Import source: the forecast uses Deye `bought_kwh`. 2026-07-17..31: Deye 140 kWh vs PGE balanced import 406 kWh; on several days Deye _export_ matches PGE _import_ (swapped counters / CT direction?). Aug/Sep cannot be checked yet (PGE CSV in the lab ends 2026-07-31).
 - Pricing: every kWh at the June-bill blended rate (1.0991 PLN gross) + 44.62 PLN fixed; no credit for exported energy; `rachunek-current.json` is hand-made (2026-07-21) and a missing file crashes the refresh.
 - Real invoices seen by HA's PGE Sensor: 670.59 PLN / 350.93 kWh (due 2026-07-21), 495.22 PLN / 434.5 kWh (due 2026-08-25), 214.66 PLN / 261.81 kWh (due 2026-09-22). Periods and correction/deposit lines unknown without the PDFs.
 - Day selection: snapshot gaps 2026-09-14..18 and 09-22..24; the Deye day counter also resets mid-day (e.g. 09-26 14:44), so "last sample after 21:00" undercounts.
@@ -26,7 +26,7 @@ Inputs promised by the owner: last PGE invoices (PDF) and the Aug/Sep eBOK CSV u
 PGE Sensor v1.5.1 exposes more than the lab collects: `pge_consumed_energy` (423 kWh), `pge_feed_in_energy` (342 kWh), `solar_pge_sensor_pge_okres_rozliczeniowy` (01.08–31.08.2026, monthly), `solar_pge_sensor_pge_magazyn_energii` (factor **0.8**, credited 274 kWh, left 0), `solar_pge_sensor_pge_biezaca_platnosc`. Friendly names and the balance attributes carry personal data (email, PPE, invoice number): never copy them into a repo.
 
 - Settlement is **net-metering (opust) at 0.8**, monthly, not net-billing. August: (423 − 0.8 × 342) = 149.4 kWh × 1.0991 + 44.62 = ~209 PLN against the real 214.66 PLN invoice (within 3%). The lab's method gives 423 × 1.0991 + 44.62 = ~509 PLN.
-- Deye August import 433.6 kWh vs PGE 423 (−2.5%): the import counter is fine since early August. Deye August export 94.7 kWh vs PGE 342: the export counter is not usable, so the in-month forecast needs another export source.
+- Deye August import 433.6 kWh vs PGE 423 (**+2.5% against PGE**): the import counter is fine since early August. Deye August export 94.7 kWh vs PGE 342: the export counter is not usable, so the in-month forecast needs another export source.
 - Unused credit carries forward (leftEnergyAmount), so summer surplus can offset later months.
 
 ### Owner decision 2026-09-27: the HA PGE connector is the billing source
@@ -48,7 +48,7 @@ Ran the repo's own `build_daily_history` against the real `energy-history.jsonl`
 
 - **Day count.** 18 of the 26 past September days have rows at all (the 14–18 and 22–24 gaps have none). Of those, 3 are null under the push rule (13, 19, 21 — last usable sample before 23:00), leaving **n = 15** against the current forecast's 16. So the stricter rule costs one day, and nothing else: `50/√15 = 12.9` is below the 15% floor, so uncertainty stays **15.0%** and confidence stays **high** (the 7- and 14-day thresholds are clear). The F5 risk was real but lands benignly.
 - **Projection.** Mean daily import 18.31 kWh (min 12.9, max 23.9) → 549 kWh for 30 days. With the August reference (ratio 0.809): **258 PLN**, against 648 PLN for the current no-credit method. That matches the plan's expected "around 250".
-- **Range width (F9).** Point estimate 258 PLN. Lockstep as planned: **143–402 PLN** (−45%/+56%, width 259). Import band alone: 226–290 (±12%). Half ratio band: 184–346. Errors combined in quadrature: **155–361** (±40%, width 205). With the July reference (lag 2, ±40% band): 392 PLN, range 253–562.
+- **Range width (F9).** Point estimate 258 PLN. Lockstep as planned: **143–402 PLN** (−45%/+56%, width 259). Import band alone: 226–290 (±12%). Half ratio band: 184–346. Errors combined in quadrature: **155–361** (±40%, width 205). With the July reference (lag 1, ±40% band): 392 PLN, range 253–562.
 
 Owner decision 2026-09-27: wM-Bus is parked as future development (roadmap Parked). This change uses the inverter's grid power for daily export, checked against the eBOK CSV. The PGE CSVs are hourly, so the meter is a remotely read AMI meter (model not yet checked).
 
