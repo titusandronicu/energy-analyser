@@ -468,14 +468,14 @@ The migration adds a view only — no table, no data movement, no backfill — s
 
 #### Automated
 
-- [x] 2.1 Migration applies cleanly on a reset database: `npx supabase db reset`
-- [x] 2.2 Unit tests pass, including the loader's query shape: `npm test`
-- [x] 2.3 Linting and type checks pass: `npm run lint`
+- [x] 2.1 Migration applies cleanly on a reset database: `npx supabase db reset` — 7f8b4ee
+- [x] 2.2 Unit tests pass, including the loader's query shape: `npm test` — 7f8b4ee
+- [x] 2.3 Linting and type checks pass: `npm run lint` — 7f8b4ee
 
 #### Manual
 
-- [x] 2.4 Signed in as an owner, the view returns the newest section; as anon it returns nothing
-- [x] 2.5 The migration adds no grant or policy beyond the view itself
+- [x] 2.4 Signed in as an owner, the view returns the newest section; as anon it returns nothing — 7f8b4ee
+- [x] 2.5 The migration adds no grant or policy beyond the view itself — 7f8b4ee
 
 ### Phase 3: View model
 
