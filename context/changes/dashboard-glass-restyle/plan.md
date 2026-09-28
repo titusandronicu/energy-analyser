@@ -318,14 +318,14 @@ Not applicable — no data model or schema changes. Rolling back is reverting th
 
 #### Automated
 
-- [x] 4.1 Unit tests pass: `npm test`
-- [x] 4.2 Linting and type checks pass: `npm run lint`
-- [x] 4.3 Production build succeeds: `npm run build`
+- [x] 4.1 Unit tests pass: `npm test` — d93729c
+- [x] 4.2 Linting and type checks pass: `npm run lint` — d93729c
+- [x] 4.3 Production build succeeds: `npm run build` — d93729c
 
 #### Manual
 
-- [x] 4.4 Tab through the full page keyboard-only: every interactive element shows a visible focus indicator and has an accessible name
-- [x] 4.5 Push each card into its existing load-failure, empty/insufficient, and stale/no-data-reason states and confirm legibility against the new dark palette
-- [x] 4.6 Every status remains understandable with colour ignored
-- [x] 4.7 No animation beyond the brief's declared 120-180ms interaction feedback; reduced-motion is respected
-- [x] 4.8 Re-check both 1440px and 390px one final time against the fully-states-verified page
+- [x] 4.4 Tab through the full page keyboard-only: every interactive element shows a visible focus indicator and has an accessible name — d93729c
+- [x] 4.5 Push each card into its existing load-failure, empty/insufficient, and stale/no-data-reason states and confirm legibility against the new dark palette — d93729c
+- [x] 4.6 Every status remains understandable with colour ignored — d93729c
+- [x] 4.7 No animation beyond the brief's declared 120-180ms interaction feedback; reduced-motion is respected — d93729c
+- [x] 4.8 Re-check both 1440px and 390px one final time against the fully-states-verified page — d93729c
