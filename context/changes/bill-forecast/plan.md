@@ -481,29 +481,29 @@ The migration adds a view only — no table, no data movement, no backfill — s
 
 #### Automated
 
-- [x] 3.1 Unit tests pass, covering all three `no_data` reasons, both freshness boundaries, both day-count boundaries, all three verdict boundaries, the absent-invoice case, the plausibility ceiling and a wrong-month body: `npm test`
-- [x] 3.2 Linting and type checks pass: `npm run lint`
+- [x] 3.1 Unit tests pass, covering all three `no_data` reasons, both freshness boundaries, both day-count boundaries, all three verdict boundaries, the absent-invoice case, the plausibility ceiling and a wrong-month body: `npm test` — d9bea15
+- [x] 3.2 Linting and type checks pass: `npm run lint` — d9bea15
 
 #### Manual
 
-- [x] 3.3 The Polish copy for every refusal reason reads as an explanation a non-expert can act on, not a status code
+- [x] 3.3 The Polish copy for every refusal reason reads as an explanation a non-expert can act on, not a status code — d9bea15
 
 ### Phase 4: Card, dashboard and docs
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass: `npm test`
-- [ ] 4.2 Linting and type checks pass: `npm run lint`
-- [ ] 4.3 Production build succeeds: `npm run build`
-- [ ] 4.4 The smoke test passes against a running server with the new card present: `npm run smoke`
+- [x] 4.1 Unit tests pass: `npm test`
+- [x] 4.2 Linting and type checks pass: `npm run lint`
+- [x] 4.3 Production build succeeds: `npm run build`
+- [x] 4.4 The smoke test passes against a running server with the new card present: `npm run smoke`
 
 #### Manual
 
-- [ ] 4.5 On `/dashboard` against a full fixture push, the card renders second with the range as its headline and the central estimate beneath
-- [ ] 4.6 The "Na podstawie" block names the reference month, its lag and the rate date; the closed-month line appears only when the key is present
-- [ ] 4.7 Each refusal path shows its reason and no number, and the other three cards keep rendering
-- [ ] 4.8 The card is readable at phone width, and every state is legible with colour ignored
-- [ ] 4.9 The glossary box explains the cost terms in plain Polish
+- [x] 4.5 On `/dashboard` against a full fixture push, the card renders second with the range as its headline and the central estimate beneath
+- [x] 4.6 The "Na podstawie" block names the reference month, its lag and the rate date; the closed-month line appears only when the key is present
+- [x] 4.7 Each refusal path shows its reason and no number, and the other three cards keep rendering
+- [x] 4.8 The card is readable at phone width, and every state is legible with colour ignored
+- [x] 4.9 The glossary box explains the cost terms in plain Polish
 
 ### Phase 5: Lab push and production
 

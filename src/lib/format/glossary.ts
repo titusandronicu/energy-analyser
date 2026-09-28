@@ -1,6 +1,17 @@
 // One-sentence plain-Polish explanations of the terms the cards use. Later cards reuse the same wording.
 export type GlossaryTerm =
-  "pv" | "kw" | "kwh" | "battery_soc" | "grid_import" | "grid_export" | "norm" | "forecast" | "forecast_certainty";
+  | "pv"
+  | "kw"
+  | "kwh"
+  | "battery_soc"
+  | "grid_import"
+  | "grid_export"
+  | "norm"
+  | "forecast"
+  | "forecast_certainty"
+  | "bill_forecast"
+  | "bill_range"
+  | "net_metering";
 
 export const GLOSSARY: Record<GlossaryTerm, { term: string; explanation: string }> = {
   pv: {
@@ -40,5 +51,20 @@ export const GLOSSARY: Record<GlossaryTerm, { term: string; explanation: string 
   forecast_certainty: {
     term: "Pewność prognozy",
     explanation: "Jak bardzo można ufać prognozie, sprawdzone na tym, jak trafne były wcześniejsze prognozy.",
+  },
+  bill_forecast: {
+    term: "Prognoza rachunku",
+    explanation:
+      "Szacunek, ile wyjdzie rachunek za prąd za cały ten miesiąc, policzony z dotychczasowego zużycia i cen z Twojej taryfy — to nie faktura z PGE.",
+  },
+  bill_range: {
+    term: "Kwota od–do",
+    explanation:
+      "Przedział, w którym najprawdopodobniej zmieści się rachunek; im mniej dni miesiąca minęło, tym jest szerszy.",
+  },
+  net_metering: {
+    term: "Opust (rozliczenie z PGE)",
+    explanation:
+      "Prąd oddany do sieci nie jest sprzedawany za pieniądze, tylko odkładany: za każdą oddaną kilowatogodzinę możesz później pobrać 0,8 kWh bez płacenia za energię, a niewykorzystany zapas przechodzi na kolejne miesiące.",
   },
 };

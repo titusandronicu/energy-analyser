@@ -17,6 +17,7 @@ Content-Type: application/json
 - Cadence: one push per refresh (the lab's refresh job runs every 5 minutes).
 - `captured_at`: the lab's snapshot time, ISO 8601 with offset. It must be at most 5 minutes in the future and at most 14 days old. It is the push's identity: one push per `captured_at`.
 - `state` is required. Include `recommendation` when there is a narrated recommendation, and `daily_history` with recent days (at most 62, one entry per Europe/Warsaw calendar day). Sending the same recommendation or day again is fine.
+- `bill_forecast` (optional) is the current-month bill forecast, sent exactly as the lab computes it. It is a union on `status`: an `ok` body carries the projection, its range, the settlement and pricing facts it rests on and an optional `closed_month_check`; a `no_data` body carries only `status`, `reason`, `message`, `generated_at`, `month` and `method`, and the schema rejects a `no_data` body that still carries a figure. Its own `generated_at` — not the push's `captured_at` — decides whether the app shows a figure; anything older than 30 minutes is shown as no figure with the reason.
 - `daily_history` should hold complete past days plus today. Today's entry is partial; each later push replaces it until the day is over.
 - `pv_forecast_kwh` (optional, may be `null`) in a `daily_history` entry is the PV forecast for that day as known in the morning. A missing or `null` value keeps a forecast already stored for that day.
 - Every object is strict: unknown keys are rejected with 422. Add a field only after this contract gains it.
@@ -40,7 +41,7 @@ PGE CSV rows, customer or POD identifiers, hourly private readings, Home Assista
 
 Retry network errors and 5xx with the **same** payload; the duplicate rule makes that safe. Never retry 4xx.
 
-What gets stored: raw pushes for 14 days, daily totals per day (the push with the latest `captured_at` wins) and each recommendation once per `generated_at`.
+What gets stored: raw pushes for 14 days, daily totals per day (the push with the latest `captured_at` wins) and each recommendation once per `generated_at`. The bill forecast gets no table of its own — it is a current-month snapshot recomputed with every push — and is read back from the raw pushes through the `bill_forecast` view, which returns the newest push that carries the section. A push that omits it therefore leaves the last one in place rather than blanking the card.
 
 ## Tokens
 
@@ -49,7 +50,9 @@ Tokens are stored only as SHA-256 hashes in `public.ingest_tokens`, and there is
 Payload validation (strict keys, size cap, capture-time window) happens in the app, not in the database. The `ingest_push` function checks only the token, so someone holding both an ingest token and the app's Supabase anon key could bypass validation by calling it directly. That's accepted for v1 because the home lab never receives the anon key. Keep it that way: give pushers only the ingest token, and never both secrets.
 
 1. **Create:** `node scripts/create-ingest-token.mjs <label>` prints the token once, plus an `insert` statement. Run the statement in the Supabase SQL editor and put the token in the home lab's push config (never in either repo).
-2. **Verify:** `BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs` should print `201`. It sends only the live `state` section, which the next real push supersedes. `--full` also sends the example's made-up recommendation and daily history; use it only against a local database, because recommendations are never pruned.
+2. **Verify:** `BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs` should print `201`. It sends only the live `state` section, which the next real push supersedes. `--full` also sends the example's made-up recommendation, daily history and bill forecast; use it only against a local database, because recommendations are never pruned.
+   - `--file <path>` sends a whole body from another file instead of the example — the variants in `scripts/fixtures/bill-forecast/` cover the forecast's refusal paths and verdict boundaries. A named file is always sent whole, so it is local-only for the same reason as `--full`.
+   - Both forms rewrite `bill_forecast.generated_at` to now (and say so), because the committed bodies carry fixed timestamps that are always past the card's 30-minute freshness rule. `--keep-generated-at` leaves it alone, which is what the deliberately stale variant needs.
 3. **Rotate:** create a new token, switch the lab to it, then revoke the old one. Both work in the meantime.
 4. **Revoke:** `update public.ingest_tokens set revoked_at = now() where label = '<label>';`
 

@@ -1,8 +1,10 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import BillForecastCard from "@/components/BillForecastCard.astro";
 import LiveStateCard from "@/components/LiveStateCard.astro";
 import RecommendationCard from "@/components/RecommendationCard.astro";
 import UsageInsightCard from "@/components/UsageInsightCard.astro";
+import { loadBillForecast, toBillForecastView, type BillForecastView } from "@/lib/services/bill-forecast";
 import { loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
 import { loadLatestRecommendation, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 import { loadDailyEnergy, toUsageInsightView, type UsageInsightView } from "@/lib/services/usage-insight";
@@ -31,21 +33,29 @@ function getClient() {
 }
 
 const now = new Date();
-const [liveView, usageView, view]: [LiveStateView | null, UsageInsightView | null, RecommendationView | null] =
-  await Promise.all([
-    orLoadError(async () => {
-      const supabase = getClient();
-      return toLiveStateView(supabase ? await loadLiveState(supabase) : null, now);
-    }),
-    orLoadError(async () => {
-      const supabase = getClient();
-      return toUsageInsightView(supabase ? await loadDailyEnergy(supabase, now) : [], now);
-    }),
-    orLoadError(async () => {
-      const supabase = getClient();
-      return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
-    }),
-  ]);
+const [liveView, billView, usageView, view]: [
+  LiveStateView | null,
+  BillForecastView | null,
+  UsageInsightView | null,
+  RecommendationView | null,
+] = await Promise.all([
+  orLoadError(async () => {
+    const supabase = getClient();
+    return toLiveStateView(supabase ? await loadLiveState(supabase) : null, now);
+  }),
+  orLoadError(async () => {
+    const supabase = getClient();
+    return toBillForecastView(supabase ? await loadBillForecast(supabase) : null, now);
+  }),
+  orLoadError(async () => {
+    const supabase = getClient();
+    return toUsageInsightView(supabase ? await loadDailyEnergy(supabase, now) : [], now);
+  }),
+  orLoadError(async () => {
+    const supabase = getClient();
+    return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
+  }),
+]);
 ---
 
 <Layout title="Energy Analyser">
@@ -64,6 +74,7 @@ const [liveView, usageView, view]: [LiveStateView | null, UsageInsightView | nul
       </header>
 
       <LiveStateCard view={liveView} />
+      <BillForecastCard view={billView} />
       <UsageInsightCard view={usageView} />
       <RecommendationCard view={view} />
     </div>

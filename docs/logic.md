@@ -4,16 +4,17 @@ The rules Energy Analyser and the home lab apply to the data, with the exact thr
 
 ## Where each rule runs
 
-| Rule                                           | Runs in                                       | Source                                                                            |
-| ---------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
-| Live state and its staleness                   | App                                           | `src/lib/services/live-state.ts`                                                  |
-| Usage insight (season-adjusted baseline)       | App                                           | `src/lib/services/usage-insight.ts`                                               |
-| Recommendation staleness and labels            | App                                           | `src/lib/services/recommendation.ts`                                              |
-| Status colours, period text, term explanations | App                                           | `src/lib/format/status.ts`, `period.ts`, `glossary.ts`                            |
-| Daily totals per day, which days are complete  | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py`              |
-| Current-month bill forecast                    | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/build-current-month-bill-forecast.py` |
-| Facts bundle and battery recommendation        | Lab (deterministic rules, then LLM narration) | homelab-2 `build-energy-agent-briefing.py`, `run-energy-advisory.py`              |
-| PV forecast                                    | Solcast via Home Assistant, read by the lab   | homelab-2 `collect-ha-snapshot.py`                                                |
+| Rule                                                                             | Runs in                                       | Source                                                                            |
+| -------------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
+| Live state and its staleness                                                     | App                                           | `src/lib/services/live-state.ts`                                                  |
+| Usage insight (season-adjusted baseline)                                         | App                                           | `src/lib/services/usage-insight.ts`                                               |
+| Recommendation staleness and labels                                              | App                                           | `src/lib/services/recommendation.ts`                                              |
+| Bill forecast card: freshness, minimum days, verdict bands, plausibility ceiling | App                                           | `src/lib/services/bill-forecast.ts`                                               |
+| Status colours, period text, term explanations                                   | App                                           | `src/lib/format/status.ts`, `period.ts`, `glossary.ts`                            |
+| Daily totals per day, which days are complete                                    | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py`              |
+| Current-month bill forecast                                                      | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/build-current-month-bill-forecast.py` |
+| Facts bundle and battery recommendation                                          | Lab (deterministic rules, then LLM narration) | homelab-2 `build-energy-agent-briefing.py`, `run-energy-advisory.py`              |
+| PV forecast                                                                      | Solcast via Home Assistant, read by the lab   | homelab-2 `collect-ha-snapshot.py`                                                |
 
 ## Live state
 
@@ -62,6 +63,7 @@ The badge reads "<word> · <detail>", e.g. "Warto sprawdzić · dane sprzed 40 m
 - **Live state:** good ("aktualne") up to **15 minutes** old; watch ("dane sprzed …") over 15 minutes; problem ("brak nowych danych od …") over **2 hours**. A fresh snapshot the lab marks degraded is watch ("niepełne dane z Home Assistant"); staleness wins over degraded. Nothing received yet is insufficient.
 - **Usage insight:** normal or below the norm is good ("w normie" / "poniżej normy"); more than **15%** above is watch ("powyżej normy"); more than **40%** above is problem ("dużo powyżej normy"). The grid-purchase figure shows its change against the norm but is not rated (ratings are S-17).
 - **Recommendation:** good ("aktualna") when generated today within **2 hours**; watch ("sprzed …") when from today but older; problem ("z <day> — dotyczy innego dnia") when generated before today. Nothing received yet is insufficient.
+- **Bill forecast:** the badge is the verdict against the last real invoice — good ("nie więcej niż ostatni rachunek (…)"), watch ("do 20% powyżej …"), problem ("ponad 20% powyżej …"); insufficient when there is no closed invoice to compare with. Every refusal path (the lab's three `no_data` reasons, a calculation older than **30 minutes**, an unreadable, reversed or implausible amount, fewer than **7** complete days) shows its reason and no number. A forecast for another month keeps its figure and turns problem, naming the month it covers. The card's own confidence badge is the lab's `confidence`, and it names the reference month whenever that month lags.
 - **Forecast certainty:** always insufficient, "jeszcze nie wiadomo", until S-11 computes it from forecast accuracy.
 - **Not enough data:** the usage card says what it needs: "brak zużycia z ostatnich 7 dni", or "potrzeba co najmniej 7 dni z ostatnich 30, jest <n>". No verdict is guessed from too little data.
 - **Period text:** every derived figure says which days it rests on, as "<count> <dzień|dni>: <first> – <last>", e.g. "1 dzień: 24 września", "18 dni: 27 sierpnia – 25 września", "2 dni: 23–24 września". The range runs from the first to the last day used even when days in between are missing. The year is shown on both ends when the range spans two years, and once when the whole range is in an earlier year ("20 dni: 10–29 września 2025"). Live "today" totals say "dziś od północy do <HH:MM>" (or the capture's date when it is from an earlier day).
@@ -76,9 +78,9 @@ The badge reads "<word> · <detail>", e.g. "Warto sprawdzić · dane sprzed 40 m
 - The day's PV forecast is the first forecast reading at or after **06:00** local time.
 - Forecast source since 2026-09-26: **Solcast** (forecast plus low/high estimates, recorded in the lab's history). Forecast.Solar is kept only for comparison; it overshot real production on this flat array. Its today/tomorrow values are recorded in the lab's history once homelab-2 #28 is installed, so the two sources can be compared.
 
-## Bill forecast (lab)
+## Bill forecast (lab → app)
 
-The lab has computed this since 2026-09-27 and writes it with every 5-minute refresh; the Telegram bot and the lab page read it today. The app card that will show it (S-07) is **planned** — the rule below is built, the screen for it is not.
+The lab has computed this since 2026-09-27 and writes it with every 5-minute refresh; the Telegram bot and the lab page read it. Since 2026-09-28 the app accepts it as the optional `bill_forecast` section and shows it on the dashboard as the "Prognoza rachunku" card (S-07); the lab starts sending it once that version of the app is deployed, as [Changing the contract](ingest/README.md#changing-the-contract) requires. The rules below run in the lab; [what the app does with the figure](#what-the-app-shows-s-07) is at the end of this section.
 
 The house is a prosumer on Poland's older settlement scheme, **net-metering** ("opust"). Energy sent to the grid is not sold for money: it is banked. For every kWh fed in, **0.8** kWh may later be taken back without paying the energy charge, and credit left unused carries over to the following months. So the invoice is not "everything you took × the price". It is "everything you took, minus the credit you had banked, × the price", plus the fixed monthly fees, which are due whatever the meter says.
 
@@ -97,6 +99,20 @@ The house is a prosumer on Poland's older settlement scheme, **net-metering** ("
 **The closed-month check.** When the reference period carries an invoice total, the run re-prices that month from the consumed and fed-in energy PGE actually settled and compares the two (`closed_month_check`, `ok` within **±5%**). Without one the key is absent altogether, so anything reading the file treats it as optional. It tests the arithmetic, not the estimate: it cannot detect a wrong export ratio, and it drifts when PGE changes prices — August's implied rate was 1.14 PLN/kWh against today's 1.0991, which puts the check at −2.7% before any error of the formula (208.83 against the 214.66 invoiced). A failing check is always reported and never suppresses the projection.
 
 Why credit the export at all: it is the whole difference between a plausible bill and a wrong one. Pricing every imported kWh put August at about 509 PLN against the 214.66 PLN actually invoiced; crediting it gives about 209 PLN, and July comes out at about 489 PLN against 495.22. Why estimate the export from last month's ratio instead of measuring it: PGE settled 342 kWh fed in for August where the inverter's counter read 94.7, and PGE records export at night, when the panels cannot be producing. Until that is explained (`context/changes/grid-export-mismatch/`) the house has no trustworthy in-month export figure of its own, and the last settled month's ratio is the closest honest stand-in — which is exactly why its age is published and why it drags the confidence down.
+
+### What the app shows (S-07)
+
+The app displays the lab's figure and never re-prices anything (`prd-v3.md:268`). Its own rules live in `src/lib/services/bill-forecast.ts`, each as a named constant, and they decide only whether a figure may be shown at all:
+
+- **The range is the headline** ("od 155 zł do 360 zł"); the central estimate reads beneath it as "ok. 258 zł". Money is shown in whole złoty: a figure carrying a ±40% band quoted to the grosz would assert precision it does not have.
+- **Freshness: 30 minutes**, judged against the body's own `generated_at`, never the push's `captured_at` — a stale forecast riding inside a fresh push is the documented failure, and `captured_at` staleness is already the live state card's job. Past it the card says how old the calculation is and shows no figure.
+- **Minimum 7 complete days.** Below that the card is grey ("za mało danych") and quotes the average daily use instead of a złoty figure.
+- **Verdict** against `closed_month_check.invoice_gross_pln`, the last real invoice: at or below it is good, up to **+20%** is worth checking, above is a problem; exactly on a line takes the milder status. With no invoice to compare against there is no verdict at all — the badge says so — and never a fallback to the lab's own `computed_gross_pln`, which would change the colour's meaning from "against your last bill" to "against our own arithmetic".
+- **Plausibility ceiling: 7,000 PLN** on the central figure or either range end, derived from the lab's own bounds (200 kWh × 31 days × 1.0991 + 44.62 ≈ 6,859). Above it, and for a reversed range or a negative settlement figure, the card shows the reason and no number. These guards are deliberately not in the ingest contract: a 422 rejects the whole push and would stop the live state and the recommendation too.
+- **A forecast for another month is relabelled, not withheld** — the badge says which month it covers and the figure stays, as the recommendation card does for advice from an earlier day. A forecast generated at 23:58 on the last day of a month and read at 00:05 the next is still inside the freshness window.
+- **The lab's `confidence` is shown as a nested badge**, and when the reference month lags its label names that month, so a lagging reference is disclosed instead of hiding the figure for three weeks of every month.
+- **The closed-month check stays inside the "Na podstawie" block**, worded as a test of the arithmetic. Predicted-vs-actual reconciliation is a PRD non-goal (`prd-v3.md:278`).
+- **Banked credit covering the whole month's import is said out loud**, because otherwise the card would show a strikingly low, trivially green figure (only the fixed fees) with no reason for it.
 
 ## Planned rules (PRD v3)
 
