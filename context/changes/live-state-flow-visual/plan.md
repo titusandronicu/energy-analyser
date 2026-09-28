@@ -223,24 +223,24 @@ Not applicable — no data model or schema changes, only new derived fields on a
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test`
-- [x] 1.2 Linting and type checks pass: `npm run lint`
-- [x] 1.3 Production build succeeds: `npm run build`
+- [x] 1.1 Unit tests pass: `npm test` — 29af899
+- [x] 1.2 Linting and type checks pass: `npm run lint` — 29af899
+- [x] 1.3 Production build succeeds: `npm run build` — 29af899
 
 ### Phase 2: Static flow diagram
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Linting and type checks pass: `npm run lint`
-- [ ] 2.3 Production build succeeds: `npm run build`
-- [ ] 2.4 The smoke test passes with the new diagram present: `npm run smoke`
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Linting and type checks pass: `npm run lint`
+- [x] 2.3 Production build succeeds: `npm run build`
+- [x] 2.4 The smoke test passes with the new diagram present: `npm run smoke`
 
 #### Manual
 
-- [ ] 2.5 On `/dashboard`, `Stan na żywo` shows four icon-led nodes (PV/home/battery/grid) instead of the old plain grid, each with its correct existing value and direction text
-- [ ] 2.6 The battery node's icon matches its actual charge level and charging state (e.g. charging shows the charging icon regardless of level)
-- [ ] 2.7 At 1440px and 390px, the diagram has no horizontal overflow or clipped label
+- [x] 2.5 On `/dashboard`, `Stan na żywo` shows four icon-led nodes (PV/home/battery/grid) instead of the old plain grid, each with its correct existing value and direction text
+- [x] 2.6 The battery node's icon matches its actual charge level and charging state (e.g. charging shows the charging icon regardless of level)
+- [x] 2.7 At 1440px and 390px, the diagram has no horizontal overflow or clipped label
 
 ### Phase 3: Pulse animation and reduced motion
 
