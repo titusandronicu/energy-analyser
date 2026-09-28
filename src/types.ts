@@ -30,3 +30,12 @@ export interface DailyEnergyRow {
   grid_export_kwh: number | null;
   pv_forecast_kwh: number | null;
 }
+
+// The newest homelab push that carries a bill forecast, as public.bill_forecast exposes it. `bill_forecast`
+// is the pushed jsonb (validated by the ingest contract on the way in), so readers still treat its shape as
+// untrusted.
+export interface BillForecastRow {
+  captured_at: string;
+  received_at: string;
+  bill_forecast: unknown;
+}
