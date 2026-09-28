@@ -1,7 +1,7 @@
 ---
 change_id: live-state-flow-visual
 title: Energy-flow visualization and battery state for Stan na żywo
-status: implementing
+status: implemented
 created: 2026-09-28
 updated: 2026-09-28
 archived_at: null
