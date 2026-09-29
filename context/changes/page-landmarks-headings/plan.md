@@ -190,28 +190,28 @@ None: no data, schema, contract or external prerequisite changes; `docs/prerequi
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Type checks pass: `npx astro check`
-- [x] 1.4 Production build succeeds: `npm run build`
-- [x] 1.5 Each page source has one `<main`: `git grep -c "<main" -- src/components/DashboardBody.astro src/pages/auth/signin.astro src/pages/auth/check-email.astro` prints `:1` for each of the three files
-- [x] 1.6 The layout has no `<main`: `git grep -c "<main" -- src/layouts/Layout.astro` prints nothing
-- [x] 1.7 The dashboard brand is an `h1`: `git grep -n "<h1" -- src/components/DashboardHeader.astro` prints one line containing "Energy Analyser"
-- [x] 1.8 The decision is recorded: `git grep -n "F10" -- docs/decisions.md` prints at least one line
+- [x] 1.1 Unit tests pass: `npm test` — c937cb7
+- [x] 1.2 Linting passes: `npm run lint` — c937cb7
+- [x] 1.3 Type checks pass: `npx astro check` — c937cb7
+- [x] 1.4 Production build succeeds: `npm run build` — c937cb7
+- [x] 1.5 Each page source has one `<main`: `git grep -c "<main" -- src/components/DashboardBody.astro src/pages/auth/signin.astro src/pages/auth/check-email.astro` prints `:1` for each of the three files — c937cb7
+- [x] 1.6 The layout has no `<main`: `git grep -c "<main" -- src/layouts/Layout.astro` prints nothing — c937cb7
+- [x] 1.7 The dashboard brand is an `h1`: `git grep -n "<h1" -- src/components/DashboardHeader.astro` prints one line containing "Energy Analyser" — c937cb7
+- [x] 1.8 The decision is recorded: `git grep -n "F10" -- docs/decisions.md` prints at least one line — c937cb7
 
 #### Manual
 
 - [ ] 1.9 On `/dashboard` (signed in, local stack) the accessibility tree shows one banner (the header), one main containing the live card and the three cards, and one contentinfo labelled "Legenda"; the main does not contain the header or the legend
 - [ ] 1.10 The dashboard heading outline is one `h1` "Energy Analyser", then `h2` card titles, then `h3` sub-sections, with no skipped level and no second `h1`
-- [x] 1.11 `/auth/signin` and `/auth/check-email` each show one main landmark containing the card and their existing `h1`
+- [x] 1.11 `/auth/signin` and `/auth/check-email` each show one main landmark containing the card and their existing `h1` — c937cb7
 - [ ] 1.12 Nothing looks different at 1440px and 390px on all three pages: the brand's size, weight and position, and the spacing between header, live card, grid and legend, match `main` (compare with a screenshot of the current production page or the archived `fresh-full-1440.jpg` and `fresh-full-390.jpg`)
 
 ### Phase 2: Smoke guard
 
 #### Automated
 
-- [ ] 2.1 Linting passes: `npm run lint`
-- [ ] 2.2 The three steps exist: `git grep -c "<main" -- scripts/smoke.mjs` prints 3
+- [x] 2.1 Linting passes: `npm run lint`
+- [x] 2.2 The three steps exist: `git grep -c "<main" -- scripts/smoke.mjs` prints 3
 - [ ] 2.3 After the draft PR is opened the CI `ci` and `smoke` jobs are green (smoke does not run on the Mac; it needs local Supabase)
 
 #### Manual

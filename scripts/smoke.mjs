@@ -62,6 +62,16 @@ const steps = [
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
   ["password sign-up is gone", () => request("/auth/signup"), { status: 404 }],
   [
+    "sign-in page has a main landmark and a top-level heading",
+    () => request("/auth/signin", { readBody: true }),
+    { status: 200, contains: ["<main", "<h1"] },
+  ],
+  [
+    "check-email page has a main landmark and a top-level heading",
+    () => request("/auth/check-email", { readBody: true }),
+    { status: 200, contains: ["<main", "<h1"] },
+  ],
+  [
     "home forwards a Supabase code to /auth/confirm",
     () => request("/?code=smoke-code"),
     { status: 302, location: "/auth/confirm?code=smoke-code" },
@@ -112,6 +122,11 @@ const steps = [
     "dashboard shows the bill forecast card",
     () => request("/dashboard", { readBody: true }),
     { status: 200, contains: ["Prognoza rachunku", "od 155 zł do 360 zł", "ok. 258 zł"] },
+  ],
+  [
+    "dashboard has a main landmark and a top-level heading",
+    () => request("/dashboard", { readBody: true }),
+    { status: 200, contains: ["<main", "<h1"] },
   ],
   ["used sign-in link is rejected", () => request(signinLink), { status: 302, location: "/auth/signin?error=" }],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
