@@ -359,7 +359,7 @@ Addendum (2026-09-29, after the implementation review and PR 58 review): one mig
 
 - Related research: `context/changes/live-flow-interaction/research.md`
 - Adapted handoff and owner decisions: `context/changes/live-flow-interaction/handoff-adapted.md`
-- Prior work: `context/changes/live-state-flow-visual/plan.md`, `context/changes/dashboard-glass-restyle/design-brief.md`
+- Prior work: `context/archive/2026-09-28-live-state-flow-visual/plan.md`, `context/archive/2026-09-28-dashboard-glass-restyle/design-brief.md`
 - Mapper and card: `src/lib/services/live-state.ts`, `src/components/LiveStateCard.astro`
 - Norm and thresholds: `src/lib/services/usage-insight.ts:19-21,257`
 
