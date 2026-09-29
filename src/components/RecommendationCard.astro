@@ -1,9 +1,13 @@
 ---
 import Panel from "@/components/ui/Panel.astro";
+import AdviceBlocks from "@/components/AdviceBlocks.astro";
+import RecommendationFindings from "@/components/RecommendationFindings.astro";
+import RecommendationForecast from "@/components/RecommendationForecast.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
+import { VerdictChip } from "@/components/live/VerdictChip";
 import { DisclosureButton } from "@/components/ui/DisclosureButton";
 import type { RecommendationView } from "@/lib/services/recommendation";
-import { parseAdviceMarkdown } from "@/lib/format/advice-markdown";
+import { parseAdviceMarkdown, splitAdviceLead } from "@/lib/format/advice-markdown";
 import { LOAD_FAILED } from "@/lib/format/status";
 
 interface Props {
@@ -13,76 +17,110 @@ interface Props {
 // null means loading failed; the page never throws a 500 for a data problem.
 const { view } = Astro.props;
 const status = view === null ? LOAD_FAILED : view.status;
+// The lead of the advice is always shown; the remaining blocks sit behind the disclosure. The text is never edited.
+const { lead, rest } = splitAdviceLead(view?.kind === "recommendation" ? parseAdviceMarkdown(view.text) : []);
+const explained =
+  view?.kind === "recommendation"
+    ? view.findings.filter((finding) => finding.meaning !== null || finding.suggestedCheck !== null)
+    : [];
 ---
 
 <Panel>
-  <h2 class="mb-2 text-lg font-semibold text-blue-100">Rekomendacja na dziś</h2>
+  <h2 class="mb-2 text-lg font-semibold text-card-foreground">Rekomendacja na dziś</h2>
   <div class="mb-4 flex flex-wrap items-center gap-2">
     <StatusBadge status={status} testId="recommendation-status" />
     {view?.kind === "recommendation" && (
-      <span class="text-xs text-blue-100/70">Wygenerowano {view.generatedAtLabel}</span>
+      <span class="text-xs text-muted-foreground">Wygenerowano {view.generatedAtLabel}</span>
     )}
   </div>
 
-  {view === null && <p class="text-sm text-blue-100/70">Spróbuj odświeżyć stronę.</p>}
+  {view === null && <p class="text-sm text-muted-foreground">Spróbuj odświeżyć stronę.</p>}
 
   {view?.kind === "recommendation" && (
     <div class="space-y-4">
       {view.isStale && (
-        <p class="text-sm text-blue-100/70" data-testid="stale-warning">
+        <p class="text-sm text-muted-foreground" data-testid="stale-warning">
           Laboratorium mogło przestać przesyłać dane.
         </p>
       )}
 
       <div class="space-y-3 leading-relaxed" data-testid="recommendation-text">
-        {parseAdviceMarkdown(view.text).map((block) =>
-          block.type === "paragraph" ? (
-            <p>
-              {block.lines.map((line, i) => (
-                <>
-                  {i > 0 && <br />}
-                  {line.map((segment) => (segment.bold ? <strong>{segment.text}</strong> : segment.text))}
-                </>
-              ))}
-            </p>
-          ) : block.ordered ? (
-            <ol class="list-decimal space-y-1 pl-5">
-              {block.items.map((item) => (
-                <li>{item.map((segment) => (segment.bold ? <strong>{segment.text}</strong> : segment.text))}</li>
-              ))}
-            </ol>
-          ) : (
-            <ul class="list-disc space-y-1 pl-5">
-              {block.items.map((item) => (
-                <li>{item.map((segment) => (segment.bold ? <strong>{segment.text}</strong> : segment.text))}</li>
-              ))}
-            </ul>
-          ),
-        )}
+        <AdviceBlocks blocks={lead} />
       </div>
+
+      <RecommendationFindings findings={view.findings} animate={view.isCurrent} />
+
+      <RecommendationForecast
+        forecast={view.forecast}
+        isFromEarlierDay={view.isFromEarlierDay}
+        animate={view.isCurrent}
+      />
 
       <DisclosureButton
         client:load
+        animate={view.isCurrent}
         openLabel="Pokaż szczegóły"
         closeLabel="Ukryj szczegóły"
         controlsId="recommendation-details"
       >
-        {view.findings.length > 0 && (
-          <>
-            <p class="mt-2 text-xs font-medium text-blue-100">Na podstawie</p>
-            <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-blue-100/80">
-              {view.findings.map((finding) => (
-                <li>{finding}</li>
-              ))}
-            </ul>
-          </>
-        )}
-        <p class="mt-2 text-xs text-blue-100/70">{view.modelLabel}</p>
+        <div class="mt-3 space-y-4">
+          {rest.length > 0 && (
+            <div class="space-y-3 leading-relaxed" data-testid="recommendation-text-rest">
+              <AdviceBlocks blocks={rest} />
+            </div>
+          )}
+
+          {explained.length > 0 && (
+            <div>
+              <h3 class="text-sm font-semibold text-card-foreground">Co to znaczy i co sprawdzić</h3>
+              <ul class="mt-2 space-y-3">
+                {explained.map((finding) => (
+                  <li class="text-sm [overflow-wrap:anywhere]">
+                    <p class="font-medium text-card-foreground">{finding.title ?? finding.fact}</p>
+                    {finding.meaning !== null && <p class="text-muted-foreground">{finding.meaning}</p>}
+                    {finding.suggestedCheck !== null && (
+                      <p class="text-muted-foreground">
+                        <span class="font-medium text-card-foreground">Co sprawdzić:</span> {finding.suggestedCheck}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {view.moreFindings.length > 0 && (
+            <div>
+              <h3 class="text-sm font-semibold text-card-foreground">Pozostałe ustalenia</h3>
+              <ul class="mt-2 space-y-3">
+                {view.moreFindings.map((finding) => (
+                  <li class="flex flex-col items-start gap-1 text-sm sm:flex-row sm:justify-between sm:gap-3">
+                    <div class="min-w-0 [overflow-wrap:anywhere]">
+                      <p class="font-medium text-card-foreground">{finding.title ?? finding.fact}</p>
+                      {finding.title !== null && finding.fact !== null && (
+                        <p class="text-muted-foreground">{finding.fact}</p>
+                      )}
+                      {finding.meaning !== null && <p class="text-muted-foreground">{finding.meaning}</p>}
+                      {finding.suggestedCheck !== null && (
+                        <p class="text-muted-foreground">
+                          <span class="font-medium text-card-foreground">Co sprawdzić:</span> {finding.suggestedCheck}
+                        </p>
+                      )}
+                    </div>
+                    <VerdictChip tone={finding.tone} word={finding.word} className="shrink-0" />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <p class="text-xs text-muted-foreground">{view.modelLabel}</p>
+        </div>
       </DisclosureButton>
     </div>
   )}
 
-  <p class="mt-4 text-xs text-blue-100/70">
+  <p class="mt-4 text-xs text-muted-foreground">
     To tylko porada. Aplikacja niczego nie zmienia w falowniku ani w Home Assistant.
   </p>
 </Panel>

@@ -77,3 +77,34 @@ export function parseAdviceMarkdown(text: string): Block[] {
   flush();
   return blocks;
 }
+
+// A heading is a paragraph of one line holding one bold segment: how `#` headings are parsed, and also what a
+// bold-only line looks like, which the parser cannot tell apart.
+export function isHeadingBlock(block: Block): boolean {
+  return (
+    block.type === "paragraph" && block.lines.length === 1 && block.lines[0].length === 1 && block.lines[0][0].bold
+  );
+}
+
+// A one-line paragraph ending in ":" introduces what follows ("Zalecenia na dziś:"). A multi-line one does not.
+export function endsWithColonIntro(block: Block): boolean {
+  if (block.type !== "paragraph" || block.lines.length !== 1) return false;
+  return block.lines[0]
+    .map((segment) => segment.text)
+    .join("")
+    .trimEnd()
+    .endsWith(":");
+}
+
+// The part of the advice always shown: every leading heading plus the first block after them (a paragraph or a
+// whole list). An intro line ending in ":" pulls in the one list right after it, because the parser splits
+// "Zalecenia na dziś:" and its bullets into two blocks and the actionable items must not hide behind the intro.
+// The rest goes behind the disclosure. No length cap: the blocks offer no honest place to cut, and the text is
+// never edited.
+export function splitAdviceLead(blocks: Block[]): { lead: Block[]; rest: Block[] } {
+  let end = 0;
+  while (end < blocks.length && isHeadingBlock(blocks[end])) end++;
+  if (end < blocks.length) end++;
+  if (end > 0 && end < blocks.length && endsWithColonIntro(blocks[end - 1]) && blocks[end].type === "list") end++;
+  return { lead: blocks.slice(0, end), rest: blocks.slice(end) };
+}

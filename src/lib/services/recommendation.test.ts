@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { RecommendationRow } from "@/types";
-import { FORECAST_HISTORY_START, isStaleRecommendation, toRecommendationView } from "./recommendation";
+import {
+  FINDING_SEVERITY_CHIP,
+  FINDING_TEXT_MAX_CHARS,
+  FINDINGS_VISIBLE_MAX,
+  FORECAST_HISTORY_START,
+  isStaleRecommendation,
+  toRecommendationView,
+} from "./recommendation";
 
 const CERTAINTY = { tone: "insufficient", label: "jeszcze nie wiadomo — prognozy zbierane od 27 września" };
 
@@ -61,6 +68,7 @@ describe("toRecommendationView", () => {
       text: "Utrzymaj rezerwę baterii na 20%.\nNie ładuj z sieci.",
       generatedAtLabel: "23 września 2026, 12:00",
       isStale: false,
+      isCurrent: true,
       isFromEarlierDay: false,
       forecast: {
         todayLabel: "18,6 kWh",
@@ -70,7 +78,18 @@ describe("toRecommendationView", () => {
         certainty: CERTAINTY,
       },
       modelLabel: "gemma3:4b (lokalny model)",
-      findings: ["Forecast.Solar przewiduje 18.6 kWh."],
+      findings: [
+        {
+          title: null,
+          fact: "Forecast.Solar przewiduje 18.6 kWh.",
+          meaning: null,
+          suggestedCheck: null,
+          severity: "unknown",
+          tone: "insufficient",
+          word: "Bez oceny",
+        },
+      ],
+      moreFindings: [],
     });
   });
 
@@ -157,4 +176,173 @@ describe("toRecommendationView", () => {
       expect(view.kind === "recommendation" && view.findings).toEqual([]);
     },
   );
+
+  it("marks only a good status as current, at its edges", () => {
+    const isCurrent = (generated_at: string, clock: string) => {
+      const view = toRecommendationView(row({ generated_at }), at(clock));
+      return view.kind === "recommendation" && view.isCurrent;
+    };
+    expect(isCurrent("2026-09-23T09:00:00Z", "2026-09-23T11:00:00Z")).toBe(true);
+    expect(isCurrent("2026-09-23T09:00:00Z", "2026-09-23T11:00:01Z")).toBe(false);
+    expect(isCurrent("2026-09-22T21:30:00Z", "2026-09-22T22:30:00Z")).toBe(false);
+  });
+});
+
+function withFindings(local_findings: unknown) {
+  const view = toRecommendationView(row({ facts: { local_findings } }), at("2026-09-23T11:00:00Z"));
+  if (view.kind !== "recommendation") throw new Error("expected a recommendation");
+  return view;
+}
+
+describe("findings", () => {
+  it("has the severity chips the owner decided, without a problem entry", () => {
+    expect(FINDING_SEVERITY_CHIP).toEqual({
+      warn: { tone: "watch", word: "Warto sprawdzić" },
+      ok: { tone: "good", word: "Dobrze" },
+      info: { tone: "insufficient", word: "Informacja" },
+      unknown: { tone: "insufficient", word: "Bez oceny" },
+    });
+    expect(FINDING_TEXT_MAX_CHARS).toBe(500);
+    expect(FINDINGS_VISIBLE_MAX).toBe(5);
+  });
+
+  it.each([
+    ["warn", "warn", "watch", "Warto sprawdzić"],
+    ["ok", "ok", "good", "Dobrze"],
+    ["info", "info", "insufficient", "Informacja"],
+    ["WARN ", "warn", "watch", "Warto sprawdzić"],
+    [" Ok", "ok", "good", "Dobrze"],
+    [undefined, "unknown", "insufficient", "Bez oceny"],
+    [3, "unknown", "insufficient", "Bez oceny"],
+    ["critical", "unknown", "insufficient", "Bez oceny"],
+    ["", "unknown", "insufficient", "Bez oceny"],
+  ])("reads severity %j as %s", (severity, expected, tone, word) => {
+    const [finding] = withFindings([{ fact: "F", severity }]).findings;
+    expect(finding).toMatchObject({ severity: expected, tone, word });
+  });
+
+  it.each([
+    ["title only", { title: "T" }, { title: "T", fact: null }],
+    ["fact only", { fact: "F" }, { title: null, fact: "F" }],
+    ["both", { title: " T ", fact: " F " }, { title: "T", fact: "F" }],
+    ["a blank title with a fact", { title: "  ", fact: "F" }, { title: null, fact: "F" }],
+    ["a wrong-typed title with a fact", { title: 3, fact: "F" }, { title: null, fact: "F" }],
+  ])("keeps a finding with %s", (_name, record, expected) => {
+    expect(withFindings([record]).findings).toMatchObject([expected]);
+  });
+
+  it.each([
+    ["both blank", { title: " ", fact: "" }],
+    ["both wrong types", { title: 1, fact: true }],
+    ["neither", { severity: "warn", meaning: "M" }],
+    ["not a record", null],
+  ])("drops a finding with %s", (_name, record) => {
+    expect(withFindings([record]).findings).toEqual([]);
+  });
+
+  it.each([
+    ["missing", {}, null],
+    ["a number", { meaning: 5, suggested_check: 5 }, null],
+    ["a boolean", { meaning: true, suggested_check: false }, null],
+    ["blank", { meaning: "  ", suggested_check: "" }, null],
+    ["present", { meaning: " M ", suggested_check: " S " }, "text"],
+  ])("reads meaning and suggested_check when %s", (_name, extra, kind) => {
+    const [finding] = withFindings([{ fact: "F", ...extra }]).findings;
+    expect(finding.meaning).toBe(kind === null ? null : "M");
+    expect(finding.suggestedCheck).toBe(kind === null ? null : "S");
+  });
+
+  describe("text length", () => {
+    const max = FINDING_TEXT_MAX_CHARS;
+    it.each(["title", "fact", "meaning", "suggested_check"])("cuts %s only past the limit", (key) => {
+      const field = key === "suggested_check" ? "suggestedCheck" : (key as "title" | "fact" | "meaning");
+      const base = key === "title" || key === "fact" ? {} : { fact: "F" };
+      const read = (value: string) => withFindings([{ ...base, [key]: value }]).findings[0][field];
+      expect(read("a".repeat(max))).toBe("a".repeat(max));
+      const cut = read("a".repeat(max + 1));
+      expect(cut).toBe(`${"a".repeat(max - 1)}…`);
+      expect(cut).toHaveLength(max);
+      // Over the limit only before trimming: kept whole.
+      expect(read(`  ${"a".repeat(max)}  `)).toBe("a".repeat(max));
+    });
+
+    it("does not leave half an emoji before the ellipsis", () => {
+      // "😀" is two UTF-16 units; placed so the cut would fall between them.
+      const value = `${"a".repeat(max - 2)}😀😀`;
+      const cut = withFindings([{ fact: value }]).findings[0].fact;
+      expect(cut).toBe(`${"a".repeat(max - 2)}…`);
+    });
+  });
+
+  describe("stale cards", () => {
+    const mixed = [
+      { fact: "ok", severity: "ok" },
+      { fact: "warn", severity: "warn" },
+      { fact: "info", severity: "info" },
+    ];
+
+    it.each([
+      ["a watch (older than 2 hours)", "2026-09-23T06:00:00Z"],
+      ["a problem (earlier day)", "2026-09-20T10:00:00Z"],
+    ])("makes chips neutral but keeps words and real severity on %s", (_name, generated_at) => {
+      const view = toRecommendationView(
+        row({ generated_at, facts: { local_findings: mixed } }),
+        at("2026-09-23T11:00:00Z"),
+      );
+      if (view.kind !== "recommendation") throw new Error("expected a recommendation");
+      expect(view.findings.map((f) => [f.fact, f.severity, f.tone, f.word])).toEqual([
+        ["warn", "warn", "insufficient", "Warto sprawdzić"],
+        ["info", "info", "insufficient", "Informacja"],
+        ["ok", "ok", "insufficient", "Dobrze"],
+      ]);
+    });
+
+    it("keeps watch and good tones on a current recommendation", () => {
+      expect(withFindings(mixed).findings.map((f) => f.tone)).toEqual(["watch", "insufficient", "good"]);
+    });
+  });
+
+  it("orders warn, then info and unknown in lab order, then ok", () => {
+    const view = withFindings([
+      { fact: "ok1", severity: "ok" },
+      { fact: "unknown1", severity: "???" },
+      { fact: "warn1", severity: "warn" },
+      { fact: "info1", severity: "info" },
+      { fact: "warn2", severity: "warn" },
+      { fact: "ok2", severity: "ok" },
+      { fact: "unknown2" },
+    ]);
+    expect([...view.findings, ...view.moreFindings].map((f) => f.fact)).toEqual([
+      "warn1",
+      "warn2",
+      "unknown1",
+      "info1",
+      "unknown2",
+      "ok1",
+      "ok2",
+    ]);
+  });
+
+  it.each([
+    [1, 1, 0],
+    [FINDINGS_VISIBLE_MAX, FINDINGS_VISIBLE_MAX, 0],
+    [FINDINGS_VISIBLE_MAX + 1, FINDINGS_VISIBLE_MAX, 1],
+    [50, FINDINGS_VISIBLE_MAX, 50 - FINDINGS_VISIBLE_MAX],
+  ])("splits %i findings into %i visible and %i more", (count, visible, more) => {
+    const view = withFindings(Array.from({ length: count }, (_, i) => ({ fact: `f${String(i)}`, severity: "info" })));
+    expect(view.findings).toHaveLength(visible);
+    expect(view.moreFindings).toHaveLength(more);
+    expect([...view.findings, ...view.moreFindings].map((f) => f.fact)).toEqual(
+      Array.from({ length: count }, (_, i) => `f${String(i)}`),
+    );
+  });
+
+  it("splits after ranking, so a late warning is visible", () => {
+    const view = withFindings([
+      ...Array.from({ length: 6 }, (_, i) => ({ fact: `ok${String(i)}`, severity: "ok" })),
+      { fact: "late warning", severity: "warn" },
+    ]);
+    expect(view.findings[0].fact).toBe("late warning");
+    expect(view.moreFindings).toHaveLength(2);
+  });
 });

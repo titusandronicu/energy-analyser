@@ -26,12 +26,21 @@
 //   still fresh. That also limits when their screenshots can be taken.
 // - The verdicts also depend on the month (the expected PV share table in src/lib/services/live-state.ts): the
 //   fixtures are tuned for September to October.
-// Usage: BASE_URL=https://… INGEST_TOKEN=… node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--shift-days] [--allow-remote]
+//
+// Recommendation states (scripts/fixtures/recommendation/, local databases only, like every whole body):
+// - --generated-at <iso> sets recommendation.generated_at instead of the body's own value, so a state (current,
+//   older than 2 h, from an earlier day) can be pushed at any time. It needs a body with a recommendation, so
+//   use --file or --full: the default state-only push strips it and the script exits with an error. It sets only
+//   that field: it is independent of --captured-at, and the two may differ.
+// - The recommendations table keeps the first push per generated_at (later pushes with the same value are
+//   ignored) and the dashboard shows the newest by generated_at. Push oldest first (earlier day, then older
+//   than 2 h, then current), or reset the local recommendations table between states.
+// Usage: BASE_URL=https://… INGEST_TOKEN=… node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--generated-at <iso>] [--shift-days] [--allow-remote]
 import { readFileSync } from "node:fs";
 import { URL } from "node:url";
 
 const usage =
-  "Usage: BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--shift-days] [--allow-remote]";
+  "Usage: BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--generated-at <iso>] [--shift-days] [--allow-remote]";
 
 const { BASE_URL, INGEST_TOKEN } = process.env;
 if (!BASE_URL || !INGEST_TOKEN) {
@@ -58,6 +67,18 @@ if (capturedAtOverride !== null && Number.isNaN(capturedAtOverride.getTime())) {
   process.exit(1);
 }
 
+const generatedAtFlag = process.argv.indexOf("--generated-at");
+const generatedAtValue = generatedAtFlag === -1 ? null : process.argv[generatedAtFlag + 1];
+if (generatedAtFlag !== -1 && (!generatedAtValue || generatedAtValue.startsWith("--"))) {
+  console.error(`--generated-at needs an ISO timestamp\n${usage}`);
+  process.exit(1);
+}
+const generatedAtOverride = generatedAtValue === null ? null : new Date(generatedAtValue);
+if (generatedAtOverride !== null && Number.isNaN(generatedAtOverride.getTime())) {
+  console.error(`--generated-at is not a valid timestamp: ${generatedAtValue}\n${usage}`);
+  process.exit(1);
+}
+
 // A named file is always sent whole: its point is the sections the default push strips.
 const source = filePath ?? new URL("../docs/ingest/example-v1.json", import.meta.url);
 let fixture;
@@ -75,6 +96,12 @@ const {
 } = fixture;
 const full = filePath !== null || process.argv.includes("--full");
 const body = full ? fixture : stateOnly;
+
+// The default state-only push strips the recommendation, so the flag has nothing to rewrite without a whole body.
+if (generatedAtOverride !== null && !body.recommendation) {
+  console.error(`--generated-at needs a body with a recommendation (use --file or --full)\n${usage}`);
+  process.exit(1);
+}
 
 // A whole body writes made-up recommendations (never pruned) and daily rows, so it is local-only unless the
 // caller says a remote push is deliberate.
@@ -126,11 +153,18 @@ const payload = {
   captured_at: capturedAt,
   ...(dailyHistory === undefined ? {} : { daily_history: dailyHistory }),
   ...(rewriteGeneratedAt ? { bill_forecast: { ...body.bill_forecast, generated_at: capturedAt } } : {}),
+  ...(generatedAtOverride === null
+    ? {}
+    : { recommendation: { ...body.recommendation, generated_at: generatedAtOverride.toISOString() } }),
 };
 
 // Say so out loud: a silent rewrite makes the stale-forecast variants look like they were exercised.
 if (rewriteGeneratedAt) {
   console.log("bill_forecast.generated_at rewritten to now (use --keep-generated-at to preserve it)");
+}
+
+if (generatedAtOverride !== null) {
+  console.log(`recommendation.generated_at rewritten to ${generatedAtOverride.toISOString()}`);
 }
 
 const response = await fetch(new URL("/api/ingest", BASE_URL), {
