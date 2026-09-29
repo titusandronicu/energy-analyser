@@ -1,0 +1,68 @@
+---
+// Server-rendered sparkline: no script, no animation, no hydration. Expects an opaque surface behind it (bg-card or
+// bg-inset), never a blurred one: the stroke contrast in the plan is computed against those two.
+import { cn } from "@/lib/utils";
+import { describeSeries, flatCaption, sparklineGeometry } from "@/lib/sparkline";
+
+interface Props {
+  // null means the history could not be loaded (the "historia niedostępna" variant), not that it is short.
+  values: readonly (number | null)[] | null;
+  subject: string;
+  windowLabel: string;
+  tone: "pv" | "home" | "neutral" | "primary";
+  width?: number;
+  height?: number;
+  class?: string;
+}
+
+const { values, subject, windowLabel, tone, width = 120, height = 36, class: className } = Astro.props;
+
+// Full class names, so Tailwind sees every one of them.
+const TONE_CLASS = {
+  pv: "text-flow-pv",
+  home: "text-flow-home",
+  neutral: "text-tone-neutral",
+  primary: "text-primary",
+} as const;
+
+const geometry = values === null ? null : sparklineGeometry(values, width, height);
+const label = values === null ? null : describeSeries(subject, windowLabel, values);
+const caption = values === null ? null : flatCaption(values);
+---
+
+{values === null ? (
+  <span class:list={cn("text-muted-foreground text-xs", className)} data-testid="sparkline-unavailable">
+    historia niedostępna
+  </span>
+) : geometry === null ? (
+  <span class:list={cn("text-muted-foreground text-xs", className)} data-testid="sparkline-empty">
+    za mało dni
+  </span>
+) : (
+  <span class="inline-flex flex-col items-start gap-1">
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      width={width}
+      height={height}
+      role="img"
+      aria-label={label}
+      class:list={cn("block flex-none", TONE_CLASS[tone], className)}
+    >
+      {geometry.area !== "" && <path d={geometry.area} fill="currentColor" fill-opacity="0.14" stroke="none" />}
+      <path
+        d={geometry.line}
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        vector-effect="non-scaling-stroke"
+      />
+    </svg>
+    {caption && (
+      <span class="text-muted-foreground text-[11px]" data-testid="sparkline-flat">
+        {caption}
+      </span>
+    )}
+  </span>
+)}

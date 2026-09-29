@@ -589,15 +589,15 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Type checks pass: `npx astro check`
-- [x] 2.4 Production build succeeds: `npm run build`
-- [x] 2.5 The header carries the new copy and the sign-out form is intact: `git grep -n "Wyloguj się" -- src/components` prints the header line and `git grep -n 'action="/api/auth/signout"' -- src` prints one line
-- [x] 2.6 Icons are server-rendered and no new island appeared: `git --no-pager grep -nE "[[:space:]]client:(load|idle|visible|media|only)" -- "src/**/*.astro"` prints exactly four lines, `src/components/LiveStateCard.astro` (the `LiveFlow` island), `src/components/RecommendationCard.astro` and the two form islands in `src/pages/auth/signin.astro`; any other line, an icon among them, fails the check
-- [x] 2.7 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
-- [x] 2.8 The status testids are unchanged: `git grep -nE 'testId="(live|bill|usage)-status"' -- src` prints three lines
-- [x] 2.9 The dev page is still untracked: `git ls-files src/pages/dev` prints nothing
+- [x] 2.1 Unit tests pass: `npm test` — 1d61eac
+- [x] 2.2 Linting passes: `npm run lint` — 1d61eac
+- [x] 2.3 Type checks pass: `npx astro check` — 1d61eac
+- [x] 2.4 Production build succeeds: `npm run build` — 1d61eac
+- [x] 2.5 The header carries the new copy and the sign-out form is intact: `git grep -n "Wyloguj się" -- src/components` prints the header line and `git grep -n 'action="/api/auth/signout"' -- src` prints one line — 1d61eac
+- [x] 2.6 Icons are server-rendered and no new island appeared: `git --no-pager grep -nE "[[:space:]]client:(load|idle|visible|media|only)" -- "src/**/*.astro"` prints exactly four lines, `src/components/LiveStateCard.astro` (the `LiveFlow` island), `src/components/RecommendationCard.astro` and the two form islands in `src/pages/auth/signin.astro`; any other line, an icon among them, fails the check — 1d61eac
+- [x] 2.7 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing — 1d61eac
+- [x] 2.8 The status testids are unchanged: `git grep -nE 'testId="(live|bill|usage)-status"' -- src` prints three lines — 1d61eac
+- [x] 2.9 The dev page is still untracked: `git ls-files src/pages/dev` prints nothing — 1d61eac
 
 #### Manual
 
@@ -613,12 +613,12 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass, including the new `src/lib/sparkline.test.ts`: `npm test`
-- [ ] 3.2 Linting passes: `npm run lint`
-- [ ] 3.3 Type checks pass: `npx astro check`
-- [ ] 3.4 Production build succeeds: `npm run build`
-- [ ] 3.5 No dependency was added or changed: `git diff --exit-code origin/main -- package.json package-lock.json`
-- [ ] 3.6 The sparkline code has no animation, timers or hydration: `git grep -nE "animate|@keyframes|transition|setInterval|client:" -- src/lib/sparkline.ts src/components/ui/Sparkline.astro` prints nothing
+- [x] 3.1 Unit tests pass, including the new `src/lib/sparkline.test.ts`: `npm test`
+- [x] 3.2 Linting passes: `npm run lint`
+- [x] 3.3 Type checks pass: `npx astro check`
+- [x] 3.4 Production build succeeds: `npm run build`
+- [x] 3.5 No dependency was added or changed: `git diff --exit-code origin/main -- package.json package-lock.json`
+- [x] 3.6 The sparkline code has no animation, timers or hydration: `git grep -nE "animate|@keyframes|transition|setInterval|client:" -- src/lib/sparkline.ts src/components/ui/Sparkline.astro` prints nothing
 
 #### Manual
 
