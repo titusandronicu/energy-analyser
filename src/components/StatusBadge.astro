@@ -14,7 +14,7 @@ const { status, testId, dot = false } = Astro.props;
 
 <span
   class:list={cn(
-    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+    "inline-flex items-center rounded-2xl border px-2.5 py-0.5 text-xs font-medium",
     dot && "gap-1.5",
     TONE_CLASSES[status.tone],
   )}
