@@ -89,7 +89,7 @@ After the first image is published, make the GHCR package public. The VPS then p
 
 ## 5. Deploy and verify
 
-Wait for CI and image publication for the chosen commit. Run the **Deploy production** workflow with its full lowercase 40-character SHA. After approval, verify:
+If the release adds files under `supabase/migrations/`, apply them to production through the Supabase connector first and confirm each in `list_migrations` (and the relation it creates, e.g. `select to_regclass('public.<name>')`); nothing in CI or the workflow applies or checks migrations, and code that reads a missing view fails on deploy. Then wait for CI and image publication for the chosen commit. Run the **Deploy production** workflow with its full lowercase 40-character SHA. After approval, verify:
 
 ```bash
 curl -fsS https://neil170-20170.mikrus.cloud/api/health
