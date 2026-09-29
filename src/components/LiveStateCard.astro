@@ -1,20 +1,9 @@
 ---
-import {
-  Battery,
-  BatteryCharging,
-  BatteryFull,
-  BatteryLow,
-  BatteryMedium,
-  BatteryWarning,
-  Home,
-  Sun,
-  Zap,
-} from "lucide-react";
+import { LiveFlow } from "@/components/live/LiveFlow";
 import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED } from "@/lib/format/status";
-import { MIN_FLOW_W } from "@/lib/services/live-state";
 import type { LiveStateView } from "@/lib/services/live-state";
 
 interface Props {
@@ -25,25 +14,6 @@ interface Props {
 const { view } = Astro.props;
 // The badge says how fresh the reading is (or why there is none); the notices below only add what it can't.
 const status = view === null ? LOAD_FAILED : view.status;
-
-// Charging wins regardless of level; otherwise the icon follows the mapper-owned charge-level band.
-function batteryIcon(battery: Extract<LiveStateView, { kind: "state" }>["battery"]) {
-  if (battery.direction === "ładowanie") return BatteryCharging;
-  switch (battery.chargeLevel) {
-    case "full":
-      return BatteryFull;
-    case "medium":
-      return BatteryMedium;
-    case "low":
-      return BatteryLow;
-    case "warning":
-      return BatteryWarning;
-    default:
-      return Battery;
-  }
-}
-
-const BatteryIcon = view?.kind === "state" ? batteryIcon(view.battery) : Battery;
 ---
 
 <Panel>
@@ -56,63 +26,27 @@ const BatteryIcon = view?.kind === "state" ? batteryIcon(view.battery) : Battery
 
   {view?.kind === "state" && (
     <div class="space-y-4">
-      {view.isDegraded && <p class="text-sm text-blue-100/70">Część odczytów z Home Assistant może być niedostępna.</p>}
+      {view.isDegraded && (
+        <p class="text-muted-foreground text-sm">Część odczytów z Home Assistant może być niedostępna.</p>
+      )}
+      {view.isStale && (
+        <p class="text-muted-foreground text-sm">
+          Ruch i oceny wstrzymane: odczyty starsze niż 15 minut nie opisują stanu teraz.
+        </p>
+      )}
 
-      <dl class="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4 sm:gap-0 sm:divide-x sm:divide-white/10">
-        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/5 p-3 text-center sm:rounded-none sm:bg-transparent sm:px-4">
-          <span
-            class:list={[
-              "flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100",
-              Math.abs(view.pvWatts ?? 0) >= MIN_FLOW_W && "animate-flow-pulse",
-            ]}
-          >
-            <Sun className="size-5" aria-hidden="true" />
-          </span>
-          <dt class="text-blue-100/60">Prąd z paneli teraz</dt>
-          <dd class="text-lg font-medium">{view.pv}</dd>
-        </div>
-        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/5 p-3 text-center sm:rounded-none sm:bg-transparent sm:px-4">
-          <span
-            class:list={[
-              "flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100",
-              Math.abs(view.homeLoadWatts ?? 0) >= MIN_FLOW_W && "animate-flow-pulse",
-            ]}
-          >
-            <Home className="size-5" aria-hidden="true" />
-          </span>
-          <dt class="text-blue-100/60">Dom zużywa teraz</dt>
-          <dd class="text-lg font-medium">{view.homeLoad}</dd>
-        </div>
-        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/5 p-3 text-center sm:rounded-none sm:bg-transparent sm:px-4">
-          <span
-            class:list={[
-              "flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100",
-              view.battery.direction !== null && "animate-flow-pulse",
-            ]}
-          >
-            <BatteryIcon className="size-5" aria-hidden="true" />
-          </span>
-          <dt class="text-blue-100/60">Bateria teraz</dt>
-          <dd class="text-lg font-medium">{view.battery.value}</dd>
-          <dd class="text-xs text-blue-100/70">
-            Naładowanie: {view.battery.socLabel}
-            {view.battery.direction && ` · ${view.battery.direction}`}
-          </dd>
-        </div>
-        <div class="flex flex-col items-center gap-2 rounded-lg bg-white/5 p-3 text-center sm:rounded-none sm:bg-transparent sm:px-4">
-          <span
-            class:list={[
-              "flex size-9 items-center justify-center rounded-full bg-white/10 text-blue-100",
-              view.grid.direction !== null && "animate-flow-pulse",
-            ]}
-          >
-            <Zap className="size-5" aria-hidden="true" />
-          </span>
-          <dt class="text-blue-100/60">Sieć teraz</dt>
-          <dd class="text-lg font-medium">{view.grid.value}</dd>
-          {view.grid.direction && <dd class="text-xs text-blue-100/70">{view.grid.direction}</dd>}
-        </div>
-      </dl>
+      <LiveFlow
+        client:load
+        pv={view.pv}
+        homeLoad={view.homeLoad}
+        grid={view.grid}
+        battery={view.battery}
+        flows={view.flows}
+        verdicts={view.verdicts}
+        capturedAtLabel={view.capturedAtLabel}
+        ageLabel={view.ageLabel}
+        isStale={view.isStale}
+      />
 
       <div class="space-y-2 rounded-lg bg-white/5 p-3 text-sm">
         <p class="text-xs text-blue-100/60" data-testid="live-today-period">

@@ -155,6 +155,8 @@ Replace the four tiles with a React island: squares, junction, connectors with a
 - At 1440px and 390px there is no overflow or clipped value; the "Dziś" row, timestamp and glossary are intact
 - Badges on all four cards (live, bill forecast, usage, recommendation) keep their words and shape, use the tone tokens, and measure at least 4.5:1 on the card surface
 
+Note (2026-09-29): 2.4 (`npm run smoke`) was skipped by the owner because it needs a local Supabase stack (Docker on the UGREEN); the live-card text was instead confirmed in server-rendered HTML from a temporary dev page.
+
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase.
 
 ---
@@ -365,32 +367,32 @@ No schema or contract change. Rolling back is reverting the phase commits; store
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test`
-- [x] 1.2 Linting and type checks pass: `npm run lint`
-- [x] 1.3 Production build succeeds: `npm run build`
+- [x] 1.1 Unit tests pass: `npm test` — 22bcdae
+- [x] 1.2 Linting and type checks pass: `npm run lint` — 22bcdae
+- [x] 1.3 Production build succeeds: `npm run build` — 22bcdae
 
 #### Manual
 
-- [x] 1.4 The new tokens exist in `global.css` and compile to `bg-flow-*` and `text-tone-*` utilities (spot check in a built page)
-- [x] 1.5 The battery verdict's edges match `handoff-adapted.md` (30 and 10) and nothing else in the card changed visually yet
-- [x] 1.6 Each `--tone-*` colour on its `--tone-*-surface` composited over `--card` measures at least 4.5:1 (spot-check with a contrast tool); token values are adjusted here if not
+- [x] 1.4 The new tokens exist in `global.css` and compile to `bg-flow-*` and `text-tone-*` utilities (spot check in a built page) — 22bcdae
+- [x] 1.5 The battery verdict's edges match `handoff-adapted.md` (30 and 10) and nothing else in the card changed visually yet — 22bcdae
+- [x] 1.6 Each `--tone-*` colour on its `--tone-*-surface` composited over `--card` measures at least 4.5:1 (spot-check with a contrast tool); token values are adjusted here if not — 22bcdae
 
 ### Phase 2: The static flow island
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Linting and type checks pass: `npm run lint`
-- [ ] 2.3 Production build succeeds: `npm run build`
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Linting and type checks pass: `npm run lint`
+- [x] 2.3 Production build succeeds: `npm run build`
 - [ ] 2.4 Smoke test still finds the live text: `npm run smoke`
 
 #### Manual
 
-- [ ] 2.5 The four squares, junction icon and arrowheads render; grid and battery arrows follow the direction words
-- [ ] 2.6 Tab reaches every square and both toggle buttons with a visible focus ring; Enter and Space select a square and show its details
-- [ ] 2.7 "Odczyty" shows the same four values as the diagram
-- [ ] 2.8 At 1440px and 390px there is no overflow or clipped value; the "Dziś" row, timestamp and glossary are intact
-- [ ] 2.9 Badges on all four cards (live, bill forecast, usage, recommendation) keep their words and shape, use the tone tokens, and measure at least 4.5:1 on the card surface
+- [x] 2.5 The four squares, junction icon and arrowheads render; grid and battery arrows follow the direction words
+- [x] 2.6 Tab reaches every square and both toggle buttons with a visible focus ring; Enter and Space select a square and show its details
+- [x] 2.7 "Odczyty" shows the same four values as the diagram
+- [x] 2.8 At 1440px and 390px there is no overflow or clipped value; the "Dziś" row, timestamp and glossary are intact
+- [x] 2.9 Badges on all four cards (live, bill forecast, usage, recommendation) keep their words and shape, use the tone tokens, and measure at least 4.5:1 on the card surface
 
 ### Phase 3: Motion and controls
 
