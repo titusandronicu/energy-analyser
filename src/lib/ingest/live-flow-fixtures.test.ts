@@ -35,7 +35,7 @@ function toDaily(payload: IngestPayloadV1): DailyEnergyRow[] {
 function viewOf(name: string, afterCaptureMs: number) {
   const payload = load(name);
   const now = new Date(Date.parse(payload.captured_at) + afterCaptureMs);
-  const view = toLiveStateView(toRow(payload), now, toDaily(payload));
+  const view = toLiveStateView(toRow(payload), now, toDaily(payload), payload.captured_at);
   if (view.kind !== "state") throw new Error("expected a state view");
   return view;
 }

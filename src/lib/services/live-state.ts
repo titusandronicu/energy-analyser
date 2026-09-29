@@ -48,6 +48,9 @@ export const PV_EXPECTED_SHARE: readonly (readonly [number, number])[] = [
 // The bands reuse the usage card's STATUS_THRESHOLD (good up to +15%, lower is never bad) and FAR_ABOVE_THRESHOLD
 // (problem above +40%).
 export const LOAD_RATE_FROM_HOUR = 6;
+// The lab pushes every 5 minutes, so today's daily row captured more than a stale window before the snapshot came
+// from an earlier push (daily history is optional in a push); its consumption total is then not rated.
+export const DAILY_ROW_MAX_LAG_MS = LIVE_STALE_AFTER_MS;
 // Absorbs floating point error so an exact line stays on the milder side.
 const EPSILON = 1e-9;
 const MINUTE_MS = 60 * 1000;
@@ -103,6 +106,19 @@ export async function loadLiveState(client: SupabaseClient): Promise<LiveStateRo
     .overrideTypes<LiveStateRow[], { merge: false }>();
   if (error) throw new Error(`loading live state failed: ${error.message}`);
   return data[0] ?? null;
+}
+
+// When the daily row for `dayKey` was captured; readable by owners through a column grant. Errors are thrown
+// (for example the grant not applied yet); the page isolates them so the consumption verdict is only unrated.
+export async function loadDailyRowCapturedAt(client: SupabaseClient, dayKey: string): Promise<string | null> {
+  const { data, error } = await client
+    .from("daily_energy")
+    .select("captured_at")
+    .eq("day", dayKey)
+    .limit(1)
+    .overrideTypes<{ captured_at: string }[], { merge: false }>();
+  if (error) throw new Error(`loading daily row time failed: ${error.message}`);
+  return data[0]?.captured_at ?? null;
 }
 
 const wholeNumber = new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 });
@@ -226,7 +242,9 @@ function pvVerdict(
 
 function homeVerdict(
   captured: { hour: number; time: string; dayKey: string },
+  capturedAtMs: number,
   dailyRows: DailyEnergyRow[],
+  todayRowCapturedAt: string | null | undefined,
   now: Date,
   isStale: boolean,
 ): NodeVerdict {
@@ -239,6 +257,21 @@ function homeVerdict(
   }
   if (dailyRows.length === 0) {
     return unrated(NO_HISTORY_DETAIL, "Brak danych historii, więc nie ma normy zużycia do porównania.");
+  }
+  // The daily row is written independently of the snapshot: a fresh state-only push leaves an older total in place,
+  // which must not be read as consumption up to this snapshot's capture time.
+  const rowMs = todayRowCapturedAt == null ? Number.NaN : Date.parse(todayRowCapturedAt);
+  if (Number.isNaN(rowMs)) {
+    return unrated(
+      "brak czasu historii",
+      "Nie wiadomo, z kiedy pochodzi dzisiejsze zużycie w historii, więc zużycie domu nie jest oceniane.",
+    );
+  }
+  if (capturedAtMs - rowMs > DAILY_ROW_MAX_LAG_MS) {
+    return unrated(
+      "historia nieaktualna",
+      "Dzisiejsze zużycie w historii pochodzi z wcześniejszego odczytu niż ta migawka, więc zużycie domu nie jest oceniane.",
+    );
   }
   const load = asNumber(dailyRows.find((day) => day.day === captured.dayKey)?.load_kwh);
   if (load === null) {
@@ -282,11 +315,14 @@ function liveStatus(ageMs: number, isDegraded: boolean): Status {
 }
 
 // `dailyRows` are the daily totals the usage card reads; null, undefined or empty means no history (PV and
-// consumption are then not rated), never an error.
+// consumption are then not rated), never an error. `todayRowCapturedAt` is when the capture day's daily row was
+// written; without it (null, undefined or unparseable) or when it is older than the snapshot by more than
+// DAILY_ROW_MAX_LAG_MS, consumption is not rated.
 export function toLiveStateView(
   row: LiveStateRow | null,
   now: Date,
   dailyRows?: DailyEnergyRow[] | null,
+  todayRowCapturedAt?: string | null,
 ): LiveStateView {
   if (!row) return { kind: "empty", status: { tone: "insufficient", label: "laboratorium jeszcze nic nie przesłało" } };
 
@@ -349,7 +385,7 @@ export function toLiveStateView(
     verdicts: {
       battery: batteryVerdict(socWhole, socLabel, isStale),
       pv: pvVerdict(capturedClock, asNumber(state.pv_today_kwh), history, isStale),
-      home: homeVerdict(capturedClock, history, now, isStale),
+      home: homeVerdict(capturedClock, capturedAt.getTime(), history, todayRowCapturedAt, now, isStale),
     },
   };
 }

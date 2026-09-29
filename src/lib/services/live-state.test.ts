@@ -29,8 +29,8 @@ function row(overrides: Partial<LiveStateRow> = {}, stateOverrides: Record<strin
 const at = (iso: string) => new Date(iso);
 const now = at("2026-09-25T10:05:00Z");
 
-function view(r: LiveStateRow, clock: Date = now, daily?: DailyEnergyRow[] | null) {
-  const v = toLiveStateView(r, clock, daily);
+function view(r: LiveStateRow, clock: Date = now, daily?: DailyEnergyRow[] | null, rowCapturedAt?: string | null) {
+  const v = toLiveStateView(r, clock, daily, rowCapturedAt);
   if (v.kind !== "state") throw new Error("expected a state view");
   return v;
 }
@@ -333,16 +333,26 @@ function history(today: Partial<DailyEnergyRow> | null, count = 30, day = DAY): 
   return today === null ? earlier : [daily(day, today), ...earlier];
 }
 
-// A capture at the given Warsaw time on DAY, read a minute later.
+// The daily row's capture time relative to the snapshot's: `lagMs` earlier (negative: later), or absent.
+const sameTime = (captured: Date) => captured.toISOString();
+const behind = (lagMs: number) => (captured: Date) => new Date(captured.getTime() - lagMs).toISOString();
+
+// A capture at the given Warsaw time on DAY, read a minute later. By default today's daily row was captured with
+// the snapshot; `rowAt` overrides its capture time.
 function verdictsAt(
   warsaw: string,
   rows: DailyEnergyRow[] | null | undefined,
   stateOverrides: Record<string, unknown> = {},
   day = DAY,
+  rowAt: (captured: Date) => string | null | undefined = sameTime,
 ) {
   const captured = new Date(`${day}T${warsaw}:00+02:00`);
-  return view(row({ captured_at: captured.toISOString() }, stateOverrides), new Date(captured.getTime() + 60_000), rows)
-    .verdicts;
+  return view(
+    row({ captured_at: captured.toISOString() }, stateOverrides),
+    new Date(captured.getTime() + 60_000),
+    rows,
+    rowAt(captured),
+  ).verdicts;
 }
 
 describe("expectedPvShare", () => {
@@ -551,6 +561,63 @@ describe("consumption verdict", () => {
     expect(verdictsAt("12:00", noRows, {}).home).toMatchObject({
       tone: "insufficient",
       detail: "brak danych historii",
+    });
+  });
+
+  describe("age of today's row", () => {
+    const MIN = 60_000;
+    const homeAt = (rowAt: (captured: Date) => string | null | undefined) =>
+      verdictsAt("12:00", rows(10), {}, DAY, rowAt).home;
+
+    it.each([
+      ["captured with the snapshot", sameTime],
+      ["exactly 15 minutes behind", behind(15 * MIN)],
+      ["newer than the snapshot", behind(-2 * MIN)],
+    ])("rates a row %s", (_name, rowAt) => {
+      expect(homeAt(rowAt)).toMatchObject({ tone: "good", detail: "0% wobec normy" });
+    });
+
+    it("does not rate a row 15 minutes and 1 second behind", () => {
+      expect(homeAt(behind(15 * MIN + 1000))).toMatchObject({
+        tone: "insufficient",
+        word: "bez oceny",
+        detail: "historia nieaktualna",
+      });
+    });
+
+    it.each([null, undefined, "not a date"])("does not rate without a usable row time (%j)", (rowAt) => {
+      expect(homeAt(() => rowAt)).toMatchObject({
+        tone: "insufficient",
+        word: "bez oceny",
+        detail: "brak czasu historii",
+      });
+    });
+
+    it("never rates an earlier push's partial total against the new snapshot's time", () => {
+      // A 06:00 push stored 5 kWh; a state-only push at 12:00 left it. Norm 20 kWh gives 10 kWh by noon, so
+      // reading 5 kWh as consumption to 12:00 would be a false "good" at -50%.
+      const v = verdictsAt("12:00", rows(5), {}, DAY, behind(6 * 60 * MIN)).home;
+      expect(v).toMatchObject({ tone: "insufficient", detail: "historia nieaktualna" });
+      expect(v.tone).not.toBe("good");
+    });
+
+    it("keeps the earlier gates first: stale snapshot, early hour and missing history win", () => {
+      const captured = new Date("2026-09-25T12:00:00+02:00");
+      const stale = view(
+        row({ captured_at: captured.toISOString() }),
+        new Date(captured.getTime() + 16 * MIN),
+        rows(10),
+        null,
+      );
+      expect(stale.verdicts.home.detail).toBe("dane nieaktualne");
+      expect(verdictsAt("05:59", rows(3), {}, DAY, () => null).home.detail).toBe("za wcześnie");
+      expect(verdictsAt("12:00", [], {}, DAY, () => null).home.detail).toBe("brak danych historii");
+    });
+
+    it("leaves PV rating unaffected by the row's age", () => {
+      expect(verdictsAt("15:00", history({ pv_forecast_kwh: 10 }), { pv_today_kwh: 8 }, DAY, () => null).pv.tone).toBe(
+        "good",
+      );
     });
   });
 });

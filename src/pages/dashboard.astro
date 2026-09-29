@@ -7,7 +7,8 @@ import RecommendationCard from "@/components/RecommendationCard.astro";
 import UsageInsightCard from "@/components/UsageInsightCard.astro";
 import { buttonVariants } from "@/components/ui/button";
 import { loadBillForecast, toBillForecastView, type BillForecastView } from "@/lib/services/bill-forecast";
-import { loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
+import { warsawParts } from "@/lib/format/warsaw-time";
+import { loadDailyRowCapturedAt, loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
 import { loadLatestRecommendation, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 import { loadDailyEnergy, toUsageInsightView, type UsageInsightView } from "@/lib/services/usage-insight";
 import { createClient } from "@/lib/supabase";
@@ -50,7 +51,12 @@ const [liveView, billView, usageView, view]: [
   orLoadError(async () => {
     const supabase = getClient();
     const liveRow = supabase ? await loadLiveState(supabase) : null;
-    return toLiveStateView(liveRow, now, await dailyRowsPromise);
+    // Own isolation: a failure (for example the column grant not applied yet) only leaves consumption unrated.
+    const rowCapturedAt =
+      supabase && liveRow
+        ? await orLoadError(() => loadDailyRowCapturedAt(supabase, warsawParts(new Date(liveRow.captured_at)).dayKey))
+        : null;
+    return toLiveStateView(liveRow, now, await dailyRowsPromise, rowCapturedAt);
   }),
   orLoadError(async () => {
     const supabase = getClient();
