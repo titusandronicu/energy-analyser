@@ -75,10 +75,12 @@ const referencePeriod = z.union([monthKey, settledPeriod]);
 // Split on `status` so a `no_data` body can never carry a figure: the app must not be able to read
 // `projected_bill_gross_pln` off a body that refused to produce one.
 //
-// Types here enforce shape and sign only. There is deliberately no plausibility ceiling and no sign
-// check on `settlement`: a zod failure 422s the whole push, which would take the live `state` and the
-// recommendation down with it. `reference_feed_in_kwh` has been observed negative in the lab, so the
-// settlement block stays permissive `z.number()` and the sign check lives in the mapper, where it
+// Types here enforce shape and sign only for the money and the observed figures. There is deliberately no
+// plausibility ceiling, and no sign check on `settlement` or on the derived kWh figures
+// (`projected_import_kwh`, `projected_credit_kwh`, `projected_billable_kwh`, `credit_left_kwh`): a zod failure
+// 422s the whole push, which would take the live `state` and the recommendation down with it.
+// `reference_feed_in_kwh` has been observed negative in the lab, which gives a negative export ratio and so a
+// negative credit. Those fields stay permissive `z.number()` and the sign check is the mapper's job, where it
 // blanks this card alone.
 const billForecast = z.discriminatedUnion("status", [
   z.strictObject({
@@ -96,15 +98,15 @@ const billForecast = z.discriminatedUnion("status", [
         message: "observed_days dates must be unique",
       }),
     average_daily_import_kwh: nonNegative,
-    projected_import_kwh: nonNegative,
+    projected_import_kwh: z.number(),
     projected_bill_gross_pln: nonNegative,
     range_gross_pln: z.strictObject({
       low: nonNegative,
       high: nonNegative,
     }),
-    projected_credit_kwh: nonNegative,
-    projected_billable_kwh: nonNegative,
-    credit_left_kwh: nonNegative,
+    projected_credit_kwh: z.number(),
+    projected_billable_kwh: z.number(),
+    credit_left_kwh: z.number(),
     settlement: z.strictObject({
       factor: z.number(),
       reference_period: referencePeriod,

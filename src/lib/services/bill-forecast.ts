@@ -27,6 +27,12 @@ export const MAX_PLAUSIBLE_BILL_PLN = 7000;
 // The verdict bands against the last real invoice: at or below it is good, up to +20% is worth watching, above
 // is a problem (context/changes/bill-forecast/change.md:14).
 export const BILL_AMBER_RATIO = 1.2;
+// The contract's cap on `observed_days` (one entry per day of the longest month). The mapper applies it itself so
+// a body that skipped validation cannot make the day label or the count unbounded.
+export const MAX_OBSERVED_DAYS = 31;
+// A reference month this many months behind is already as stale as the card can say; the sentence "o N mies."
+// stops there rather than printing whatever the lab sent.
+export const MAX_SHOWN_LAG_MONTHS = 12;
 // Absorbs floating point error so a figure exactly on a verdict line takes the milder status.
 const EPSILON = 1e-9;
 
@@ -189,6 +195,9 @@ function confidenceStatus(value: unknown, referenceMonth: unknown, lagMonths: nu
   const base = isConfidence(value) ? CONFIDENCE_STATUS[value] : { tone: "insufficient" as StatusTone, label: "" };
   if (lagMonths <= 0) return { ...base };
   const month = periodMonthLabel(referenceMonth);
+  // Without a readable reference month the lag is still on the "Na podstawie" sentence, so the badge omits the
+  // detail rather than naming "—".
+  if (month === MISSING) return { ...base };
   const detail = `rozliczenie za ${month}, nie za ostatni miesiąc`;
   return { tone: base.tone, label: base.label ? `${base.label} — ${detail}` : detail };
 }
@@ -201,7 +210,10 @@ function verdictStatus(central: number, invoice: number | null): Status {
     return { tone: "insufficient", label: "brak zamkniętego rachunku do porównania" };
   }
   const reference = plnLabel(invoice);
-  if (central <= invoice + EPSILON) {
+  // "Not more than the last invoice" is judged on the whole-złoty amounts the card shows, so 214.90 against
+  // 214.66 does not read as "above" 215 zł with 215 zł on both sides. The +20% line is not displayed as an amount
+  // and stays exact.
+  if (Math.round(central) <= Math.round(invoice) || central <= invoice + EPSILON) {
     return { tone: "good", label: `nie więcej niż ostatni rachunek (${reference})` };
   }
   const band = `${String(Math.round((BILL_AMBER_RATIO - 1) * 100))}%`;
@@ -213,10 +225,10 @@ function verdictStatus(central: number, invoice: number | null): Status {
 
 // The complete days the estimate rests on (FR-018). `formatPeriod` throws on an empty list, so a body without
 // usable dates falls back to the bare count the lab reported.
-function dayLabelOf(observedDays: unknown, completedDays: number, now: Date): string {
-  const dates = Array.isArray(observedDays)
-    ? observedDays.map((day) => asRecord(day).date).filter((date): date is string => typeof date === "string")
-    : [];
+function dayLabelOf(observedDays: unknown[] | null, completedDays: number, now: Date): string {
+  const dates = (observedDays ?? [])
+    .map((day) => asRecord(day).date)
+    .filter((date): date is string => typeof date === "string" && DAY_KEY.test(date));
   if (dates.length === 0) return dayCount(completedDays);
   return formatPeriod(dates, warsawParts(now).dayKey.slice(0, 4)).label;
 }
@@ -228,17 +240,8 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
 
   const body = asRecord(row.bill_forecast);
 
-  // 1. The lab refused to produce a figure and said why.
-  if (body.status === "no_data") {
-    const refusal = typeof body.reason === "string" ? NO_DATA[body.reason] : undefined;
-    if (refusal) return unavailable(refusal.tone, refusal.label, refusal.reason);
-    return unavailable(
-      "insufficient",
-      "",
-      "Nie znamy w tej chwili kwoty za ten miesiąc. Wróci przy kolejnym przeliczeniu.",
-    );
-  }
-  if (body.status !== "ok") {
+  // 1. A body of neither known status is not read at all.
+  if (body.status !== "ok" && body.status !== "no_data") {
     return unavailable(
       "problem",
       "nierozpoznane wyliczenie",
@@ -246,7 +249,8 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
     );
   }
 
-  // 2. Freshness, against the forecast's own clock.
+  // 2. Freshness, against the forecast's own clock, for both statuses: a `no_data` body carries `generated_at`
+  // too, and a last "the month has only just begun" kept for weeks would otherwise never look stale.
   const generatedAt = typeof body.generated_at === "string" ? Date.parse(body.generated_at) : NaN;
   if (Number.isNaN(generatedAt)) {
     return unavailable(
@@ -271,7 +275,20 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
     );
   }
 
-  // 3. Plausibility. Shape and sign are the contract's job; these three guards are deliberately not in zod,
+  // The lab refused to produce a figure and said why. `hasOwn`, because the reason is pushed text and a plain
+  // object also answers to "constructor".
+  if (body.status === "no_data") {
+    const refusal =
+      typeof body.reason === "string" && Object.hasOwn(NO_DATA, body.reason) ? NO_DATA[body.reason] : null;
+    if (refusal) return unavailable(refusal.tone, refusal.label, refusal.reason);
+    return unavailable(
+      "insufficient",
+      "",
+      "Nie znamy w tej chwili kwoty za ten miesiąc. Wróci przy kolejnym przeliczeniu.",
+    );
+  }
+
+  // 3. Plausibility. Shape and the sign of money are the contract's job; these guards are deliberately not in zod,
   // because a 422 would reject the whole push and stop the live state and the recommendation with it.
   const central = asNumber(body.projected_bill_gross_pln);
   const range = asRecord(body.range_gross_pln);
@@ -314,12 +331,33 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
       "Dane rozliczeniowe z PGE wyglądają na błędne, więc kwoty nie pokazujemy.",
     );
   }
+  // The derived kWh figures are signed by the contract's silence, not by its types (a negative feed-in makes a
+  // negative credit), so their sign is judged here.
+  const derivedKwh = [
+    body.projected_import_kwh,
+    body.projected_credit_kwh,
+    body.projected_billable_kwh,
+    body.credit_left_kwh,
+  ];
+  if (derivedKwh.some((value) => typeof value === "number" && (!Number.isFinite(value) || value < 0))) {
+    return unavailable(
+      "problem",
+      "błędne dane w wyliczeniu",
+      "Wyliczenie zawiera ujemne lub nieczytelne ilości energii, więc kwoty nie pokazujemy.",
+    );
+  }
 
   // 4. Too little of the month behind the figure: the grey "za mało danych" state. The body is fresh and its
   // figures passed every guard above — it is only early — so the reader's own daily usage is quoted rather than
   // leaving them with a blank card. The corrupt and stale paths above deliberately quote nothing: a body this
   // card has just declared untrustworthy has no number worth repeating.
-  const completedDays = asNumber(body.completed_days_used) ?? 0;
+  // The count comes from the days themselves: `completed_days_used` is a second claim about the same thing, and
+  // trusting it alone let 20 "complete days" pass the gate on 3 observed ones. Only a body without a day list
+  // falls back to the lab's own count.
+  const observedDays = Array.isArray(body.observed_days)
+    ? (body.observed_days as unknown[]).slice(0, MAX_OBSERVED_DAYS)
+    : null;
+  const completedDays = observedDays ? observedDays.length : (asNumber(body.completed_days_used) ?? 0);
   if (completedDays < MIN_COMPLETE_DAYS) {
     const averageDaily = asNumber(body.average_daily_import_kwh);
     const usage = averageDaily === null ? "" : ` Na razie zużywasz średnio ${kwhLabel(averageDaily)} dziennie.`;
@@ -330,14 +368,16 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
     );
   }
 
-  const check = "closed_month_check" in body ? asRecord(body.closed_month_check) : null;
+  // Present but not an object (null, a string) is as good as absent.
+  const rawCheck = body.closed_month_check;
+  const check = rawCheck && typeof rawCheck === "object" && !Array.isArray(rawCheck) ? asRecord(rawCheck) : null;
   const invoice = check === null ? null : asNumber(check.invoice_gross_pln);
   // A forecast generated at 23:58 on the last day of a month and read at 00:05 the next is still fresh, but it
   // describes the month before. The repo's rule for wrong-period data is relabel-and-keep-showing (as the
   // recommendation card does for advice from an earlier day), never withholding.
   const isOtherMonth = typeof body.month === "string" && body.month !== warsawMonthKey(now);
   const pricing = asRecord(body.pricing);
-  const lagMonths = asNumber(settlement.reference_lag_months) ?? 0;
+  const lagMonths = Math.min(asNumber(settlement.reference_lag_months) ?? 0, MAX_SHOWN_LAG_MONTHS);
   const creditLeft = asNumber(body.credit_left_kwh) ?? 0;
 
   return {
@@ -349,7 +389,7 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
     isOtherMonth,
     rangeLabel: `od ${plnLabel(low)} do ${plnLabel(high)}`,
     centralLabel: `ok. ${plnLabel(central)}`,
-    dayLabel: dayLabelOf(body.observed_days, completedDays, now),
+    dayLabel: dayLabelOf(observedDays, completedDays, now),
     confidence: confidenceStatus(body.confidence, settlement.reference_period, lagMonths),
     creditLeftLabel: creditLeft > 0 ? kwhLabel(creditLeft) : null,
     basis: {

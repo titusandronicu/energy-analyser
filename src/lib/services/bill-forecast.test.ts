@@ -190,6 +190,28 @@ describe("toBillForecastView", () => {
     expect(view.reason).toContain("Nie znamy w tej chwili kwoty");
   });
 
+  it("does not mistake an inherited property name for a known no_data reason", () => {
+    const view = refusal(rowOf({ ...noData, reason: "constructor" }));
+    expect(view.status).toEqual({ tone: "insufficient", label: "" });
+    expect(view.reason).toContain("Nie znamy w tej chwili kwoty");
+  });
+
+  // A no_data body carries generated_at too: a last "the month has just begun" kept for weeks must not look current.
+  it("shows a stale no_data body as stale, not as its old reason", () => {
+    const view = refusal(rowOf(noData), at("2026-09-23T10:25:01Z"));
+    expect(view.status).toEqual({ tone: "problem", label: "wyliczona 30 min temu" });
+    expect(view.reason).not.toContain("po pierwszym pełnym dniu");
+  });
+
+  it("still shows the reason of a fresh no_data body", () => {
+    expect(refusal(rowOf(noData), at("2026-09-23T10:25:00Z")).reason).toContain("po pierwszym pełnym dniu");
+  });
+
+  it("flags a no_data body dated in the future or without a time", () => {
+    expect(refusal(rowOf(noData), at("2026-09-23T09:49:59Z")).status.label).toBe("czas wyliczenia z przyszłości");
+    expect(refusal(rowOf({ ...noData, generated_at: undefined })).status.label).toBe("nieznany czas wyliczenia");
+  });
+
   it("shows no figure for a body whose status it does not understand", () => {
     expect(refusal(rowOf({ status: "partial" })).status).toEqual({
       tone: "problem",
@@ -274,6 +296,13 @@ describe("toBillForecastView", () => {
     expect(view.status).toEqual(status);
   });
 
+  // Both sides read "215 zł", so the verdict must not say "powyżej" between them.
+  it("rates a central 214.9 against an invoice of 214.66 as not more than the invoice", () => {
+    const view = forecast(okRow({ projected_bill_gross_pln: 214.9 }));
+    expect(view.centralLabel).toBe("ok. 215 zł");
+    expect(view.status).toEqual({ tone: "good", label: "nie więcej niż ostatni rachunek (215 zł)" });
+  });
+
   it("gives no verdict and no check line without a closed month to compare with", () => {
     const { closed_month_check: _dropped, ...body } = ok;
     const view = forecast(rowOf(body));
@@ -320,6 +349,23 @@ describe("toBillForecastView", () => {
     },
   );
 
+  it.each(["projected_import_kwh", "projected_credit_kwh", "projected_billable_kwh", "credit_left_kwh"])(
+    "blanks the figure when the derived %s is negative",
+    (field) => {
+      const view = refusal(okRow({ [field]: -0.5 }));
+      expect(view.status).toEqual({ tone: "problem", label: "błędne dane w wyliczeniu" });
+      expect(view.reason).toContain("ujemne lub nieczytelne");
+    },
+  );
+
+  it("blanks the figure when a derived kWh figure is not finite", () => {
+    expect(refusal(okRow({ projected_credit_kwh: Infinity })).status.label).toBe("błędne dane w wyliczeniu");
+  });
+
+  it("keeps a zero derived kWh figure", () => {
+    expect(forecast(okRow({ projected_credit_kwh: 0, credit_left_kwh: 0 })).centralLabel).toBe("ok. 258 zł");
+  });
+
   it("blanks the figure when the amount itself is not a number", () => {
     expect(refusal(okRow({ projected_bill_gross_pln: null })).status).toEqual({
       tone: "problem",
@@ -327,11 +373,41 @@ describe("toBillForecastView", () => {
     });
   });
 
-  it.each([
-    [[], "15 dni"],
-    [undefined, "15 dni"],
-  ])("falls back to the bare day count for observed_days %j", (days, expected) => {
-    expect(forecast(okRow({ observed_days: days })).dayLabel).toBe(expected);
+  it("falls back to the lab's day count when the body has no observed_days list", () => {
+    expect(forecast(okRow({ observed_days: undefined })).dayLabel).toBe("15 dni");
+  });
+
+  // The count is the days themselves, not the lab's second claim about them.
+  it("does not pass the 7-day gate on completed_days_used alone", () => {
+    const view = refusal(okRow({ completed_days_used: 20, observed_days: observedDays(3) }));
+    expect(view.status).toEqual({ tone: "insufficient", label: "" });
+    expect(view.reason).toContain("jest 3 dni z 7 potrzebnych");
+  });
+
+  it("labels the period from the observed days, not from completed_days_used", () => {
+    expect(forecast(okRow({ completed_days_used: 9, observed_days: observedDays(7) })).dayLabel).toBe(
+      "7 dni: 1–7 września",
+    );
+  });
+
+  it("falls back to the day count when no observed date is readable, without throwing", () => {
+    const days = [{ date: "not-a-date", grid_import_kwh: 1 }, { date: 5 }, null, ...observedDays(6)].slice(0, 9);
+    expect(forecast(okRow({ observed_days: days })).dayLabel).toBe("6 dni: 1–6 września");
+    const allBad = Array.from({ length: 8 }, () => ({ date: "31/12/2026" }));
+    expect(forecast(okRow({ observed_days: allBad })).dayLabel).toBe("8 dni");
+  });
+
+  it("caps observed_days at the contract maximum", () => {
+    const view = forecast(okRow({ observed_days: Array.from({ length: 40 }, () => ({ date: "x" })) }));
+    expect(view.dayLabel).toBe("31 dni");
+  });
+
+  it("treats a closed_month_check that is not an object as absent", () => {
+    for (const value of [null, "2026-08"]) {
+      const view = forecast(okRow({ closed_month_check: value }));
+      expect(view.closedMonthCheck).toBeNull();
+      expect(view.status).toEqual({ tone: "insufficient", label: "brak zamkniętego rachunku do porównania" });
+    }
   });
 
   it.each([
@@ -357,6 +433,41 @@ describe("toBillForecastView", () => {
     });
     expect(view.basis).toMatchObject({ referenceMonthLabel: "lipiec 2026", referenceLagMonths: 1 });
     expect(view.centralLabel).toBe("ok. 258 zł");
+  });
+
+  it("omits the reference month from the lag badge when the period is unreadable", () => {
+    const view = forecast(
+      okRow({
+        confidence: "low",
+        settlement: { ...settlement, reference_period: "garbage", reference_lag_months: 1 },
+      }),
+    );
+    expect(view.confidence).toEqual({ tone: "insufficient", label: "niska pewność" });
+    expect(view.basis).toMatchObject({ referenceMonthLabel: "—", referenceLagMonths: 1 });
+  });
+
+  it.each([
+    [0, 0],
+    [2, 2],
+    [12, 12],
+    [40, 12],
+    [-3, -3],
+    ["2", 0],
+  ])("reports reference_lag_months %j as %j", (lag, shown) => {
+    const view = forecast(okRow({ settlement: { ...settlement, reference_lag_months: lag } }));
+    expect(view.basis.referenceLagMonths).toBe(shown);
+  });
+
+  it("still gives a lagging body its verdict against the last invoice", () => {
+    const view = forecast(
+      okRow({
+        confidence: "low",
+        projected_bill_gross_pln: 230,
+        settlement: { ...settlement, reference_period: "2026-07", reference_lag_months: 1 },
+      }),
+    );
+    expect(view.status).toEqual({ tone: "watch", label: "do 20% powyżej ostatniego rachunku (215 zł)" });
+    expect(view.confidence.label).toContain("rozliczenie za lipiec 2026");
   });
 
   // The lab publishes the connector's own period text; the month named is the one the period ends in.

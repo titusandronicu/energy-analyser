@@ -200,6 +200,16 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     },
     { status: 401 },
   ]);
+  steps.push([
+    "anon cannot read bill forecast directly",
+    async () => {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/bill_forecast?select=bill_forecast`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      return { status: response.status, location: "" };
+    },
+    { status: 401 },
+  ]);
   // Password alternative: create a local user with a password through Supabase, then sign in via the app.
   const passwordEmail = `smoke-pw-${Date.now()}@example.com`;
   const passwordValue = "Smoke-Test-Passw0rd!";
