@@ -1,10 +1,10 @@
 ---
 change_id: frosted-aurora-dashboard
 title: Field-preserving Frosted Aurora dashboard refresh
-status: implementing
+status: archived
 created: 2026-09-29
 updated: 2026-09-29
-archived_at: null
+archived_at: 2026-09-29T16:06:05Z
 ---
 
 ## Notes
@@ -22,3 +22,5 @@ External `/10x-ui` link supplied by the user was not readable from this environm
 read-only GitHub CLI), so this change follows the local `/10x-ui` conventions already present in the repository:
 token-first styling, no second UI stack, no invented data, field-preserving screenshots, and no new chart/animation
 dependency.
+
+**Closed as superseded 2026-09-29.** PR 65 (the Frosted Aurora theme) is merged. Its palette is replaced by `dashboard-refresh-icons-sparklines`, which takes the palette from the approved Claude Designer canvas instead ("Palette from the design, not from PR 65"), so manual checks 1.7–1.9 were not run and no longer apply; that change carries its own palette, contrast and motion checks.
