@@ -485,8 +485,16 @@
                   "type": "number"
                 },
                 "reference_period": {
-                  "type": "string",
-                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\d{2}\\.(0[1-9]|1[0-2])\\.\\d{4} - \\d{2}\\.(0[1-9]|1[0-2])\\.\\d{4}$"
+                    }
+                  ]
                 },
                 "reference_lag_months": {
                   "type": "integer",
@@ -513,7 +521,11 @@
                   "type": "boolean"
                 },
                 "factor_implied": {
-                  "type": "boolean"
+                  "type": [
+                    "number",
+                    "boolean",
+                    "null"
+                  ]
                 }
               },
               "required": [
@@ -563,8 +575,16 @@
               "type": "object",
               "properties": {
                 "period": {
-                  "type": "string",
-                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "^\\d{2}\\.(0[1-9]|1[0-2])\\.\\d{4} - \\d{2}\\.(0[1-9]|1[0-2])\\.\\d{4}$"
+                    }
+                  ]
                 },
                 "computed_gross_pln": {
                   "type": "number",
@@ -587,6 +607,23 @@
                 "invoice_gross_pln",
                 "diff_pct",
                 "ok"
+              ],
+              "additionalProperties": false
+            },
+            "privacy": {
+              "type": "object",
+              "properties": {
+                "raw_snapshots_public": {
+                  "type": "boolean"
+                },
+                "published_values": {
+                  "type": "string",
+                  "maxLength": 200
+                }
+              },
+              "required": [
+                "raw_snapshots_public",
+                "published_values"
               ],
               "additionalProperties": false
             },

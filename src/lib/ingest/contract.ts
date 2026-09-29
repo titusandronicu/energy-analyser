@@ -65,6 +65,11 @@ const dailyEnergy = z.strictObject({
 // The month part is validated like `z.iso.date()` does it, so "2026-13" is a rejection rather than
 // something the card later reports as the wrong month.
 const monthKey = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+// The lab's settled periods are the PGE connector's own text, "01.08.2026 - 31.08.2026", which it publishes as
+// they are. Accepted beside `monthKey` (never instead of it, so an older sender stays valid); the app names the
+// month a period ends in.
+const settledPeriod = z.string().regex(/^\d{2}\.(0[1-9]|1[0-2])\.\d{4} - \d{2}\.(0[1-9]|1[0-2])\.\d{4}$/);
+const referencePeriod = z.union([monthKey, settledPeriod]);
 
 // The lab's estimate of this month's PGE invoice (docs/logic.md, "Bill forecast (lab)").
 // Split on `status` so a `no_data` body can never carry a figure: the app must not be able to read
@@ -102,7 +107,7 @@ const billForecast = z.discriminatedUnion("status", [
     credit_left_kwh: nonNegative,
     settlement: z.strictObject({
       factor: z.number(),
-      reference_period: monthKey,
+      reference_period: referencePeriod,
       reference_lag_months: z.number().int().nonnegative(),
       reference_consumed_kwh: z.number(),
       reference_feed_in_kwh: z.number(),
@@ -110,7 +115,9 @@ const billForecast = z.discriminatedUnion("status", [
       carried_credit_kwh: z.number(),
       carried_credit_basis: z.string().max(100),
       carried_credit_dropped_as_stale: z.boolean(),
-      factor_implied: z.boolean(),
+      // The factor implied by the connector's two settled sums (a number), or null when the settlement came
+      // from the history file, which does not carry it. Older senders sent a boolean, so that stays valid.
+      factor_implied: z.union([z.number(), z.boolean()]).nullable(),
     }),
     pricing: z.strictObject({
       source: z.string().max(200),
@@ -122,11 +129,19 @@ const billForecast = z.discriminatedUnion("status", [
     // `diff_pct` is signed by nature.
     closed_month_check: z
       .strictObject({
-        period: monthKey,
+        period: referencePeriod,
         computed_gross_pln: nonNegative,
         invoice_gross_pln: nonNegative,
         diff_pct: z.number(),
         ok: z.boolean(),
+      })
+      .optional(),
+    // The lab's own publication notice (two scalars, no identifiers). The lab writes it into the file and the
+    // push sends the file unchanged, so it must be declared; the app never reads it.
+    privacy: z
+      .strictObject({
+        raw_snapshots_public: z.boolean(),
+        published_values: z.string().max(200),
       })
       .optional(),
     generated_at: z.iso.datetime({ offset: true }),
