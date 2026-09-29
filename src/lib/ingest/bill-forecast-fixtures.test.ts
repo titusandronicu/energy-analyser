@@ -22,11 +22,23 @@ describe("bill-forecast fixtures", () => {
     expect(result.data?.bill_forecast).toBeDefined();
   });
 
+  // A negative derived kWh figure must reach the card's mapper (which blanks it), not stop at a 422.
+  it("negative-derived-kwh.json is stored by the contract and refused by the card", () => {
+    const forecast = ingestPayloadV1.parse(read("negative-derived-kwh.json")).bill_forecast;
+    const view = toBillForecastView(
+      { captured_at: "2026-09-23T09:58:00Z", received_at: "2026-09-23T09:58:02Z", bill_forecast: forecast },
+      new Date("2026-09-23T10:00:00Z"),
+    );
+    expect(view).toMatchObject({ kind: "unavailable", status: { label: "błędne dane w wyliczeniu" } });
+  });
+
   // lab-shape.json is SYNTHETIC: every value is invented, but it mirrors the shape of the file the lab actually
   // publishes (web/data/current-month-bill-forecast.json on docker-core), including every key its build script
   // emits, the connector's period text and the null-versus-value patterns. It is the preflight for the lab push:
   // the section is sent unchanged, so anything the contract does not declare would be a 422 for the whole push.
   // Refresh its shape (keys, nulls, formats, never real values) whenever the lab script's output changes.
+  // Any change to the keys of current-month-bill-forecast.json (top level or inside `settlement`) needs a contract
+  // change deployed first, and this file refreshed in shape, or every push 422s (docs/ingest/README.md).
   describe("lab-shape.json", () => {
     const parsed = ingestPayloadV1.safeParse(read("lab-shape.json"));
 

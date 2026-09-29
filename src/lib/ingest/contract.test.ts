@@ -163,9 +163,19 @@ describe("ingest contract v1", () => {
     expect(firstIssuePath(payload)).toBe("bill_forecast");
   });
 
-  it("rejects a negative projected import", () => {
-    expect(firstIssuePath(withChanges((p) => (okForecast(p).projected_import_kwh = -1)))).toBe(
-      "bill_forecast.projected_import_kwh",
+  // Deliberate, like the settlement block below: a negative feed-in gives a negative export ratio and so a
+  // negative credit, and the mapper's sign guard blanks the card instead of the push failing.
+  it.each(["projected_import_kwh", "projected_credit_kwh", "projected_billable_kwh", "credit_left_kwh"] as const)(
+    "accepts a negative %s rather than failing the whole push",
+    (field) => {
+      const payload = withChanges((p) => (okForecast(p)[field] = -1));
+      expect(validateIngestPayload(payload, now).success).toBe(true);
+    },
+  );
+
+  it("rejects a negative average daily import", () => {
+    expect(firstIssuePath(withChanges((p) => (okForecast(p).average_daily_import_kwh = -1)))).toBe(
+      "bill_forecast.average_daily_import_kwh",
     );
   });
 

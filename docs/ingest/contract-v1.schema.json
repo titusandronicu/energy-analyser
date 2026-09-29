@@ -441,8 +441,7 @@
               "minimum": 0
             },
             "projected_import_kwh": {
-              "type": "number",
-              "minimum": 0
+              "type": "number"
             },
             "projected_bill_gross_pln": {
               "type": "number",
@@ -467,16 +466,13 @@
               "additionalProperties": false
             },
             "projected_credit_kwh": {
-              "type": "number",
-              "minimum": 0
+              "type": "number"
             },
             "projected_billable_kwh": {
-              "type": "number",
-              "minimum": 0
+              "type": "number"
             },
             "credit_left_kwh": {
-              "type": "number",
-              "minimum": 0
+              "type": "number"
             },
             "settlement": {
               "type": "object",
