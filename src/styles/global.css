@@ -39,6 +39,18 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Flow-diagram source identity and verdict tones (context/changes/live-flow-interaction/handoff-adapted.md):
+     one source for squares, chips and arrows. Tone text colours sit on their -surface counterpart. */
+  --flow-pv: #b5a3f5;
+  --flow-home: #7cc4f5;
+  --flow-battery: #e9a3d3;
+  --flow-grid: #9aa7c7;
+  --tone-good: #6ee7b7;
+  --tone-watch: #fcd34d;
+  --tone-problem: #fca5a5;
+  --tone-good-surface: #064e3b;
+  --tone-watch-surface: #78350f;
+  --tone-problem-surface: #7f1d1d;
 }
 
 .dark {
@@ -112,6 +124,16 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-flow-pv: var(--flow-pv);
+  --color-flow-home: var(--flow-home);
+  --color-flow-battery: var(--flow-battery);
+  --color-flow-grid: var(--flow-grid);
+  --color-tone-good: var(--tone-good);
+  --color-tone-watch: var(--tone-watch);
+  --color-tone-problem: var(--tone-problem);
+  --color-tone-good-surface: var(--tone-good-surface);
+  --color-tone-watch-surface: var(--tone-watch-surface);
+  --color-tone-problem-surface: var(--tone-problem-surface);
 }
 
 @utility bg-cosmic {

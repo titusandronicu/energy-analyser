@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LiveStateRow } from "@/types";
 import { asNumber, asRecord, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
-import type { Status } from "@/lib/format/status";
+import { TONE_WORD } from "@/lib/format/status";
+import type { Status, StatusTone } from "@/lib/format/status";
 import { formatDayMonth, warsawParts } from "@/lib/format/warsaw-time";
 
 // The lab pushes every few minutes; a snapshot older than 15 minutes no longer describes "now".
@@ -15,6 +16,10 @@ export const MIN_FLOW_W = 50;
 export const BATTERY_FULL_AT = 80;
 export const BATTERY_LOW_AT = 30;
 export const BATTERY_WARNING_AT = 10;
+// Battery verdict lines (live-flow-interaction): at or above GOOD_AT is good, from PROBLEM_BELOW up to but
+// excluding GOOD_AT is worth watching, under PROBLEM_BELOW is a problem. Exactly on a line takes the milder status.
+export const BATTERY_GOOD_AT = BATTERY_LOW_AT;
+export const BATTERY_PROBLEM_BELOW = BATTERY_WARNING_AT;
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
@@ -25,6 +30,19 @@ export interface FlowLabel {
   value: string;
   direction: string | null;
   watts: number | null;
+}
+
+// `word` is lower case like TONE_WORD ("dobrze", "bez oceny"); the view capitalises it when it starts a sentence.
+export interface NodeVerdict {
+  tone: StatusTone;
+  word: string;
+  detail: string;
+  explanation: string;
+}
+
+export interface FlowMotion {
+  watts: number | null;
+  moving: boolean;
 }
 
 export type LiveStateView =
@@ -43,6 +61,9 @@ export type LiveStateView =
       grid: FlowLabel;
       battery: FlowLabel & { socLabel: string; socPct: number | null; chargeLevel: BatteryChargeLevel | null };
       today: { pv: string; bought: string; sold: string; periodLabel: string };
+      flows: { pv: FlowMotion; home: FlowMotion; grid: FlowMotion; battery: FlowMotion };
+      // pv and home are not rated yet (null).
+      verdicts: { battery: NodeVerdict; pv: NodeVerdict | null; home: NodeVerdict | null };
     };
 
 // Newest homelab snapshot via the live_state view; RLS returns nothing for non-owners. Errors are thrown
@@ -79,6 +100,39 @@ function chargeLevelOf(socPct: number | null): BatteryChargeLevel | null {
   return "warning";
 }
 
+// One rule for "is this flow moving": fresh data and at least MIN_FLOW_W in either direction.
+function motion(watts: number | null, isStale: boolean): FlowMotion {
+  return { watts, moving: !isStale && watts !== null && Math.abs(watts) >= MIN_FLOW_W };
+}
+
+const UNRATED_WORD = "bez oceny";
+
+function verdict(tone: StatusTone, detail: string, explanation: string): NodeVerdict {
+  return { tone, word: tone === "insufficient" ? UNRATED_WORD : TONE_WORD[tone], detail, explanation };
+}
+
+const BATTERY_RULE = `od ${String(BATTERY_GOOD_AT)}% w górę to dobrze, ${String(BATTERY_PROBLEM_BELOW)}–${String(BATTERY_GOOD_AT)}% warto sprawdzić, poniżej ${String(BATTERY_PROBLEM_BELOW)}% problem. 100% nigdy nie jest złe.`;
+
+// The battery is rated on its charge level alone; a missing reading or an old snapshot is never rated.
+function batteryVerdict(socPct: number | null, socLabel: string, isStale: boolean): NodeVerdict {
+  if (isStale) {
+    return verdict(
+      "insufficient",
+      "dane nieaktualne",
+      "Migawka jest nieaktualna, więc poziom naładowania nie jest oceniany.",
+    );
+  }
+  if (socPct === null) {
+    return verdict("insufficient", "brak odczytu", "Brak odczytu poziomu naładowania, więc bateria nie jest oceniana.");
+  }
+  const rule = `Poziom naładowania ${socLabel}: ${BATTERY_RULE}`;
+  if (socPct >= BATTERY_GOOD_AT) {
+    return verdict("good", socPct >= BATTERY_FULL_AT ? "wysoki poziom" : "w normie", rule);
+  }
+  if (socPct >= BATTERY_PROBLEM_BELOW) return verdict("watch", "niski poziom", rule);
+  return verdict("problem", "prawie pusta", rule);
+}
+
 // "5 min" under an hour, "2 godz." under a day, "3 dni" beyond. A capture time in the future counts as 0.
 export function formatAge(ageMs: number): string {
   const age = Math.max(0, ageMs);
@@ -108,24 +162,31 @@ export function toLiveStateView(row: LiveStateRow | null, now: Date): LiveStateV
   const isDegraded = state.source_health === "degraded";
   const pvWatts = asNumber(state.pv_w);
   const homeLoadWatts = asNumber(state.home_load_w);
+  const isStale = ageMs > LIVE_STALE_AFTER_MS;
+  const grid = flow(state.grid_w, "pobór z sieci", "oddawanie do sieci");
+  const batteryFlow = flow(state.battery_w, "rozładowanie", "ładowanie");
+  const socLabel = soc === null ? MISSING : `${wholeNumber.format(soc)}%`;
+  // The icon band and the verdict read the same whole percent the label shows, so the number, the icon and the chip
+  // never disagree at a line (29,9 shows as 30% and is rated as 30%).
+  const socWhole = soc === null ? null : Math.round(soc);
 
   return {
     kind: "state",
     status: liveStatus(ageMs, isDegraded),
     capturedAtLabel: captured.label,
     ageLabel: formatAge(ageMs),
-    isStale: ageMs > LIVE_STALE_AFTER_MS,
+    isStale,
     isDegraded,
     pv: kwLabel(pvWatts),
     pvWatts,
     homeLoad: kwLabel(homeLoadWatts),
     homeLoadWatts,
-    grid: flow(state.grid_w, "pobór z sieci", "oddawanie do sieci"),
+    grid,
     battery: {
-      ...flow(state.battery_w, "rozładowanie", "ładowanie"),
-      socLabel: soc === null ? MISSING : `${wholeNumber.format(soc)}%`,
+      ...batteryFlow,
+      socLabel,
       socPct: soc,
-      chargeLevel: chargeLevelOf(soc),
+      chargeLevel: chargeLevelOf(socWhole),
     },
     today: {
       pv: kwhLabel(state.pv_today_kwh),
@@ -136,5 +197,12 @@ export function toLiveStateView(row: LiveStateRow | null, now: Date): LiveStateV
         captured.dayKey === warsawParts(now).dayKey ? "dziś" : formatDayMonth(captured.dayKey)
       } od północy do ${captured.time}`,
     },
+    flows: {
+      pv: motion(pvWatts, isStale),
+      home: motion(homeLoadWatts, isStale),
+      grid: motion(grid.watts, isStale),
+      battery: motion(batteryFlow.watts, isStale),
+    },
+    verdicts: { battery: batteryVerdict(socWhole, socLabel, isStale), pv: null, home: null },
   };
 }

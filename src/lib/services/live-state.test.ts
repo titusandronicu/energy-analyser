@@ -64,7 +64,95 @@ describe("toLiveStateView", () => {
         chargeLevel: "medium",
       },
       today: { pv: "12,3 kWh", bought: "1,2 kWh", sold: "5,0 kWh", periodLabel: "dziś od północy do 12:00" },
+      flows: {
+        pv: { watts: 3420, moving: true },
+        home: { watts: 850, moving: true },
+        grid: { watts: -1200, moving: true },
+        battery: { watts: -1370, moving: true },
+      },
+      verdicts: {
+        battery: {
+          tone: "good",
+          word: "dobrze",
+          detail: "w normie",
+          explanation:
+            "Poziom naładowania 74%: od 30% w górę to dobrze, 10–30% warto sprawdzić, poniżej 10% problem. 100% nigdy nie jest złe.",
+        },
+        pv: null,
+        home: null,
+      },
     });
+  });
+
+  it.each([
+    [50, true],
+    [-50, true],
+    [49, false],
+    [-49, false],
+    [0, false],
+    [null, false],
+  ])("moves a fresh flow of %j W: %s", (w, moving) => {
+    const v = view(row({}, { pv_w: w, home_load_w: w, grid_w: w, battery_w: w }));
+    expect(v.flows).toEqual({
+      pv: { watts: w, moving },
+      home: { watts: w, moving },
+      grid: { watts: w, moving },
+      battery: { watts: w, moving },
+    });
+  });
+
+  it("moves no flow when the snapshot is stale, whatever the watts", () => {
+    const v = view(row(), at("2026-09-25T10:15:01Z"));
+    expect(v.flows.pv).toEqual({ watts: 3420, moving: false });
+    expect(v.flows.home.moving).toBe(false);
+    expect(v.flows.grid.moving).toBe(false);
+    expect(v.flows.battery.moving).toBe(false);
+  });
+
+  it("still moves flows for a degraded but fresh snapshot", () => {
+    const v = view(row({}, { source_health: "degraded" }));
+    expect(v.flows.pv.moving).toBe(true);
+    expect(v.flows.battery.moving).toBe(true);
+  });
+
+  it.each([
+    [100, "good", "dobrze", "wysoki poziom"],
+    [80, "good", "dobrze", "wysoki poziom"],
+    [79.9, "good", "dobrze", "wysoki poziom"],
+    [79.4, "good", "dobrze", "w normie"],
+    [30, "good", "dobrze", "w normie"],
+    [29.9, "good", "dobrze", "w normie"],
+    [29.5, "good", "dobrze", "w normie"],
+    [29.4, "watch", "warto sprawdzić", "niski poziom"],
+    [10, "watch", "warto sprawdzić", "niski poziom"],
+    [9.9, "watch", "warto sprawdzić", "niski poziom"],
+    [9.4, "problem", "problem", "prawie pusta"],
+    [0, "problem", "problem", "prawie pusta"],
+    [null, "insufficient", "bez oceny", "brak odczytu"],
+  ])("rates battery_soc_pct %j as %s (%s, %s)", (battery_soc_pct, tone, word, detail) => {
+    const verdict = view(row({}, { battery_soc_pct })).verdicts.battery;
+    expect(verdict).toMatchObject({ tone, word, detail });
+    expect(verdict.explanation).toMatch(/\.$/);
+  });
+
+  it("explains the battery thresholds in the verdict sentence", () => {
+    expect(view(row({}, { battery_soc_pct: 100 })).verdicts.battery.explanation).toBe(
+      "Poziom naładowania 100%: od 30% w górę to dobrze, 10–30% warto sprawdzić, poniżej 10% problem. 100% nigdy nie jest złe.",
+    );
+  });
+
+  it("does not rate the battery when the snapshot is stale", () => {
+    expect(view(row(), at("2026-09-25T10:15:01Z")).verdicts.battery).toMatchObject({
+      tone: "insufficient",
+      word: "bez oceny",
+      detail: "dane nieaktualne",
+    });
+  });
+
+  it("leaves pv and home unrated", () => {
+    const { verdicts } = view(row());
+    expect(verdicts.pv).toBeNull();
+    expect(verdicts.home).toBeNull();
   });
 
   it("is not stale at exactly 15 minutes", () => {
@@ -153,6 +241,9 @@ describe("toLiveStateView", () => {
     [30, "medium"],
     [9, "warning"],
     [10, "low"],
+    [79.9, "full"],
+    [29.9, "medium"],
+    [9.9, "low"],
     [null, null],
   ])("charges battery_soc_pct %j as level %j", (battery_soc_pct, chargeLevel) => {
     expect(view(row({}, { battery_soc_pct })).battery.chargeLevel).toBe(chargeLevel as BatteryChargeLevel | null);
