@@ -69,6 +69,7 @@ Let the owner, and only the owner, read recommendations, and turn a row into eve
 **Intent**: Introduce the owner allowlist and let listed owners read recommendations through RLS.
 
 **Contract**:
+
 - `public.app_owners` (`user_id uuid primary key references auth.users (id) on delete cascade`, `created_at timestamptz not null default now()`), with RLS enabled.
 - Grant `select` on `app_owners` and `recommendations` to `authenticated`, with no insert/update/delete.
 - The `app_owners` select policy for `authenticated` allows `user_id = (select auth.uid())`.
@@ -90,6 +91,7 @@ Let the owner, and only the owner, read recommendations, and turn a row into eve
 **Intent**: Load the newest recommendation and derive everything the card shows from it and the current time.
 
 **Contract**:
+
 - `RecommendationRow` in `src/types.ts`, matching the table columns the page reads.
 - `loadLatestRecommendation(client) → Promise<RecommendationRow | null>`: select ordered by `generated_at desc`, limit 1. A query error is thrown, not swallowed.
 - `toRecommendationView(row: RecommendationRow | null, now: Date)` → `{ kind: "empty" }` or `{ kind: "recommendation", text, generatedAtLabel, isStale, forecast: { todayLabel, tomorrowLabel, confidenceLabel }, modelLabel, findings: string[] }`, where:
@@ -177,6 +179,7 @@ Put the access rules and the page into production, register the owner, and write
 **Intent**: Record the one-time owner step next to the other Supabase steps.
 
 **Contract**:
+
 1. Apply the migration to production (Supabase MCP or `npx supabase db push`), keeping the repo file's version in step with what production records.
 2. Insert the owner with `insert into public.app_owners (user_id) select id from auth.users where email = '<owner email>';` in the SQL editor.
 

@@ -45,12 +45,16 @@ async function request(path, { method = "GET", form, readBody = false } = {}) {
 }
 
 // A recommendation generated "now", with a text unique to this run, pushed before the dashboard check.
+// The bill forecast's generated_at is rewritten the same way and for the same reason: the example's fixed
+// timestamp is always older than the card's 30-minute freshness rule, so without this the card would render
+// its refusal state on every smoke run and the happy path would never be exercised.
 const freshMarker = `Smoke rekomendacja ${Date.now()}`;
 const freshPush = () =>
   ingest({
     ...example,
     captured_at: new Date(Date.now() - 60_000).toISOString(),
     recommendation: { ...example.recommendation, generated_at: new Date().toISOString(), text: freshMarker },
+    bill_forecast: { ...example.bill_forecast, generated_at: new Date().toISOString() },
   });
 
 const steps = [
@@ -101,6 +105,13 @@ const steps = [
     "dashboard shows the usage insight card",
     () => request("/dashboard", { readBody: true }),
     { status: 200, contains: "Zużycie wczoraj", notContains: "Nie udało się wczytać porównania" },
+  ],
+  [
+    // The example's own figures: 155–360 zł around 258. The card is deliberately red here — 257.73 is just
+    // over +20% of August's real invoice (214.66) — so the marker is the range, not the verdict.
+    "dashboard shows the bill forecast card",
+    () => request("/dashboard", { readBody: true }),
+    { status: 200, contains: ["Prognoza rachunku", "od 155 zł do 360 zł", "ok. 258 zł"] },
   ],
   ["used sign-in link is rejected", () => request(signinLink), { status: 302, location: "/auth/signin?error=" }],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],

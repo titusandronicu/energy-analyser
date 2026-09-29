@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Today's Recommendation
 
 - **Plan**: context/changes/todays-recommendation/plan.md
@@ -10,14 +11,14 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | PASS |
-| Scope Discipline | PASS |
-| Safety & Quality | PASS |
-| Architecture | PASS |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | PASS    |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | PASS    |
+| Architecture        | PASS    |
 | Pattern Consistency | WARNING |
-| Success Criteria | PASS |
+| Success Criteria    | PASS    |
 
 Automated: `npm test` 66/66, lint clean, `astro check` 0 errors; CI smoke on #14 proved push → dashboard. Production (2026-09-25): migration `20260923150859_owner_read_recommendations` applied, owner row inserted, RLS simulated (owner reads own row; another signed-in user reads nothing). The security advisor no longer lists `recommendations` or `app_owners`.
 

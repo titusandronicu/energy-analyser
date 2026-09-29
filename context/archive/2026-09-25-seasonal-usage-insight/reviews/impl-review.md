@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Seasonal Usage Insight
 
 - **Plan**: context/changes/seasonal-usage-insight/plan.md
@@ -10,14 +11,14 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | PASS |
-| Scope Discipline | PASS |
-| Safety & Quality | WARNING |
-| Architecture | PASS |
-| Pattern Consistency | PASS |
-| Success Criteria | PASS |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | PASS    |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | WARNING |
+| Architecture        | PASS    |
+| Pattern Consistency | PASS    |
+| Success Criteria    | PASS    |
 
 Every rule matches the plan (compared day, seasonal window with New Year and leap-day handling, fallback, exclusions, strict ±15% with a floating-point tolerance). RLS and column grants are sound, there is no XSS path, and error isolation holds. Checks re-run on 2026-09-25: unit tests, lint and type check pass; CI smoke passed on #31/#32; production grants verified by SQL. Note: F-02 finding F1 means two production days (16 Aug, 3 Sep) have undercounted PV; S-04 compares load, which is affected only when load was also low.
 

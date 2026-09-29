@@ -40,10 +40,10 @@ A solo operator shipping a single-user energy-insight MVP in 3 after-hours weeks
 
 ## Pre-scaffold verification
 
-| Signal      | Value                                                 | Severity | Notes                                                        |
-| ----------- | ------------------------------------------------------ | -------- | ------------------------------------------------------------- |
-| npm package | not run                                                 | n/a      | `cmd_template` starts with `git clone`; no npm CLI to check   |
-| GitHub repo | przeprogramowani/10x-astro-starter last pushed 2026-09-12T21:16:08Z | fresh    | from card `docs_url`                                          |
+| Signal      | Value                                                               | Severity | Notes                                                       |
+| ----------- | ------------------------------------------------------------------- | -------- | ----------------------------------------------------------- |
+| npm package | not run                                                             | n/a      | `cmd_template` starts with `git clone`; no npm CLI to check |
+| GitHub repo | przeprogramowani/10x-astro-starter last pushed 2026-09-12T21:16:08Z | fresh    | from card `docs_url`                                        |
 
 ## Scaffold log
 
@@ -79,27 +79,28 @@ None.
 
 ## Hints recorded but not acted on
 
-| Hint                     | Value              |
-| ------------------------ | ------------------- |
-| bootstrapper_confidence  | first-class          |
-| quality_override         | false                |
-| path_taken               | standard             |
-| self_check_answers       | null                 |
-| team_size                | solo                 |
-| deployment_target        | cloudflare-pages     |
-| ci_provider              | github-actions       |
-| ci_default_flow          | auto-deploy-on-merge |
-| has_auth                 | true                 |
-| has_payments             | false                |
-| has_realtime             | false                |
-| has_ai                   | true                 |
-| has_background_jobs      | true                 |
+| Hint                    | Value                |
+| ----------------------- | -------------------- |
+| bootstrapper_confidence | first-class          |
+| quality_override        | false                |
+| path_taken              | standard             |
+| self_check_answers      | null                 |
+| team_size               | solo                 |
+| deployment_target       | cloudflare-pages     |
+| ci_provider             | github-actions       |
+| ci_default_flow         | auto-deploy-on-merge |
+| has_auth                | true                 |
+| has_payments            | false                |
+| has_realtime            | false                |
+| has_ai                  | true                 |
+| has_background_jobs     | true                 |
 
 ## Next steps
 
 Next: a future skill will set up agent context (CLAUDE.md, AGENTS.md). For now, your project is scaffolded and verified — happy hacking.
 
 Useful manual steps in the meantime:
+
 - `git init` (if you have not already) to start your own repo history — this run only found an existing `.git/` at the project root and did not touch it.
 - The scaffold ships its own `CLAUDE.md` / `AGENTS.md` (the latter a symlink to the former); these were not present in cwd before this run, so they moved in silently — review them against this project's own conventions.
 - `has_background_jobs: true` combined with the Cloudflare edge runtime is a known friction point per the hand-off's "Why this stack" note — plan for a queue or external worker for the daily refresh pipeline rather than an inline cron.

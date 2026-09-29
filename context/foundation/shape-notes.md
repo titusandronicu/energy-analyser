@@ -47,27 +47,32 @@ Generic solar-monitoring apps don't have this owner's exact PGE tariff and billi
 ## User & Persona
 
 Primary persona: the homeowner (you) — sole operator of a home solar PV + battery + grid system (Deye inverter, PGE G11 tariff, Home Assistant as the live telemetry hub). Reaches for this product:
+
 - mid-next-month, when the PGE bill arrives and they want to understand or verify the cost against what actually happened, and
 - day-to-day / seasonally, when deciding how to configure battery reserve/charge behavior ahead of expected weather or a season change.
 
 No secondary persona — single-user by design.
 
-*Scale insight (100x check): at real multi-household scale, the access-key model wouldn't hold — it would need proper account security and credential storage. Confirms single-user + access-key is a deliberate MVP choice, not an oversight; multi-tenant auth is out of scope (see Non-Goals).*
+_Scale insight (100x check): at real multi-household scale, the access-key model wouldn't hold — it would need proper account security and credential storage. Confirms single-user + access-key is a deliberate MVP choice, not an oversight; multi-tenant auth is out of scope (see Non-Goals)._
 
 ## Access Control
 
 Access key (magic link) — no account-creation form, no roles, but opening the link **establishes an authenticated session**: the user is logged in for that session and sees only their own resources (current state, insight, recommendations, feedback history). This is a real login mechanism, not just an anonymous page gate — it satisfies "access tied to a logged-in user" without the overhead of a username/password flow. Single user by design.
+
 > Correction (post-PRD review): reframed from a bare page-gate token to an explicit session-establishing login, to unambiguously meet the "logged-in user sees their own resources" access-control requirement.
 
 ## Success Criteria
 
 ### Primary
+
 - End-to-end flow works: opening the app with the access key shows current state (live Home Assistant telemetry) plus one derived insight against the historical baseline (built from the existing database and advisory logic ported from the prior prototype), and an LLM-narrated battery-setting recommendation for today, informed by a weather forecast.
 
 ### Secondary
+
 - The battery recommendation already incorporates a weather forecast in v1, rather than being deferred to v2.
 
 ### Guardrails
+
 - The app never writes to Home Assistant or the inverter — recommendations are advisory-only, for human review.
 - No private-network data or secrets (telemetry, bills, credentials, local network topology) leak into the public repo.
 - The app degrades gracefully when Home Assistant is temporarily unreachable — shows last-known data with a clear staleness indicator instead of failing.
@@ -75,10 +80,12 @@ Access key (magic link) — no account-creation form, no roles, but opening the 
 ## Functional Requirements
 
 ### Access
+
 - FR-001: User can access the app using an access key (token/link), without creating an account. Priority: must-have
   > Socratic: No counter-argument considered; stands as written.
 
 ### Live state & insight
+
 - FR-002: User can view current PV/battery/grid state from Home Assistant, pushed by the home lab at least every 5 minutes (corrected 2026-09-23; originally "pulled live"), independently of whether the insight/recommendation panel is available. Priority: must-have
   > Socratic: Counter-argument considered: "live pull adds a failure-prone dependency for
   > something that isn't the differentiator." Resolution: kept, but decoupled — the live-state
@@ -97,6 +104,7 @@ Access key (magic link) — no account-creation form, no roles, but opening the 
   > in Phase 3 (app must not fail hard when Home Assistant is down).
 
 ### Battery recommendation
+
 - FR-005: User can view a plain-language battery-setting recommendation for today, generated via an LLM that narrates a pre-computed, verified facts bundle from the deterministic advisory engine — the LLM does not introduce new numbers or facts of its own. Priority: must-have
   > Socratic: Counter-argument considered: "an LLM could hallucinate or misstate the underlying
   > facts with confident tone." Resolution: LLM constrained to narration-only over a verified
@@ -107,6 +115,7 @@ Access key (magic link) — no account-creation form, no roles, but opening the 
   > must surface forecast confidence/uncertainty explicitly, not state it as fact.
 
 ### Recommendation feedback (CRUD)
+
 - FR-007: User can create a feedback entry on a recommendation — accept or dismiss it, with an optional note. Priority: must-have
 - FR-008: User can view their past feedback entries. Priority: must-have
 - FR-009: User can edit an existing feedback entry (change accept/dismiss status or note). Priority: must-have
@@ -126,6 +135,7 @@ Access key (magic link) — no account-creation form, no roles, but opening the 
 - **Then** they see current PV/battery/grid state, one derived insight against the historical baseline, and a plain-language battery-setting recommendation for today
 
 #### Acceptance Criteria
+
 - Insight and recommendation are visible without further clicks beyond opening the app
 - The recommendation shown reflects the most recent daily refresh — it is not computed live while the user waits
 - If same-season historical data is insufficient, the insight visibly discloses it is using the flat-30-day fallback baseline
@@ -139,6 +149,7 @@ Access key (magic link) — no account-creation form, no roles, but opening the 
 - **Then** the feedback is saved and appears in their feedback history, and can later be edited or deleted
 
 #### Acceptance Criteria
+
 - Feedback entries are scoped to the single logged-in user's session/account
 - Editing or deleting a feedback entry updates or removes it immediately, visible on next view
 - Feedback does not automatically alter future recommendations in v1 — it's recorded for the user's own reference (see Non-Goals)

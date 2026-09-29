@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "smoke": "node scripts/smoke.mjs",
     "test": "vitest run",
-    "contract:export": "UPDATE_INGEST_CONTRACT=1 vitest run src/lib/ingest/contract.test.ts"
+    "contract:export": "UPDATE_INGEST_CONTRACT=1 vitest run src/lib/ingest/contract.test.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.6",

@@ -10,6 +10,9 @@ export const MAX_CAPTURE_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
 const reading = z.number().nullable();
 const energyKwh = z.number().nonnegative().nullable();
+// Non-null counterpart of `energyKwh`, for the bill forecast's kWh and PLN figures. Hoisted so the
+// deliberate bare `z.number()` inside `settlement` reads as the exception it is.
+const nonNegative = z.number().nonnegative();
 const factValue = z.union([z.number(), z.string().max(500), z.boolean(), z.null()]);
 const factRecord = z.record(z.string().max(100), factValue);
 
@@ -59,6 +62,86 @@ const dailyEnergy = z.strictObject({
   pv_forecast_kwh: energyKwh.optional(),
 });
 
+// The month part is validated like `z.iso.date()` does it, so "2026-13" is a rejection rather than
+// something the card later reports as the wrong month.
+const monthKey = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+
+// The lab's estimate of this month's PGE invoice (docs/logic.md, "Bill forecast (lab)").
+// Split on `status` so a `no_data` body can never carry a figure: the app must not be able to read
+// `projected_bill_gross_pln` off a body that refused to produce one.
+//
+// Types here enforce shape and sign only. There is deliberately no plausibility ceiling and no sign
+// check on `settlement`: a zod failure 422s the whole push, which would take the live `state` and the
+// recommendation down with it. `reference_feed_in_kwh` has been observed negative in the lab, so the
+// settlement block stays permissive `z.number()` and the sign check lives in the mapper, where it
+// blanks this card alone.
+const billForecast = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("ok"),
+    month: monthKey,
+    confidence: z.enum(["low", "medium", "high"]),
+    completed_days_used: z.number().int().nonnegative(),
+    // `{date, grid_import_kwh}` per complete day the estimate rests on; the card names the period from it.
+    // Days must be unique, as in `daily_history` below: a repeated date would skew the period label and
+    // the day count the card derives from this array. A duplicate is a sender bug with no valid form.
+    observed_days: z
+      .array(z.strictObject({ date: z.iso.date(), grid_import_kwh: nonNegative }))
+      .max(31)
+      .refine((days) => new Set(days.map((d) => d.date)).size === days.length, {
+        message: "observed_days dates must be unique",
+      }),
+    average_daily_import_kwh: nonNegative,
+    projected_import_kwh: nonNegative,
+    projected_bill_gross_pln: nonNegative,
+    range_gross_pln: z.strictObject({
+      low: nonNegative,
+      high: nonNegative,
+    }),
+    projected_credit_kwh: nonNegative,
+    projected_billable_kwh: nonNegative,
+    credit_left_kwh: nonNegative,
+    settlement: z.strictObject({
+      factor: z.number(),
+      reference_period: monthKey,
+      reference_lag_months: z.number().int().nonnegative(),
+      reference_consumed_kwh: z.number(),
+      reference_feed_in_kwh: z.number(),
+      export_ratio: z.number(),
+      carried_credit_kwh: z.number(),
+      carried_credit_basis: z.string().max(100),
+      carried_credit_dropped_as_stale: z.boolean(),
+      factor_implied: z.boolean(),
+    }),
+    pricing: z.strictObject({
+      source: z.string().max(200),
+      rates_verified_on: z.iso.date(),
+      variable_gross_pln_per_kwh: nonNegative,
+      fixed_gross_pln_per_month: nonNegative,
+    }),
+    // Absent when the reference period carries no invoice total, so readers treat it as optional.
+    // `diff_pct` is signed by nature.
+    closed_month_check: z
+      .strictObject({
+        period: monthKey,
+        computed_gross_pln: nonNegative,
+        invoice_gross_pln: nonNegative,
+        diff_pct: z.number(),
+        ok: z.boolean(),
+      })
+      .optional(),
+    generated_at: z.iso.datetime({ offset: true }),
+    method: z.literal("net_metering_credit_estimate"),
+  }),
+  z.strictObject({
+    status: z.literal("no_data"),
+    reason: z.enum(["no_complete_days", "settlement_facts_missing", "rates_unavailable"]),
+    message: z.string().max(500),
+    generated_at: z.iso.datetime({ offset: true }),
+    month: monthKey,
+    method: z.literal("net_metering_credit_estimate"),
+  }),
+]);
+
 export const ingestPayloadV1 = z.strictObject({
   contract_version: z.literal(INGEST_CONTRACT_VERSION),
   source: z.literal("homelab"),
@@ -72,6 +155,7 @@ export const ingestPayloadV1 = z.strictObject({
       message: "daily_history days must be unique",
     })
     .optional(),
+  bill_forecast: billForecast.optional(),
 });
 
 export type IngestPayloadV1 = z.infer<typeof ingestPayloadV1>;

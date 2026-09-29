@@ -1,0 +1,8 @@
+# linear-cli (schpet/linear-cli) config for this repo. `linear config` regenerates it.
+# No api_key here: the key lives in the macOS keyring (1Password: Linear API key).
+workspace = "fnky"
+team_id = "FNK"
+
+# Work here belongs to a Linear project (M-1: MVP daily advice), so ask on create.
+issue_create_ask_project = true
+issue_create_assign_self = "always"

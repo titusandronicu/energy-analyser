@@ -1,8 +1,12 @@
 ---
 import Layout from "@/layouts/Layout.astro";
+import BillForecastCard from "@/components/BillForecastCard.astro";
+import ForecastCard from "@/components/ForecastCard.astro";
 import LiveStateCard from "@/components/LiveStateCard.astro";
 import RecommendationCard from "@/components/RecommendationCard.astro";
 import UsageInsightCard from "@/components/UsageInsightCard.astro";
+import { buttonVariants } from "@/components/ui/button";
+import { loadBillForecast, toBillForecastView, type BillForecastView } from "@/lib/services/bill-forecast";
 import { loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
 import { loadLatestRecommendation, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 import { loadDailyEnergy, toUsageInsightView, type UsageInsightView } from "@/lib/services/usage-insight";
@@ -31,32 +35,40 @@ function getClient() {
 }
 
 const now = new Date();
-const [liveView, usageView, view]: [LiveStateView | null, UsageInsightView | null, RecommendationView | null] =
-  await Promise.all([
-    orLoadError(async () => {
-      const supabase = getClient();
-      return toLiveStateView(supabase ? await loadLiveState(supabase) : null, now);
-    }),
-    orLoadError(async () => {
-      const supabase = getClient();
-      return toUsageInsightView(supabase ? await loadDailyEnergy(supabase, now) : [], now);
-    }),
-    orLoadError(async () => {
-      const supabase = getClient();
-      return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
-    }),
-  ]);
+const [liveView, billView, usageView, view]: [
+  LiveStateView | null,
+  BillForecastView | null,
+  UsageInsightView | null,
+  RecommendationView | null,
+] = await Promise.all([
+  orLoadError(async () => {
+    const supabase = getClient();
+    return toLiveStateView(supabase ? await loadLiveState(supabase) : null, now);
+  }),
+  orLoadError(async () => {
+    const supabase = getClient();
+    return toBillForecastView(supabase ? await loadBillForecast(supabase) : null, now);
+  }),
+  orLoadError(async () => {
+    const supabase = getClient();
+    return toUsageInsightView(supabase ? await loadDailyEnergy(supabase, now) : [], now);
+  }),
+  orLoadError(async () => {
+    const supabase = getClient();
+    return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
+  }),
+]);
 ---
 
 <Layout title="Energy Analyser">
-  <div class="bg-cosmic min-h-screen p-4 sm:p-8">
-    <div class="mx-auto max-w-2xl space-y-6">
-      <header class="flex items-center justify-between text-sm text-blue-100/70">
+  <div class="bg-background min-h-screen p-4 sm:p-8">
+    <div class="mx-auto max-w-[1120px] space-y-6">
+      <header class="glass-surface flex items-center justify-between rounded-xl px-4 py-3 text-sm text-blue-100/70">
         <span class="font-semibold text-white">Energy Analyser</span>
         <div class="flex items-center gap-3">
           <span class="hidden sm:inline">{user?.email}</span>
           <form method="POST" action="/api/auth/signout">
-            <button type="submit" class="text-purple-300 transition-colors hover:text-purple-100 hover:underline">
+            <button type="submit" class:list={buttonVariants({ variant: "ghost" })}>
               Wyloguj
             </button>
           </form>
@@ -64,8 +76,19 @@ const [liveView, usageView, view]: [LiveStateView | null, UsageInsightView | nul
       </header>
 
       <LiveStateCard view={liveView} />
-      <UsageInsightCard view={usageView} />
-      <RecommendationCard view={view} />
+      <BillForecastCard view={billView} />
+      <div class="grid gap-6 lg:grid-cols-3">
+        <div class="lg:col-span-2">
+          <RecommendationCard view={view} />
+        </div>
+        <div class="space-y-6">
+          <UsageInsightCard view={usageView} />
+          <ForecastCard
+            forecast={view?.kind === "recommendation" ? view.forecast : null}
+            isFromEarlierDay={view?.kind === "recommendation" && view.isFromEarlierDay}
+          />
+        </div>
+      </div>
     </div>
   </div>
 </Layout>

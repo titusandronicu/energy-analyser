@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { LiveStateRow } from "@/types";
 import { formatAge, toLiveStateView } from "./live-state";
+import type { BatteryChargeLevel } from "./live-state";
 
 const state = {
   pv_w: 3420,
@@ -51,10 +52,105 @@ describe("toLiveStateView", () => {
       isDegraded: false,
       pv: "3,4 kW",
       homeLoad: "0,9 kW",
-      grid: { value: "1,2 kW", direction: "oddawanie do sieci" },
-      battery: { value: "1,4 kW", direction: "ładowanie", socLabel: "74%" },
+      grid: { value: "1,2 kW", direction: "oddawanie do sieci", watts: -1200 },
+      battery: {
+        value: "1,4 kW",
+        direction: "ładowanie",
+        watts: -1370,
+        socLabel: "74%",
+        socPct: 74,
+        chargeLevel: "medium",
+      },
       today: { pv: "12,3 kWh", bought: "1,2 kWh", sold: "5,0 kWh", periodLabel: "dziś od północy do 12:00" },
+      flows: {
+        pv: { watts: 3420, moving: true },
+        home: { watts: 850, moving: true },
+        grid: { watts: -1200, moving: true },
+        battery: { watts: -1370, moving: true },
+      },
+      verdicts: {
+        battery: {
+          tone: "good",
+          word: "dobrze",
+          detail: "w normie",
+          explanation:
+            "Poziom naładowania 74%: od 30% w górę to dobrze, 10–30% warto sprawdzić, poniżej 10% problem. 100% nigdy nie jest złe.",
+        },
+        pv: null,
+        home: null,
+      },
     });
+  });
+
+  it.each([
+    [50, true],
+    [-50, true],
+    [49, false],
+    [-49, false],
+    [0, false],
+    [null, false],
+  ])("moves a fresh flow of %j W: %s", (w, moving) => {
+    const v = view(row({}, { pv_w: w, home_load_w: w, grid_w: w, battery_w: w }));
+    expect(v.flows).toEqual({
+      pv: { watts: w, moving },
+      home: { watts: w, moving },
+      grid: { watts: w, moving },
+      battery: { watts: w, moving },
+    });
+  });
+
+  it("moves no flow when the snapshot is stale, whatever the watts", () => {
+    const v = view(row(), at("2026-09-25T10:15:01Z"));
+    expect(v.flows.pv).toEqual({ watts: 3420, moving: false });
+    expect(v.flows.home.moving).toBe(false);
+    expect(v.flows.grid.moving).toBe(false);
+    expect(v.flows.battery.moving).toBe(false);
+  });
+
+  it("still moves flows for a degraded but fresh snapshot", () => {
+    const v = view(row({}, { source_health: "degraded" }));
+    expect(v.flows.pv.moving).toBe(true);
+    expect(v.flows.battery.moving).toBe(true);
+  });
+
+  it.each([
+    [100, "good", "dobrze", "wysoki poziom"],
+    [80, "good", "dobrze", "wysoki poziom"],
+    [79.9, "good", "dobrze", "wysoki poziom"],
+    [79.4, "good", "dobrze", "w normie"],
+    [30, "good", "dobrze", "w normie"],
+    [29.9, "good", "dobrze", "w normie"],
+    [29.5, "good", "dobrze", "w normie"],
+    [29.4, "watch", "warto sprawdzić", "niski poziom"],
+    [10, "watch", "warto sprawdzić", "niski poziom"],
+    [9.9, "watch", "warto sprawdzić", "niski poziom"],
+    [9.4, "problem", "problem", "prawie pusta"],
+    [0, "problem", "problem", "prawie pusta"],
+    [null, "insufficient", "bez oceny", "brak odczytu"],
+  ])("rates battery_soc_pct %j as %s (%s, %s)", (battery_soc_pct, tone, word, detail) => {
+    const verdict = view(row({}, { battery_soc_pct })).verdicts.battery;
+    expect(verdict).toMatchObject({ tone, word, detail });
+    expect(verdict.explanation).toMatch(/\.$/);
+  });
+
+  it("explains the battery thresholds in the verdict sentence", () => {
+    expect(view(row({}, { battery_soc_pct: 100 })).verdicts.battery.explanation).toBe(
+      "Poziom naładowania 100%: od 30% w górę to dobrze, 10–30% warto sprawdzić, poniżej 10% problem. 100% nigdy nie jest złe.",
+    );
+  });
+
+  it("does not rate the battery when the snapshot is stale", () => {
+    expect(view(row(), at("2026-09-25T10:15:01Z")).verdicts.battery).toMatchObject({
+      tone: "insufficient",
+      word: "bez oceny",
+      detail: "dane nieaktualne",
+    });
+  });
+
+  it("leaves pv and home unrated", () => {
+    const { verdicts } = view(row());
+    expect(verdicts.pv).toBeNull();
+    expect(verdicts.home).toBeNull();
   });
 
   it("is not stale at exactly 15 minutes", () => {
@@ -109,26 +205,46 @@ describe("toLiveStateView", () => {
   });
 
   it.each([
-    [1500, { value: "1,5 kW", direction: "pobór z sieci" }],
-    [-1500, { value: "1,5 kW", direction: "oddawanie do sieci" }],
-    [0, { value: "0,0 kW", direction: null }],
-    [30, { value: "0,0 kW", direction: null }],
-    [-49, { value: "0,0 kW", direction: null }],
-    [-50, { value: "0,1 kW", direction: "oddawanie do sieci" }],
-    [null, { value: "—", direction: null }],
+    [1500, { value: "1,5 kW", direction: "pobór z sieci", watts: 1500 }],
+    [-1500, { value: "1,5 kW", direction: "oddawanie do sieci", watts: -1500 }],
+    [0, { value: "0,0 kW", direction: null, watts: 0 }],
+    [30, { value: "0,0 kW", direction: null, watts: 30 }],
+    [-49, { value: "0,0 kW", direction: null, watts: -49 }],
+    [-50, { value: "0,1 kW", direction: "oddawanie do sieci", watts: -50 }],
+    [null, { value: "—", direction: null, watts: null }],
   ])("labels grid %j", (grid_w, expected) => {
     expect(view(row({}, { grid_w })).grid).toEqual(expected);
   });
 
   it.each([
-    [800, { value: "0,8 kW", direction: "rozładowanie" }],
-    [-800, { value: "0,8 kW", direction: "ładowanie" }],
-    [0, { value: "0,0 kW", direction: null }],
-    [-20, { value: "0,0 kW", direction: null }],
-    [50, { value: "0,1 kW", direction: "rozładowanie" }],
-    [null, { value: "—", direction: null }],
+    [800, { value: "0,8 kW", direction: "rozładowanie", watts: 800 }],
+    [-800, { value: "0,8 kW", direction: "ładowanie", watts: -800 }],
+    [0, { value: "0,0 kW", direction: null, watts: 0 }],
+    [-20, { value: "0,0 kW", direction: null, watts: -20 }],
+    [50, { value: "0,1 kW", direction: "rozładowanie", watts: 50 }],
+    [null, { value: "—", direction: null, watts: null }],
   ])("labels battery %j", (battery_w, expected) => {
-    expect(view(row({}, { battery_w })).battery).toEqual({ ...expected, socLabel: "74%" });
+    expect(view(row({}, { battery_w })).battery).toEqual({
+      ...expected,
+      socLabel: "74%",
+      socPct: 74,
+      chargeLevel: "medium",
+    });
+  });
+
+  it.each([
+    [79, "medium"],
+    [80, "full"],
+    [29, "low"],
+    [30, "medium"],
+    [9, "warning"],
+    [10, "low"],
+    [79.9, "full"],
+    [29.9, "medium"],
+    [9.9, "low"],
+    [null, null],
+  ])("charges battery_soc_pct %j as level %j", (battery_soc_pct, chargeLevel) => {
+    expect(view(row({}, { battery_soc_pct })).battery.chargeLevel).toBe(chargeLevel as BatteryChargeLevel | null);
   });
 
   it.each([
@@ -156,6 +272,8 @@ describe("toLiveStateView", () => {
     expect(v.pv).toBe("—");
     expect(v.homeLoad).toBe("—");
     expect(v.battery.socLabel).toBe("—");
+    expect(v.battery.socPct).toBeNull();
+    expect(v.battery.chargeLevel).toBeNull();
     expect(v.today).toMatchObject({ pv: "—", bought: "—", sold: "—" });
   });
 
@@ -165,8 +283,8 @@ describe("toLiveStateView", () => {
       isDegraded: false,
       pv: "—",
       homeLoad: "—",
-      grid: { value: "—", direction: null },
-      battery: { value: "—", direction: null, socLabel: "—" },
+      grid: { value: "—", direction: null, watts: null },
+      battery: { value: "—", direction: null, watts: null, socLabel: "—", socPct: null, chargeLevel: null },
       today: { pv: "—", bought: "—", sold: "—", periodLabel: "dziś od północy do 12:00" },
     });
     expect(v.capturedAtLabel).toBe("25 września 2026, 12:00");

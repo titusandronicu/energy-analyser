@@ -22,10 +22,26 @@ function withChanges(mutate: (payload: IngestPayloadV1) => void) {
 }
 
 function sections(payload: IngestPayloadV1) {
-  const { recommendation, daily_history } = payload;
-  if (!recommendation || !daily_history) throw new Error("example must include every section");
-  return { recommendation, days: daily_history };
+  const { recommendation, daily_history, bill_forecast } = payload;
+  if (!recommendation || !daily_history || !bill_forecast) throw new Error("example must include every section");
+  return { recommendation, days: daily_history, billForecast: bill_forecast };
 }
+
+// The example carries the `ok` body; the `no_data` branch is built explicitly where it is needed.
+function okForecast(payload: IngestPayloadV1) {
+  const { billForecast } = sections(payload);
+  if (billForecast.status !== "ok") throw new Error("example must carry a bill forecast with status ok");
+  return billForecast;
+}
+
+const noDataForecast = {
+  status: "no_data",
+  reason: "no_complete_days",
+  message: "Ten miesiąc nie ma jeszcze ani jednego zakończonego dnia.",
+  generated_at: "2026-09-23T11:55:00+02:00",
+  month: "2026-09",
+  method: "net_metering_credit_estimate",
+} as const;
 
 function firstIssuePath(input: unknown) {
   const result = validateIngestPayload(input, now);
@@ -48,6 +64,7 @@ describe("ingest contract v1", () => {
     const payload = withChanges((p) => {
       delete p.recommendation;
       delete p.daily_history;
+      delete p.bill_forecast;
     });
     expect(validateIngestPayload(payload, now).success).toBe(true);
   });
@@ -122,5 +139,80 @@ describe("ingest contract v1", () => {
     expect(firstIssuePath(withChanges((p) => (sections(p).days[0].pv_forecast_kwh = -1)))).toBe(
       "daily_history.0.pv_forecast_kwh",
     );
+  });
+
+  it("accepts the bill forecast in the committed example", () => {
+    expect(okForecast(validExample).method).toBe("net_metering_credit_estimate");
+    expect(validateIngestPayload(example, now).success).toBe(true);
+  });
+
+  it("accepts a bill forecast without the closed-month check", () => {
+    const payload = withChanges((p) => delete okForecast(p).closed_month_check);
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it("accepts a bill forecast that refuses to produce a figure", () => {
+    const payload = withChanges((p) => (p.bill_forecast = noDataForecast));
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it("rejects a refusing bill forecast that still carries a figure", () => {
+    const payload = withChanges((p) =>
+      Object.assign(p, { bill_forecast: { ...noDataForecast, projected_bill_gross_pln: 258 } }),
+    );
+    expect(firstIssuePath(payload)).toBe("bill_forecast");
+  });
+
+  it("rejects a negative projected import", () => {
+    expect(firstIssuePath(withChanges((p) => (okForecast(p).projected_import_kwh = -1)))).toBe(
+      "bill_forecast.projected_import_kwh",
+    );
+  });
+
+  it("rejects a negative projected bill", () => {
+    expect(firstIssuePath(withChanges((p) => (okForecast(p).projected_bill_gross_pln = -1)))).toBe(
+      "bill_forecast.projected_bill_gross_pln",
+    );
+  });
+
+  // Deliberate: the lab has published a negative `reference_feed_in_kwh`, and a 422 here would take the
+  // live state and the recommendation down with it. The sign check lives in the card's mapper, where it
+  // blanks this one card. See the comment above `billForecast` in contract.ts.
+  it("accepts a negative settlement figure rather than failing the whole push", () => {
+    const payload = withChanges((p) => (okForecast(p).settlement.reference_feed_in_kwh = -342));
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it("rejects an unknown key inside the bill forecast", () => {
+    expect(firstIssuePath(withChanges((p) => Object.assign(okForecast(p), { tariff_secret: "x" })))).toBe(
+      "bill_forecast",
+    );
+  });
+
+  it("rejects an unsupported forecast method", () => {
+    expect(firstIssuePath(withChanges((p) => Object.assign(okForecast(p), { method: "flat_rate" })))).toBe(
+      "bill_forecast.method",
+    );
+  });
+
+  it("rejects a month outside 01-12", () => {
+    expect(firstIssuePath(withChanges((p) => (okForecast(p).month = "2026-13")))).toBe("bill_forecast.month");
+    expect(firstIssuePath(withChanges((p) => (okForecast(p).month = "2026-00")))).toBe("bill_forecast.month");
+  });
+
+  it("rejects a repeated day in observed_days", () => {
+    expect(
+      firstIssuePath(
+        withChanges((p) => {
+          const forecast = okForecast(p);
+          forecast.observed_days = [forecast.observed_days[0], { ...forecast.observed_days[0] }];
+        }),
+      ),
+    ).toBe("bill_forecast.observed_days");
+  });
+
+  it("accepts a payload without a bill forecast", () => {
+    const payload = withChanges((p) => delete p.bill_forecast);
+    expect(validateIngestPayload(payload, now).success).toBe(true);
   });
 });

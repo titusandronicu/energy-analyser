@@ -1,4 +1,5 @@
 <!-- IMPL-REVIEW-REPORT -->
+
 # Implementation Review: Live State with Staleness
 
 - **Plan**: context/changes/live-state-with-staleness/plan.md
@@ -10,16 +11,17 @@
 
 ## Verdicts
 
-| Dimension | Verdict |
-|-----------|---------|
-| Plan Adherence | PASS |
-| Scope Discipline | PASS |
-| Safety & Quality | WARNING |
-| Architecture | PASS |
+| Dimension           | Verdict |
+| ------------------- | ------- |
+| Plan Adherence      | PASS    |
+| Scope Discipline    | PASS    |
+| Safety & Quality    | WARNING |
+| Architecture        | PASS    |
 | Pattern Consistency | WARNING |
-| Success Criteria | PASS |
+| Success Criteria    | PASS    |
 
 Success criteria were re-run on 2026-09-25:
+
 - Unit tests, lint, `astro check` and build pass.
 - The migration applied on a clean local DB.
 - CI `ci` and `smoke` passed on PR #24, including "dashboard shows the fresh live state" and "anon cannot read live state directly -> 401".

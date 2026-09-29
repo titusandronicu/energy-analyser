@@ -24,3 +24,6 @@ release.env
 
 # jetbrains setting folder
 .idea/
+
+# agent worktrees (full repo checkouts)
+.claude/worktrees/

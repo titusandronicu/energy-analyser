@@ -16,13 +16,13 @@ The lab's forecast comes from Solcast (tomorrow 27.6 kWh instead of 36.3), Forec
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) |
-| --- | --- | --- |
-| Forecast source | Solcast | Matches real September production; Forecast.Solar overshoots on this flat array. |
-| Forecast.Solar | Kept as comparison-only values | S-11 can later show which source is more accurate here. |
-| Low/high estimates | Recorded in lab history now, not sent to the app | Certainty data accumulates before S-11 changes the contract. |
-| Health rule | Unchanged; comparison entities still count | Same as Solarman; documented next to the keys. |
-| Apply | Runbook steps from merged `main`, with backups, after the owner's OK | The runbook already covers drift check, backup and install. |
+| Decision           | Choice                                                               | Why (1 sentence)                                                                 |
+| ------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Forecast source    | Solcast                                                              | Matches real September production; Forecast.Solar overshoots on this flat array. |
+| Forecast.Solar     | Kept as comparison-only values                                       | S-11 can later show which source is more accurate here.                          |
+| Low/high estimates | Recorded in lab history now, not sent to the app                     | Certainty data accumulates before S-11 changes the contract.                     |
+| Health rule        | Unchanged; comparison entities still count                           | Same as Solarman; documented next to the keys.                                   |
+| Apply              | Runbook steps from merged `main`, with backups, after the owner's OK | The runbook already covers drift check, backup and install.                      |
 
 ## Scope
 
@@ -36,10 +36,10 @@ Home Assistant (Solcast + Forecast.Solar) → `collect-ha-snapshot.py` (Solcast 
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Lab code and docs | homelab-2 PR with mapping, estimates, tests, docs | A comparison entity going missing marks snapshots degraded |
-| 2. Apply and verify | Scripts installed on docker-core; pushes carry Solcast values | Live change; rollback is the runbook's `.bak` copies |
+| Phase                | What it delivers                                              | Key risk                                                   |
+| -------------------- | ------------------------------------------------------------- | ---------------------------------------------------------- |
+| 1. Lab code and docs | homelab-2 PR with mapping, estimates, tests, docs             | A comparison entity going missing marks snapshots degraded |
+| 2. Apply and verify  | Scripts installed on docker-core; pushes carry Solcast values | Live change; rollback is the runbook's `.bak` copies       |
 
 **Prerequisites:** both integrations set up in Home Assistant (done 2026-09-26); operator key `~/.ssh/docker-core`.
 **Estimated effort:** one short session.

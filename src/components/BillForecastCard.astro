@@ -1,0 +1,117 @@
+---
+import Panel from "@/components/ui/Panel.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import TermsExplained from "@/components/TermsExplained.astro";
+import { LOAD_FAILED } from "@/lib/format/status";
+import type { BillForecastView } from "@/lib/services/bill-forecast";
+
+interface Props {
+  view: BillForecastView | null;
+}
+
+// null means loading failed; the page never throws a 500 for a data problem.
+const { view } = Astro.props;
+// The badge carries the verdict against the last real invoice — and, on every refusal path, why there is no figure.
+const status = view === null ? LOAD_FAILED : view.status;
+// Every refusal path renders its reason as a whole sentence with no number beside it; the empty state says all it
+// has to say on the badge, as the live state card's does. US-03 asks for a range rather than a single exact
+// figure, so the range is the headline and the central estimate reads beneath it.
+// Narrowed once so the "Na podstawie" sentences can be built as whole strings: a line break between text and a
+// template expression swallows the space between them, and these lines mix copy and values throughout.
+const forecast = view?.kind === "forecast" ? view : null;
+const basis = forecast?.basis ?? null;
+// The reference month is named whatever its age. A lagging one says how far behind it is rather than hiding the
+// figure: it is the normal state from the 1st of a month until roughly the 22nd.
+const referenceLine =
+  basis === null
+    ? ""
+    : basis.referenceLagMonths > 0
+      ? `Ostatnie rozliczenie z PGE: za ${basis.referenceMonthLabel} — o ${basis.referenceLagMonths} mies. starsze niż poprzedni miesiąc, bo rachunek przychodzi około 3 tygodnie po końcu miesiąca.`
+      : `Ostatnie rozliczenie z PGE: za ${basis.referenceMonthLabel}, czyli za poprzedni miesiąc.`;
+const exportLine =
+  basis === null
+    ? ""
+    : `W rozliczonym miesiącu dom oddał do sieci ${basis.exportRatioLabel} tego, co kupił — tyle zakładamy też dla bieżącego miesiąca.`;
+const pricingLine =
+  basis === null
+    ? ""
+    : `Ceny z taryfy G11: ${basis.rateLabel} za prąd i opłaty stałe ${basis.fixedFeeLabel}, sprawdzone ${basis.ratesVerifiedOnLabel}.`;
+// Without this line the card would show a strikingly low, trivially green figure and no reason for it.
+const creditLeft = forecast?.creditLeftLabel ?? null;
+const creditLine =
+  creditLeft === null
+    ? ""
+    : `Zgromadzony opust (${creditLeft}) pokrywa cały prąd kupiony w tym miesiącu, więc w prognozie zostają tylko opłaty stałe.`;
+// Worded as a test of the arithmetic, never as the forecast's accuracy: it cannot detect a wrong export ratio,
+// and it drifts when PGE changes prices. Absent when the reference month carries no invoice total.
+const check = forecast?.closedMonthCheck ?? null;
+const checkLine =
+  check === null
+    ? ""
+    : `Sprawdzenie wyliczenia na zamkniętym miesiącu (${check.monthLabel}): ten sam wzór daje ${check.computedLabel} przy rachunku ${check.invoiceLabel}, czyli ${check.diffLabel}. ${check.ok ? "Wyliczenie się zgadza" : "Różnica jest większa niż zwykle"} — to test samej arytmetyki, nie trafności prognozy.`;
+---
+
+<Panel>
+  <h2 class="mb-2 text-lg font-semibold text-blue-100">Prognoza rachunku</h2>
+  <div class="mb-4">
+    <StatusBadge status={status} testId="bill-status" />
+  </div>
+
+  {view === null && <p class="text-sm text-blue-100/70">Spróbuj odświeżyć stronę.</p>}
+
+  {view?.kind === "unavailable" && (
+    <p class="text-sm text-blue-100/70" data-testid="bill-unavailable-reason">
+      {view.reason}
+    </p>
+  )}
+
+  {forecast !== null && (
+    <div class="space-y-4">
+      <div class="rounded-lg bg-white/5 p-3">
+        <p class="text-sm text-blue-100/60" data-testid="bill-month">
+          {forecast.isOtherMonth
+            ? `Rachunek za ${forecast.monthLabel}`
+            : `Rachunek za ten miesiąc (${forecast.monthLabel})`}
+        </p>
+        <p class="mt-1 text-2xl font-semibold" data-testid="bill-range">
+          {forecast.rangeLabel}
+        </p>
+        <p class="mt-1 text-sm text-blue-100/70" data-testid="bill-central">
+          {`najbardziej prawdopodobnie ${forecast.centralLabel}`}
+        </p>
+      </div>
+
+      <dl class="grid grid-cols-1 gap-3 rounded-lg bg-white/5 p-3 text-sm sm:grid-cols-2">
+        <div>
+          <dt class="text-blue-100/60">Policzone z pełnych dni</dt>
+          <dd class="font-medium" data-testid="bill-days">
+            {forecast.dayLabel}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-blue-100/60">Pewność tej kwoty</dt>
+          <dd class="mt-1">
+            <StatusBadge status={forecast.confidence} testId="bill-confidence" />
+          </dd>
+        </div>
+      </dl>
+
+      <details class="text-sm text-blue-100/80" data-testid="bill-basis">
+        <summary class="cursor-pointer py-1 text-blue-100">Na podstawie</summary>
+        <ul class="mt-2 list-disc space-y-1 pl-5">
+          <li>{referenceLine}</li>
+          <li>{exportLine}</li>
+          <li>{pricingLine}</li>
+          {creditLine && <li data-testid="bill-credit-left">{creditLine}</li>}
+          {checkLine && <li data-testid="bill-closed-month-check">{checkLine}</li>}
+        </ul>
+      </details>
+
+      <TermsExplained terms={["bill_forecast", "bill_range", "net_metering", "kwh", "grid_import", "grid_export"]} />
+    </div>
+  )}
+
+  <p class="mt-4 text-xs text-blue-100/70">
+    To szacunek z dotychczasowego zużycia i cen z taryfy, a nie faktura z PGE.
+  </p>
+</Panel>

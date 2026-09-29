@@ -16,15 +16,15 @@ F-01 already stores each pushed recommendation in `public.recommendations`, but 
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) |
-| --- | --- | --- |
+| Decision             | Choice                                                                                                    | Why (1 sentence)                                                                                 |
+| -------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Which recommendation | Always the newest, with a "Nieaktualna" warning when it's from before today (Warsaw) or more than 2 h old | Keeps last-known advice visible during a lab outage, per the PRD's degrade-gracefully guardrail. |
-| Read access | Owner allowlist (`app_owners`) in RLS | Data stays private even if sign-up were ever enabled, and S-02/S-04/S-05 reuse the same check. |
-| Missing confidence | Show "Pewność prognozy: nieznana" | Meets FR-006's "state uncertainty explicitly" without inventing a value. |
-| Lab push | Separate homelab-2 change; this plan writes its brief | Infra changes belong in the infra repo; each side is verified on its own. |
-| Local/CI users | `seed.sql` trigger makes every local user an owner | Smoke-created users can read; `seed.sql` never runs in production. |
-| Landing page | `/` redirects to dashboard or sign-in; starter welcome removed | The app has one purpose: open it and see the decision. |
-| Rendering | Server-side, text only (no HTML), line breaks kept | No XSS surface from LLM text; no client JavaScript needed. |
+| Read access          | Owner allowlist (`app_owners`) in RLS                                                                     | Data stays private even if sign-up were ever enabled, and S-02/S-04/S-05 reuse the same check.   |
+| Missing confidence   | Show "Pewność prognozy: nieznana"                                                                         | Meets FR-006's "state uncertainty explicitly" without inventing a value.                         |
+| Lab push             | Separate homelab-2 change; this plan writes its brief                                                     | Infra changes belong in the infra repo; each side is verified on its own.                        |
+| Local/CI users       | `seed.sql` trigger makes every local user an owner                                                        | Smoke-created users can read; `seed.sql` never runs in production.                               |
+| Landing page         | `/` redirects to dashboard or sign-in; starter welcome removed                                            | The app has one purpose: open it and see the decision.                                           |
+| Rendering            | Server-side, text only (no HTML), line breaks kept                                                        | No XSS surface from LLM text; no client JavaScript needed.                                       |
 
 ## Scope
 
@@ -45,11 +45,11 @@ owner ──► /dashboard ──► loadLatestRecommendation ──► toRecomm
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Data access and view model | Owner allowlist + read policies; staleness and label rules with tests | A grant without the policy exposes data; a policy without the grant breaks reads |
-| 2. Dashboard recommendation card | Polish card, `/` redirect, smoke proves push → dashboard | Smoke ordering (push before the signed-in check) |
-| 3. Production rollout and lab handoff | Migration + owner row in production; homelab-2 brief | North star only proven once the lab actually pushes |
+| Phase                                 | What it delivers                                                      | Key risk                                                                         |
+| ------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 1. Data access and view model         | Owner allowlist + read policies; staleness and label rules with tests | A grant without the policy exposes data; a policy without the grant breaks reads |
+| 2. Dashboard recommendation card      | Polish card, `/` redirect, smoke proves push → dashboard              | Smoke ordering (push before the signed-in check)                                 |
+| 3. Production rollout and lab handoff | Migration + owner row in production; homelab-2 brief                  | North star only proven once the lab actually pushes                              |
 
 **Prerequisites:** F-01 and S-01 deployed (done); local Supabase via the UGREEN relay; production SQL access for the owner row.
 **Estimated effort:** ~2 sessions across 3 phases, plus the separate homelab-2 change.

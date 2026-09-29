@@ -13,6 +13,7 @@ Every push already carries the live state, but it sits inside the raw `ingest_pu
 ## Desired End State
 
 A Polish "Stan na żywo" card above the recommendation shows:
+
 - PV, home load, grid (buying from or selling to the grid), battery (charging or discharging), state of charge
 - today's kWh, and the reading time
 
@@ -20,14 +21,14 @@ It warns "Dane nieaktualne" after 15 minutes without a new snapshot, notes degra
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) |
-| --- | --- | --- |
-| Stale after | Newest snapshot more than 15 min old (3 missed pushes) | Flags real outages quickly without alarming on one slow refresh. |
-| Refresh | Full-page reload every 5 min while visible | Matches the push cadence with a tiny script; no API route or client state. |
-| Degraded snapshots | Mild notice, values kept, missing ones "—" | Partial data is honest and still useful; it isn't the same problem as stale data. |
-| Data access | `security_invoker` view over `ingest_pushes` + owner RLS + column grants | Reuses the S-03 owner check; token and hash columns stay unreadable. |
-| Staleness signal | Age of the newest `captured_at` | When Home Assistant is down, the lab re-sends the old snapshot, so the time stops advancing. |
-| Layout | Live state above the recommendation | You read "what's happening" before "what to do". |
+| Decision           | Choice                                                                   | Why (1 sentence)                                                                             |
+| ------------------ | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| Stale after        | Newest snapshot more than 15 min old (3 missed pushes)                   | Flags real outages quickly without alarming on one slow refresh.                             |
+| Refresh            | Full-page reload every 5 min while visible                               | Matches the push cadence with a tiny script; no API route or client state.                   |
+| Degraded snapshots | Mild notice, values kept, missing ones "—"                               | Partial data is honest and still useful; it isn't the same problem as stale data.            |
+| Data access        | `security_invoker` view over `ingest_pushes` + owner RLS + column grants | Reuses the S-03 owner check; token and hash columns stay unreadable.                         |
+| Staleness signal   | Age of the newest `captured_at`                                          | When Home Assistant is down, the lab re-sends the old snapshot, so the time stops advancing. |
+| Layout             | Live state above the recommendation                                      | You read "what's happening" before "what to do".                                             |
 
 ## Scope
 
@@ -46,11 +47,11 @@ owner ──► /dashboard ──► loadLiveState ──► toLiveStateView(row
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Data access and view model | View + owner policy + column grants; tested display rules | A view without `security_invoker` would bypass RLS |
+| Phase                             | What it delivers                                          | Key risk                                                      |
+| --------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------- |
+| 1. Data access and view model     | View + owner policy + column grants; tested display rules | A view without `security_invoker` would bypass RLS            |
 | 2. Dashboard card and auto-reload | Polish card above the recommendation; 5-min reload; smoke | The reload closes an open "Na podstawie" section (acceptable) |
-| 3. Production rollout | Migration applied, version aligned, deployed | Empty until the home-lab push is live |
+| 3. Production rollout             | Migration applied, version aligned, deployed              | Empty until the home-lab push is live                         |
 
 **Prerequisites:** S-03 deployed (done); local Supabase via the UGREEN relay; Supabase connector for production.
 **Estimated effort:** ~1–2 sessions across 3 phases.

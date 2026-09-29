@@ -19,16 +19,28 @@
       "type": "object",
       "properties": {
         "pv_w": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "home_load_w": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "grid_w": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "battery_w": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "battery_soc_pct": {
           "anyOf": [
@@ -119,7 +131,11 @@
         },
         "provider": {
           "type": "string",
-          "enum": ["ha_conversation", "ollama", "openrouter"]
+          "enum": [
+            "ha_conversation",
+            "ollama",
+            "openrouter"
+          ]
         },
         "model": {
           "type": "string",
@@ -153,10 +169,17 @@
             },
             "confidence": {
               "type": "string",
-              "enum": ["low", "medium", "high"]
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
             }
           },
-          "required": ["today_kwh", "tomorrow_kwh"],
+          "required": [
+            "today_kwh",
+            "tomorrow_kwh"
+          ],
           "additionalProperties": false
         },
         "facts": {
@@ -267,11 +290,24 @@
               }
             }
           },
-          "required": ["current_state", "balance_today", "local_findings", "sanity_checks"],
+          "required": [
+            "current_state",
+            "balance_today",
+            "local_findings",
+            "sanity_checks"
+          ],
           "additionalProperties": false
         }
       },
-      "required": ["generated_at", "language", "text", "provider", "model", "forecast", "facts"],
+      "required": [
+        "generated_at",
+        "language",
+        "text",
+        "provider",
+        "model",
+        "forecast",
+        "facts"
+      ],
       "additionalProperties": false
     },
     "daily_history": {
@@ -341,11 +377,300 @@
             ]
           }
         },
-        "required": ["day", "pv_kwh", "load_kwh", "grid_import_kwh", "grid_export_kwh"],
+        "required": [
+          "day",
+          "pv_kwh",
+          "load_kwh",
+          "grid_import_kwh",
+          "grid_export_kwh"
+        ],
         "additionalProperties": false
       }
+    },
+    "bill_forecast": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "ok"
+            },
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "confidence": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ]
+            },
+            "completed_days_used": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "observed_days": {
+              "maxItems": 31,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                  },
+                  "grid_import_kwh": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "date",
+                  "grid_import_kwh"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "average_daily_import_kwh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "projected_import_kwh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "projected_bill_gross_pln": {
+              "type": "number",
+              "minimum": 0
+            },
+            "range_gross_pln": {
+              "type": "object",
+              "properties": {
+                "low": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "high": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "low",
+                "high"
+              ],
+              "additionalProperties": false
+            },
+            "projected_credit_kwh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "projected_billable_kwh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "credit_left_kwh": {
+              "type": "number",
+              "minimum": 0
+            },
+            "settlement": {
+              "type": "object",
+              "properties": {
+                "factor": {
+                  "type": "number"
+                },
+                "reference_period": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                },
+                "reference_lag_months": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "reference_consumed_kwh": {
+                  "type": "number"
+                },
+                "reference_feed_in_kwh": {
+                  "type": "number"
+                },
+                "export_ratio": {
+                  "type": "number"
+                },
+                "carried_credit_kwh": {
+                  "type": "number"
+                },
+                "carried_credit_basis": {
+                  "type": "string",
+                  "maxLength": 100
+                },
+                "carried_credit_dropped_as_stale": {
+                  "type": "boolean"
+                },
+                "factor_implied": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "factor",
+                "reference_period",
+                "reference_lag_months",
+                "reference_consumed_kwh",
+                "reference_feed_in_kwh",
+                "export_ratio",
+                "carried_credit_kwh",
+                "carried_credit_basis",
+                "carried_credit_dropped_as_stale",
+                "factor_implied"
+              ],
+              "additionalProperties": false
+            },
+            "pricing": {
+              "type": "object",
+              "properties": {
+                "source": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "rates_verified_on": {
+                  "type": "string",
+                  "format": "date",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                },
+                "variable_gross_pln_per_kwh": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "fixed_gross_pln_per_month": {
+                  "type": "number",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "source",
+                "rates_verified_on",
+                "variable_gross_pln_per_kwh",
+                "fixed_gross_pln_per_month"
+              ],
+              "additionalProperties": false
+            },
+            "closed_month_check": {
+              "type": "object",
+              "properties": {
+                "period": {
+                  "type": "string",
+                  "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+                },
+                "computed_gross_pln": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "invoice_gross_pln": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "diff_pct": {
+                  "type": "number"
+                },
+                "ok": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "period",
+                "computed_gross_pln",
+                "invoice_gross_pln",
+                "diff_pct",
+                "ok"
+              ],
+              "additionalProperties": false
+            },
+            "generated_at": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "method": {
+              "type": "string",
+              "const": "net_metering_credit_estimate"
+            }
+          },
+          "required": [
+            "status",
+            "month",
+            "confidence",
+            "completed_days_used",
+            "observed_days",
+            "average_daily_import_kwh",
+            "projected_import_kwh",
+            "projected_bill_gross_pln",
+            "range_gross_pln",
+            "projected_credit_kwh",
+            "projected_billable_kwh",
+            "credit_left_kwh",
+            "settlement",
+            "pricing",
+            "generated_at",
+            "method"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "no_data"
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "no_complete_days",
+                "settlement_facts_missing",
+                "rates_unavailable"
+              ]
+            },
+            "message": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "generated_at": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            "month": {
+              "type": "string",
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+            },
+            "method": {
+              "type": "string",
+              "const": "net_metering_credit_estimate"
+            }
+          },
+          "required": [
+            "status",
+            "reason",
+            "message",
+            "generated_at",
+            "month",
+            "method"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
-  "required": ["contract_version", "source", "captured_at", "state"],
+  "required": [
+    "contract_version",
+    "source",
+    "captured_at",
+    "state"
+  ],
   "additionalProperties": false
 }

@@ -53,19 +53,18 @@ Micr.us joins the tailnet as an entry point into the home network from outside. 
 - **App isolation.** Tailscale runs on the VPS host; the public app container gets no tailnet access by default. A future feature that needs it gets its own narrowly scoped path.
 - **Home side is partly ready.** The home lab's main host is a Tailscale node, reachable at its own tailnet address. It does not advertise subnet routes (checked 2026-09-23), so Micr.us can reach only that host, not the rest of the LAN. Keep it that way unless a feature needs more. If subnet routes are added later, the Micr.us ACL must list explicit destination IPs and ports.
 
-
 ## Platform Comparison
 
-| Platform | CLI-first | Managed / serverless | Agent-readable docs | Stable deployment API | MCP / agent integration | Project fit |
-|---|---|---|---|---|---|---|
-| Micr.us VPS | Pass | Fail | Partial | Pass | Partial | **Selected: existing server, persistent Node and private HA path** |
-| Cloudflare Workers | Pass | Pass | Pass | Pass | Pass | Best managed alternative; exact current adapter, but event-driven runtime |
-| Netlify | Pass | Pass | Pass | Pass | Pass | Good DX; adapter change and 30-second scheduled-function limit |
-| AWS Amplify + Lambda | Partial | Pass | Pass | Pass | Partial | Low usage cost, but community Astro adapter and IAM complexity |
-| Vercel | Pass | Pass | Pass | Pass | Partial | Requires Vercel adapter; Hobby cron and rollback caveats |
-| Railway | Pass | Pass | Pass | Partial | Pass | Persistent runtime and cron, but approximately $5/month minimum |
-| Render | Pass | Pass | Pass | Pass | Pass | Persistent runtime; practical web + cron baseline is higher |
-| Fly.io | Pass | Partial | Pass | Pass | Partial | Persistent process, but more container and scheduling operations |
+| Platform             | CLI-first | Managed / serverless | Agent-readable docs | Stable deployment API | MCP / agent integration | Project fit                                                               |
+| -------------------- | --------- | -------------------- | ------------------- | --------------------- | ----------------------- | ------------------------------------------------------------------------- |
+| Micr.us VPS          | Pass      | Fail                 | Partial             | Pass                  | Partial                 | **Selected: existing server, persistent Node and private HA path**        |
+| Cloudflare Workers   | Pass      | Pass                 | Pass                | Pass                  | Pass                    | Best managed alternative; exact current adapter, but event-driven runtime |
+| Netlify              | Pass      | Pass                 | Pass                | Pass                  | Pass                    | Good DX; adapter change and 30-second scheduled-function limit            |
+| AWS Amplify + Lambda | Partial   | Pass                 | Pass                | Pass                  | Partial                 | Low usage cost, but community Astro adapter and IAM complexity            |
+| Vercel               | Pass      | Pass                 | Pass                | Pass                  | Partial                 | Requires Vercel adapter; Hobby cron and rollback caveats                  |
+| Railway              | Pass      | Pass                 | Pass                | Partial               | Pass                    | Persistent runtime and cron, but approximately $5/month minimum           |
+| Render               | Pass      | Pass                 | Pass                | Pass                  | Pass                    | Persistent runtime; practical web + cron baseline is higher               |
+| Fly.io               | Pass      | Partial              | Pass                | Pass                  | Partial                 | Persistent process, but more container and scheduling operations          |
 
 Micr.us passes the operational CLI test because routine work is scriptable through SSH, Git and Docker Compose. It fails the managed-platform criterion by design: OS lifecycle, firewall, reverse proxy, TLS, capacity and recovery are owner-operated. Documentation quality depends on the selected components rather than one platform manual. Deployment is deterministic when image tags or digests and a versioned Compose file are used. Agent integration is through standard SSH/Docker tooling rather than a first-party platform MCP.
 
@@ -122,21 +121,21 @@ Six months after launch, the app stopped refreshing recommendations even though 
 
 ## Risk Register
 
-| Risk | Source | Likelihood | Impact | Mitigation |
-|---|---|---:|---:|---|
-| VPS or container outage | Pre-mortem | M | H | Restart policies, health checks, external uptime monitor and documented provider recovery |
-| Ingestion token leaked or over-privileged | Push-model review | L | M | Write-only token scoped to ingestion; rotate on suspicion; rate-limit and size-cap the endpoint; audit rows by source |
-| Silent stale telemetry | Pre-mortem | M | H | Store `last_success_at`, show staleness in UI and alert when refresh misses its SLA |
-| Irreproducible rollback | Pre-mortem | M | H | Pin image by Git SHA/digest; retain several known-good images and test rollback |
-| Database migration incompatible with rollback | Devil's advocate | M | H | Backward-compatible migrations, pre-deploy backup and separate migration approval |
-| VPS secrets exposed | Research finding | L | H | Root-readable files/Docker secrets, scoped tokens, no secrets in repo or logs |
-| Home-lab push stops silently | Push-model review | M | H | Store `last_push_at` per source; staleness indicator in the UI; external uptime check alerts when pushes miss their window |
-| Supabase or home-lab internet outage | Research finding | M | M | Cache last good state, degrade visibly and retry asynchronously |
-| Micr.us resource limit unknown | Unknown unknowns | M | M | Confirm CPU/RAM/disk/backup limits and run a load/soak check before launch |
-| Unpatched host or dependencies | Devil's advocate | M | H | Monthly patch window, automated vulnerability scan and explicit upgrade runbook |
-| Over-broad VPS-to-home access via Tailscale | Devil's advocate | L | H | Tag-based ACL to named hosts/ports only; no subnet routing; app container kept off the tailnet; review ACL on every change |
-| Private data leaks through the push payload | Push-model review | L | H | Versioned allow-list payload contract; reject unknown fields; the home lab sends aggregates only |
-| Duplicate pipeline drifts from the lab analyser | Existing-system review | M | M | Consume the lab analyser's public-safe aggregates/facts bundle instead of re-deriving them |
+| Risk                                            | Source                 | Likelihood | Impact | Mitigation                                                                                                                 |
+| ----------------------------------------------- | ---------------------- | ---------: | -----: | -------------------------------------------------------------------------------------------------------------------------- |
+| VPS or container outage                         | Pre-mortem             |          M |      H | Restart policies, health checks, external uptime monitor and documented provider recovery                                  |
+| Ingestion token leaked or over-privileged       | Push-model review      |          L |      M | Write-only token scoped to ingestion; rotate on suspicion; rate-limit and size-cap the endpoint; audit rows by source      |
+| Silent stale telemetry                          | Pre-mortem             |          M |      H | Store `last_success_at`, show staleness in UI and alert when refresh misses its SLA                                        |
+| Irreproducible rollback                         | Pre-mortem             |          M |      H | Pin image by Git SHA/digest; retain several known-good images and test rollback                                            |
+| Database migration incompatible with rollback   | Devil's advocate       |          M |      H | Backward-compatible migrations, pre-deploy backup and separate migration approval                                          |
+| VPS secrets exposed                             | Research finding       |          L |      H | Root-readable files/Docker secrets, scoped tokens, no secrets in repo or logs                                              |
+| Home-lab push stops silently                    | Push-model review      |          M |      H | Store `last_push_at` per source; staleness indicator in the UI; external uptime check alerts when pushes miss their window |
+| Supabase or home-lab internet outage            | Research finding       |          M |      M | Cache last good state, degrade visibly and retry asynchronously                                                            |
+| Micr.us resource limit unknown                  | Unknown unknowns       |          M |      M | Confirm CPU/RAM/disk/backup limits and run a load/soak check before launch                                                 |
+| Unpatched host or dependencies                  | Devil's advocate       |          M |      H | Monthly patch window, automated vulnerability scan and explicit upgrade runbook                                            |
+| Over-broad VPS-to-home access via Tailscale     | Devil's advocate       |          L |      H | Tag-based ACL to named hosts/ports only; no subnet routing; app container kept off the tailnet; review ACL on every change |
+| Private data leaks through the push payload     | Push-model review      |          L |      H | Versioned allow-list payload contract; reject unknown fields; the home lab sends aggregates only                           |
+| Duplicate pipeline drifts from the lab analyser | Existing-system review |          M |      M | Consume the lab analyser's public-safe aggregates/facts bundle instead of re-deriving them                                 |
 
 ## Getting Started
 

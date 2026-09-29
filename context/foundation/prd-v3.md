@@ -210,7 +210,7 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
 
 ### History, ratings and summaries (v3)
 
-- FR-021: User can open a calendar with day and month views, each showing PV production, consumption, grid import/export, forecast against actual, and the recommendations from that period. Priority: must-have
+- FR-021: User can open a calendar with day, month, quarter, and year views, each showing PV production, consumption, grid import/export, forecast against actual, and the recommendations from that period. A quarter or year view with incomplete data shows what exists and says plainly that the period isn't finished or that comparison data doesn't exist yet, per FR-019 — it never fabricates a full-period figure. Priority: must-have
 - FR-022: Each completed day and month gets a good / neutral / bad rating computed in the app from self-sufficiency (the share of consumption covered by PV and the battery rather than grid import) compared with a norm, with the basis shown. The norm is the season-adjusted one when enough same-season history exists; otherwise the recent trailing period, and the rating says plainly that the recent norm is in use (the same rule as FR-003). Thresholds are set when the slice is planned. Priority: must-have
 - FR-023: Each completed day and month shows a short summary written by the home lab: an LLM narrates a facts bundle of what happened, taking Polish seasons into account, without advice or suggested changes. It is generated and pushed by the lab ahead of the visit, like the daily recommendation. Priority: must-have
 - FR-024: The home lab backfills the days it recorded before the app's pushes started (2026-07-16 to 2026-07-25) once, so the calendar and norms use every day the lab has. Priority: must-have
@@ -222,6 +222,11 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
   > same-season data from a year before exists until about July 2027, so: ratings use the recent
   > norm with a visible notice until then (FR-022); the backfill covers only the ten days before the
   > first push (FR-024); the year view is deferred until a second year of history exists (FR-021).
+  > Correction (v3.2, 2026-09-28): the year view is no longer deferred — it ships alongside day/month/
+  > quarter, showing the current (partial) year's totals via the same "not enough data yet" pattern
+  > (FR-019) any incomplete period already uses. Year-over-year _comparison_ specifically still isn't
+  > possible until about July 2027 (a second year of history) — that limitation is unchanged, only the
+  > view's existence is no longer gated on it.
 
 ### Plain language for a non-expert (v3)
 

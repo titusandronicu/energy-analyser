@@ -16,16 +16,16 @@ The home lab (or a fixture script) pushes a v1 payload with a bearer token and g
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) |
-| --- | --- | --- |
-| Contract scope | Envelope + state, recommendation and daily-history sections now | homelab-2 makes one push change instead of three, and real data flows before S-02/S-03 start. |
-| Write path | Anon key → `SECURITY DEFINER` `ingest_push` that checks token hashes | No service-role key, no app secret, rotation is a DB row change, anon can do nothing else. |
-| Duplicates | Identical re-send → 200; same time, different content → 409 | Retries are safe and lab bugs surface loudly instead of silently rewriting history. |
-| Retention | Raw pushes 14 days, pruned on insert; daily energy and recommendations kept | Bounded storage without a scheduler. |
-| Contract home | zod in this repo → exported JSON Schema + example, drift-tested | The receiver defines what it accepts, with one generated artifact for homelab-2. |
-| Testing | Vitest for contract/service + smoke against local Supabase in CI | The SQL function, hashing and RLS are proven against a real DB on every PR. |
-| Size cap | 256 KB on bytes read | Far above a normal push, bounded against misuse. |
-| Time window | `captured_at` ≤ 5 min in the future and ≤ 14 days old | Catches lab clock bugs and avoids storing rows that would be pruned immediately. |
+| Decision       | Choice                                                                      | Why (1 sentence)                                                                              |
+| -------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Contract scope | Envelope + state, recommendation and daily-history sections now             | homelab-2 makes one push change instead of three, and real data flows before S-02/S-03 start. |
+| Write path     | Anon key → `SECURITY DEFINER` `ingest_push` that checks token hashes        | No service-role key, no app secret, rotation is a DB row change, anon can do nothing else.    |
+| Duplicates     | Identical re-send → 200; same time, different content → 409                 | Retries are safe and lab bugs surface loudly instead of silently rewriting history.           |
+| Retention      | Raw pushes 14 days, pruned on insert; daily energy and recommendations kept | Bounded storage without a scheduler.                                                          |
+| Contract home  | zod in this repo → exported JSON Schema + example, drift-tested             | The receiver defines what it accepts, with one generated artifact for homelab-2.              |
+| Testing        | Vitest for contract/service + smoke against local Supabase in CI            | The SQL function, hashing and RLS are proven against a real DB on every PR.                   |
+| Size cap       | 256 KB on bytes read                                                        | Far above a normal push, bounded against misuse.                                              |
+| Time window    | `captured_at` ≤ 5 min in the future and ≤ 14 days old                       | Catches lab clock bugs and avoids storing rows that would be pruned immediately.              |
 
 ## Scope
 
@@ -48,12 +48,12 @@ home lab refresh job ──HTTPS, Bearer──► POST /api/ingest
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Contract and test tooling | zod v1 contract, JSON Schema + example, Vitest | Contract too strict for the lab's real bundle |
-| 2. Database schema and ingest function | Migration, `ingest_push`, seed token, token script | `SECURITY DEFINER` search_path and grants done wrong |
-| 3. Ingest endpoint and middleware exemption | `/api/ingest`, status mapping, Origin exemption | Exemption accidentally widening beyond the one path |
-| 4. End-to-end verification and handoff | CI smoke cases, fixture push, homelab-2 README | Local Docker/Supabase setup friction in CI |
+| Phase                                       | What it delivers                                   | Key risk                                             |
+| ------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------- |
+| 1. Contract and test tooling                | zod v1 contract, JSON Schema + example, Vitest     | Contract too strict for the lab's real bundle        |
+| 2. Database schema and ingest function      | Migration, `ingest_push`, seed token, token script | `SECURITY DEFINER` search_path and grants done wrong |
+| 3. Ingest endpoint and middleware exemption | `/api/ingest`, status mapping, Origin exemption    | Exemption accidentally widening beyond the one path  |
+| 4. End-to-end verification and handoff      | CI smoke cases, fixture push, homelab-2 README     | Local Docker/Supabase setup friction in CI           |
 
 **Prerequisites:** local Supabase via the UGREEN Docker context (`scripts/remote-docker.sh`); access to the production Supabase SQL editor for the first token.
 **Estimated effort:** ~3–4 sessions across 4 phases.

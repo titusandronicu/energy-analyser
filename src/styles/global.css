@@ -4,25 +4,28 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  /* Dashboard glass restyle (context/changes/dashboard-glass-restyle/design-brief.md): the app has no
+     light mode and never applies a `.dark` class, so the dark palette goes straight into :root. */
+  --radius: 12px;
+  --radius-panel: 20px;
+  --background: #101218;
+  --foreground: #f3f4f8;
+  --card: #1c1f29;
+  --card-foreground: #f3f4f8;
+  --popover: #1c1f29;
+  --popover-foreground: #f3f4f8;
+  --primary: #b5a3f5;
+  --primary-foreground: #171222;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted: #252936;
+  --muted-foreground: #b0b6c6;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
+  --destructive: #fda4af;
+  --border: #353b4b;
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: #d2c5ff;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -36,6 +39,18 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Flow-diagram source identity and verdict tones (context/changes/live-flow-interaction/handoff-adapted.md):
+     one source for squares, chips and arrows. Tone text colours sit on their -surface counterpart. */
+  --flow-pv: #b5a3f5;
+  --flow-home: #7cc4f5;
+  --flow-battery: #e9a3d3;
+  --flow-grid: #9aa7c7;
+  --tone-good: #6ee7b7;
+  --tone-watch: #fcd34d;
+  --tone-problem: #fca5a5;
+  --tone-good-surface: #064e3b;
+  --tone-watch-surface: #78350f;
+  --tone-problem-surface: #7f1d1d;
 }
 
 .dark {
@@ -77,6 +92,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-panel: var(--radius-panel);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -108,10 +124,53 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-flow-pv: var(--flow-pv);
+  --color-flow-home: var(--flow-home);
+  --color-flow-battery: var(--flow-battery);
+  --color-flow-grid: var(--flow-grid);
+  --color-tone-good: var(--tone-good);
+  --color-tone-watch: var(--tone-watch);
+  --color-tone-problem: var(--tone-problem);
+  --color-tone-good-surface: var(--tone-good-surface);
+  --color-tone-watch-surface: var(--tone-watch-surface);
+  --color-tone-problem-surface: var(--tone-problem-surface);
 }
 
 @utility bg-cosmic {
   background-image: linear-gradient(to bottom, #0a0e1a, #0f1529, #0a0e1a);
+}
+
+/* Glass treatment for the header only (dashboard-glass-restyle design brief): translucent + blurred,
+   with an opaque fallback when backdrop-filter isn't supported. */
+@utility glass-surface {
+  background: color-mix(in srgb, var(--color-card) 78%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--color-border);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-surface {
+    background: var(--color-card);
+  }
+}
+
+/* Moving dashes along a live flow connector (live-flow-interaction). The path runs start to end in the flow
+   direction, so a negative dash offset carries the dashes toward the arrowhead (one 6+8 period per second). The
+   reduced-motion override is unconditional so every reuse of this utility inherits the same guarantee; the
+   dashes then stay put and the arrowhead still shows the direction. */
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -14;
+  }
+}
+@utility animate-flow-dash {
+  stroke-dasharray: 6 8;
+  animation: flow-dash 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-flow-dash {
+    animation: none;
+  }
 }
 
 @layer base {
@@ -121,4 +180,15 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Unlayered on purpose: button.tsx's focus-visible:ring-* utilities don't compile to a visible ring in this
+   Tailwind v4 setup (the theme's ring color token is itself named "ring"), and its `outline-none` utility lives
+   in the higher-priority `utilities` layer, so a `@layer base` rule here would lose to it. An unlayered rule
+   beats every layered rule regardless of specificity, guaranteeing a visible focus indicator everywhere. */
+:focus-visible {
+  outline-width: 2px !important;
+  outline-style: solid !important;
+  outline-color: var(--color-ring) !important;
+  outline-offset: 2px !important;
 }

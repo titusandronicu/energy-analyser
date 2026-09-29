@@ -67,6 +67,7 @@ The new sign-in path, fully testable before any UI changes: a service with injec
 **Intent**: Keep the routes thin and make the behaviour unit-testable, following the `ingest.ts` pattern of injected dependencies.
 
 **Contract**:
+
 - `requestMagicLink(form: FormData, deps: { sendOtp(email, { shouldCreateUser }): Promise<{ error }>, signupEnabled: boolean, logError? }) → { redirect: string }`. It validates the email with zod: an invalid address returns `/auth/signin?error=<Polish message>`. Otherwise it calls `sendOtp` with `shouldCreateUser = signupEnabled` and always returns `/auth/check-email`, logging any error without exposing it.
 - `confirmMagicLink(url: URL, deps: { verifyOtp({ token_hash, type }): Promise<{ error }>, logError? }) → { redirect: string }`. A missing or blank `token_hash`, or a `type` other than `email`, returns `/auth/signin?error=<invalid link>`. A verify error returns `/auth/signin?error=<expired or already used>`. Success returns `/dashboard`. Any `next` parameter is ignored.
 
@@ -181,6 +182,7 @@ Prove the flow in CI through a real email, then roll out to production, where th
 **Intent**: Record the one-time dashboard steps so production matches `config.toml`.
 
 **Contract**: The runbook section gets:
+
 1. Supabase → Authentication → Emails: set "Magic link" and "Confirm signup" to the template from `supabase/templates/magic-link.html` with the Polish subjects.
 2. Confirm Site URL is `https://neil170-20170.mikrus.cloud`.
 3. Merge and deploy.
