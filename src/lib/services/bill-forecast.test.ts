@@ -213,6 +213,17 @@ describe("toBillForecastView", () => {
     expect(refusal(stale, at("2026-09-23T11:00:00Z")).status.label).toBe("wyliczona 1 godz. temu");
   });
 
+  // generated_at is 2026-09-23T09:55:00Z; the app clock may run up to 5 minutes behind it before it is a clock error.
+  it("keeps a forecast generated up to 5 minutes ahead of the app clock", () => {
+    expect(forecast(okRow(), at("2026-09-23T09:50:00Z")).centralLabel).toBe("ok. 258 zł");
+  });
+
+  it("blanks the figure when generated_at is more than 5 minutes ahead of the app clock", () => {
+    const view = refusal(okRow(), at("2026-09-23T09:49:59Z"));
+    expect(view.status).toEqual({ tone: "problem", label: "czas wyliczenia z przyszłości" });
+    expect(view.reason).toContain("z przyszłości");
+  });
+
   it("shows no figure when the body does not say when it was generated", () => {
     expect(refusal(okRow({ generated_at: "never" })).status).toEqual({
       tone: "problem",
@@ -276,6 +287,21 @@ describe("toBillForecastView", () => {
     const view = refusal(okRow({ range_gross_pln: { low: 155.08, high: 9500 } }));
     expect(view.status).toEqual({ tone: "problem", label: "nierealna kwota" });
     expect(view.reason).toContain("7000 zł");
+  });
+
+  it.each([
+    ["below the range", { projected_bill_gross_pln: 100, range_gross_pln: { low: 155.08, high: 360.4 } }],
+    ["above the range", { projected_bill_gross_pln: 400, range_gross_pln: { low: 155.08, high: 360.4 } }],
+    ["outside a narrow range", { projected_bill_gross_pln: 300, range_gross_pln: { low: 100, high: 200 } }],
+  ])("blanks the figure when the central estimate is %s", (_name, fields) => {
+    expect(refusal(okRow(fields)).status).toEqual({ tone: "problem", label: "sprzeczne dane" });
+  });
+
+  it.each([
+    ["at the low end", 155.08],
+    ["at the high end", 360.4],
+  ])("keeps the figure when the central estimate is %s of the range", (_name, central) => {
+    expect(forecast(okRow({ projected_bill_gross_pln: central })).rangeLabel).toBe("od 155 zł do 360 zł");
   });
 
   it("blanks the figure when the range is reversed", () => {

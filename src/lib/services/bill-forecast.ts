@@ -12,6 +12,10 @@ import { formatAge } from "@/lib/services/live-state";
 // (context/archive/2026-09-27-bill-accuracy/reviews/impl-review-phase-2.md:69). `captured_at` staleness is the
 // live state card's job.
 export const FORECAST_STALE_AFTER_MS = 30 * 60 * 1000;
+// A `generated_at` ahead of this app's clock by more than this is a producer clock error: it would otherwise keep an
+// obsolete figure fresh until 30 minutes after that future instant. The same 5-minute skew the ingest contract
+// allows for `captured_at`.
+export const FORECAST_FUTURE_SKEW_MS = 5 * 60 * 1000;
 // Below this many complete days the month is too short to project from, and the card says so instead of
 // showing a figure (context/changes/bill-forecast/change.md:14).
 export const MIN_COMPLETE_DAYS = 7;
@@ -242,6 +246,13 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
     );
   }
   const ageMs = now.getTime() - generatedAt;
+  if (ageMs < -FORECAST_FUTURE_SKEW_MS) {
+    return unavailable(
+      "problem",
+      "czas wyliczenia z przyszłości",
+      "Ostatnie wyliczenie ma czas z przyszłości, więc nie wiadomo, czy jest aktualne, i kwoty nie pokazujemy.",
+    );
+  }
   if (ageMs > FORECAST_STALE_AFTER_MS) {
     return unavailable(
       "problem",
@@ -268,6 +279,13 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
       "problem",
       "sprzeczne dane",
       "Dane z ostatniego wyliczenia są sprzeczne — dolna kwota wyszła wyżej niż górna — więc kwoty nie pokazujemy.",
+    );
+  }
+  if (central < low || central > high) {
+    return unavailable(
+      "problem",
+      "sprzeczne dane",
+      "Dane z ostatniego wyliczenia są sprzeczne — najbardziej prawdopodobna kwota leży poza swoim przedziałem — więc kwoty nie pokazujemy.",
     );
   }
   if (Math.max(central, low, high) > MAX_PLAUSIBLE_BILL_PLN) {
