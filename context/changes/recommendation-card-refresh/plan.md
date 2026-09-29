@@ -386,42 +386,42 @@ None: no schema, contract or lab change; rows stored earlier render with the sam
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Type checks pass: `npx astro check`
-- [x] 2.4 Production build succeeds: `npm run build`
-- [x] 2.5 No `ForecastCard` reference remains in the app: `git grep -n ForecastCard -- src` prints nothing
-- [x] 2.6 No colour literal remains in the recommendation markup: `git grep -n --untracked -e text-blue-100 -e bg-white -- src/components/RecommendationCard.astro src/components/RecommendationFindings.astro src/components/RecommendationForecast.astro` prints nothing
-- [x] 2.7 Contract schema has not drifted: `git diff --exit-code docs/ingest/contract-v1.schema.json`
-- [x] 2.8 The push script parses: `node --check scripts/push-fixture.mjs`
-- [x] 2.9 The fixtures are formatted: `npx prettier --check "scripts/fixtures/recommendation/*.json"`
-- [x] 2.10 The dev page is not tracked: `git ls-files src/pages/dev` prints nothing
+- [x] 2.1 Unit tests pass: `npm test` — 9542fd8
+- [x] 2.2 Linting passes: `npm run lint` — 9542fd8
+- [x] 2.3 Type checks pass: `npx astro check` — 9542fd8
+- [x] 2.4 Production build succeeds: `npm run build` — 9542fd8
+- [x] 2.5 No `ForecastCard` reference remains in the app: `git grep -n ForecastCard -- src` prints nothing — 9542fd8
+- [x] 2.6 No colour literal remains in the recommendation markup: `git grep -n --untracked -e text-blue-100 -e bg-white -- src/components/RecommendationCard.astro src/components/RecommendationFindings.astro src/components/RecommendationForecast.astro` prints nothing — 9542fd8
+- [x] 2.7 Contract schema has not drifted: `git diff --exit-code docs/ingest/contract-v1.schema.json` — 9542fd8
+- [x] 2.8 The push script parses: `node --check scripts/push-fixture.mjs` — 9542fd8
+- [x] 2.9 The fixtures are formatted: `npx prettier --check "scripts/fixtures/recommendation/*.json"` — 9542fd8
+- [x] 2.10 The dev page is not tracked: `git ls-files src/pages/dev` prints nothing — 9542fd8
 
 #### Manual
 
-- [x] 2.11 The temporary dev page renders with the local Supabase stack down (no hang, no redirect, no error from the middleware), and without any change to the middleware or other product code
-- [x] 2.12 On the dev page the current fixture shows generation time, the lead of the advice, "Najważniejsze ustalenia" with a chip (icon and word) per finding, then the inline forecast with the certainty badge; the `colon-list` fixture shows its intro line and bullets above the disclosure
-- [x] 2.13 "Pokaż szczegóły" opens the rest of the advice, the meaning and suggested check of each finding, any findings beyond the visible five (`odd-findings`), and the model; the chevron follows the open state and keyboard focus is visible
-- [x] 2.14 Advice from an earlier day shows the forecast with date labels instead of "dziś" and "jutro", and neutral finding chips that keep their words ("Warto sprawdzić", "Dobrze"); no forecast section appears when the view is empty or failed
-- [x] 2.15 The 2:1 grid reads well at 1440px and 390px with only the usage card in the right column (adjust the column only if it looks unbalanced, keeping both cards)
-- [x] 2.16 The advisory sentence, the generation time, the stale warning and the testids `recommendation-status`, `stale-warning`, `recommendation-text` and `forecast-certainty` are still present on the dev page
-- [x] 2.17 Pushing a fixture with `--generated-at` on the owner's local stack shows the expected badge, and the flag exits with an error for a state-only push (Docker runs on the UGREEN and is not started by the assistant; the owner may defer this as in the earlier change)
+- [x] 2.11 The temporary dev page renders with the local Supabase stack down (no hang, no redirect, no error from the middleware), and without any change to the middleware or other product code — 9542fd8
+- [x] 2.12 On the dev page the current fixture shows generation time, the lead of the advice, "Najważniejsze ustalenia" with a chip (icon and word) per finding, then the inline forecast with the certainty badge; the `colon-list` fixture shows its intro line and bullets above the disclosure — 9542fd8
+- [x] 2.13 "Pokaż szczegóły" opens the rest of the advice, the meaning and suggested check of each finding, any findings beyond the visible five (`odd-findings`), and the model; the chevron follows the open state and keyboard focus is visible — 9542fd8
+- [x] 2.14 Advice from an earlier day shows the forecast with date labels instead of "dziś" and "jutro", and neutral finding chips that keep their words ("Warto sprawdzić", "Dobrze"); no forecast section appears when the view is empty or failed — 9542fd8
+- [x] 2.15 The 2:1 grid reads well at 1440px and 390px with only the usage card in the right column (adjust the column only if it looks unbalanced, keeping both cards) — 9542fd8
+- [x] 2.16 The advisory sentence, the generation time, the stale warning and the testids `recommendation-status`, `stale-warning`, `recommendation-text` and `forecast-certainty` are still present on the dev page — 9542fd8
+- [x] 2.17 Pushing a fixture with `--generated-at` on the owner's local stack shows the expected badge, and the flag exits with an error for a state-only push (Docker runs on the UGREEN and is not started by the assistant; the owner may defer this as in the earlier change) — 9542fd8
 
 ### Phase 3: Screenshot gate for the static states
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm test`
-- [ ] 3.2 Linting passes: `npm run lint`
-- [ ] 3.3 Type checks pass: `npx astro check`
-- [ ] 3.4 Production build succeeds: `npm run build`
+- [x] 3.1 Unit tests pass: `npm test`
+- [x] 3.2 Linting passes: `npm run lint`
+- [x] 3.3 Type checks pass: `npx astro check`
+- [x] 3.4 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 3.5 Screenshots of the seven fixtures at 1440px and 390px (14 files) are saved under the change's `screenshots/` folder with a README, and show no clipped text or overlapping controls
-- [ ] 3.6 At 390px no fixture causes horizontal page scroll (the document is not wider than the viewport; long finding text wraps)
-- [ ] 3.7 Chip and note contrast on the card surface is at least 4.5:1 in every state, neutral stale chips included (spot-check with a contrast tool; muted text computes to 8.1:1 in this plan)
-- [ ] 3.8 The rendered text of every fixture contains neither "Nieaktualna" nor "Dane nieaktualne" (the smoke assertions)
+- [x] 3.5 Screenshots of the seven fixtures at 1440px and 390px (14 files) are saved under the change's `screenshots/` folder with a README, and show no clipped text or overlapping controls
+- [x] 3.6 At 390px no fixture causes horizontal page scroll (the document is not wider than the viewport; long finding text wraps)
+- [x] 3.7 Chip and note contrast on the card surface is at least 4.5:1 in every state, neutral stale chips included (spot-check with a contrast tool; muted text computes to 8.1:1 in this plan)
+- [x] 3.8 The rendered text of every fixture contains neither "Nieaktualna" nor "Dane nieaktualne" (the smoke assertions)
 
 ### Phase 4: Motion, reduced motion, docs and cleanup
 
