@@ -210,10 +210,10 @@ None: no data, schema, contract or external prerequisite changes; `docs/prerequi
 
 #### Automated
 
-- [x] 2.1 Linting passes: `npm run lint`
-- [x] 2.2 The three steps exist: `git grep -c "<main" -- scripts/smoke.mjs` prints 3
-- [ ] 2.3 After the draft PR is opened the CI `ci` and `smoke` jobs are green (smoke does not run on the Mac; it needs local Supabase)
+- [x] 2.1 Linting passes: `npm run lint` — 55090bc
+- [x] 2.2 The three steps exist: `git grep -c "<main" -- scripts/smoke.mjs` prints 3 — 55090bc
+- [x] 2.3 After the draft PR is opened the CI `ci` and `smoke` jobs are green (smoke does not run on the Mac; it needs local Supabase)
 
 #### Manual
 
-- [ ] 2.4 The CI smoke log lists the three new step names as passed
+- [x] 2.4 The CI smoke log lists the three new step names as passed

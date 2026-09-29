@@ -1,7 +1,7 @@
 ---
 change_id: page-landmarks-headings
 title: Main landmark and a top-level heading on every page
-status: implementing
+status: implemented
 created: 2026-09-29
 updated: 2026-09-29
 archived_at: null
