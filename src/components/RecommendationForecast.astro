@@ -8,14 +8,19 @@ type Forecast = Extract<RecommendationView, { kind: "recommendation" }>["forecas
 interface Props {
   forecast: Forecast;
   isFromEarlierDay: boolean;
+  // True only for a current recommendation: the section fades in once. Never set for stale advice.
+  animate?: boolean;
 }
 
 // The PV forecast the lab generated with the advice, shown inside the recommendation card. Advice from an earlier
 // day gets date-only labels: its "today" and "tomorrow" are other days than the reader's.
-const { forecast, isFromEarlierDay } = Astro.props;
+const { forecast, isFromEarlierDay, animate = false } = Astro.props;
 ---
 
-<section class="border-t border-border pt-4" data-testid="recommendation-forecast">
+<section
+  class:list={["border-t border-border pt-4", animate && "animate-disclose"]}
+  data-testid="recommendation-forecast"
+>
   <h3 class="mb-2 text-sm font-semibold text-card-foreground">Prognoza produkcji</h3>
   <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
     <div>

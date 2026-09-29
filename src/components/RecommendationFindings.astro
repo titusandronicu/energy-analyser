@@ -4,19 +4,31 @@ import type { RecommendationFinding } from "@/lib/services/recommendation";
 
 interface Props {
   findings: RecommendationFinding[];
+  // True only for a current recommendation: the items then enter one after another. Never set for stale advice.
+  animate?: boolean;
 }
 
-// The lab's own findings as a static list. Tone and word come from the mapper (a stale card arrives with neutral
-// chips), so this component holds no freshness logic. No category icons: a finding carries severity, not a kind.
-const { findings } = Astro.props;
+// Stagger between finding entrances; the card shows at most FINDINGS_VISIBLE_MAX (5) items, so the last starts at 240 ms.
+const FINDING_ENTER_STEP_MS = 60;
+
+// The lab's own findings as a list. Tone and word come from the mapper (a stale card arrives with neutral
+// chips), so the chips hold no freshness logic; motion is the caller's `animate`. No category icons: a finding
+// carries severity, not a kind.
+const { findings, animate = false } = Astro.props;
 ---
 
 {findings.length > 0 && (
   <section class="border-t border-border pt-4" data-testid="recommendation-findings">
     <h3 class="mb-2 text-sm font-semibold text-card-foreground">Najważniejsze ustalenia</h3>
     <ul class="space-y-3">
-      {findings.map((finding) => (
-        <li class="flex flex-col items-start gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+      {findings.map((finding, index) => (
+        <li
+          class:list={[
+            "flex flex-col items-start gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3",
+            animate && "animate-card-enter",
+          ]}
+          style={animate ? `--enter-delay: ${index * FINDING_ENTER_STEP_MS}ms` : undefined}
+        >
           <div class="min-w-0 text-sm [overflow-wrap:anywhere]">
             <p class="font-medium text-card-foreground">{finding.title ?? finding.fact}</p>
             {finding.title !== null && finding.fact !== null && <p class="text-muted-foreground">{finding.fact}</p>}

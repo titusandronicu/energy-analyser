@@ -50,12 +50,17 @@ const explained =
         <AdviceBlocks blocks={lead} />
       </div>
 
-      <RecommendationFindings findings={view.findings} />
+      <RecommendationFindings findings={view.findings} animate={view.isCurrent} />
 
-      <RecommendationForecast forecast={view.forecast} isFromEarlierDay={view.isFromEarlierDay} />
+      <RecommendationForecast
+        forecast={view.forecast}
+        isFromEarlierDay={view.isFromEarlierDay}
+        animate={view.isCurrent}
+      />
 
       <DisclosureButton
         client:load
+        animate={view.isCurrent}
         openLabel="Pokaż szczegóły"
         closeLabel="Ukryj szczegóły"
         controlsId="recommendation-details"

@@ -411,33 +411,33 @@ None: no schema, contract or lab change; rows stored earlier render with the sam
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test`
-- [x] 3.2 Linting passes: `npm run lint`
-- [x] 3.3 Type checks pass: `npx astro check`
-- [x] 3.4 Production build succeeds: `npm run build`
+- [x] 3.1 Unit tests pass: `npm test` — f3783d0
+- [x] 3.2 Linting passes: `npm run lint` — f3783d0
+- [x] 3.3 Type checks pass: `npx astro check` — f3783d0
+- [x] 3.4 Production build succeeds: `npm run build` — f3783d0
 
 #### Manual
 
-- [x] 3.5 Screenshots of the seven fixtures at 1440px and 390px (14 files) are saved under the change's `screenshots/` folder with a README, and show no clipped text or overlapping controls
-- [x] 3.6 At 390px no fixture causes horizontal page scroll (the document is not wider than the viewport; long finding text wraps)
-- [x] 3.7 Chip and note contrast on the card surface is at least 4.5:1 in every state, neutral stale chips included (spot-check with a contrast tool; muted text computes to 8.1:1 in this plan)
-- [x] 3.8 The rendered text of every fixture contains neither "Nieaktualna" nor "Dane nieaktualne" (the smoke assertions)
+- [x] 3.5 Screenshots of the seven fixtures at 1440px and 390px (14 files) are saved under the change's `screenshots/` folder with a README, and show no clipped text or overlapping controls — f3783d0
+- [x] 3.6 At 390px no fixture causes horizontal page scroll (the document is not wider than the viewport; long finding text wraps) — f3783d0
+- [x] 3.7 Chip and note contrast on the card surface is at least 4.5:1 in every state, neutral stale chips included (spot-check with a contrast tool; muted text computes to 8.1:1 in this plan) — f3783d0
+- [x] 3.8 The rendered text of every fixture contains neither "Nieaktualna" nor "Dane nieaktualne" (the smoke assertions) — f3783d0
 
 ### Phase 4: Motion, reduced motion, docs and cleanup
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass: `npm test`
-- [ ] 4.2 Linting passes: `npm run lint`
-- [ ] 4.3 Type checks pass: `npx astro check`
-- [ ] 4.4 Production build succeeds: `npm run build`
-- [ ] 4.5 The reduced-motion override is present: `git grep -n "prefers-reduced-motion" -- src/styles/global.css` lists the new rule next to the `animate-flow-dash` one
+- [x] 4.1 Unit tests pass: `npm test`
+- [x] 4.2 Linting passes: `npm run lint`
+- [x] 4.3 Type checks pass: `npx astro check`
+- [x] 4.4 Production build succeeds: `npm run build`
+- [x] 4.5 The reduced-motion override is present: `git grep -n "prefers-reduced-motion" -- src/styles/global.css` lists the new rule next to the `animate-flow-dash` one
 
 #### Manual
 
-- [ ] 4.6 A current recommendation fades in once (findings staggered, forecast, then the disclosure content on open); the older-than-2h and earlier-day recommendations render static with neutral chips; nothing loops
-- [ ] 4.7 With reduced motion enabled (operating system setting or browser rendering emulation) nothing animates and all content is visible at once
-- [ ] 4.8 Screenshots of the current and stale states are re-taken at 1440px and 390px after the motion change and replace the Phase 3 files
-- [ ] 4.9 `docs/logic.md` and the five dated entries in `docs/decisions.md` describe every rule above, and `docs/prerequisites.md` needs no change
+- [x] 4.6 A current recommendation fades in once (findings staggered, forecast, then the disclosure content on open); the older-than-2h and earlier-day recommendations render static with neutral chips; nothing loops
+- [x] 4.7 With reduced motion enabled (operating system setting or browser rendering emulation) nothing animates and all content is visible at once
+- [x] 4.8 Screenshots of the current and stale states are re-taken at 1440px and 390px after the motion change and replace the Phase 3 files
+- [x] 4.9 `docs/logic.md` and the five dated entries in `docs/decisions.md` describe every rule above, and `docs/prerequisites.md` needs no change
 - [ ] 4.10 After the draft PR is opened, the CI `ci` and `smoke` jobs are green (smoke still finds the advice marker and the live text; it does not run locally)
-- [ ] 4.11 The temporary dev page is deleted as the last step and never entered git: `test ! -e src/pages/dev/recommendation-fixtures.astro` and `git log --all --oneline -- src/pages/dev` prints nothing
+- [x] 4.11 The temporary dev page is deleted as the last step and never entered git: `test ! -e src/pages/dev/recommendation-fixtures.astro` and `git log --all --oneline -- src/pages/dev` prints nothing
