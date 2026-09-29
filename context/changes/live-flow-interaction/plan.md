@@ -429,15 +429,15 @@ No schema or contract change. Rolling back is reverting the phase commits; store
 
 #### Automated
 
-- [x] 5.1 Unit tests pass: `npm test`
-- [x] 5.2 Linting and type checks pass: `npm run lint`
-- [x] 5.3 Production build succeeds: `npm run build`
-- [x] 5.4 Contract schema has not drifted: `npm test` passes (it fails on drift) and `git diff --exit-code docs/ingest/contract-v1.schema.json` is clean
+- [x] 5.1 Unit tests pass: `npm test` — 217d73a
+- [x] 5.2 Linting and type checks pass: `npm run lint` — 217d73a
+- [x] 5.3 Production build succeeds: `npm run build` — 217d73a
+- [x] 5.4 Contract schema has not drifted: `npm test` passes (it fails on drift) and `git diff --exit-code docs/ingest/contract-v1.schema.json` is clean — 217d73a
 - [ ] 5.5 Smoke test passes on the local stack (magic-link steps may fail for the known unrelated reason): `npm run smoke`
 
 #### Manual
 
-- [x] 5.6 Screenshots for every state at 1440px and 390px show no overflow, clipped label or overlapping control, and are saved in the change folder
-- [x] 5.7 Text and chip contrast on the tinted squares is at least 4.5:1 (spot-check with a contrast tool), and status is never conveyed by colour alone
-- [x] 5.8 The sign check on real pushes passes for grid and battery, and the result is written in research.md and the ingest README
-- [x] 5.9 `docs/logic.md` and `docs/decisions.md` reflect every constant and decision above
+- [x] 5.6 Screenshots for every state at 1440px and 390px show no overflow, clipped label or overlapping control, and are saved in the change folder — 217d73a
+- [x] 5.7 Text and chip contrast on the tinted squares is at least 4.5:1 (spot-check with a contrast tool), and status is never conveyed by colour alone — 217d73a
+- [x] 5.8 The sign check on real pushes passes for grid and battery, and the result is written in research.md and the ingest README — 217d73a
+- [x] 5.9 `docs/logic.md` and `docs/decisions.md` reflect every constant and decision above — 217d73a

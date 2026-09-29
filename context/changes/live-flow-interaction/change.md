@@ -1,7 +1,7 @@
 ---
 change_id: live-flow-interaction
 title: Truthful, interactive energy flow for Stan na żywo
-status: implementing
+status: implemented
 created: 2026-09-29
 updated: 2026-09-29
 archived_at: null
