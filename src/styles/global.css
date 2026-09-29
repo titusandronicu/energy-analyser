@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Dashboard glass restyle (context/changes/dashboard-glass-restyle/design-brief.md): the app has no
+  /* Dashboard glass restyle (context/archive/2026-09-28-dashboard-glass-restyle/design-brief.md): the app has no
      light mode and never applies a `.dark` class, so the dark palette goes straight into :root. */
   --radius: 12px;
   --radius-panel: 20px;
