@@ -84,3 +84,45 @@ The implementation must not remove or hide these existing surfaces:
 - No hardcoded `text-blue-100`, `bg-white/5`, `border-white`, or `text-white` literals remain in dashboard cards.
 - Motion remains truthful and respects pause/reduced-motion.
 - Automated checks pass.
+
+## Phase 1: Theme, shell and card token cleanup
+
+### Overview
+
+The four implementation steps above as one phase: tokens and aurora background, the frosted header, and the token cleanup of the older dashboard cards. Review follow-ups applied: opaque `Panel`, token-derived aurora stops and header shadow, an `@supports (color-mix)` block for the aurora blobs, a header of a mostly opaque card colour with 16 px blur.
+
+### Success Criteria:
+
+#### Automated Verification:
+
+- Unit tests pass: `npm test`
+- Linting passes: `npm run lint`
+- Type checks pass: `npx astro check`
+- Production build succeeds: `npm run build`
+- Touched files are formatted: `npx prettier --check src/styles/global.css src/components/ui/Panel.astro`
+- No colour literal remains in the dashboard cards: `git grep -nE "text-white|border-white|bg-white/|text-blue-100" -- src/components/LiveStateCard.astro src/components/BillForecastCard.astro src/components/UsageInsightCard.astro src/components/TermsExplained.astro src/pages/dashboard.astro` prints nothing
+
+#### Manual Verification:
+
+- `/dashboard` shows the Frosted Aurora palette at 1440px and 390px with no clipped text or horizontal scroll
+- Text and chip contrast on the panel, muted and header surfaces is at least 4.5:1 (measured in review: minimum 6.06:1)
+- Data panels are opaque and only the header uses blur; live-flow motion, pause and reduced motion behave as before
+
+## Progress
+
+### Phase 1: Theme, shell and card token cleanup
+
+#### Automated
+
+- [ ] 1.1 Unit tests pass: `npm test`
+- [ ] 1.2 Linting passes: `npm run lint`
+- [ ] 1.3 Type checks pass: `npx astro check`
+- [ ] 1.4 Production build succeeds: `npm run build`
+- [ ] 1.5 Touched files are formatted: `npx prettier --check src/styles/global.css src/components/ui/Panel.astro`
+- [ ] 1.6 No colour literal remains in the dashboard cards (`git grep` of `text-white|border-white|bg-white/|text-blue-100` in the four cards and `dashboard.astro` prints nothing)
+
+#### Manual
+
+- [ ] 1.7 `/dashboard` shows the Frosted Aurora palette at 1440px and 390px with no clipped text or horizontal scroll
+- [ ] 1.8 Text and chip contrast on the panel, muted and header surfaces is at least 4.5:1 (measured in review: minimum 6.06:1)
+- [ ] 1.9 Data panels are opaque and only the header uses blur; live-flow motion, pause and reduced motion behave as before

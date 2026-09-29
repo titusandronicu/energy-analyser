@@ -1,7 +1,7 @@
 ---
 change_id: frosted-aurora-dashboard
 title: Field-preserving Frosted Aurora dashboard refresh
-status: planning
+status: implementing
 created: 2026-09-29
 updated: 2026-09-29
 archived_at: null
