@@ -119,7 +119,11 @@ function findingText(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const text = value.trim();
   if (text === "") return null;
-  return text.length > FINDING_TEXT_MAX_CHARS ? `${text.slice(0, FINDING_TEXT_MAX_CHARS - 1)}…` : text;
+  if (text.length <= FINDING_TEXT_MAX_CHARS) return text;
+  const cut = text.slice(0, FINDING_TEXT_MAX_CHARS - 1);
+  // Never leave half of a surrogate pair (an emoji) in front of the ellipsis.
+  const lastUnit = cut.charCodeAt(cut.length - 1);
+  return `${lastUnit >= 0xd800 && lastUnit <= 0xdbff ? cut.slice(0, -1) : cut}…`;
 }
 
 function findingSeverity(value: unknown): FindingSeverity {
@@ -171,7 +175,7 @@ export function toRecommendationView(row: RecommendationRow | null, now: Date): 
     text: row.text.trim(),
     generatedAtLabel: formatWarsawDateTime(generatedAt),
     isStale,
-    isCurrent: status.tone === "good",
+    isCurrent: !isStale,
     isFromEarlierDay: isFromEarlierDay(generatedAt, now),
     forecast: {
       todayLabel: kwhLabel(forecast.today_kwh),

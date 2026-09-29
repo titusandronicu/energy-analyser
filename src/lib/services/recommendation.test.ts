@@ -265,6 +265,13 @@ describe("findings", () => {
       // Over the limit only before trimming: kept whole.
       expect(read(`  ${"a".repeat(max)}  `)).toBe("a".repeat(max));
     });
+
+    it("does not leave half an emoji before the ellipsis", () => {
+      // "😀" is two UTF-16 units; placed so the cut would fall between them.
+      const value = `${"a".repeat(max - 2)}😀😀`;
+      const cut = withFindings([{ fact: value }]).findings[0].fact;
+      expect(cut).toBe(`${"a".repeat(max - 2)}…`);
+    });
   });
 
   describe("stale cards", () => {

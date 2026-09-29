@@ -38,7 +38,10 @@ export function DisclosureButton({
       >
         {open ? closeLabel : openLabel}
         <ChevronDown
-          className={cn("size-4 group-aria-expanded:rotate-180", animate && "transition-transform duration-200")}
+          className={cn(
+            "size-4 group-aria-expanded:rotate-180",
+            animate && "motion-safe:transition-transform motion-safe:duration-200",
+          )}
           aria-hidden="true"
         />
       </Button>

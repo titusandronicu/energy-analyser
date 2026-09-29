@@ -21,9 +21,7 @@ const status = view === null ? LOAD_FAILED : view.status;
 const { lead, rest } = splitAdviceLead(view?.kind === "recommendation" ? parseAdviceMarkdown(view.text) : []);
 const explained =
   view?.kind === "recommendation"
-    ? [...view.findings, ...view.moreFindings].filter(
-        (finding) => finding.meaning !== null || finding.suggestedCheck !== null,
-      )
+    ? view.findings.filter((finding) => finding.meaning !== null || finding.suggestedCheck !== null)
     : [];
 ---
 
@@ -101,6 +99,12 @@ const explained =
                       <p class="font-medium text-card-foreground">{finding.title ?? finding.fact}</p>
                       {finding.title !== null && finding.fact !== null && (
                         <p class="text-muted-foreground">{finding.fact}</p>
+                      )}
+                      {finding.meaning !== null && <p class="text-muted-foreground">{finding.meaning}</p>}
+                      {finding.suggestedCheck !== null && (
+                        <p class="text-muted-foreground">
+                          <span class="font-medium text-card-foreground">Co sprawdzić:</span> {finding.suggestedCheck}
+                        </p>
                       )}
                     </div>
                     <VerdictChip tone={finding.tone} word={finding.word} className="shrink-0" />

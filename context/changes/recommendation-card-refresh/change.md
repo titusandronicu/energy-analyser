@@ -1,7 +1,7 @@
 ---
 change_id: recommendation-card-refresh
 title: Restore always-visible findings and inline forecast on the recommendation card, with a glassy refresh
-status: implementing
+status: impl_reviewed
 created: 2026-09-28
 updated: 2026-09-29
 archived_at: null

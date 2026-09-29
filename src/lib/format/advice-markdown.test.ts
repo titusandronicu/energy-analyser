@@ -109,6 +109,7 @@ describe("splitAdviceLead", () => {
     it.each([
       ["intro ending in a colon and a list", "Zalecenia na dziś:\n- a\n- b\n\nKoniec.", "pl", "p"],
       ["the same after a leading heading", "# Dziś\n\nZalecenia na dziś:\n- a\n- b\n\nKoniec.", "hpl", "p"],
+      ["an intro and a list with CRLF line ends", "Zalecenia:\r\n- a\r\n- b\r\n\r\nKoniec.", "pl", "p"],
       ["an intro with trailing spaces", "Zalecenia:  \n- a\n\nKoniec.", "pl", "p"],
       ["an intro followed by a numbered list", "Zalecenia:\n1. a\n2. b\n\nKoniec.", "pl", "p"],
       ["an intro followed by a paragraph (no list joins)", "Zalecenia:\n\nKoniec.\n\n- a", "p", "pl"],
