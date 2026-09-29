@@ -18,7 +18,7 @@ export const FORECAST_STALE_AFTER_MS = 30 * 60 * 1000;
 // allows for `captured_at`.
 export const FORECAST_FUTURE_SKEW_MS = 5 * 60 * 1000;
 // Below this many complete days the month is too short to project from, and the card says so instead of
-// showing a figure (context/changes/bill-forecast/change.md:14).
+// showing a figure (context/archive/2026-09-27-bill-forecast/change.md:14).
 export const MIN_COMPLETE_DAYS = 7;
 // The lab drops a day reading above 200 kWh as a counter glitch (docs/logic.md), so the most expensive month it
 // can honestly report is 200 × 31 × 1.0991 + 44.62 ≈ 6859 PLN. Anything above this is a publisher bug — a
@@ -26,7 +26,7 @@ export const MIN_COMPLETE_DAYS = 7;
 // push, which would stop the live state and the recommendation too.
 export const MAX_PLAUSIBLE_BILL_PLN = 7000;
 // The verdict bands against the last real invoice: at or below it is good, up to +20% is worth watching, above
-// is a problem (context/changes/bill-forecast/change.md:14).
+// is a problem (context/archive/2026-09-27-bill-forecast/change.md:14).
 export const BILL_AMBER_RATIO = 1.2;
 // The same line in whole percent.
 const BILL_AMBER_PERCENT = Math.round((BILL_AMBER_RATIO - 1) * 100);
