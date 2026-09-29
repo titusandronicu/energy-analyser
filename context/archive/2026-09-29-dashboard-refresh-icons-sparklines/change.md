@@ -1,10 +1,10 @@
 ---
 change_id: dashboard-refresh-icons-sparklines
 title: Dashboard refresh: icons, sparklines, bill delta and system balance
-status: impl_reviewed
+status: archived
 created: 2026-09-29
 updated: 2026-09-29
-archived_at: null
+archived_at: 2026-09-29T16:29:24Z
 ---
 
 ## Notes
@@ -21,3 +21,5 @@ Owner decisions (2026-09-29):
 - **Scope: no new data.** Steps 2, 3, 4, 6 and 7 of the proposed split: icons, source legend, logo and "Wyloguj się"; `Sparkline` component; daily sparklines from `daily_energy`; bill delta and days-in-estimate bar; the balance value. Out of scope, later changes: intraday sparklines (needs a view over retained pushes and a decision on `docs/decisions.md:20`) and recommendation tag chips (needs a lab `tags` field).
 - **Flow diagram rebuilt to the design (2026-09-29, after the first screenshot pass; reverses plan assumption 3).** The owner saw that the rendered dashboard does not look like the approved artboards, mainly the flow diagram, and decided (binding) to rebuild it like `design/Main.dc.html` and `design/Mobile.dc.html`: flat icon tiles, PV on the left, a hub circle with the scale icon, Home, Battery and Grid in one right column, curved dashed connectors with arrowheads, big values (26/22 px), a verdict chip under each value, "Bilans systemu" under the hub, and the Schemat/Odczyty/Wstrzymaj controls in the title row (36 and 44 px); plus the bill range headline at 30 px in text-primary, the recommendation heading at 22 px and "Pokaż szczegóły" with a primary-tinted outline. LiveFlow behaviour (pause, freshness-gated motion, reduced motion, direction arrows, selection strip, "Odczyty") is unchanged. Delivered as new Phase 7 of the plan; the former Phase 7 is now Phase 8.
 - Kept from the app (differs from the mockup): the bill card leads with the range ("od X zł do Y zł"), the central estimate is secondary; the delta line names the reference invoice ("względem ostatniego rachunku za sierpień"); recommendation chips stay the lab's severity chips.
+
+2026-09-29 (archive): merged in PR 68. The 62 manual Progress rows (1.10–8.20) were never ticked. The evidence for them is the second-pass screenshots and measurements in `screenshots/README.md`, not a row-by-row check. The impl-review (verdict NEEDS ATTENTION) is triaged: F1, F3, F4, F7 and F8 fixed in `886088a`; F2, F5, F6 and F9 accepted; F10 (no `<main>` landmark or `<h1>` on the dashboard, predating this change) left as a separate follow-up.
