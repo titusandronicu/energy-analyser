@@ -52,23 +52,23 @@ const checkLine =
 ---
 
 <Panel>
-  <h2 class="mb-2 text-lg font-semibold text-blue-100">Prognoza rachunku</h2>
+  <h2 class="mb-2 text-lg font-semibold text-card-foreground">Prognoza rachunku</h2>
   <div class="mb-4">
     <StatusBadge status={status} testId="bill-status" />
   </div>
 
-  {view === null && <p class="text-sm text-blue-100/70">Spróbuj odświeżyć stronę.</p>}
+  {view === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
 
   {view?.kind === "unavailable" && (
-    <p class="text-sm text-blue-100/70" data-testid="bill-unavailable-reason">
+    <p class="text-muted-foreground text-sm" data-testid="bill-unavailable-reason">
       {view.reason}
     </p>
   )}
 
   {forecast !== null && (
     <div class="space-y-4">
-      <div class="rounded-lg bg-white/5 p-3">
-        <p class="text-sm text-blue-100/60" data-testid="bill-month">
+      <div class="bg-muted rounded-lg p-3">
+        <p class="text-muted-foreground text-sm" data-testid="bill-month">
           {forecast.isOtherMonth
             ? `Rachunek za ${forecast.monthLabel}`
             : `Rachunek za ten miesiąc (${forecast.monthLabel})`}
@@ -76,28 +76,28 @@ const checkLine =
         <p class="mt-1 text-2xl font-semibold" data-testid="bill-range">
           {forecast.rangeLabel}
         </p>
-        <p class="mt-1 text-sm text-blue-100/70" data-testid="bill-central">
+        <p class="text-muted-foreground mt-1 text-sm" data-testid="bill-central">
           {`najbardziej prawdopodobnie ${forecast.centralLabel}`}
         </p>
       </div>
 
-      <dl class="grid grid-cols-1 gap-3 rounded-lg bg-white/5 p-3 text-sm sm:grid-cols-2">
+      <dl class="bg-muted grid grid-cols-1 gap-3 rounded-lg p-3 text-sm sm:grid-cols-2">
         <div>
-          <dt class="text-blue-100/60">Policzone z pełnych dni</dt>
+          <dt class="text-muted-foreground">Policzone z pełnych dni</dt>
           <dd class="font-medium" data-testid="bill-days">
             {forecast.dayLabel}
           </dd>
         </div>
         <div>
-          <dt class="text-blue-100/60">Pewność tej kwoty</dt>
+          <dt class="text-muted-foreground">Pewność tej kwoty</dt>
           <dd class="mt-1">
             <StatusBadge status={forecast.confidence} testId="bill-confidence" />
           </dd>
         </div>
       </dl>
 
-      <details class="text-sm text-blue-100/80" data-testid="bill-basis">
-        <summary class="cursor-pointer py-1 text-blue-100">Na podstawie</summary>
+      <details class="text-muted-foreground text-sm" data-testid="bill-basis">
+        <summary class="text-card-foreground cursor-pointer py-1">Na podstawie</summary>
         <ul class="mt-2 list-disc space-y-1 pl-5">
           <li>{referenceLine}</li>
           <li>{exportLine}</li>
@@ -111,7 +111,7 @@ const checkLine =
     </div>
   )}
 
-  <p class="mt-4 text-xs text-blue-100/70">
+  <p class="text-muted-foreground mt-4 text-xs">
     To szacunek z dotychczasowego zużycia i cen z taryfy, a nie faktura z PGE.
   </p>
 </Panel>

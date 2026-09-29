@@ -8,6 +8,6 @@ interface Props {
 const { class: className } = Astro.props;
 ---
 
-<section class:list={cn("rounded-panel border border-border bg-card p-6 text-card-foreground", className)}>
+<section class:list={cn("rounded-panel border border-border bg-card p-6 text-card-foreground shadow-2xl", className)}>
   <slot />
 </section>
