@@ -169,6 +169,12 @@ describe("toBillForecastView", () => {
         diffLabel: "−2,7%",
         ok: true,
       },
+      delta: {
+        text: "+43 zł (+20,1%) względem ostatniego rachunku za sierpień 2026",
+        tone: "problem",
+        direction: "up",
+      },
+      days: { used: 15, inMonth: 30, label: "15 z 30", share: 0.5 },
     });
   });
 
@@ -496,6 +502,151 @@ describe("toBillForecastView", () => {
 
   it("says when banked credit already covers the month's import", () => {
     expect(forecast(okRow({ credit_left_kwh: 41.5 })).creditLeftLabel).toBe("41,5 kWh");
+  });
+
+  describe("delta against the last invoice", () => {
+    function deltaOf(projected: number, invoice: number, overrides: Record<string, unknown> = {}) {
+      return forecast(
+        okRow({
+          projected_bill_gross_pln: projected,
+          closed_month_check: { ...ok.closed_month_check, invoice_gross_pln: invoice },
+          ...overrides,
+        }),
+      ).delta;
+    }
+    const against = "względem ostatniego rachunku za sierpień 2026";
+
+    it.each([
+      [257.73, 214.66, `+43 zł (+20,1%) ${against}`, "problem", "up"],
+      [240, 200, `+40 zł (+20,0%) ${against}`, "watch", "up"],
+      [240.01, 200, `+40 zł (+20,1%) ${against}`, "problem", "up"],
+      // In the band past the line the badge says "ponad 20%", so the percent never reads a bare "+20%".
+      [240.6, 200, `+41 zł (+20,3%) ${against}`, "problem", "up"],
+      [260, 200, `+60 zł (+30%) ${against}`, "problem", "up"],
+      // The negative side has no verdict line, so no decimal.
+      [160, 200, `−40 zł (−20%) ${against}`, "good", "down"],
+      [180, 200, `−20 zł (−10%) ${against}`, "good", "down"],
+      [200, 200, `bez zmian ${against}`, "good", "flat"],
+      // Both sides read 215 zł.
+      [214.9, 214.66, `bez zmian ${against}`, "good", "flat"],
+      // A whole-złoty difference whose percent rounds to 0 carries no percent.
+      [215.6, 214.66, `+1 zł ${against}`, "watch", "up"],
+      [214.4, 214.66, `−1 zł ${against}`, "good", "down"],
+    ])("compares %d with an invoice of %d as %s", (projected, invoice, text, tone, direction) => {
+      expect(deltaOf(projected, invoice)).toEqual({ text, tone, direction });
+    });
+
+    it("shows the amount only, without dividing, for an invoice of 0 zł", () => {
+      expect(deltaOf(50, 0, { range_gross_pln: { low: 10, high: 100 } })).toEqual({
+        text: `+50 zł ${against}`,
+        tone: "problem",
+        direction: "up",
+      });
+    });
+
+    it("has no delta without an invoice", () => {
+      const { closed_month_check: _dropped, ...body } = ok;
+      expect(forecast(rowOf(body)).delta).toBeNull();
+      const { invoice_gross_pln: _invoice, ...check } = ok.closed_month_check;
+      expect(forecast(okRow({ closed_month_check: check })).delta).toBeNull();
+    });
+
+    it("has no delta when the invoice month cannot be read", () => {
+      expect(forecast(okRow({ closed_month_check: { ...ok.closed_month_check, period: "garbage" } })).delta).toBeNull();
+      expect(forecast(okRow({ closed_month_check: { ...ok.closed_month_check, period: undefined } })).delta).toBeNull();
+    });
+
+    it("names the invoice's own month when the reference lags", () => {
+      const period = "01.07.2026 - 31.07.2026";
+      const view = forecast(
+        okRow({
+          settlement: { ...settlement, reference_period: period, reference_lag_months: 1 },
+          closed_month_check: { ...ok.closed_month_check, period },
+        }),
+      );
+      expect(view.delta?.text).toBe("+43 zł (+20,1%) względem ostatniego rachunku za lipiec 2026");
+    });
+
+    it("has no delta for a forecast of another month", () => {
+      expect(forecast(okRow({ month: "2026-08" })).delta).toBeNull();
+    });
+
+    it("carries no delta and no days on any refusal", () => {
+      const refusals = [
+        rowOf(noData),
+        okRow({ projected_bill_gross_pln: null }),
+        okRow({ range_gross_pln: { low: 155.08, high: 9500 } }),
+        okRow({ completed_days_used: 6, observed_days: observedDays(6) }),
+        okRow({ generated_at: "never" }),
+        rowOf({ status: "partial" }),
+      ];
+      for (const r of refusals) {
+        const view = refusal(r);
+        expect(view).not.toHaveProperty("delta");
+        expect(view).not.toHaveProperty("days");
+      }
+      expect(refusal(okRow(), at("2026-09-23T10:25:01Z"))).not.toHaveProperty("delta");
+      expect(refusal(okRow(), at("2026-09-23T09:49:59Z"))).not.toHaveProperty("days");
+    });
+  });
+
+  describe("days in the estimate", () => {
+    // Dates are irrelevant here, only the count and the month key.
+    const plainDays = (count: number) => Array.from({ length: count }, () => ({ date: "x" }));
+    function daysOf(month: string | undefined, used: number, generatedAt: string, clock: string) {
+      return forecast(
+        okRow({ month, completed_days_used: used, observed_days: plainDays(used), generated_at: generatedAt }),
+        at(clock),
+      ).days;
+    }
+
+    it("counts 15 of 30 in September", () => {
+      expect(forecast(okRow()).days).toEqual({ used: 15, inMonth: 30, label: "15 z 30", share: 0.5 });
+    });
+
+    it("counts 28 of 28 in February 2027 and 15 of 29 in February 2028", () => {
+      expect(daysOf("2027-02", 28, "2027-02-15T12:00:00+01:00", "2027-02-15T11:05:00Z")).toEqual({
+        used: 28,
+        inMonth: 28,
+        label: "28 z 28",
+        share: 1,
+      });
+      expect(daysOf("2028-02", 15, "2028-02-15T12:00:00+01:00", "2028-02-15T11:05:00Z")).toEqual({
+        used: 15,
+        inMonth: 29,
+        label: "15 z 29",
+        share: 15 / 29,
+      });
+    });
+
+    it("counts 31 of 31 in a 31-day month", () => {
+      expect(daysOf("2026-10", 31, "2026-10-31T12:00:00+01:00", "2026-10-31T11:05:00Z")).toEqual({
+        used: 31,
+        inMonth: 31,
+        label: "31 z 31",
+        share: 1,
+      });
+    });
+
+    it("uses the Warsaw month when the body has no month key", () => {
+      expect(daysOf(undefined, 15, "2026-09-23T11:55:00+02:00", "2026-09-23T10:00:00Z")?.label).toBe("15 z 30");
+    });
+
+    it("has no bar when the body claims more complete days than the month has", () => {
+      // 32 observed days are capped at 31, which still exceeds September's 30.
+      const view = forecast(okRow({ completed_days_used: 32, observed_days: plainDays(32) }));
+      expect(view.dayLabel).toBe("31 dni");
+      expect(view.days).toBeNull();
+    });
+
+    it("falls back to completed_days_used without a day list", () => {
+      expect(forecast(okRow({ observed_days: undefined })).days).toEqual({
+        used: 15,
+        inMonth: 30,
+        label: "15 z 30",
+        share: 0.5,
+      });
+    });
   });
 
   it("renders non-numeric values as MISSING instead of a wrong figure", () => {

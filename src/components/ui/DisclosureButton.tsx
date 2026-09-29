@@ -29,7 +29,7 @@ export function DisclosureButton({
       <Button
         type="button"
         variant="outline"
-        className="group"
+        className="group border-primary/45 text-primary hover:bg-primary/10 hover:text-primary h-11 rounded-xl bg-transparent px-[18px] font-semibold"
         aria-expanded={open}
         aria-controls={controlsId}
         onClick={() => {

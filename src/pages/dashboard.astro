@@ -1,10 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro";
-import BillForecastCard from "@/components/BillForecastCard.astro";
-import LiveStateCard from "@/components/LiveStateCard.astro";
-import RecommendationCard from "@/components/RecommendationCard.astro";
-import UsageInsightCard from "@/components/UsageInsightCard.astro";
-import { buttonVariants } from "@/components/ui/button";
+import DashboardBody from "@/components/DashboardBody.astro";
 import { loadBillForecast, toBillForecastView, type BillForecastView } from "@/lib/services/bill-forecast";
 import { warsawParts } from "@/lib/format/warsaw-time";
 import { loadDailyRowCapturedAt, loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
@@ -73,32 +69,13 @@ const [liveView, billView, usageView, view]: [
 ---
 
 <Layout title="Energy Analyser">
-  <div class="bg-aurora min-h-screen p-4 sm:p-8">
-    <div class="mx-auto max-w-[1120px] space-y-6">
-      <header class="glass-surface text-muted-foreground flex items-center justify-between rounded-xl px-4 py-3 text-sm">
-        <span class="text-card-foreground font-semibold">Energy Analyser</span>
-        <div class="flex items-center gap-3">
-          <span class="hidden sm:inline">{user?.email}</span>
-          <form method="POST" action="/api/auth/signout">
-            <button type="submit" class:list={buttonVariants({ variant: "ghost" })}>
-              Wyloguj
-            </button>
-          </form>
-        </div>
-      </header>
-
-      <LiveStateCard view={liveView} />
-      <BillForecastCard view={billView} />
-      <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
-        <div class="lg:col-span-2">
-          <RecommendationCard view={view} />
-        </div>
-        <div class="space-y-6">
-          <UsageInsightCard view={usageView} />
-        </div>
-      </div>
-    </div>
-  </div>
+  <DashboardBody
+    liveView={liveView}
+    billView={billView}
+    usageView={usageView}
+    recommendationView={view}
+    email={user?.email}
+  />
 </Layout>
 
 <script>

@@ -1,6 +1,8 @@
 ---
+import { Sparkles } from "lucide-react";
 import Panel from "@/components/ui/Panel.astro";
 import AdviceBlocks from "@/components/AdviceBlocks.astro";
+import CardHeading from "@/components/CardHeading.astro";
 import RecommendationFindings from "@/components/RecommendationFindings.astro";
 import RecommendationForecast from "@/components/RecommendationForecast.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
@@ -26,7 +28,7 @@ const explained =
 ---
 
 <Panel>
-  <h2 class="mb-2 text-lg font-semibold text-card-foreground">Rekomendacja na dziś</h2>
+  <CardHeading class="mb-2" title="Rekomendacja na dziś" size="lead" icon={Sparkles} iconClass="text-primary" />
   <div class="mb-4 flex flex-wrap items-center gap-2">
     <StatusBadge status={status} testId="recommendation-status" />
     {view?.kind === "recommendation" && (

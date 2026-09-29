@@ -1,10 +1,13 @@
 ---
+import { Sun, TowerControl, Upload } from "lucide-react";
+import LiveCardTitle from "@/components/LiveCardTitle.astro";
 import { LiveFlow } from "@/components/live/LiveFlow";
 import Panel from "@/components/ui/Panel.astro";
-import StatusBadge from "@/components/StatusBadge.astro";
+import Sparkline from "@/components/ui/Sparkline.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED } from "@/lib/format/status";
 import type { LiveStateView } from "@/lib/services/live-state";
+import { cn } from "@/lib/utils";
 
 interface Props {
   view: LiveStateView | null;
@@ -14,63 +17,119 @@ interface Props {
 const { view } = Astro.props;
 // The badge says how fresh the reading is (or why there is none); the notices below only add what it can't.
 const status = view === null ? LOAD_FAILED : view.status;
+
+// The KPI row: the three "today" totals, each with the previous 14 complete days beside it. A failed history load
+// (series null) gives every item the "historia niedostępna" variant.
+const kpis =
+  view?.kind === "state"
+    ? [
+        {
+          label: "Z paneli dziś",
+          value: view.today.pv,
+          Icon: Sun,
+          iconClass: "text-flow-pv",
+          series: view.series?.pv ?? null,
+          subject: "Produkcja z paneli",
+          tone: "pv" as const,
+        },
+        {
+          label: "Kupione z sieci dziś",
+          value: view.today.bought,
+          Icon: TowerControl,
+          iconClass: "text-flow-grid",
+          series: view.series?.bought ?? null,
+          subject: "Energia kupiona z sieci",
+          tone: "neutral" as const,
+        },
+        {
+          label: "Sprzedane do sieci dziś",
+          value: view.today.sold,
+          Icon: Upload,
+          iconClass: "text-primary",
+          series: view.series?.sold ?? null,
+          subject: "Energia sprzedana do sieci",
+          tone: "primary" as const,
+        },
+      ]
+    : [];
 ---
 
-<Panel>
-  <h2 class="mb-2 text-lg font-semibold text-card-foreground">Stan na żywo</h2>
-  <div class="mb-4">
-    <StatusBadge status={status} testId="live-status" />
-  </div>
+<Panel class="p-4 sm:p-6">
+  {view?.kind !== "state" && (
+    <div class="mb-4">
+      <LiveCardTitle status={status} />
+    </div>
+  )}
 
   {view === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
 
   {view?.kind === "state" && (
     <div class="space-y-4">
-      {view.isDegraded && (
-        <p class="text-muted-foreground text-sm">Część odczytów z Home Assistant może być niedostępna.</p>
-      )}
-      {view.isStale && (
-        <p class="text-muted-foreground text-sm">
-          Ruch i oceny wstrzymane: odczyty starsze niż 15 minut nie opisują stanu teraz.
-        </p>
-      )}
-
       <LiveFlow
         client:load
         pv={view.pv}
         homeLoad={view.homeLoad}
         grid={view.grid}
         battery={view.battery}
+        balance={view.balance}
         flows={view.flows}
         verdicts={view.verdicts}
         capturedAtLabel={view.capturedAtLabel}
         ageLabel={view.ageLabel}
         isStale={view.isStale}
-      />
+      >
+        <Fragment slot="heading">
+          <LiveCardTitle status={status} />
+        </Fragment>
+        <Fragment slot="notices">
+          {(view.isDegraded || view.isStale) && (
+            <div class="mb-4 space-y-1">
+              {view.isDegraded && (
+                <p class="text-muted-foreground text-sm">Część odczytów z Home Assistant może być niedostępna.</p>
+              )}
+              {view.isStale && (
+                <p class="text-muted-foreground text-sm">
+                  Ruch i oceny wstrzymane: odczyty starsze niż 15 minut nie opisują stanu teraz.
+                </p>
+              )}
+            </div>
+          )}
+        </Fragment>
+      </LiveFlow>
 
-      <div class="bg-muted space-y-2 rounded-lg p-3 text-sm">
+      <ul class="bg-inset border-hairline grid rounded-2xl border md:grid-cols-3">
+        {kpis.map(({ label, value, Icon, iconClass, series, subject, tone }) => (
+          <li class="border-hairline flex items-center justify-between gap-3 border-t px-4 py-3.5 first:border-t-0 md:gap-4 md:border-t-0 md:border-l md:px-6 md:py-[18px] md:first:border-l-0">
+            <div class="flex min-w-0 items-center gap-3 md:gap-3.5">
+              <Icon aria-hidden="true" className={cn("size-6 flex-none md:size-[26px]", iconClass)} />
+              <div class="flex min-w-0 flex-col gap-0.5">
+                <span class="text-muted-foreground text-xs md:text-[13px]">{label}</span>
+                <span class="text-[19px] font-bold md:text-2xl">{value}</span>
+              </div>
+            </div>
+            <div class="w-24 flex-none md:w-[120px]">
+              <Sparkline
+                values={series}
+                subject={subject}
+                windowLabel="ostatnie 14 dni"
+                tone={tone}
+                class="h-auto w-24 md:w-[120px]"
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div class="space-y-1">
         <p class="text-muted-foreground text-xs" data-testid="live-today-period">
           {view.today.periodLabel.charAt(0).toUpperCase() + view.today.periodLabel.slice(1)}
         </p>
-        <dl class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <div>
-            <dt class="text-muted-foreground">Z paneli dziś</dt>
-            <dd class="font-medium">{view.today.pv}</dd>
-          </div>
-          <div>
-            <dt class="text-muted-foreground">Kupione z sieci dziś</dt>
-            <dd class="font-medium">{view.today.bought}</dd>
-          </div>
-          <div>
-            <dt class="text-muted-foreground">Sprzedane do sieci dziś</dt>
-            <dd class="font-medium">{view.today.sold}</dd>
-          </div>
-        </dl>
+        <p class="text-muted-foreground text-xs">
+          Odczyt z {view.capturedAtLabel} · wykresy: poprzednie 14 dni, bez dzisiejszego
+        </p>
       </div>
 
-      <p class="text-muted-foreground text-xs">Odczyt z {view.capturedAtLabel}</p>
-
-      <TermsExplained terms={["pv", "kw", "kwh", "battery_soc", "grid_import", "grid_export"]} />
+      <TermsExplained terms={["pv", "kw", "kwh", "battery_soc", "grid_import", "grid_export", "system_balance"]} />
     </div>
   )}
 </Panel>

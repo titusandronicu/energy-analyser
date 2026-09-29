@@ -5,27 +5,23 @@ import {
   BatteryLow,
   BatteryMedium,
   BatteryWarning,
-  Home,
+  House,
   Info,
-  List,
-  Network,
-  Pause,
-  Play,
   Scale,
   Sun,
-  Zap,
+  TowerControl,
   type LucideIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { usePreference } from "@/components/hooks/usePreference";
 import { Button } from "@/components/ui/button";
-import { FlowNode, capitalise, type NodeId } from "@/components/live/FlowNode";
+import { FlowNode, capitalise, chipFor, type NodeId } from "@/components/live/FlowNode";
 import { VerdictChip } from "@/components/live/VerdictChip";
 import { useFlowLines } from "@/components/hooks/useFlowLines";
-import { connector } from "@/lib/flow-geometry";
+import { connectorState } from "@/lib/flow-connector-state";
+import { flowPath } from "@/lib/flow-geometry";
 import { GLOSSARY, type GlossaryTerm } from "@/lib/format/glossary";
 import { FLOW_PAUSED_KEY, FLOW_VIEW_KEY } from "@/lib/preferences";
-import { MIN_FLOW_W } from "@/lib/flow-constants";
 import type { LiveStateView, NodeVerdict } from "@/lib/services/live-state";
 import { cn } from "@/lib/utils";
 
@@ -34,8 +30,12 @@ type StateView = Extract<LiveStateView, { kind: "state" }>;
 // The serializable part of the "state" view: everything the diagram and the readings list show, nothing else.
 export type LiveFlowProps = Pick<
   StateView,
-  "pv" | "homeLoad" | "grid" | "battery" | "flows" | "verdicts" | "capturedAtLabel" | "ageLabel" | "isStale"
->;
+  "pv" | "homeLoad" | "grid" | "battery" | "balance" | "flows" | "verdicts" | "capturedAtLabel" | "ageLabel" | "isStale"
+> & {
+  // Named Astro slots: the card's title row (heading and badge) and the notices above the diagram.
+  heading?: ReactNode;
+  notices?: ReactNode;
+};
 
 const VIEWS = ["diagram", "readings"] as const;
 const PAUSED = ["0", "1"] as const;
@@ -43,6 +43,10 @@ const PAUSED = ["0", "1"] as const;
 interface NodeData {
   id: NodeId;
   label: string;
+  // The phone label; direction and the detail line only show from `sm` (the details strip carries them on the phone).
+  short: string;
+  direction: string | null;
+  detailLine: string | null;
   Icon: LucideIcon;
   value: string;
   // The reading in words: value plus direction and, for the battery, the charge level.
@@ -88,6 +92,9 @@ function buildNodes(props: LiveFlowProps): NodeData[] {
     {
       id: "pv",
       label: "Produkcja PV",
+      short: "Panele",
+      direction: null,
+      detailLine: null,
       Icon: Sun,
       value: pv,
       spoken: pv,
@@ -99,7 +106,10 @@ function buildNodes(props: LiveFlowProps): NodeData[] {
     {
       id: "home",
       label: "Zużycie domu",
-      Icon: Home,
+      short: "Dom",
+      direction: null,
+      detailLine: null,
+      Icon: House,
       value: homeLoad,
       spoken: homeLoad,
       sub: null,
@@ -110,6 +120,9 @@ function buildNodes(props: LiveFlowProps): NodeData[] {
     {
       id: "battery",
       label: "Bateria",
+      short: "Bateria",
+      direction: battery.direction,
+      detailLine: `Naładowanie: ${battery.socLabel}`,
       Icon: batteryIcon(battery),
       value: battery.value,
       spoken: `${withDirection(battery.value, battery.direction)}, naładowanie ${battery.socLabel}`,
@@ -121,7 +134,10 @@ function buildNodes(props: LiveFlowProps): NodeData[] {
     {
       id: "grid",
       label: "Sieć",
-      Icon: Zap,
+      short: "Sieć",
+      direction: grid.direction,
+      detailLine: null,
+      Icon: TowerControl,
       value: grid.value,
       spoken: withDirection(grid.value, grid.direction),
       sub: grid.direction ?? "bez przepływu",
@@ -132,19 +148,8 @@ function buildNodes(props: LiveFlowProps): NodeData[] {
   ];
 }
 
-const SIDE: Record<NodeId, "left" | "right"> = { pv: "left", battery: "left", home: "right", grid: "right" };
-
-// Which way the arrow points, 1 = node to junction. PV always feeds the junction and the junction always feeds
-// the home; grid import (positive) and battery discharge (positive) feed the junction, the reverse leaves it.
-function flowDirection(id: NodeId, watts: number | null): 1 | -1 {
-  if (id === "pv") return 1;
-  if (id === "home") return -1;
-  return watts !== null && watts > 0 ? 1 : -1;
-}
-
-function isActive(watts: number | null): boolean {
-  return watts !== null && Math.abs(watts) >= MIN_FLOW_W;
-}
+// PV feeds the hub from the left; the other three nodes sit in the right column.
+const HUB_SIDE: Record<NodeId, "left" | "right"> = { pv: "left", home: "right", battery: "right", grid: "right" };
 
 const LEGEND = [
   { tone: "good", word: "Dobrze" },
@@ -154,7 +159,7 @@ const LEGEND = [
 ] as const;
 
 export function LiveFlow(props: LiveFlowProps) {
-  const { flows, capturedAtLabel, ageLabel, isStale } = props;
+  const { flows, balance, capturedAtLabel, ageLabel, isStale, heading, notices } = props;
   // View and pause survive the periodic page reload; the selected node and the readings never do.
   const [view, setView] = usePreference(FLOW_VIEW_KEY, VIEWS, "diagram");
   const [pausedValue, setPausedValue] = usePreference(FLOW_PAUSED_KEY, PAUSED, "0");
@@ -164,130 +169,184 @@ export function LiveFlow(props: LiveFlowProps) {
 
   const nodes = buildNodes(props);
   const details = nodes.find((node) => node.id === selected) ?? nodes[0];
+  const detailsChip = chipFor(details.verdict);
 
   return (
-    <div className="space-y-3">
-      <div className="flex flex-wrap justify-end gap-1.5">
-        <div className="flex gap-1.5" role="group" aria-label="Widok">
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+        {heading}
+        <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3">
+          <div
+            className="border-border bg-muted flex flex-1 rounded-xl border p-1 sm:flex-none"
+            role="group"
+            aria-label="Widok"
+          >
+            <Button
+              type="button"
+              variant="ghost"
+              aria-pressed={view === "diagram"}
+              className={cn(
+                "h-[38px] flex-1 rounded-[9px] border px-4 text-sm sm:h-9 sm:flex-none",
+                view === "diagram"
+                  ? "border-primary/45 bg-primary/15 text-foreground hover:bg-primary/15 font-semibold"
+                  : "text-muted-foreground border-transparent",
+              )}
+              onClick={() => {
+                setView("diagram");
+              }}
+            >
+              Schemat
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              aria-pressed={view === "readings"}
+              className={cn(
+                "h-[38px] flex-1 rounded-[9px] border px-4 text-sm sm:h-9 sm:flex-none",
+                view === "readings"
+                  ? "border-primary/45 bg-primary/15 text-foreground hover:bg-primary/15 font-semibold"
+                  : "text-muted-foreground border-transparent",
+              )}
+              onClick={() => {
+                setView("readings");
+              }}
+            >
+              Odczyty
+            </Button>
+          </div>
           <Button
             type="button"
-            size="sm"
-            variant={view === "diagram" ? "outline" : "ghost"}
-            aria-pressed={view === "diagram"}
+            variant="outline"
+            aria-pressed={paused}
+            className={cn(
+              "border-border-strong h-11 rounded-xl bg-transparent px-3 text-[13px] sm:px-4 sm:text-sm",
+              paused && "bg-primary/15 hover:bg-primary/15",
+            )}
             onClick={() => {
-              setView("diagram");
+              setPausedValue(paused ? "0" : "1");
             }}
           >
-            <Network aria-hidden="true" />
-            Schemat
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            variant={view === "readings" ? "outline" : "ghost"}
-            aria-pressed={view === "readings"}
-            onClick={() => {
-              setView("readings");
-            }}
-          >
-            <List aria-hidden="true" />
-            Odczyty
+            <span>
+              {paused ? "Wznów" : "Wstrzymaj"}
+              <span className="sr-only sm:not-sr-only"> ruch</span>
+            </span>
           </Button>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant={paused ? "outline" : "ghost"}
-          aria-pressed={paused}
-          onClick={() => {
-            setPausedValue(paused ? "0" : "1");
-          }}
-        >
-          {paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
-          {paused ? "Wznów ruch" : "Wstrzymaj ruch"}
-        </Button>
       </div>
+
+      {notices}
 
       {view === "diagram" ? (
         <>
-          <div ref={stageRef} className="relative mx-auto max-w-[720px]">
-            {layout && (
-              <svg
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 size-full overflow-visible"
-                viewBox={`0 0 ${String(layout.width)} ${String(layout.height)}`}
-              >
-                {nodes.map(({ id }) => {
-                  const rect = layout.nodes[id];
-                  if (!rect) return null;
-                  const watts = flows[id].watts;
-                  const active = isActive(watts);
-                  const line = connector(rect, layout.junction, SIDE[id], active ? flowDirection(id, watts) : 1);
-                  const d = `M${String(line.start.x)} ${String(line.start.y)} L${String(line.end.x)} ${String(line.end.y)}`;
-                  if (!active) {
-                    return (
-                      <path
-                        key={id}
-                        d={d}
-                        className="text-border"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        strokeDasharray="2 6"
-                        fill="none"
-                      />
+          <div className="bg-inset border-hairline rounded-2xl border px-1 py-2 sm:px-3 sm:py-6 md:px-8">
+            <div ref={stageRef} className="relative">
+              {layout && (
+                <svg
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 size-full overflow-visible"
+                  viewBox={`0 0 ${String(layout.width)} ${String(layout.height)}`}
+                >
+                  {nodes.map(({ id }) => {
+                    const rect = layout.nodes[id];
+                    if (!rect) return null;
+                    const state = connectorState(id, flows[id], { paused, isStale });
+                    const path = flowPath(
+                      rect,
+                      layout.junction,
+                      HUB_SIDE[id],
+                      state.kind === "active" ? state.direction : 1,
                     );
-                  }
-                  const animated = flows[id].moving && !paused;
-                  return (
-                    <g key={id} className={cn(LINE_TEXT[id], isStale && "opacity-45")}>
-                      <path
-                        d={d}
-                        className={cn(animated && "animate-flow-dash")}
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        fill="none"
-                      />
-                      <polygon
-                        points="-6,-5 6,0 -6,5"
-                        fill="currentColor"
-                        transform={`translate(${String(line.mid.x)},${String(line.mid.y)}) rotate(${String(line.angle)})`}
-                      />
-                    </g>
-                  );
-                })}
-              </svg>
-            )}
-            <div className="grid grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)] items-stretch gap-y-9 max-[480px]:grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)]">
-              {nodes.map((node) => (
-                <FlowNode
-                  key={node.id}
-                  id={node.id}
-                  label={node.label}
-                  value={node.value}
-                  spoken={node.spoken}
-                  sub={node.sub}
-                  Icon={node.Icon}
-                  verdict={node.verdict}
-                  selected={node.id === selected}
-                  onSelect={setSelected}
-                />
-              ))}
-              <span
-                data-flow-junction
-                aria-hidden="true"
-                className="border-muted-foreground/50 bg-muted text-ring col-start-2 row-span-2 row-start-1 flex size-[34px] items-center justify-center self-center justify-self-center rounded-full border"
-              >
-                <Scale className="size-[18px]" />
-              </span>
+                    if (!path) return null;
+                    if (state.kind === "idle") {
+                      return (
+                        <path
+                          key={id}
+                          d={path.d}
+                          className="text-border"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeDasharray="2 6"
+                          fill="none"
+                        />
+                      );
+                    }
+                    return (
+                      <g key={id} className={cn(LINE_TEXT[id], state.dimmed && "opacity-65")}>
+                        <path
+                          d={path.d}
+                          className={cn(state.animated && "animate-flow-dash")}
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeDasharray="6 8"
+                          fill="none"
+                        />
+                        <path
+                          d="M-8 -6 L0 0 L-8 6"
+                          transform={`translate(${String(path.end.x)},${String(path.end.y)}) rotate(${String(path.angle)})`}
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          fill="none"
+                        />
+                      </g>
+                    );
+                  })}
+                </svg>
+              )}
+              <div className="grid auto-rows-fr grid-cols-[70px_minmax(16px,1fr)_56px_minmax(16px,1fr)_114px] grid-rows-3 items-center sm:grid-cols-[minmax(0,300px)_minmax(24px,1fr)_100px_minmax(24px,1fr)_minmax(0,300px)]">
+                {nodes.map((node) => (
+                  <FlowNode
+                    key={node.id}
+                    id={node.id}
+                    label={node.label}
+                    short={node.short}
+                    direction={node.direction}
+                    detailLine={node.detailLine}
+                    value={node.value}
+                    spoken={node.spoken}
+                    Icon={node.Icon}
+                    verdict={node.verdict}
+                    selected={node.id === selected}
+                    onSelect={setSelected}
+                  />
+                ))}
+                <div className="relative col-start-3 row-start-2 flex justify-center">
+                  <span
+                    data-flow-junction
+                    aria-hidden="true"
+                    className="border-primary bg-muted text-primary flex size-14 items-center justify-center rounded-full border shadow-[0_8px_24px_color-mix(in_srgb,var(--primary)_18%,transparent)] sm:size-[76px]"
+                  >
+                    <Scale className="size-[26px] sm:size-[34px]" />
+                  </span>
+                  <div
+                    className={cn(
+                      "pointer-events-none absolute top-full left-1/2 mt-2 w-24 -translate-x-1/2 text-center sm:w-40",
+                      isStale && "opacity-70",
+                    )}
+                  >
+                    <span className="text-muted-foreground mx-auto block max-w-16 text-[11px] leading-tight sm:max-w-none sm:text-[13px]">
+                      Bilans systemu
+                    </span>
+                    <span className="text-primary block text-[15px] font-bold whitespace-nowrap sm:text-[22px]">
+                      {balance.label}
+                      {balance.word && <span className="sr-only"> {balance.word}</span>}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="bg-muted space-y-1 rounded-lg p-3 text-sm" aria-live="polite" aria-atomic="true">
-            <p>
-              <Info className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" />
-              <span className="font-medium">{details.label}</span> · {details.spoken}
+            <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span>
+                <Info className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" />
+                <span className="font-medium">{details.label}</span> · {details.spoken}
+              </span>
+              <VerdictChip tone={detailsChip.tone} word={detailsChip.word} className="rounded-2xl" />
             </p>
             <p>{details.why}</p>
             {details.terms.map((term) => (
@@ -321,6 +380,11 @@ export function LiveFlow(props: LiveFlowProps) {
               )}
             </div>
           ))}
+          <div className="bg-muted col-span-full rounded-lg p-3" data-testid="live-balance">
+            <dt className="text-muted-foreground">Bilans systemu</dt>
+            <dd className="text-lg font-medium">{balance.label}</dd>
+            {balance.word && <dd className="text-muted-foreground text-xs">{balance.word}</dd>}
+          </div>
         </dl>
       )}
     </div>

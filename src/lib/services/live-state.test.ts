@@ -28,6 +28,8 @@ function row(overrides: Partial<LiveStateRow> = {}, stateOverrides: Record<strin
 // Warsaw is UTC+2 in late September (CEST).
 const at = (iso: string) => new Date(iso);
 const now = at("2026-09-25T10:05:00Z");
+// A KPI series with no data at all: KPI_SERIES_DAYS gaps.
+const NULL_DAYS = Array.from({ length: 14 }, () => null);
 
 function view(r: LiveStateRow, clock: Date = now, daily?: DailyEnergyRow[] | null, rowCapturedAt?: string | null) {
   const v = toLiveStateView(r, clock, daily, rowCapturedAt);
@@ -67,6 +69,8 @@ describe("toLiveStateView", () => {
         charging: true,
       },
       today: { pv: "12,3 kWh", bought: "1,2 kWh", sold: "5,0 kWh", periodLabel: "dziś od północy do 12:00" },
+      balance: { watts: 2570, label: "+2,6 kW", word: "nadwyżka" },
+      series: { pv: NULL_DAYS, bought: NULL_DAYS, sold: NULL_DAYS },
       flows: {
         pv: { watts: 3420, moving: true },
         home: { watts: 850, moving: true },
@@ -674,5 +678,111 @@ describe("stale snapshots", () => {
     const v = verdictsAt("16:00", rows, { source_health: "degraded", pv_today_kwh: 9 });
     expect(v.pv.tone).toBe("good");
     expect(v.home.tone).not.toBe("insufficient");
+  });
+});
+
+describe("system balance", () => {
+  const balance = (pv_w: unknown, home_load_w: unknown, clock: Date = now, extra: Record<string, unknown> = {}) =>
+    view(row({}, { pv_w, home_load_w, ...extra }), clock).balance;
+
+  it.each([
+    [3100, 900, 2200, "+2,2 kW", "nadwyżka"],
+    [900, 1300, -400, "\u22120,4 kW", "niedobór"],
+    [849, 800, 49, "0,0 kW", "zbilansowany"],
+    [800, 849, -49, "0,0 kW", "zbilansowany"],
+    [850, 800, 50, "+0,1 kW", "nadwyżka"],
+    [800, 850, -50, "\u22120,1 kW", "niedobór"],
+    [1200, 1200, 0, "0,0 kW", "zbilansowany"],
+  ])("pv %j W minus home load %j W is %j W: %s", (pv, home, watts, label, word) => {
+    expect(balance(pv, home)).toEqual({ watts, label, word });
+  });
+
+  it("is computed from the unrounded watts", () => {
+    // The panel and home figures display as 3,1 and 1,0 kW (difference 2,1), the unrounded 2011 W as 2,0 kW.
+    const b = balance(3060, 1049);
+    expect(b.label).toBe("+2,0 kW");
+    expect(b.watts).toBe(2011);
+  });
+
+  it.each([
+    ["pv_w missing", null, 900],
+    ["home_load_w missing", 3100, null],
+    ["both missing", null, null],
+    ["pv_w undefined", undefined, 900],
+    ["a non-numeric pv_w", "3100", 900],
+    ["a non-numeric home_load_w", 3100, "900"],
+    ["a NaN reading", Number.NaN, 900],
+  ])("shows a dash and no word when %s, never a zero", (_name, pv, home) => {
+    expect(balance(pv, home)).toEqual({ watts: null, label: "—", word: null });
+  });
+
+  it("is still computed for a stale snapshot", () => {
+    const v = view(row({}, { pv_w: 3100, home_load_w: 900 }), at("2026-09-25T10:40:00Z"));
+    expect(v.isStale).toBe(true);
+    expect(v.balance).toEqual({ watts: 2200, label: "+2,2 kW", word: "nadwyżka" });
+  });
+
+  it("is still computed for a degraded snapshot", () => {
+    const b = balance(900, 1300, now, { source_health: "degraded" });
+    expect(b).toEqual({ watts: -400, label: "\u22120,4 kW", word: "niedobór" });
+  });
+});
+
+describe("daily series", () => {
+  // One row per day from `first` to `last` (inclusive) with pv, purchase and export totals of the day-of-month.
+  function totalsRows(first: string, last: string): DailyEnergyRow[] {
+    const rows: DailyEnergyRow[] = [];
+    for (let key = last; key >= first; key = addDays(key, -1)) {
+      const dayOfMonth = Number(key.slice(8));
+      rows.push(daily(key, { pv_kwh: dayOfMonth, grid_import_kwh: dayOfMonth + 0.5, grid_export_kwh: 0 }));
+    }
+    return rows;
+  }
+
+  it("ends the day before the capture day and never plots the capture day's own row", () => {
+    // Captured on the 25th; the 25th's row is a partial (99) and must stay out.
+    const rows = [
+      daily(DAY, { pv_kwh: 99, grid_import_kwh: 99, grid_export_kwh: 99 }),
+      ...totalsRows("2026-09-01", "2026-09-24"),
+    ];
+    const { series } = view(row(), now, rows);
+    expect(series).toEqual({
+      pv: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24],
+      bought: [11.5, 12.5, 13.5, 14.5, 15.5, 16.5, 17.5, 18.5, 19.5, 20.5, 21.5, 22.5, 23.5, 24.5],
+      sold: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    });
+  });
+
+  it("ends the day before the capture day even when the snapshot was captured on an earlier day than now", () => {
+    // Captured on the 23rd, read on the 25th: the window ends on the 22nd, not on the day before `now`.
+    const captured = new Date("2026-09-23T10:00:00Z");
+    const v = view(row({ captured_at: captured.toISOString() }), now, totalsRows("2026-09-01", "2026-09-24"));
+    expect(v.series?.pv).toEqual([9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]);
+  });
+
+  it("draws gaps for missing days and null totals, never zeros", () => {
+    const rows = [
+      daily("2026-09-24", { pv_kwh: 5 }),
+      daily("2026-09-22", { pv_kwh: null, grid_import_kwh: 1 }),
+      daily("2026-09-21", { pv_kwh: 4 }),
+    ];
+    const { series } = view(row(), now, rows);
+    expect(series?.pv).toEqual([...NULL_DAYS.slice(0, 10), 4, null, null, 5]);
+    expect(series?.bought).toEqual([...NULL_DAYS.slice(0, 11), 1, null, null]);
+  });
+
+  it("gives 14 gaps per series for empty or absent history", () => {
+    const expected = { pv: NULL_DAYS, bought: NULL_DAYS, sold: NULL_DAYS };
+    expect(view(row(), now, []).series).toEqual(expected);
+    expect(view(row(), now, undefined).series).toEqual(expected);
+  });
+
+  it("has no series when loading the history failed, while the chips still say the history is unavailable", () => {
+    const v = verdictsAt("16:00", null, { pv_today_kwh: 8 });
+    expect(v.pv.detail).toBe("historia niedostępna");
+    expect(v.home.detail).toBe("historia niedostępna");
+    const captured = new Date(`${DAY}T16:00:00+02:00`);
+    const failed = view(row({ captured_at: captured.toISOString() }), new Date(captured.getTime() + 60_000), null);
+    expect(failed.series).toBeNull();
   });
 });

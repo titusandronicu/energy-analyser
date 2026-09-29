@@ -1,8 +1,11 @@
 ---
+import { FileText, Minus, TrendingDown, TrendingUp } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
 import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED } from "@/lib/format/status";
+import { cn } from "@/lib/utils";
 import type { BillForecastView } from "@/lib/services/bill-forecast";
 
 interface Props {
@@ -42,6 +45,12 @@ const creditLine =
   creditLeft === null
     ? ""
     : `Zgromadzony opust (${creditLeft}) pokrywa cały prąd kupiony w tym miesiącu, więc w prognozie zostają tylko opłaty stałe.`;
+// The delta line: the arrow, the sign and the words carry the meaning, the tone class only reinforces it.
+const delta = forecast?.delta ?? null;
+const days = forecast?.days ?? null;
+const DELTA_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
+const DELTA_TEXT = { good: "text-tone-good", watch: "text-tone-watch", problem: "text-tone-problem" };
+const DeltaIcon = delta === null ? null : DELTA_ICON[delta.direction];
 // Worded as a test of the arithmetic, never as the forecast's accuracy: it cannot detect a wrong export ratio,
 // and it drifts when PGE changes prices. Absent when the reference month carries no invoice total.
 const check = forecast?.closedMonthCheck ?? null;
@@ -52,7 +61,7 @@ const checkLine =
 ---
 
 <Panel>
-  <h2 class="mb-2 text-lg font-semibold text-card-foreground">Prognoza rachunku</h2>
+  <CardHeading class="mb-2" title="Prognoza rachunku" icon={FileText} iconClass="text-primary" />
   <div class="mb-4">
     <StatusBadge status={status} testId="bill-status" />
   </div>
@@ -73,22 +82,40 @@ const checkLine =
             ? `Rachunek za ${forecast.monthLabel}`
             : `Rachunek za ten miesiąc (${forecast.monthLabel})`}
         </p>
-        <p class="mt-1 text-2xl font-semibold" data-testid="bill-range">
+        <p class="text-primary mt-1 text-[30px] leading-tight font-bold" data-testid="bill-range">
           {forecast.rangeLabel}
         </p>
         <p class="text-muted-foreground mt-1 text-sm" data-testid="bill-central">
           {`najbardziej prawdopodobnie ${forecast.centralLabel}`}
         </p>
+        {delta !== null && DeltaIcon !== null && (
+          <p class:list={cn("mt-2 flex items-center gap-2 text-sm", DELTA_TEXT[delta.tone])} data-testid="bill-delta">
+            <DeltaIcon aria-hidden="true" className="size-4 shrink-0" />
+            <span>{delta.text}</span>
+          </p>
+        )}
       </div>
 
       <dl class="bg-muted grid grid-cols-1 gap-3 rounded-lg p-3 text-sm sm:grid-cols-2">
-        <div>
+        <div class="flex flex-wrap items-baseline justify-between gap-x-3 sm:col-span-2">
           <dt class="text-muted-foreground">Policzone z pełnych dni</dt>
-          <dd class="font-medium" data-testid="bill-days">
-            {forecast.dayLabel}
+          {days !== null && (
+            <dd class="font-medium" data-testid="bill-days-share">
+              {days.label}
+            </dd>
+          )}
+          <dd class="basis-full">
+            {days !== null && (
+              <div class="bg-hairline mb-2 mt-1 h-2 overflow-hidden rounded-full" aria-hidden="true">
+                <div class="bg-primary h-2 rounded-full" style={`width: ${String(Math.round(days.share * 100))}%`} />
+              </div>
+            )}
+            <p class="text-muted-foreground" data-testid="bill-days">
+              {forecast.dayLabel}
+            </p>
           </dd>
         </div>
-        <div>
+        <div class="sm:col-span-2">
           <dt class="text-muted-foreground">Pewność tej kwoty</dt>
           <dd class="mt-1">
             <StatusBadge status={forecast.confidence} testId="bill-confidence" />

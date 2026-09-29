@@ -6,18 +6,21 @@ import { cn } from "@/lib/utils";
 interface Props {
   status: Status;
   testId?: string;
+  dot?: boolean;
 }
 
-const { status, testId } = Astro.props;
+const { status, testId, dot = false } = Astro.props;
 ---
 
 <span
   class:list={cn(
-    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+    "inline-flex items-center rounded-2xl border px-2.5 py-0.5 text-xs font-medium",
+    dot && "gap-1.5",
     TONE_CLASSES[status.tone],
   )}
   data-tone={status.tone}
   data-testid={testId}
 >
+  {dot && <span aria-hidden="true" class="size-2 rounded-full bg-current" />}
   {statusText(status)}
 </span>

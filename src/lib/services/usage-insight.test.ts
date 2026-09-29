@@ -39,6 +39,7 @@ describe("toUsageInsightView", () => {
       isYesterday: true,
       load: { kwhLabel: "12,3 kWh", deltaLabel: "+23%", status: "above" },
       purchase: { kwhLabel: "4,0 kWh", deltaLabel: "−20%" },
+      series: { load: [10, 10, 10, 10, 10, 10, 12.34], purchase: [5, 5, 5, 5, 5, 5, 4] },
       baseline: { kind: "fallback", days: 30, periodLabel: "30 dni: 25 sierpnia – 23 września" },
       meaning: {
         normKwhLabel: "10,0 kWh",
@@ -54,6 +55,45 @@ describe("toUsageInsightView", () => {
           "Dla porównania: typowy dom w Polsce o powierzchni ok. 140 m² ogrzewany pompą ciepła zużywa we wrześniu ok. 13 kWh dziennie (szacunek z danych GUS i branżowych).",
       },
     });
+  });
+
+  it("ends the series on the compared day, so the last point is the value shown", () => {
+    const rows = [row(TODAY, 50, 9), row(YESTERDAY, 12, 4), ...daysBefore(YESTERDAY, 30, 10, 5)];
+    const v = insight(rows);
+    expect(v.series.load).toHaveLength(7);
+    expect(v.series.purchase).toHaveLength(7);
+    expect(v.series.load.at(-1)).toBe(12);
+    expect(v.series.purchase.at(-1)).toBe(4);
+    // Today's partial row is never in the window.
+    expect(v.series.load).not.toContain(50);
+  });
+
+  it("ends the series three days back when yesterday and the day before are missing", () => {
+    const compared = "2026-09-22";
+    const rows = [row(compared, 11, 3), ...daysBefore(compared, 30, 10, 5)];
+    const v = insight(rows);
+    expect(v.dayLabel).toBe("22 września");
+    expect(v.series.load).toEqual([10, 10, 10, 10, 10, 10, 11]);
+    expect(v.series.purchase).toEqual([5, 5, 5, 5, 5, 5, 3]);
+  });
+
+  it("leaves a trailing gap when the compared day has no purchase", () => {
+    const rows = [row(YESTERDAY, 12, null), ...daysBefore(YESTERDAY, 30, 10, 5)];
+    const v = insight(rows);
+    expect(v.purchase.kwhLabel).toBe("—");
+    expect(v.series.purchase).toEqual([5, 5, 5, 5, 5, 5, null]);
+    expect(v.series.load.at(-1)).toBe(12);
+  });
+
+  // Corrupt data: the series treats a negative daily total as a gap ("negative is null") while the figure beside it
+  // is still shown. The two intentionally differ; this pins the corner (impl review F5, behaviour accepted).
+  it("draws a gap for a negative load on the compared day while the shown load stays unchanged", () => {
+    const rows = [row(YESTERDAY, -2, 4), ...daysBefore(YESTERDAY, 30, 10, 5)];
+    const v = insight(rows);
+    expect(v.load.kwhLabel).toBe("-2,0 kWh");
+    expect(v.series.load).toEqual([10, 10, 10, 10, 10, 10, null]);
+    expect(v.series.load.at(-1)).toBeNull();
+    expect(v.series.purchase.at(-1)).toBe(4);
   });
 
   it("uses the latest earlier day when yesterday is missing and names it", () => {

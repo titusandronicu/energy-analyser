@@ -1,0 +1,42 @@
+---
+import BillForecastCard from "@/components/BillForecastCard.astro";
+import DashboardHeader from "@/components/DashboardHeader.astro";
+import LiveStateCard from "@/components/LiveStateCard.astro";
+import RecommendationCard from "@/components/RecommendationCard.astro";
+import SourceLegend from "@/components/SourceLegend.astro";
+import UsageInsightCard from "@/components/UsageInsightCard.astro";
+import type { BillForecastView } from "@/lib/services/bill-forecast";
+import type { LiveStateView } from "@/lib/services/live-state";
+import type { RecommendationView } from "@/lib/services/recommendation";
+import type { UsageInsightView } from "@/lib/services/usage-insight";
+
+interface Props {
+  liveView: LiveStateView | null;
+  billView: BillForecastView | null;
+  usageView: UsageInsightView | null;
+  recommendationView: RecommendationView | null;
+  email: string | undefined;
+}
+
+// The page composition lives here so /dashboard and the dev page render exactly the same body.
+const { liveView, billView, usageView, recommendationView, email } = Astro.props;
+---
+
+<div class="bg-aurora min-h-screen p-4 sm:p-8">
+  <div class="mx-auto max-w-[1120px] space-y-6">
+    <DashboardHeader email={email} />
+
+    <LiveStateCard view={liveView} />
+    <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
+      <div class="lg:col-span-2">
+        <RecommendationCard view={recommendationView} />
+      </div>
+      <div class="space-y-6">
+        <BillForecastCard view={billView} />
+        <UsageInsightCard view={usageView} />
+      </div>
+    </div>
+
+    <SourceLegend />
+  </div>
+</div>
