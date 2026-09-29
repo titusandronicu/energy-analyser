@@ -509,9 +509,9 @@ The migration adds a view only — no table, no data movement, no backfill — s
 
 #### Automated
 
-- [ ] 5.1 The real lab forecast file parses against the deployed contract before the lab is changed (preflight)
+- [x] 5.1 The real lab forecast file parses against the deployed contract before the lab is changed (preflight) — 0f7771d
 - [ ] 5.2 The app's deployed contract accepts a real lab push: `/api/ingest` returns 2xx, no 422 in the logs
-- [ ] 5.3 Unit tests and lint still pass: `npm test`, `npm run lint`
+- [x] 5.3 Unit tests and lint still pass: `npm test`, `npm run lint` — 0f7771d
 
 #### Manual
 
@@ -519,4 +519,4 @@ The migration adds a view only — no table, no data movement, no backfill — s
 - [ ] 5.5 The reference month named on the card matches `settlement.reference_period` in the lab's file
 - [ ] 5.6 Stopping the lab's forecast job blanks the figure once its `generated_at` passes 30 minutes — by the freshness rule, not by the view's row disappearing — while the other cards keep updating
 - [ ] 5.7 A push that omits `bill_forecast` entirely leaves the last good forecast on the card rather than blanking it
-- [ ] 5.8 `docs/prerequisites.md` names every external dependency the card needs
+- [x] 5.8 `docs/prerequisites.md` names every external dependency the card needs — 0f7771d
