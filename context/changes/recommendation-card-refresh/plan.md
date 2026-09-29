@@ -427,17 +427,17 @@ None: no schema, contract or lab change; rows stored earlier render with the sam
 
 #### Automated
 
-- [x] 4.1 Unit tests pass: `npm test`
-- [x] 4.2 Linting passes: `npm run lint`
-- [x] 4.3 Type checks pass: `npx astro check`
-- [x] 4.4 Production build succeeds: `npm run build`
-- [x] 4.5 The reduced-motion override is present: `git grep -n "prefers-reduced-motion" -- src/styles/global.css` lists the new rule next to the `animate-flow-dash` one
+- [x] 4.1 Unit tests pass: `npm test` — 469c51b
+- [x] 4.2 Linting passes: `npm run lint` — 469c51b
+- [x] 4.3 Type checks pass: `npx astro check` — 469c51b
+- [x] 4.4 Production build succeeds: `npm run build` — 469c51b
+- [x] 4.5 The reduced-motion override is present: `git grep -n "prefers-reduced-motion" -- src/styles/global.css` lists the new rule next to the `animate-flow-dash` one — 469c51b
 
 #### Manual
 
-- [x] 4.6 A current recommendation fades in once (findings staggered, forecast, then the disclosure content on open); the older-than-2h and earlier-day recommendations render static with neutral chips; nothing loops
-- [x] 4.7 With reduced motion enabled (operating system setting or browser rendering emulation) nothing animates and all content is visible at once
-- [x] 4.8 Screenshots of the current and stale states are re-taken at 1440px and 390px after the motion change and replace the Phase 3 files
-- [x] 4.9 `docs/logic.md` and the five dated entries in `docs/decisions.md` describe every rule above, and `docs/prerequisites.md` needs no change
+- [x] 4.6 A current recommendation fades in once (findings staggered, forecast, then the disclosure content on open); the older-than-2h and earlier-day recommendations render static with neutral chips; nothing loops — 469c51b
+- [x] 4.7 With reduced motion enabled (operating system setting or browser rendering emulation) nothing animates and all content is visible at once — 469c51b
+- [x] 4.8 Screenshots of the current and stale states are re-taken at 1440px and 390px after the motion change and replace the Phase 3 files — 469c51b
+- [x] 4.9 `docs/logic.md` and the five dated entries in `docs/decisions.md` describe every rule above, and `docs/prerequisites.md` needs no change — 469c51b
 - [ ] 4.10 After the draft PR is opened, the CI `ci` and `smoke` jobs are green (smoke still finds the advice marker and the live text; it does not run locally)
-- [x] 4.11 The temporary dev page is deleted as the last step and never entered git: `test ! -e src/pages/dev/recommendation-fixtures.astro` and `git log --all --oneline -- src/pages/dev` prints nothing
+- [x] 4.11 The temporary dev page is deleted as the last step and never entered git: `test ! -e src/pages/dev/recommendation-fixtures.astro` and `git log --all --oneline -- src/pages/dev` prints nothing — 469c51b
