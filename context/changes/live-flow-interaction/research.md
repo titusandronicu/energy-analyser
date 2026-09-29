@@ -123,3 +123,18 @@ For the owner during `/10x-plan` (research answers, but the choices are theirs):
 3. Motion look: approve the dash-offset connector on a screenshot before the states phase.
 4. Sign proof: is code plus comments enough, or compare one live snapshot against the inverter load before shipping arrows? (Cheap; recommended once.)
 5. `homelab-2` manifest fix (`solar-energy-analyser-api.v1.yaml:153`) is outside this repo; record in the plan's prerequisites, do not edit from here.
+
+## Sign check on real pushes (2026-09-29)
+
+Method (plan Phase 5, item 3): read `state.grid_w`, `state.battery_w`, `state.battery_soc_pct`, `state.grid_import_today_kwh` and `state.grid_export_today_kwh` from `public.ingest_pushes` (source `homelab`, 400 pushes, captured 2026-09-27 21:51 UTC to 2026-09-29 08:13 UTC, three Warsaw days), read-only through the Supabase MCP, only those five numeric fields. Consecutive pushes on the same Warsaw day were paired (the daily counters reset at midnight); an interval counted when the mean power was beyond 300 W and the compared quantity changed.
+
+| Field and sign              | Independent evidence                                    | Result                                                                                                                                                                                          |
+| --------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grid_w > 0` = import       | the import counter rose by more than the export counter | 74 of 74 intervals                                                                                                                                                                              |
+| `battery_w > 0` = discharge | SOC fell                                                | 110 of 110 intervals                                                                                                                                                                            |
+| `battery_w < 0` = charge    | SOC rose                                                | 98 of 99 intervals (in the one exception SOC fell while `battery_w` was negative; not investigated, one of 99 is consistent with a load spike or an interval that straddled a direction change) |
+| `grid_w < 0` = export       | export counter rose                                     | **not observed**: in this window `grid_w` reached only -82 W once (a single sample under -50 W) and the export counter stayed at 0 kWh on all three days                                        |
+
+Conclusion: the import sign and both battery signs match the mapper and `docs/logic.md:23`. The export sign is inferred, not observed: import is positive and a meter power reading is antisymmetric, so negative is the opposite direction. The window had no real export (the battery took the PV surplus), so the export counter could not confirm it; repeat the check on a sunny low-load day if certainty is wanted. This does not block the arrows: grid import is proven positive, so the arrow drawn for negative values is the reverse of a proven direction.
+
+Not verified: `homelab-2/manifests/solar-energy-analyser-api.v1.yaml:153` says `battery_w: positive_charge_negative_discharge`, the opposite of the collector and of this evidence; it is outside this repository and should be corrected there.

@@ -6,12 +6,28 @@
 // --file <path> sends a whole body from another file instead (the variants in scripts/fixtures/), which is
 // local-only for the same reason. --keep-generated-at leaves the body's own bill_forecast.generated_at
 // alone, for the variants that are about a stale forecast.
-// Usage: BASE_URL=https://… INGEST_TOKEN=… node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at]
+// --captured-at <iso> sets captured_at instead of now (the contract accepts at most 5 minutes in the future and
+// up to 14 days back). --shift-days moves every daily_history day by the same number of days so the newest day
+// becomes today in Europe/Warsaw (the machine's zone is not used); together with --captured-at that is how the
+// scenarios in scripts/fixtures/live-flow/ are pushed at any time of day. Stale is `normal` pushed with
+// --captured-at set 40 minutes back.
+//
+// Live-flow scenarios (local databases only, like every whole body):
+// - `live_state` is the newest push by captured_at, and a daily row is replaced only by a push with an equal or
+//   later captured_at. Between scenarios reset ingest_pushes and daily_energy on the local database, or push in a
+//   fixed order, stale (the oldest capture) first.
+// - Fresh scenarios need a capture time within 5 minutes of now (the default, now), or the card shows them stale.
+// - The PV verdict is rated from 15:00 and the consumption verdict from 06:00 Warsaw time at the capture, so push
+//   those scenarios after 15:05 (PV) / 06:05 (consumption): the capture is then at or after the rating hour and
+//   still fresh. That also limits when their screenshots can be taken.
+// - The verdicts also depend on the month (the expected PV share table in src/lib/services/live-state.ts): the
+//   fixtures are tuned for September to October.
+// Usage: BASE_URL=https://… INGEST_TOKEN=… node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--shift-days]
 import { readFileSync } from "node:fs";
 import { URL } from "node:url";
 
 const usage =
-  "Usage: BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at]";
+  "Usage: BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--shift-days]";
 
 const { BASE_URL, INGEST_TOKEN } = process.env;
 if (!BASE_URL || !INGEST_TOKEN) {
@@ -23,6 +39,18 @@ const fileFlag = process.argv.indexOf("--file");
 const filePath = fileFlag === -1 ? null : process.argv[fileFlag + 1];
 if (fileFlag !== -1 && (!filePath || filePath.startsWith("--"))) {
   console.error(`--file needs a path\n${usage}`);
+  process.exit(1);
+}
+
+const capturedAtFlag = process.argv.indexOf("--captured-at");
+const capturedAtValue = capturedAtFlag === -1 ? null : process.argv[capturedAtFlag + 1];
+if (capturedAtFlag !== -1 && (!capturedAtValue || capturedAtValue.startsWith("--"))) {
+  console.error(`--captured-at needs an ISO timestamp\n${usage}`);
+  process.exit(1);
+}
+const capturedAtOverride = capturedAtValue === null ? null : new Date(capturedAtValue);
+if (capturedAtOverride !== null && Number.isNaN(capturedAtOverride.getTime())) {
+  console.error(`--captured-at is not a valid timestamp: ${capturedAtValue}\n${usage}`);
   process.exit(1);
 }
 
@@ -47,11 +75,31 @@ const body = full ? fixture : stateOnly;
 // The bill forecast's own generated_at decides whether the card shows a figure, and the committed bodies
 // carry fixed timestamps (so the strict parse and the schema drift assertion stay deterministic). Without
 // this rewrite every push would render the stale state and the happy path would never be exercised.
-const capturedAt = new Date().toISOString();
+const capturedAt = (capturedAtOverride ?? new Date()).toISOString();
 const rewriteGeneratedAt = body.bill_forecast && !process.argv.includes("--keep-generated-at");
+
+// Calendar arithmetic on "YYYY-MM-DD" keys in UTC, where every day has 24 hours, so DST cannot shift a day.
+const DAY_MS = 24 * 60 * 60 * 1000;
+const dayNumber = (key) => Date.parse(`${key}T00:00:00Z`) / DAY_MS;
+const dayKey = (number) => new Date(number * DAY_MS).toISOString().slice(0, 10);
+// Today's calendar date in Europe/Warsaw whatever the machine's zone ("en-CA" formats as YYYY-MM-DD).
+const warsawToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Warsaw" }).format(new Date());
+
+let dailyHistory = body.daily_history;
+if (process.argv.includes("--shift-days")) {
+  if (!dailyHistory?.length) {
+    console.error(`--shift-days needs a body with daily_history\n${usage}`);
+    process.exit(1);
+  }
+  const shift = dayNumber(warsawToday()) - Math.max(...dailyHistory.map((entry) => dayNumber(entry.day)));
+  dailyHistory = dailyHistory.map((entry) => ({ ...entry, day: dayKey(dayNumber(entry.day) + shift) }));
+  console.log(`daily_history shifted by ${String(shift)} day(s): newest day is now ${warsawToday()}`);
+}
+
 const payload = {
   ...body,
   captured_at: capturedAt,
+  ...(dailyHistory === undefined ? {} : { daily_history: dailyHistory }),
   ...(rewriteGeneratedAt ? { bill_forecast: { ...body.bill_forecast, generated_at: capturedAt } } : {}),
 };
 
