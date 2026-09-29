@@ -510,7 +510,7 @@ The migration adds a view only — no table, no data movement, no backfill — s
 #### Automated
 
 - [x] 5.1 The real lab forecast file parses against the deployed contract before the lab is changed (preflight) — 0f7771d
-- [ ] 5.2 The app's deployed contract accepts a real lab push: `/api/ingest` returns 2xx, no 422 in the logs
+- [x] 5.2 The app's deployed contract accepts a real lab push: `/api/ingest` returns 2xx, no 422 in the logs — 9c7f256
 - [x] 5.3 Unit tests and lint still pass: `npm test`, `npm run lint` — 0f7771d
 
 #### Manual
