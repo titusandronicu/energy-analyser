@@ -515,8 +515,8 @@ The migration adds a view only — no table, no data movement, no backfill — s
 
 #### Manual
 
-- [ ] 5.4 The production card shows a figure matching the lab page for the same refresh
-- [ ] 5.5 The reference month named on the card matches `settlement.reference_period` in the lab's file
+- [x] 5.4 The production card shows a figure matching the lab page for the same refresh
+- [x] 5.5 The reference month named on the card matches `settlement.reference_period` in the lab's file
 - [ ] 5.6 Stopping the lab's forecast job blanks the figure once its `generated_at` passes 30 minutes — by the freshness rule, not by the view's row disappearing — while the other cards keep updating
-- [ ] 5.7 A push that omits `bill_forecast` entirely leaves the last good forecast on the card rather than blanking it
+- [x] 5.7 A push that omits `bill_forecast` entirely leaves the last good forecast on the card rather than blanking it
 - [x] 5.8 `docs/prerequisites.md` names every external dependency the card needs — 0f7771d
