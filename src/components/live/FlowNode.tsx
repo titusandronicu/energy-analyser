@@ -22,9 +22,9 @@ const ICON_HUE: Record<NodeId, string> = {
 };
 
 const RATED_TINT: Record<Exclude<StatusTone, "insufficient">, string> = {
-  good: "border-2 border-tone-good bg-tone-good-surface/60 p-[9px] max-[480px]:px-2 max-[480px]:py-[7px]",
-  watch: "border-2 border-tone-watch bg-tone-watch-surface/60 p-[9px] max-[480px]:px-2 max-[480px]:py-[7px]",
-  problem: "border-2 border-tone-problem bg-tone-problem-surface/60 p-[9px] max-[480px]:px-2 max-[480px]:py-[7px]",
+  good: "border-2 border-tone-good bg-tone-good-surface p-[9px] max-[480px]:px-2 max-[480px]:py-[7px]",
+  watch: "border-2 border-tone-watch bg-tone-watch-surface p-[9px] max-[480px]:px-2 max-[480px]:py-[7px]",
+  problem: "border-2 border-tone-problem bg-tone-problem-surface p-[9px] max-[480px]:px-2 max-[480px]:py-[7px]",
 };
 
 const NEUTRAL = "border border-border bg-muted p-2.5 max-[480px]:px-[9px] max-[480px]:py-2";

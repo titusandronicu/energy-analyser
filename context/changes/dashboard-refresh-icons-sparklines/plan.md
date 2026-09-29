@@ -566,15 +566,15 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [ ] 1.1 PR 65 is merged on the branch base and its own acceptance check passes: `git grep -nE "text-white|border-white|bg-white/|text-blue-100" -- src/components/LiveStateCard.astro src/components/BillForecastCard.astro src/components/UsageInsightCard.astro src/components/TermsExplained.astro src/pages/dashboard.astro` prints nothing and `git grep -n "bg-aurora" -- src/pages/dashboard.astro` prints one line
-- [ ] 1.2 Unit tests pass: `npm test`
-- [ ] 1.3 Linting passes: `npm run lint`
-- [ ] 1.4 Type checks pass: `npx astro check`
-- [ ] 1.5 Production build succeeds: `npm run build`
-- [ ] 1.6 No pre-move palette value remains: `git grep -nE "#7cc4f5|#e9a3d3|#9aa7c7|#6ee7b7|#fcd34d|#fca5a5|#064e3b|#78350f|#7f1d1d|#101218|#1c1f29|#08111f|#111827|#18223a|#b8c4d9|#27344f" -- src ':!src/components/Banner.astro'` prints nothing
-- [ ] 1.7 The tone surfaces no longer carry the old fade: `git grep -n "surface/60" -- src` prints nothing
-- [ ] 1.8 The design reference is saved: `test -f context/changes/dashboard-refresh-icons-sparklines/design/Main.dc.html && test -f context/changes/dashboard-refresh-icons-sparklines/design/Mobile.dc.html`
-- [ ] 1.9 The dev page is not tracked: `git ls-files src/pages/dev` prints nothing
+- [x] 1.1 PR 65 is merged on the branch base and its own acceptance check passes: `git grep -nE "text-white|border-white|bg-white/|text-blue-100" -- src/components/LiveStateCard.astro src/components/BillForecastCard.astro src/components/UsageInsightCard.astro src/components/TermsExplained.astro src/pages/dashboard.astro` prints nothing and `git grep -n "bg-aurora" -- src/pages/dashboard.astro` prints one line
+- [x] 1.2 Unit tests pass: `npm test`
+- [x] 1.3 Linting passes: `npm run lint`
+- [x] 1.4 Type checks pass: `npx astro check`
+- [x] 1.5 Production build succeeds: `npm run build`
+- [x] 1.6 No pre-move palette value remains: `git grep -nE "#7cc4f5|#e9a3d3|#9aa7c7|#6ee7b7|#fcd34d|#fca5a5|#064e3b|#78350f|#7f1d1d|#101218|#1c1f29|#08111f|#111827|#18223a|#b8c4d9|#27344f" -- src ':!src/components/Banner.astro'` prints nothing
+- [x] 1.7 The tone surfaces no longer carry the old fade: `git grep -n "surface/60" -- src` prints nothing
+- [x] 1.8 The design reference is saved: `test -f context/changes/dashboard-refresh-icons-sparklines/design/Main.dc.html && test -f context/changes/dashboard-refresh-icons-sparklines/design/Mobile.dc.html`
+- [x] 1.9 The dev page is not tracked: `git ls-files src/pages/dev` prints nothing
 
 #### Manual
 

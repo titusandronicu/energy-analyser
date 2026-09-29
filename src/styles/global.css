@@ -8,22 +8,22 @@
      light mode and never applies a `.dark` class, so the dark palette goes straight into :root. */
   --radius: 12px;
   --radius-panel: 20px;
-  --background: #08111f;
-  --foreground: #f3f4f8;
-  --card: #111827;
-  --card-foreground: #f3f4f8;
-  --popover: #111827;
-  --popover-foreground: #f3f4f8;
+  --background: #0b1020;
+  --foreground: #eef1fa;
+  --card: #151a29;
+  --card-foreground: #eef1fa;
+  --popover: #151a29;
+  --popover-foreground: #eef1fa;
   --primary: #b5a3f5;
   --primary-foreground: #171222;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: #18223a;
-  --muted-foreground: #b8c4d9;
+  --muted: #1b2236;
+  --muted-foreground: #a9b1c6;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: #fda4af;
-  --border: #27344f;
+  --border: #2a3350;
   --input: oklch(0.922 0 0);
   --ring: #d2c5ff;
   --chart-1: oklch(0.646 0.222 41.116);
@@ -39,18 +39,24 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  /* Flow-diagram source identity and verdict tones (context/changes/live-flow-interaction/handoff-adapted.md):
-     one source for squares, chips and arrows. Tone text colours sit on their -surface counterpart. */
-  --flow-pv: #b5a3f5;
-  --flow-home: #7cc4f5;
-  --flow-battery: #e9a3d3;
-  --flow-grid: #9aa7c7;
-  --tone-good: #6ee7b7;
-  --tone-watch: #fcd34d;
-  --tone-problem: #fca5a5;
-  --tone-good-surface: #064e3b;
-  --tone-watch-surface: #78350f;
-  --tone-problem-surface: #7f1d1d;
+  /* Dashboard refresh palette (context/changes/dashboard-refresh-icons-sparklines/design/): one source for
+     squares, chips, arrows and sparklines. The tone surfaces are opaque 10% tints over the card, so tone text
+     sits on its -surface counterpart without a fade. Solar yellow and the watch tone share a hex on purpose. */
+  --flow-pv: #f5c462;
+  --flow-home: #a3e6f5;
+  --flow-battery: #f5a3c7;
+  --flow-grid: #8b919e;
+  --tone-good: #86e8b0;
+  --tone-watch: #f5c462;
+  --tone-problem: #ff9b9b;
+  --tone-neutral: #c3cadb;
+  --tone-good-surface: color-mix(in srgb, var(--tone-good) 10%, var(--card));
+  --tone-watch-surface: color-mix(in srgb, var(--tone-watch) 10%, var(--card));
+  --tone-problem-surface: color-mix(in srgb, var(--tone-problem) 10%, var(--card));
+  --tone-neutral-surface: color-mix(in srgb, var(--tone-neutral) 10%, var(--card));
+  --inset: #111627;
+  --hairline: #232b45;
+  --border-strong: #343e63;
 }
 
 .dark {
@@ -134,6 +140,11 @@
   --color-tone-good-surface: var(--tone-good-surface);
   --color-tone-watch-surface: var(--tone-watch-surface);
   --color-tone-problem-surface: var(--tone-problem-surface);
+  --color-tone-neutral: var(--tone-neutral);
+  --color-tone-neutral-surface: var(--tone-neutral-surface);
+  --color-inset: var(--inset);
+  --color-hairline: var(--hairline);
+  --color-border-strong: var(--border-strong);
 }
 
 @utility bg-cosmic {
