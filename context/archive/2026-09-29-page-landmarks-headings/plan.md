@@ -201,10 +201,10 @@ None: no data, schema, contract or external prerequisite changes; `docs/prerequi
 
 #### Manual
 
-- [ ] 1.9 On `/dashboard` (signed in, local stack) the accessibility tree shows one banner (the header), one main containing the live card and the three cards, and one contentinfo labelled "Legenda"; the main does not contain the header or the legend
-- [ ] 1.10 The dashboard heading outline is one `h1` "Energy Analyser", then `h2` card titles, then `h3` sub-sections, with no skipped level and no second `h1`
+- [x] 1.9 On `/dashboard` (signed in, local stack) the accessibility tree shows one banner (the header), one main containing the live card and the three cards, and one contentinfo labelled "Legenda"; the main does not contain the header or the legend
+- [x] 1.10 The dashboard heading outline is one `h1` "Energy Analyser", then `h2` card titles, then `h3` sub-sections, with no skipped level and no second `h1`
 - [x] 1.11 `/auth/signin` and `/auth/check-email` each show one main landmark containing the card and their existing `h1` — c937cb7
-- [ ] 1.12 Nothing looks different at 1440px and 390px on all three pages: the brand's size, weight and position, and the spacing between header, live card, grid and legend, match `main` (compare with a screenshot of the current production page or the archived `fresh-full-1440.jpg` and `fresh-full-390.jpg`)
+- [x] 1.12 Nothing looks different at 1440px and 390px on all three pages: the brand's size, weight and position, and the spacing between header, live card, grid and legend, match `main` (compare with a screenshot of the current production page or the archived `fresh-full-1440.jpg` and `fresh-full-390.jpg`)
 
 ### Phase 2: Smoke guard
 
