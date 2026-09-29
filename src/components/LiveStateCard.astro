@@ -17,12 +17,12 @@ const status = view === null ? LOAD_FAILED : view.status;
 ---
 
 <Panel>
-  <h2 class="mb-2 text-lg font-semibold text-blue-100">Stan na żywo</h2>
+  <h2 class="mb-2 text-lg font-semibold text-card-foreground">Stan na żywo</h2>
   <div class="mb-4">
     <StatusBadge status={status} testId="live-status" />
   </div>
 
-  {view === null && <p class="text-sm text-blue-100/70">Spróbuj odświeżyć stronę.</p>}
+  {view === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
 
   {view?.kind === "state" && (
     <div class="space-y-4">
@@ -48,27 +48,27 @@ const status = view === null ? LOAD_FAILED : view.status;
         isStale={view.isStale}
       />
 
-      <div class="space-y-2 rounded-lg bg-white/5 p-3 text-sm">
-        <p class="text-xs text-blue-100/60" data-testid="live-today-period">
+      <div class="bg-muted space-y-2 rounded-lg p-3 text-sm">
+        <p class="text-muted-foreground text-xs" data-testid="live-today-period">
           {view.today.periodLabel.charAt(0).toUpperCase() + view.today.periodLabel.slice(1)}
         </p>
         <dl class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div>
-            <dt class="text-blue-100/60">Z paneli dziś</dt>
+            <dt class="text-muted-foreground">Z paneli dziś</dt>
             <dd class="font-medium">{view.today.pv}</dd>
           </div>
           <div>
-            <dt class="text-blue-100/60">Kupione z sieci dziś</dt>
+            <dt class="text-muted-foreground">Kupione z sieci dziś</dt>
             <dd class="font-medium">{view.today.bought}</dd>
           </div>
           <div>
-            <dt class="text-blue-100/60">Sprzedane do sieci dziś</dt>
+            <dt class="text-muted-foreground">Sprzedane do sieci dziś</dt>
             <dd class="font-medium">{view.today.sold}</dd>
           </div>
         </dl>
       </div>
 
-      <p class="text-xs text-blue-100/70">Odczyt z {view.capturedAtLabel}</p>
+      <p class="text-muted-foreground text-xs">Odczyt z {view.capturedAtLabel}</p>
 
       <TermsExplained terms={["pv", "kw", "kwh", "battery_soc", "grid_import", "grid_export"]} />
     </div>

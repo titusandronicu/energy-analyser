@@ -73,10 +73,10 @@ const [liveView, billView, usageView, view]: [
 ---
 
 <Layout title="Energy Analyser">
-  <div class="bg-background min-h-screen p-4 sm:p-8">
+  <div class="bg-aurora min-h-screen p-4 sm:p-8">
     <div class="mx-auto max-w-[1120px] space-y-6">
-      <header class="glass-surface flex items-center justify-between rounded-xl px-4 py-3 text-sm text-blue-100/70">
-        <span class="font-semibold text-white">Energy Analyser</span>
+      <header class="glass-surface text-muted-foreground flex items-center justify-between rounded-xl px-4 py-3 text-sm">
+        <span class="text-card-foreground font-semibold">Energy Analyser</span>
         <div class="flex items-center gap-3">
           <span class="hidden sm:inline">{user?.email}</span>
           <form method="POST" action="/api/auth/signout">
