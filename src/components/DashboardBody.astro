@@ -18,7 +18,8 @@ interface Props {
   email: string | undefined;
 }
 
-// The page composition lives here so /dashboard and the dev page render exactly the same body.
+// The dashboard's page body. The cards sit in the page's main landmark; the header and the legend footer stay
+// outside it so they keep their banner and contentinfo roles.
 const { liveView, billView, usageView, recommendationView, email } = Astro.props;
 ---
 
@@ -26,16 +27,18 @@ const { liveView, billView, usageView, recommendationView, email } = Astro.props
   <div class="mx-auto max-w-[1120px] space-y-6">
     <DashboardHeader email={email} />
 
-    <LiveStateCard view={liveView} />
-    <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
-      <div class="lg:col-span-2">
-        <RecommendationCard view={recommendationView} />
+    <main class="space-y-6">
+      <LiveStateCard view={liveView} />
+      <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
+        <div class="lg:col-span-2">
+          <RecommendationCard view={recommendationView} />
+        </div>
+        <div class="space-y-6">
+          <BillForecastCard view={billView} />
+          <UsageInsightCard view={usageView} />
+        </div>
       </div>
-      <div class="space-y-6">
-        <BillForecastCard view={billView} />
-        <UsageInsightCard view={usageView} />
-      </div>
-    </div>
+    </main>
 
     <SourceLegend />
   </div>
