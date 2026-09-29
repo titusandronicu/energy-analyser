@@ -353,6 +353,8 @@ One extra measurement pass per resize and one small island; no new dependency an
 
 No schema or contract change. Rolling back is reverting the phase commits; stored `localStorage` keys are harmless leftovers.
 
+Addendum (2026-09-29, after the implementation review and PR 58 review): one migration was added, `supabase/migrations/20260929130000_owner_read_daily_energy_captured_at.sql` (a column grant so owners can read `daily_energy.captured_at`); the live card reads it in an isolated query and does not rate consumption from a daily row more than 15 minutes older than the snapshot. Apply it in production with the deploy; without it the consumption chip reads "brak czasu historii". Other deviations, all with the intent met: the fixture test is a separate file (`src/lib/ingest/live-flow-fixtures.test.ts`) instead of an extension of `contract.test.ts`; reduced-motion and paused screenshots were not captured (see `screenshots/README.md`); `text-blue-100` and `bg-white/5` literals remain in untouched markup of `LiveStateCard.astro` and in the neutral tone of `tone-classes.ts`; `preferences.ts`, `tone-classes.ts` and `VerdictChip.tsx` were added as small shared modules; and the PV chip says "oczekiwanego" instead of "prognozy" because the share is measured against the forecast pro-rated to the capture time.
+
 ## References
 
 - Related research: `context/changes/live-flow-interaction/research.md`

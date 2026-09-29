@@ -4,14 +4,14 @@ import { asNumber, asRecord, kwhLabel, MISSING, oneDecimal } from "@/lib/format/
 import { TONE_WORD } from "@/lib/format/status";
 import type { Status, StatusTone } from "@/lib/format/status";
 import { formatDayMonth, warsawParts } from "@/lib/format/warsaw-time";
+import { MIN_FLOW_W } from "@/lib/flow-constants";
 import { dailyLoadNorm, deltaLabel, FAR_ABOVE_THRESHOLD, STATUS_THRESHOLD } from "@/lib/services/usage-insight";
 
 // The lab pushes every few minutes; a snapshot older than 15 minutes no longer describes "now".
 export const LIVE_STALE_AFTER_MS = 15 * 60 * 1000;
 // After two hours without a snapshot the lab has most likely stopped pushing: a problem, not just old data.
 export const LIVE_PROBLEM_AFTER_MS = 2 * 60 * 60 * 1000;
-// Below this a flow is noise (inverter idle draw, meter jitter): it shows as "0,0 kW" with no direction word.
-export const MIN_FLOW_W = 50;
+export { MIN_FLOW_W };
 // Battery charge-level bands for the flow diagram's icon (live-state-flow-visual): purely which icon shows,
 // never a displayed number or verdict. Exactly on a line takes the higher (milder) level.
 export const BATTERY_FULL_AT = 80;
@@ -90,7 +90,13 @@ export type LiveStateView =
       pv: string;
       homeLoad: string;
       grid: FlowLabel;
-      battery: FlowLabel & { socLabel: string; socPct: number | null; chargeLevel: BatteryChargeLevel | null };
+      battery: FlowLabel & {
+        socLabel: string;
+        socPct: number | null;
+        chargeLevel: BatteryChargeLevel | null;
+        // True exactly when the direction is "ładowanie": battery_w negative with a magnitude of at least MIN_FLOW_W.
+        charging: boolean;
+      };
       today: { pv: string; bought: string; sold: string; periodLabel: string };
       flows: { pv: FlowMotion; home: FlowMotion; grid: FlowMotion; battery: FlowMotion };
       verdicts: { battery: NodeVerdict; pv: NodeVerdict; home: NodeVerdict };
@@ -191,6 +197,8 @@ function unrated(detail: string, explanation: string): NodeVerdict {
 
 const STALE_VERDICT = unrated("dane nieaktualne", "Migawka jest nieaktualna, więc ten odczyt nie jest oceniany.");
 const NO_HISTORY_DETAIL = "brak danych historii";
+const HISTORY_UNAVAILABLE_DETAIL = "historia niedostępna";
+const HISTORY_UNAVAILABLE_EXPLANATION = "Nie udało się wczytać historii dziennej, więc ten odczyt nie jest oceniany.";
 
 // "94%"; at a line (85%, 60%) one decimal so the number never reads as the line while the badge says the other side
 // of it (84,9% is watch, 85,0% is good), as deltaLabel does for the consumption bands.
@@ -209,6 +217,7 @@ function pvVerdict(
   captured: { hour: number; month: number; time: string; dayKey: string },
   pvTodayKwh: number | null,
   dailyRows: DailyEnergyRow[],
+  historyFailed: boolean,
   isStale: boolean,
 ): NodeVerdict {
   if (isStale) return STALE_VERDICT;
@@ -219,6 +228,7 @@ function pvVerdict(
       `Produkcja PV jest oceniana od ${String(PV_RATE_FROM_HOUR)}:00, gdy większość dziennej produkcji jest już za nami.`,
     );
   }
+  if (historyFailed) return unrated(HISTORY_UNAVAILABLE_DETAIL, HISTORY_UNAVAILABLE_EXPLANATION);
   if (dailyRows.length === 0) {
     return unrated(NO_HISTORY_DETAIL, "Brak danych historii, więc nie ma prognozy na dziś do porównania.");
   }
@@ -234,7 +244,7 @@ function pvVerdict(
   const shown = shareLabel(share);
   const rule = `od ${String(Math.round(PV_GOOD_AT * 100))}% dobrze, ${String(Math.round(PV_WATCH_AT * 100))}–${String(Math.round(PV_GOOD_AT * 100))}% warto sprawdzić, poniżej ${String(Math.round(PV_WATCH_AT * 100))}% problem.`;
   const explanation = `Do ${captured.time} wyprodukowano ${kwhLabel(pvTodayKwh)}, a wg prognozy na dziś (${kwhLabel(forecast)}) do tej pory powinno być ok. ${kwhLabel(expectedKwh)}, czyli ${shown} oczekiwanego: ${rule}`;
-  const detail = `${shown} prognozy`;
+  const detail = `${shown} oczekiwanego`;
   if (share >= PV_GOOD_AT - EPSILON) return verdict("good", detail, explanation);
   if (share >= PV_WATCH_AT - EPSILON) return verdict("watch", detail, explanation);
   return verdict("problem", detail, explanation);
@@ -244,6 +254,7 @@ function homeVerdict(
   captured: { hour: number; time: string; dayKey: string },
   capturedAtMs: number,
   dailyRows: DailyEnergyRow[],
+  historyFailed: boolean,
   todayRowCapturedAt: string | null | undefined,
   now: Date,
   isStale: boolean,
@@ -255,6 +266,7 @@ function homeVerdict(
       `Zużycie domu jest oceniane od ${String(LOAD_RATE_FROM_HOUR).padStart(2, "0")}:00, gdy dzienne zużycie ma już z czym się porównać.`,
     );
   }
+  if (historyFailed) return unrated(HISTORY_UNAVAILABLE_DETAIL, HISTORY_UNAVAILABLE_EXPLANATION);
   if (dailyRows.length === 0) {
     return unrated(NO_HISTORY_DETAIL, "Brak danych historii, więc nie ma normy zużycia do porównania.");
   }
@@ -314,8 +326,9 @@ function liveStatus(ageMs: number, isDegraded: boolean): Status {
   return { tone: "good", label: "aktualne" };
 }
 
-// `dailyRows` are the daily totals the usage card reads; null, undefined or empty means no history (PV and
-// consumption are then not rated), never an error. `todayRowCapturedAt` is when the capture day's daily row was
+// `dailyRows` are the daily totals the usage card reads. `null` means loading them FAILED ("historia niedostępna"),
+// `undefined` or `[]` means there is simply no history ("brak danych historii"); either way PV and consumption are
+// not rated. `todayRowCapturedAt` is when the capture day's daily row was
 // written; without it (null, undefined or unparseable) or when it is older than the snapshot by more than
 // DAILY_ROW_MAX_LAG_MS, consumption is not rated.
 export function toLiveStateView(
@@ -337,6 +350,7 @@ export function toLiveStateView(
     dayKey: captured.dayKey,
   };
   const history = dailyRows ?? [];
+  const historyFailed = dailyRows === null;
   const ageMs = now.getTime() - capturedAt.getTime();
   const state = asRecord(row.state);
   const soc = asNumber(state.battery_soc_pct);
@@ -366,6 +380,7 @@ export function toLiveStateView(
       socLabel,
       socPct: soc,
       chargeLevel: chargeLevelOf(socWhole),
+      charging: batteryFlow.watts !== null && batteryFlow.watts <= -MIN_FLOW_W,
     },
     today: {
       pv: kwhLabel(state.pv_today_kwh),
@@ -384,8 +399,8 @@ export function toLiveStateView(
     },
     verdicts: {
       battery: batteryVerdict(socWhole, socLabel, isStale),
-      pv: pvVerdict(capturedClock, asNumber(state.pv_today_kwh), history, isStale),
-      home: homeVerdict(capturedClock, capturedAt.getTime(), history, todayRowCapturedAt, now, isStale),
+      pv: pvVerdict(capturedClock, asNumber(state.pv_today_kwh), history, historyFailed, isStale),
+      home: homeVerdict(capturedClock, capturedAt.getTime(), history, historyFailed, todayRowCapturedAt, now, isStale),
     },
   };
 }

@@ -4,11 +4,15 @@
 // forecast are made up and would be kept (recommendations permanently), so use --full only against local
 // databases.
 // --file <path> sends a whole body from another file instead (the variants in scripts/fixtures/), which is
-// local-only for the same reason. --keep-generated-at leaves the body's own bill_forecast.generated_at
+// local-only for the same reason.
+// --allow-remote lifts the guard that refuses a whole body (--file or --full) for a BASE_URL that is not
+// localhost, 127.0.0.1, [::1] or *.localhost. It exists for a deliberate staging push: a whole body writes
+// made-up recommendations and daily rows. The default state-only push to a remote server is always allowed. --keep-generated-at leaves the body's own bill_forecast.generated_at
 // alone, for the variants that are about a stale forecast.
 // --captured-at <iso> sets captured_at instead of now (the contract accepts at most 5 minutes in the future and
 // up to 14 days back). --shift-days moves every daily_history day by the same number of days so the newest day
-// becomes today in Europe/Warsaw (the machine's zone is not used); together with --captured-at that is how the
+// becomes the Europe/Warsaw calendar day of the capture time actually sent (--captured-at when given, else now;
+// the machine's zone is not used); together with --captured-at that is how the
 // scenarios in scripts/fixtures/live-flow/ are pushed at any time of day. Stale is `normal` pushed with
 // --captured-at set 40 minutes back.
 //
@@ -22,12 +26,12 @@
 //   still fresh. That also limits when their screenshots can be taken.
 // - The verdicts also depend on the month (the expected PV share table in src/lib/services/live-state.ts): the
 //   fixtures are tuned for September to October.
-// Usage: BASE_URL=https://… INGEST_TOKEN=… node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--shift-days]
+// Usage: BASE_URL=https://… INGEST_TOKEN=… node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--shift-days] [--allow-remote]
 import { readFileSync } from "node:fs";
 import { URL } from "node:url";
 
 const usage =
-  "Usage: BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--shift-days]";
+  "Usage: BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--shift-days] [--allow-remote]";
 
 const { BASE_URL, INGEST_TOKEN } = process.env;
 if (!BASE_URL || !INGEST_TOKEN) {
@@ -72,18 +76,38 @@ const {
 const full = filePath !== null || process.argv.includes("--full");
 const body = full ? fixture : stateOnly;
 
+// A whole body writes made-up recommendations (never pruned) and daily rows, so it is local-only unless the
+// caller says a remote push is deliberate.
+function isLocalHost(hostname) {
+  return ["localhost", "127.0.0.1", "[::1]"].includes(hostname) || hostname.endsWith(".localhost");
+}
+let baseHost;
+try {
+  baseHost = new URL(BASE_URL).hostname;
+} catch {
+  console.error(`BASE_URL is not a valid URL: ${BASE_URL}\n${usage}`);
+  process.exit(1);
+}
+if (full && !isLocalHost(baseHost) && !process.argv.includes("--allow-remote")) {
+  console.error(
+    `refusing to send a whole body (--file or --full) to ${baseHost}: it writes made-up recommendations and daily rows. Pass --allow-remote for a deliberate staging push.\n${usage}`,
+  );
+  process.exit(1);
+}
+
 // The bill forecast's own generated_at decides whether the card shows a figure, and the committed bodies
 // carry fixed timestamps (so the strict parse and the schema drift assertion stay deterministic). Without
 // this rewrite every push would render the stale state and the happy path would never be exercised.
-const capturedAt = (capturedAtOverride ?? new Date()).toISOString();
+const captureTime = capturedAtOverride ?? new Date();
+const capturedAt = captureTime.toISOString();
 const rewriteGeneratedAt = body.bill_forecast && !process.argv.includes("--keep-generated-at");
 
 // Calendar arithmetic on "YYYY-MM-DD" keys in UTC, where every day has 24 hours, so DST cannot shift a day.
 const DAY_MS = 24 * 60 * 60 * 1000;
 const dayNumber = (key) => Date.parse(`${key}T00:00:00Z`) / DAY_MS;
 const dayKey = (number) => new Date(number * DAY_MS).toISOString().slice(0, 10);
-// Today's calendar date in Europe/Warsaw whatever the machine's zone ("en-CA" formats as YYYY-MM-DD).
-const warsawToday = () => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Warsaw" }).format(new Date());
+// The Europe/Warsaw calendar date of an instant whatever the machine's zone ("en-CA" formats as YYYY-MM-DD).
+const warsawDay = (instant) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Warsaw" }).format(instant);
 
 let dailyHistory = body.daily_history;
 if (process.argv.includes("--shift-days")) {
@@ -91,9 +115,10 @@ if (process.argv.includes("--shift-days")) {
     console.error(`--shift-days needs a body with daily_history\n${usage}`);
     process.exit(1);
   }
-  const shift = dayNumber(warsawToday()) - Math.max(...dailyHistory.map((entry) => dayNumber(entry.day)));
+  const targetDay = warsawDay(captureTime);
+  const shift = dayNumber(targetDay) - Math.max(...dailyHistory.map((entry) => dayNumber(entry.day)));
   dailyHistory = dailyHistory.map((entry) => ({ ...entry, day: dayKey(dayNumber(entry.day) + shift) }));
-  console.log(`daily_history shifted by ${String(shift)} day(s): newest day is now ${warsawToday()}`);
+  console.log(`daily_history shifted by ${String(shift)} day(s): newest day is now ${targetDay}`);
 }
 
 const payload = {

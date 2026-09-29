@@ -64,6 +64,7 @@ describe("toLiveStateView", () => {
         socLabel: "74%",
         socPct: 74,
         chargeLevel: "medium",
+        charging: true,
       },
       today: { pv: "12,3 kWh", bought: "1,2 kWh", sold: "5,0 kWh", periodLabel: "dziś od północy do 12:00" },
       flows: {
@@ -215,19 +216,30 @@ describe("toLiveStateView", () => {
   });
 
   it.each([
-    [800, { value: "0,8 kW", direction: "rozładowanie", watts: 800 }],
-    [-800, { value: "0,8 kW", direction: "ładowanie", watts: -800 }],
-    [0, { value: "0,0 kW", direction: null, watts: 0 }],
-    [-20, { value: "0,0 kW", direction: null, watts: -20 }],
-    [50, { value: "0,1 kW", direction: "rozładowanie", watts: 50 }],
-    [null, { value: "—", direction: null, watts: null }],
-  ])("labels battery %j", (battery_w, expected) => {
+    [800, { value: "0,8 kW", direction: "rozładowanie", watts: 800 }, false],
+    [-800, { value: "0,8 kW", direction: "ładowanie", watts: -800 }, true],
+    [0, { value: "0,0 kW", direction: null, watts: 0 }, false],
+    [-20, { value: "0,0 kW", direction: null, watts: -20 }, false],
+    [50, { value: "0,1 kW", direction: "rozładowanie", watts: 50 }, false],
+    [null, { value: "—", direction: null, watts: null }, false],
+  ])("labels battery %j", (battery_w, expected, charging) => {
     expect(view(row({}, { battery_w })).battery).toEqual({
       ...expected,
       socLabel: "74%",
       socPct: 74,
       chargeLevel: "medium",
+      charging,
     });
+  });
+
+  it.each([
+    [-50, true],
+    [-49, false],
+    [-1370, true],
+    [800, false],
+    [null, false],
+  ])("flags battery charging for %j W: %s", (battery_w, charging) => {
+    expect(view(row({}, { battery_w })).battery.charging).toBe(charging);
   });
 
   it.each([
@@ -282,7 +294,15 @@ describe("toLiveStateView", () => {
       pv: "—",
       homeLoad: "—",
       grid: { value: "—", direction: null, watts: null },
-      battery: { value: "—", direction: null, watts: null, socLabel: "—", socPct: null, chargeLevel: null },
+      battery: {
+        value: "—",
+        direction: null,
+        watts: null,
+        socLabel: "—",
+        socPct: null,
+        chargeLevel: null,
+        charging: false,
+      },
       today: { pv: "—", bought: "—", sold: "—", periodLabel: "dziś od północy do 12:00" },
     });
     expect(v.capturedAtLabel).toBe("25 września 2026, 12:00");
@@ -391,14 +411,14 @@ describe("PV verdict", () => {
   const pv = (kwh: number | null, at15 = "15:00") => verdictsAt(at15, rows, { pv_today_kwh: kwh }).pv;
 
   it.each([
-    [6.8, "good", "85,0% prognozy"],
-    [6.79, "watch", "84,9% prognozy"],
-    [4.8, "watch", "60,0% prognozy"],
-    [4.79, "problem", "59,9% prognozy"],
-    [7.52, "good", "94% prognozy"],
-    [8, "good", "100% prognozy"],
-    [10, "good", "125% prognozy"],
-    [0, "problem", "0% prognozy"],
+    [6.8, "good", "85,0% oczekiwanego"],
+    [6.79, "watch", "84,9% oczekiwanego"],
+    [4.8, "watch", "60,0% oczekiwanego"],
+    [4.79, "problem", "59,9% oczekiwanego"],
+    [7.52, "good", "94% oczekiwanego"],
+    [8, "good", "100% oczekiwanego"],
+    [10, "good", "125% oczekiwanego"],
+    [0, "problem", "0% oczekiwanego"],
   ])("rates %j kWh at 15:00 as %s (%s)", (kwh, tone, detail) => {
     expect(pv(kwh)).toMatchObject({ tone, detail });
   });
@@ -416,13 +436,13 @@ describe("PV verdict", () => {
 
   it("expects more of the forecast later in the day", () => {
     // 16:27 in September expects 0.80 + 0.20 * 1.45 / 2.9 = 0.90 of the forecast, so 9 kWh is exactly on target.
-    expect(pv(9, "16:27")).toMatchObject({ tone: "good", detail: "100% prognozy" });
-    expect(pv(7.65, "16:27")).toMatchObject({ tone: "good", detail: "85,0% prognozy" });
+    expect(pv(9, "16:27")).toMatchObject({ tone: "good", detail: "100% oczekiwanego" });
+    expect(pv(7.65, "16:27")).toMatchObject({ tone: "good", detail: "85,0% oczekiwanego" });
     expect(pv(7.64, "16:27")).toMatchObject({ tone: "watch" });
   });
 
   it("expects the whole forecast after the done hour", () => {
-    expect(pv(8.5, "18:00")).toMatchObject({ tone: "good", detail: "85,0% prognozy" });
+    expect(pv(8.5, "18:00")).toMatchObject({ tone: "good", detail: "85,0% oczekiwanego" });
     expect(pv(8.49, "18:00")).toMatchObject({ tone: "watch" });
   });
 
@@ -431,7 +451,7 @@ describe("PV verdict", () => {
     const juneRows = history({ pv_forecast_kwh: 10 }, 30, june);
     expect(verdictsAt("20:00", juneRows, { pv_today_kwh: 6 }, june).pv).toMatchObject({
       tone: "watch",
-      detail: "60,0% prognozy",
+      detail: "60,0% oczekiwanego",
     });
     expect(verdictsAt("20:00", juneRows, { pv_today_kwh: 5.99 }, june).pv).toMatchObject({ tone: "problem" });
   });
@@ -446,7 +466,7 @@ describe("PV verdict", () => {
       new Date(captured.getTime() + 60_000),
       decRows,
     );
-    expect(v.verdicts.pv).toMatchObject({ tone: "good", detail: "85,0% prognozy" });
+    expect(v.verdicts.pv).toMatchObject({ tone: "good", detail: "85,0% oczekiwanego" });
   });
 
   it("is not rated without today's forecast", () => {
@@ -482,11 +502,18 @@ describe("PV verdict", () => {
     });
   });
 
-  it.each([null, undefined, []])("says there is no history for %j rows once it is 15:00", (rows) => {
+  it.each([undefined, []])("says there is no history for %j rows once it is 15:00", (rows) => {
     expect(verdictsAt("15:00", rows, { pv_today_kwh: 8 }).pv).toMatchObject({
       tone: "insufficient",
       detail: "brak danych historii",
     });
+  });
+
+  it("says the history is unavailable when loading it failed (null)", () => {
+    const pvVerdict = verdictsAt("15:00", null, { pv_today_kwh: 8 }).pv;
+    expect(pvVerdict).toMatchObject({ tone: "insufficient", word: "bez oceny", detail: "historia niedostępna" });
+    expect(pvVerdict.explanation).toBe("Nie udało się wczytać historii dziennej, więc ten odczyt nie jest oceniany.");
+    expect(verdictsAt("14:59", null, { pv_today_kwh: 8 }).pv.detail).toBe("za wcześnie");
   });
 
   it("judges the capture's Warsaw day, not today's", () => {
@@ -498,7 +525,7 @@ describe("PV verdict", () => {
       new Date("2026-09-25T23:55:00+02:00"),
       rows25,
     );
-    expect(v.verdicts.pv).toMatchObject({ tone: "good", detail: "90% prognozy" });
+    expect(v.verdicts.pv).toMatchObject({ tone: "good", detail: "90% oczekiwanego" });
   });
 });
 
@@ -557,11 +584,18 @@ describe("consumption verdict", () => {
     expect(verdictsAt("12:00", wrongDay, {}).home.detail).toBe("brak odczytu");
   });
 
-  it.each([null, undefined, []])("says there is no history for %j rows", (noRows) => {
+  it.each([undefined, []])("says there is no history for %j rows", (noRows) => {
     expect(verdictsAt("12:00", noRows, {}).home).toMatchObject({
       tone: "insufficient",
       detail: "brak danych historii",
     });
+  });
+
+  it("says the history is unavailable when loading it failed (null)", () => {
+    const homeVerdict = verdictsAt("12:00", null, {}).home;
+    expect(homeVerdict).toMatchObject({ tone: "insufficient", word: "bez oceny", detail: "historia niedostępna" });
+    expect(homeVerdict.explanation).toBe("Nie udało się wczytać historii dziennej, więc ten odczyt nie jest oceniany.");
+    expect(verdictsAt("05:59", null, {}).home.detail).toBe("za wcześnie");
   });
 
   describe("age of today's row", () => {

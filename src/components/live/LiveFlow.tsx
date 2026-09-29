@@ -25,7 +25,7 @@ import { useFlowLines } from "@/components/hooks/useFlowLines";
 import { connector } from "@/lib/flow-geometry";
 import { GLOSSARY, type GlossaryTerm } from "@/lib/format/glossary";
 import { FLOW_PAUSED_KEY, FLOW_VIEW_KEY } from "@/lib/preferences";
-import { MIN_FLOW_W } from "@/lib/services/live-state";
+import { MIN_FLOW_W } from "@/lib/flow-constants";
 import type { LiveStateView, NodeVerdict } from "@/lib/services/live-state";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +63,7 @@ const LINE_TEXT: Record<NodeId, string> = {
 
 // Charging wins regardless of level; otherwise the icon follows the mapper-owned charge-level band.
 function batteryIcon(battery: LiveFlowProps["battery"]): LucideIcon {
-  if (battery.direction === "ładowanie") return BatteryCharging;
+  if (battery.charging) return BatteryCharging;
   switch (battery.chargeLevel) {
     case "full":
       return BatteryFull;
@@ -284,7 +284,7 @@ export function LiveFlow(props: LiveFlowProps) {
             </div>
           </div>
 
-          <div className="bg-muted space-y-1 rounded-lg p-3 text-sm" aria-live="polite">
+          <div className="bg-muted space-y-1 rounded-lg p-3 text-sm" aria-live="polite" aria-atomic="true">
             <p>
               <Info className="mr-1 inline size-4 align-text-bottom" aria-hidden="true" />
               <span className="font-medium">{details.label}</span> · {details.spoken}
