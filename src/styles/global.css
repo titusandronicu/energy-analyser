@@ -154,23 +154,21 @@
   }
 }
 
-/* Ambient "this is alive" signal for flow nodes with real flow (live-state-flow-visual). The reduced-motion
-   override below is unconditional so every future reuse of this utility inherits the same guarantee, rather
-   than each call site having to re-implement it. */
-@keyframes flow-pulse {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.55;
+/* Moving dashes along a live flow connector (live-flow-interaction). The path runs start to end in the flow
+   direction, so a negative dash offset carries the dashes toward the arrowhead (one 6+8 period per second). The
+   reduced-motion override is unconditional so every reuse of this utility inherits the same guarantee; the
+   dashes then stay put and the arrowhead still shows the direction. */
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -14;
   }
 }
-@utility animate-flow-pulse {
-  animation: flow-pulse 2.5s ease-in-out infinite;
+@utility animate-flow-dash {
+  stroke-dasharray: 6 8;
+  animation: flow-dash 1s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .animate-flow-pulse {
+  .animate-flow-dash {
     animation: none;
   }
 }

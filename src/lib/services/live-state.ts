@@ -55,9 +55,7 @@ export type LiveStateView =
       isStale: boolean;
       isDegraded: boolean;
       pv: string;
-      pvWatts: number | null;
       homeLoad: string;
-      homeLoadWatts: number | null;
       grid: FlowLabel;
       battery: FlowLabel & { socLabel: string; socPct: number | null; chargeLevel: BatteryChargeLevel | null };
       today: { pv: string; bought: string; sold: string; periodLabel: string };
@@ -178,9 +176,7 @@ export function toLiveStateView(row: LiveStateRow | null, now: Date): LiveStateV
     isStale,
     isDegraded,
     pv: kwLabel(pvWatts),
-    pvWatts,
     homeLoad: kwLabel(homeLoadWatts),
-    homeLoadWatts,
     grid,
     battery: {
       ...batteryFlow,

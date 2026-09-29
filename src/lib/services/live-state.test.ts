@@ -51,9 +51,7 @@ describe("toLiveStateView", () => {
       isStale: false,
       isDegraded: false,
       pv: "3,4 kW",
-      pvWatts: 3420,
       homeLoad: "0,9 kW",
-      homeLoadWatts: 850,
       grid: { value: "1,2 kW", direction: "oddawanie do sieci", watts: -1200 },
       battery: {
         value: "1,4 kW",
@@ -272,9 +270,7 @@ describe("toLiveStateView", () => {
       ),
     );
     expect(v.pv).toBe("—");
-    expect(v.pvWatts).toBeNull();
     expect(v.homeLoad).toBe("—");
-    expect(v.homeLoadWatts).toBeNull();
     expect(v.battery.socLabel).toBe("—");
     expect(v.battery.socPct).toBeNull();
     expect(v.battery.chargeLevel).toBeNull();
@@ -286,9 +282,7 @@ describe("toLiveStateView", () => {
     expect(v).toMatchObject({
       isDegraded: false,
       pv: "—",
-      pvWatts: null,
       homeLoad: "—",
-      homeLoadWatts: null,
       grid: { value: "—", direction: null, watts: null },
       battery: { value: "—", direction: null, watts: null, socLabel: "—", socPct: null, chargeLevel: null },
       today: { pv: "—", bought: "—", sold: "—", periodLabel: "dziś od północy do 12:00" },

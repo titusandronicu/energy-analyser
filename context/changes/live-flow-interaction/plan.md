@@ -381,33 +381,33 @@ No schema or contract change. Rolling back is reverting the phase commits; store
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Linting and type checks pass: `npm run lint`
-- [x] 2.3 Production build succeeds: `npm run build`
+- [x] 2.1 Unit tests pass: `npm test` — 4a8ecc8
+- [x] 2.2 Linting and type checks pass: `npm run lint` — 4a8ecc8
+- [x] 2.3 Production build succeeds: `npm run build` — 4a8ecc8
 - [ ] 2.4 Smoke test still finds the live text: `npm run smoke`
 
 #### Manual
 
-- [x] 2.5 The four squares, junction icon and arrowheads render; grid and battery arrows follow the direction words
-- [x] 2.6 Tab reaches every square and both toggle buttons with a visible focus ring; Enter and Space select a square and show its details
-- [x] 2.7 "Odczyty" shows the same four values as the diagram
-- [x] 2.8 At 1440px and 390px there is no overflow or clipped value; the "Dziś" row, timestamp and glossary are intact
-- [x] 2.9 Badges on all four cards (live, bill forecast, usage, recommendation) keep their words and shape, use the tone tokens, and measure at least 4.5:1 on the card surface
+- [x] 2.5 The four squares, junction icon and arrowheads render; grid and battery arrows follow the direction words — 4a8ecc8
+- [x] 2.6 Tab reaches every square and both toggle buttons with a visible focus ring; Enter and Space select a square and show its details — 4a8ecc8
+- [x] 2.7 "Odczyty" shows the same four values as the diagram — 4a8ecc8
+- [x] 2.8 At 1440px and 390px there is no overflow or clipped value; the "Dziś" row, timestamp and glossary are intact — 4a8ecc8
+- [x] 2.9 Badges on all four cards (live, bill forecast, usage, recommendation) keep their words and shape, use the tone tokens, and measure at least 4.5:1 on the card surface — 4a8ecc8
 
 ### Phase 3: Motion and controls
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm test`
-- [ ] 3.2 Linting and type checks pass: `npm run lint`
-- [ ] 3.3 Production build succeeds: `npm run build`
+- [x] 3.1 Unit tests pass: `npm test`
+- [x] 3.2 Linting and type checks pass: `npm run lint`
+- [x] 3.3 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 3.4 With a fresh push, active connectors move; a flow under 50 W and a stale snapshot show static arrowheads only
-- [ ] 3.5 Pause stops all motion, keeps arrowheads, and persists after a manual reload; clearing `localStorage` (or blocking it) leaves the page working with defaults
-- [ ] 3.6 With `prefers-reduced-motion: reduce` emulated, nothing moves and arrowheads remain
-- [ ] 3.7 Polling continues while paused: a new push after five minutes still appears
+- [x] 3.4 With a fresh push, active connectors move; a flow under 50 W and a stale snapshot show static arrowheads only
+- [x] 3.5 Pause stops all motion, keeps arrowheads, and persists after a manual reload; clearing `localStorage` (or blocking it) leaves the page working with defaults
+- [x] 3.6 With `prefers-reduced-motion: reduce` emulated, nothing moves and arrowheads remain
+- [x] 3.7 Polling continues while paused: a new push after five minutes still appears
 
 ### Phase 4: PV and consumption verdicts
 

@@ -9,18 +9,22 @@ import {
   Info,
   List,
   Network,
+  Pause,
+  Play,
   Scale,
   Sun,
   Zap,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
+import { usePreference } from "@/components/hooks/usePreference";
 import { Button } from "@/components/ui/button";
 import { FlowNode, capitalise, type NodeId } from "@/components/live/FlowNode";
 import { VerdictChip } from "@/components/live/VerdictChip";
 import { useFlowLines } from "@/components/hooks/useFlowLines";
 import { connector } from "@/lib/flow-geometry";
 import { GLOSSARY, type GlossaryTerm } from "@/lib/format/glossary";
+import { FLOW_PAUSED_KEY, FLOW_VIEW_KEY } from "@/lib/preferences";
 import { MIN_FLOW_W } from "@/lib/services/live-state";
 import type { LiveStateView } from "@/lib/services/live-state";
 import { cn } from "@/lib/utils";
@@ -33,7 +37,8 @@ export type LiveFlowProps = Pick<
   "pv" | "homeLoad" | "grid" | "battery" | "flows" | "verdicts" | "capturedAtLabel" | "ageLabel" | "isStale"
 >;
 
-type View = "diagram" | "readings";
+const VIEWS = ["diagram", "readings"] as const;
+const PAUSED = ["0", "1"] as const;
 
 interface NodeData {
   id: NodeId;
@@ -151,7 +156,10 @@ const LEGEND = [
 
 export function LiveFlow(props: LiveFlowProps) {
   const { flows, capturedAtLabel, ageLabel, isStale } = props;
-  const [view, setView] = useState<View>("diagram");
+  // View and pause survive the periodic page reload; the selected node and the readings never do.
+  const [view, setView] = usePreference(FLOW_VIEW_KEY, VIEWS, "diagram");
+  const [pausedValue, setPausedValue] = usePreference(FLOW_PAUSED_KEY, PAUSED, "0");
+  const paused = pausedValue === "1";
   const [selected, setSelected] = useState<NodeId>("battery");
   const { stageRef, layout } = useFlowLines(view === "diagram");
 
@@ -160,30 +168,44 @@ export function LiveFlow(props: LiveFlowProps) {
 
   return (
     <div className="space-y-3">
-      <div className="flex justify-end gap-1.5" role="group" aria-label="Widok">
+      <div className="flex flex-wrap justify-end gap-1.5">
+        <div className="flex gap-1.5" role="group" aria-label="Widok">
+          <Button
+            type="button"
+            size="sm"
+            variant={view === "diagram" ? "outline" : "ghost"}
+            aria-pressed={view === "diagram"}
+            onClick={() => {
+              setView("diagram");
+            }}
+          >
+            <Network aria-hidden="true" />
+            Schemat
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={view === "readings" ? "outline" : "ghost"}
+            aria-pressed={view === "readings"}
+            onClick={() => {
+              setView("readings");
+            }}
+          >
+            <List aria-hidden="true" />
+            Odczyty
+          </Button>
+        </div>
         <Button
           type="button"
           size="sm"
-          variant={view === "diagram" ? "outline" : "ghost"}
-          aria-pressed={view === "diagram"}
+          variant={paused ? "outline" : "ghost"}
+          aria-pressed={paused}
           onClick={() => {
-            setView("diagram");
+            setPausedValue(paused ? "0" : "1");
           }}
         >
-          <Network aria-hidden="true" />
-          Schemat
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant={view === "readings" ? "outline" : "ghost"}
-          aria-pressed={view === "readings"}
-          onClick={() => {
-            setView("readings");
-          }}
-        >
-          <List aria-hidden="true" />
-          Odczyty
+          {paused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
+          {paused ? "Wznów ruch" : "Wstrzymaj ruch"}
         </Button>
       </div>
 
@@ -217,9 +239,17 @@ export function LiveFlow(props: LiveFlowProps) {
                       />
                     );
                   }
+                  const animated = flows[id].moving && !paused;
                   return (
                     <g key={id} className={cn(LINE_TEXT[id], isStale && "opacity-45")}>
-                      <path d={d} stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" fill="none" />
+                      <path
+                        d={d}
+                        className={cn(animated && "animate-flow-dash")}
+                        stroke="currentColor"
+                        strokeWidth={2.5}
+                        strokeLinecap="round"
+                        fill="none"
+                      />
                       <polygon
                         points="-6,-5 6,0 -6,5"
                         fill="currentColor"
