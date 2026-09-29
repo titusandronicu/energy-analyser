@@ -118,11 +118,12 @@ export function FlowNode({
         onSelect(id);
       }}
       className={cn(
-        "hover:bg-muted/60 flex min-h-11 min-w-0 cursor-pointer rounded-2xl p-1 text-left transition-colors sm:p-2",
+        "hover:bg-muted/60 focus-visible:ring-ring flex min-h-11 min-w-0 cursor-pointer rounded-2xl p-1 text-left transition-colors sm:p-2",
         isPv
           ? "flex-col items-center gap-1.5 sm:flex-row sm:gap-3 md:gap-4"
           : "flex-row items-center gap-2 sm:gap-3 md:gap-3.5",
         PLACEMENT[id],
+        "focus-visible:ring-2",
         selected && "bg-muted ring-primary ring-2",
       )}
     >

@@ -186,10 +186,10 @@ export function LiveFlow(props: LiveFlowProps) {
               variant="ghost"
               aria-pressed={view === "diagram"}
               className={cn(
-                "h-[38px] flex-1 rounded-[9px] px-4 text-sm sm:h-9 sm:flex-none",
+                "h-[38px] flex-1 rounded-[9px] border px-4 text-sm sm:h-9 sm:flex-none",
                 view === "diagram"
-                  ? "bg-primary/15 text-foreground hover:bg-primary/15 font-semibold"
-                  : "text-muted-foreground",
+                  ? "border-primary/45 bg-primary/15 text-foreground hover:bg-primary/15 font-semibold"
+                  : "text-muted-foreground border-transparent",
               )}
               onClick={() => {
                 setView("diagram");
@@ -202,10 +202,10 @@ export function LiveFlow(props: LiveFlowProps) {
               variant="ghost"
               aria-pressed={view === "readings"}
               className={cn(
-                "h-[38px] flex-1 rounded-[9px] px-4 text-sm sm:h-9 sm:flex-none",
+                "h-[38px] flex-1 rounded-[9px] border px-4 text-sm sm:h-9 sm:flex-none",
                 view === "readings"
-                  ? "bg-primary/15 text-foreground hover:bg-primary/15 font-semibold"
-                  : "text-muted-foreground",
+                  ? "border-primary/45 bg-primary/15 text-foreground hover:bg-primary/15 font-semibold"
+                  : "text-muted-foreground border-transparent",
               )}
               onClick={() => {
                 setView("readings");
@@ -272,7 +272,7 @@ export function LiveFlow(props: LiveFlowProps) {
                       );
                     }
                     return (
-                      <g key={id} className={cn(LINE_TEXT[id], state.dimmed && "opacity-45")}>
+                      <g key={id} className={cn(LINE_TEXT[id], state.dimmed && "opacity-65")}>
                         <path
                           d={path.d}
                           className={cn(state.animated && "animate-flow-dash")}

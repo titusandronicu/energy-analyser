@@ -45,7 +45,7 @@ Each `<name>-1440.jpg` has a `-390.jpg` twin except `artboard-main` (1440 only).
 4. Contrast (WCAG, rendered colours resolved through a canvas, translucent layers and the stale opacity composited):
    - Every text node on every scenario at 1440, 390 and 360: the lowest ratio is 7.20 (problem chip text on its tint) on fresh pages and 4.61 on `stale-and-lag`, where the balance label and value sit at opacity-70 (value 4.61, the plan's 4.6). Chip text on tint: good 9.32, watch 8.70, problem 7.20, neutral 8.49. Balance value fresh 8.15. Bill range 7.17. Delta, muted and KPI text are all above 7.2.
    - Tone-tinted tile borders (55% over the stage): good 4.43, watch 4.15, problem 3.49, all at least 3:1. Neutral (unrated or stale) tile borders use the source colour at 45%: PV 3.16, home 3.60, battery 2.87 (stale case), grid 2.14 (grey); these are not tone borders (see "Remaining differences").
-   - Sparkline strokes (graphics, 3:1): 7.86 to 13.01 on card and inset; dimmed stale connectors: 2.14 to 3.58 (see below); idle dotted lines: 1.45 (intended, no flow).
+   - Sparkline strokes (graphics, 3:1): 7.86 to 13.01 on card and inset; dimmed stale connectors: 2.14 to 3.58 as shot at `opacity-45`, raised to `opacity-65` after the implementation review (computed, not re-shot: grid 3.13, battery 4.62, PV 5.29, home 6.10); idle dotted lines: 1.45 (intended, no flow).
    - "Pokaż szczegóły" border (primary at 45% on the card): 2.65. The artboard's own solid `#5b4f96` border is 2.5.
 5. Reduced motion: the pane cannot emulate `prefers-reduced-motion`. `global.css` is unchanged (single rule); the arrowhead is a separate un-dashed path and is never animated (`animation-name` of the dashed paths is `flow-dash` only when the flow is fresh and not paused).
 
@@ -60,15 +60,23 @@ Each `<name>-1440.jpg` has a `-390.jpg` twin except `artboard-main` (1440 only).
 - Usage card has no "Z PV wykorzystane" row (no data for it; documented decision). Accepted.
 - Recommendation card: "Prognoza produkcji" shows two plain figures and the forecast confidence badge; the artboard shows two tinted tiles with icons and a confidence sentence. Not touched by this change. Accepted.
 - Header e-mail: real e-mail on the dev page, placeholder in the artboard. Not a difference.
-- Dimmed stale connectors (opacity-45 on the source colour): 2.14 to 3.58:1, below the 3:1 graphics guideline for the arrowheads of PV, home, battery and grid. Accepted: the state is deliberate (the notice above the diagram, the "Bez oceny · dane nieaktualne" chips and the direction words in the labels carry the meaning). See owner decisions.
+- Dimmed stale connectors: the `stale-and-lag` screenshots predate the implementation review and show `opacity-45` (2.14 to 3.58:1, below 3:1 for grid, battery and PV). The code now uses `opacity-65` (computed on the stage `#111627`: grid 3.13, battery 4.62, PV 5.29, home 6.10; every connector at least 3:1). The dev page is deleted, so the stale shots were not re-shot and look slightly more faded than the current code. The notice above the diagram, the "Bez oceny" chips and the direction words still carry the meaning. Accepted (owner decision, review F4).
 - Neutral tile border of the Grid node 2.14:1 and the idle dotted lines 1.45:1: decorative outline of a tile whose icon and label carry the meaning, and "no flow" lines. Accepted.
 - "Pokaż szczegóły" border 2.65:1, the same look as the artboard (2.5:1); the label is 4.5:1 or better. Accepted (raising it would change the `border-primary/45` the plan's check greps for). See owner decisions.
+- Unbalanced desktop columns: the recommendation card ends about 200 px above the bill and usage column, leaving a blank block bottom-left; the artboard's columns end nearly level. Accepted (owner decision, review F2): the cards have different content heights and `lg:items-start` is kept, so a short recommendation is not stretched into an empty card.
+- Battery node carries an extra "Naładowanie: 74%" detail line under its verdict chip, so it is taller than the artboard's. Accepted: the plan asks for the line.
+- The stage is about 220 px tall against 180 px on the artboard (the taller battery node and the balance block under the hub). Accepted.
+- Phone PV and Battery connectors are about 27 px long (the plan's arithmetic expected about 37 px); the phone columns were tuned to 70/56/114 and the stage padding to `px-1 py-2` so the wider chips and labels fit. Accepted (still above `MIN_CONNECTOR_SPAN`, arrowheads read).
 - Segmented segments are 36 px (38 px on the phone) inside a 44 px control: the owner's sizing, as in the artboards. Fixed nothing; matches.
+
+## Follow-ups outside this change
+
+- The dashboard has no `<main>` landmark and no `<h1>` (the brand is a span, the cards start at h2; `src/layouts/Layout.astro`, `src/components/DashboardHeader.astro`). Pre-existing on `main`, not changed here (review F10); landmarks and heading level are a separate change across pages.
 
 ## Layout defects found and fixed
 
 - `LiveFlow.tsx`: `auto-rows-fr` on the diagram grid (first pass), carried into the Phase 7 grid, so the three rows are equal and the hub stays level with the middle node. In place, committed in Phase 7.
-- `StatusBadge.astro`: `rounded-full` became `rounded-2xl` (first pass). A one-line badge looks the same; a badge that wraps to three or more lines (the lagging-reference confidence text in `stale-and-lag`, the bill status badges at 1/3 width) is a rounded box instead of an oval. Still uncommitted in the working tree; committed in Phase 8.
+- `StatusBadge.astro`: `rounded-full` became `rounded-2xl` (first pass). A one-line badge looks the same; a badge that wraps to three or more lines (the lagging-reference confidence text in `stale-and-lag`, the bill status badges at 1/3 width) is a rounded box instead of an oval. Committed in this branch.
 - `BillForecastCard.astro`: `sm:col-span-2` on the "Pewność tej kwoty" cell (first pass), so the confidence badge does not wrap inside a half-width cell. In place.
 - New in this pass: none. The second pass found no clipped text, overlap, overflow or unbalanced column at 1440, 390 or 360 in any scenario, and no product code was changed.
 

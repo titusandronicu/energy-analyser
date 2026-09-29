@@ -85,6 +85,17 @@ describe("toUsageInsightView", () => {
     expect(v.series.load.at(-1)).toBe(12);
   });
 
+  // Corrupt data: the series treats a negative daily total as a gap ("negative is null") while the figure beside it
+  // is still shown. The two intentionally differ; this pins the corner (impl review F5, behaviour accepted).
+  it("draws a gap for a negative load on the compared day while the shown load stays unchanged", () => {
+    const rows = [row(YESTERDAY, -2, 4), ...daysBefore(YESTERDAY, 30, 10, 5)];
+    const v = insight(rows);
+    expect(v.load.kwhLabel).toBe("-2,0 kWh");
+    expect(v.series.load).toEqual([10, 10, 10, 10, 10, 10, null]);
+    expect(v.series.load.at(-1)).toBeNull();
+    expect(v.series.purchase.at(-1)).toBe(4);
+  });
+
   it("uses the latest earlier day when yesterday is missing and names it", () => {
     const rows = [row(YESTERDAY, null), row("2026-09-22", 10), ...daysBefore("2026-09-22", 10, 10)];
     const v = insight(rows);

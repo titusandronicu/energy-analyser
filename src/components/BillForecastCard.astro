@@ -45,14 +45,14 @@ const creditLine =
   creditLeft === null
     ? ""
     : `Zgromadzony opust (${creditLeft}) pokrywa cały prąd kupiony w tym miesiącu, więc w prognozie zostają tylko opłaty stałe.`;
-// Worded as a test of the arithmetic, never as the forecast's accuracy: it cannot detect a wrong export ratio,
-// and it drifts when PGE changes prices. Absent when the reference month carries no invoice total.
 // The delta line: the arrow, the sign and the words carry the meaning, the tone class only reinforces it.
 const delta = forecast?.delta ?? null;
 const days = forecast?.days ?? null;
 const DELTA_ICON = { up: TrendingUp, down: TrendingDown, flat: Minus };
 const DELTA_TEXT = { good: "text-tone-good", watch: "text-tone-watch", problem: "text-tone-problem" };
 const DeltaIcon = delta === null ? null : DELTA_ICON[delta.direction];
+// Worded as a test of the arithmetic, never as the forecast's accuracy: it cannot detect a wrong export ratio,
+// and it drifts when PGE changes prices. Absent when the reference month carries no invoice total.
 const check = forecast?.closedMonthCheck ?? null;
 const checkLine =
   check === null

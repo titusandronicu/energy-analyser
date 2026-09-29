@@ -1,7 +1,7 @@
 ---
 change_id: dashboard-refresh-icons-sparklines
 title: Dashboard refresh: icons, sparklines, bill delta and system balance
-status: plan_reviewed
+status: impl_reviewed
 created: 2026-09-29
 updated: 2026-09-29
 archived_at: null
