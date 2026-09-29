@@ -35,6 +35,12 @@ function getClient() {
 }
 
 const now = new Date();
+// The daily rows feed both the usage card and the live verdicts, so they load once; a failure (null) shows the usage
+// card's load error and leaves the live card's PV and consumption verdicts unrated.
+const dailyRowsPromise = orLoadError(async () => {
+  const supabase = getClient();
+  return supabase ? await loadDailyEnergy(supabase, now) : [];
+});
 const [liveView, billView, usageView, view]: [
   LiveStateView | null,
   BillForecastView | null,
@@ -43,15 +49,16 @@ const [liveView, billView, usageView, view]: [
 ] = await Promise.all([
   orLoadError(async () => {
     const supabase = getClient();
-    return toLiveStateView(supabase ? await loadLiveState(supabase) : null, now);
+    const liveRow = supabase ? await loadLiveState(supabase) : null;
+    return toLiveStateView(liveRow, now, await dailyRowsPromise);
   }),
   orLoadError(async () => {
     const supabase = getClient();
     return toBillForecastView(supabase ? await loadBillForecast(supabase) : null, now);
   }),
   orLoadError(async () => {
-    const supabase = getClient();
-    return toUsageInsightView(supabase ? await loadDailyEnergy(supabase, now) : [], now);
+    const dailyRows = await dailyRowsPromise;
+    return dailyRows === null ? null : toUsageInsightView(dailyRows, now);
   }),
   orLoadError(async () => {
     const supabase = getClient();

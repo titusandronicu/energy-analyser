@@ -398,30 +398,30 @@ No schema or contract change. Rolling back is reverting the phase commits; store
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test`
-- [x] 3.2 Linting and type checks pass: `npm run lint`
-- [x] 3.3 Production build succeeds: `npm run build`
+- [x] 3.1 Unit tests pass: `npm test` — 07a5f28
+- [x] 3.2 Linting and type checks pass: `npm run lint` — 07a5f28
+- [x] 3.3 Production build succeeds: `npm run build` — 07a5f28
 
 #### Manual
 
-- [x] 3.4 With a fresh push, active connectors move; a flow under 50 W and a stale snapshot show static arrowheads only
-- [x] 3.5 Pause stops all motion, keeps arrowheads, and persists after a manual reload; clearing `localStorage` (or blocking it) leaves the page working with defaults
-- [x] 3.6 With `prefers-reduced-motion: reduce` emulated, nothing moves and arrowheads remain
-- [x] 3.7 Polling continues while paused: a new push after five minutes still appears
+- [x] 3.4 With a fresh push, active connectors move; a flow under 50 W and a stale snapshot show static arrowheads only — 07a5f28
+- [x] 3.5 Pause stops all motion, keeps arrowheads, and persists after a manual reload; clearing `localStorage` (or blocking it) leaves the page working with defaults — 07a5f28
+- [x] 3.6 With `prefers-reduced-motion: reduce` emulated, nothing moves and arrowheads remain — 07a5f28
+- [x] 3.7 Polling continues while paused: a new push after five minutes still appears — 07a5f28
 
 ### Phase 4: PV and consumption verdicts
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass: `npm test`
-- [ ] 4.2 Linting and type checks pass: `npm run lint`
-- [ ] 4.3 Production build succeeds: `npm run build`
+- [x] 4.1 Unit tests pass: `npm test`
+- [x] 4.2 Linting and type checks pass: `npm run lint`
+- [x] 4.3 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 4.4 On a real or fixture snapshot after 15:00, the PV chip and figure match a hand calculation from the day's totals
-- [ ] 4.5 On a snapshot after 06:00 with enough history, the consumption chip matches a hand calculation against the usage card's norm
-- [ ] 4.6 Breaking the daily-energy load (for example an invalid table name locally) leaves the live card and usage card error state working
+- [x] 4.4 On a real or fixture snapshot after 15:00, the PV chip and figure match a hand calculation from the day's totals
+- [x] 4.5 On a snapshot after 06:00 with enough history, the consumption chip matches a hand calculation against the usage card's norm
+- [x] 4.6 Breaking the daily-energy load (for example an invalid table name locally) leaves the live card and usage card error state working
 
 ### Phase 5: Fixtures, visual gate, sign check and docs
 

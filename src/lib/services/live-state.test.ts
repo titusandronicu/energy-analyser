@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { LiveStateRow } from "@/types";
-import { formatAge, toLiveStateView } from "./live-state";
+import type { DailyEnergyRow, LiveStateRow } from "@/types";
+import { addDays } from "@/lib/format/warsaw-time";
+import { expectedPvShare, formatAge, toLiveStateView } from "./live-state";
 import type { BatteryChargeLevel } from "./live-state";
 
 const state = {
@@ -28,11 +29,14 @@ function row(overrides: Partial<LiveStateRow> = {}, stateOverrides: Record<strin
 const at = (iso: string) => new Date(iso);
 const now = at("2026-09-25T10:05:00Z");
 
-function view(r: LiveStateRow, clock: Date = now) {
-  const v = toLiveStateView(r, clock);
+function view(r: LiveStateRow, clock: Date = now, daily?: DailyEnergyRow[] | null) {
+  const v = toLiveStateView(r, clock, daily);
   if (v.kind !== "state") throw new Error("expected a state view");
   return v;
 }
+
+const PV_EARLY = "Produkcja PV jest oceniana od 15:00, gdy większość dziennej produkcji jest już za nami.";
+const HOME_NO_HISTORY = "Brak danych historii, więc nie ma normy zużycia do porównania.";
 
 describe("toLiveStateView", () => {
   it("returns the empty state without a row", () => {
@@ -76,8 +80,8 @@ describe("toLiveStateView", () => {
           explanation:
             "Poziom naładowania 74%: od 30% w górę to dobrze, 10–30% warto sprawdzić, poniżej 10% problem. 100% nigdy nie jest złe.",
         },
-        pv: null,
-        home: null,
+        pv: { tone: "insufficient", word: "bez oceny", detail: "za wcześnie", explanation: PV_EARLY },
+        home: { tone: "insufficient", word: "bez oceny", detail: "brak danych historii", explanation: HOME_NO_HISTORY },
       },
     });
   });
@@ -145,12 +149,6 @@ describe("toLiveStateView", () => {
       word: "bez oceny",
       detail: "dane nieaktualne",
     });
-  });
-
-  it("leaves pv and home unrated", () => {
-    const { verdicts } = view(row());
-    expect(verdicts.pv).toBeNull();
-    expect(verdicts.home).toBeNull();
   });
 
   it("is not stale at exactly 15 minutes", () => {
@@ -311,5 +309,269 @@ describe("formatAge", () => {
   it("feeds the age label from the capture time", () => {
     expect(view(row(), at("2026-09-25T12:30:00Z")).ageLabel).toBe("2 godz.");
     expect(view(row(), at("2026-09-28T10:00:00Z")).ageLabel).toBe("3 dni");
+  });
+});
+
+// Verdicts for PV and consumption. 2026-09-25 (CEST, UTC+2) unless stated; captures are given in UTC.
+const DAY = "2026-09-25";
+
+function daily(day: string, fields: Partial<DailyEnergyRow> = {}): DailyEnergyRow {
+  return {
+    day,
+    pv_kwh: null,
+    load_kwh: null,
+    grid_import_kwh: null,
+    grid_export_kwh: null,
+    pv_forecast_kwh: null,
+    ...fields,
+  };
+}
+
+// Today's row plus `count` earlier days with a load of 20 kWh, so the norm is 20 kWh a day.
+function history(today: Partial<DailyEnergyRow> | null, count = 30, day = DAY): DailyEnergyRow[] {
+  const earlier = Array.from({ length: count }, (_, i) => daily(addDays(day, -(i + 1)), { load_kwh: 20 }));
+  return today === null ? earlier : [daily(day, today), ...earlier];
+}
+
+// A capture at the given Warsaw time on DAY, read a minute later.
+function verdictsAt(
+  warsaw: string,
+  rows: DailyEnergyRow[] | null | undefined,
+  stateOverrides: Record<string, unknown> = {},
+  day = DAY,
+) {
+  const captured = new Date(`${day}T${warsaw}:00+02:00`);
+  return view(row({ captured_at: captured.toISOString() }, stateOverrides), new Date(captured.getTime() + 60_000), rows)
+    .verdicts;
+}
+
+describe("expectedPvShare", () => {
+  it("is not rated before 15:00", () => {
+    expect(expectedPvShare(9, 14.99)).toBeNull();
+  });
+
+  it("starts at the month's 15:00 share (September 0.80)", () => {
+    expect(expectedPvShare(9, 15)).toBeCloseTo(0.8, 10);
+  });
+
+  it("interpolates linearly up to the done hour (September, 17.9)", () => {
+    // Halfway between 15:00 and 17:54 (the done hour 17.9 is 17:54).
+    expect(expectedPvShare(9, 16.45)).toBeCloseTo(0.9, 10);
+  });
+
+  it("is 1.0 from the done hour on", () => {
+    expect(expectedPvShare(9, 17.9)).toBe(1);
+    expect(expectedPvShare(9, 22)).toBe(1);
+  });
+
+  it("is 1.0 from 15:00 when the day is already done (December, 14.8)", () => {
+    expect(expectedPvShare(12, 15)).toBe(1);
+    expect(expectedPvShare(12, 14.9)).toBeNull();
+  });
+
+  it("uses the June done hour (19.7) late in the day", () => {
+    expect(expectedPvShare(6, 19.7)).toBe(1);
+    expect(expectedPvShare(6, 19.6)).toBeLessThan(1);
+  });
+});
+
+describe("PV verdict", () => {
+  // September 15:00 expects 0.80 of the forecast: forecast 10 kWh means 8 kWh so far.
+  const rows = history({ pv_forecast_kwh: 10 });
+  const pv = (kwh: number | null, at15 = "15:00") => verdictsAt(at15, rows, { pv_today_kwh: kwh }).pv;
+
+  it.each([
+    [6.8, "good", "85,0% prognozy"],
+    [6.79, "watch", "84,9% prognozy"],
+    [4.8, "watch", "60,0% prognozy"],
+    [4.79, "problem", "59,9% prognozy"],
+    [7.52, "good", "94% prognozy"],
+    [8, "good", "100% prognozy"],
+    [10, "good", "125% prognozy"],
+    [0, "problem", "0% prognozy"],
+  ])("rates %j kWh at 15:00 as %s (%s)", (kwh, tone, detail) => {
+    expect(pv(kwh)).toMatchObject({ tone, detail });
+  });
+
+  it("explains the figures in a full sentence", () => {
+    expect(pv(7.52).explanation).toBe(
+      "Do 15:00 wyprodukowano 7,5 kWh, a wg prognozy na dziś (10,0 kWh) do tej pory powinno być ok. 8,0 kWh, czyli 94% oczekiwanego: od 85% dobrze, 60–85% warto sprawdzić, poniżej 60% problem.",
+    );
+  });
+
+  it("is not rated at 14:59 but is at 15:00", () => {
+    expect(pv(8, "14:59")).toMatchObject({ tone: "insufficient", word: "bez oceny", detail: "za wcześnie" });
+    expect(pv(8, "15:00")).toMatchObject({ tone: "good" });
+  });
+
+  it("expects more of the forecast later in the day", () => {
+    // 16:27 in September expects 0.80 + 0.20 * 1.45 / 2.9 = 0.90 of the forecast, so 9 kWh is exactly on target.
+    expect(pv(9, "16:27")).toMatchObject({ tone: "good", detail: "100% prognozy" });
+    expect(pv(7.65, "16:27")).toMatchObject({ tone: "good", detail: "85,0% prognozy" });
+    expect(pv(7.64, "16:27")).toMatchObject({ tone: "watch" });
+  });
+
+  it("expects the whole forecast after the done hour", () => {
+    expect(pv(8.5, "18:00")).toMatchObject({ tone: "good", detail: "85,0% prognozy" });
+    expect(pv(8.49, "18:00")).toMatchObject({ tone: "watch" });
+  });
+
+  it("expects the whole forecast late in a June day (20:00, done 19.7)", () => {
+    const june = "2026-06-15";
+    const juneRows = history({ pv_forecast_kwh: 10 }, 30, june);
+    expect(verdictsAt("20:00", juneRows, { pv_today_kwh: 6 }, june).pv).toMatchObject({
+      tone: "watch",
+      detail: "60,0% prognozy",
+    });
+    expect(verdictsAt("20:00", juneRows, { pv_today_kwh: 5.99 }, june).pv).toMatchObject({ tone: "problem" });
+  });
+
+  it("expects the whole forecast from 15:00 in December (done hour before 15:00)", () => {
+    const december = "2026-12-10";
+    // 15:00 CET is UTC+1, so build the clock from UTC directly.
+    const captured = new Date("2026-12-10T14:00:00Z");
+    const decRows = history({ pv_forecast_kwh: 2 }, 30, december);
+    const v = view(
+      row({ captured_at: captured.toISOString() }, { pv_today_kwh: 1.7 }),
+      new Date(captured.getTime() + 60_000),
+      decRows,
+    );
+    expect(v.verdicts.pv).toMatchObject({ tone: "good", detail: "85,0% prognozy" });
+  });
+
+  it("is not rated without today's forecast", () => {
+    const noForecast = history({ pv_forecast_kwh: null });
+    expect(verdictsAt("16:00", noForecast, { pv_today_kwh: 8 }).pv).toMatchObject({
+      tone: "insufficient",
+      detail: "brak prognozy",
+    });
+    expect(verdictsAt("16:00", history({ pv_forecast_kwh: 0 }), { pv_today_kwh: 8 }).pv.detail).toBe("brak prognozy");
+  });
+
+  it("is not rated without today's row", () => {
+    expect(verdictsAt("16:00", history(null), { pv_today_kwh: 8 }).pv.detail).toBe("brak prognozy");
+  });
+
+  it("ignores a row for another day", () => {
+    const wrongDay = [daily("2026-09-24", { pv_forecast_kwh: 10 }), daily("2026-09-26", { pv_forecast_kwh: 10 })];
+    expect(verdictsAt("16:00", wrongDay, { pv_today_kwh: 8 }).pv.detail).toBe("brak prognozy");
+  });
+
+  it("is not rated without pv_today_kwh in the snapshot", () => {
+    expect(pv(null)).toMatchObject({ tone: "insufficient", detail: "brak odczytu" });
+  });
+
+  it("uses the snapshot's total, not the row's pv_kwh", () => {
+    const lagging = history({ pv_forecast_kwh: 10, pv_kwh: 1 });
+    expect(verdictsAt("15:00", lagging, { pv_today_kwh: 8 }).pv).toMatchObject({ tone: "good" });
+  });
+
+  it("does not depend on the norm: a row with a forecast and too little history still rates", () => {
+    expect(verdictsAt("15:00", history({ pv_forecast_kwh: 10 }, 3), { pv_today_kwh: 8 }).pv).toMatchObject({
+      tone: "good",
+    });
+  });
+
+  it.each([null, undefined, []])("says there is no history for %j rows once it is 15:00", (rows) => {
+    expect(verdictsAt("15:00", rows, { pv_today_kwh: 8 }).pv).toMatchObject({
+      tone: "insufficient",
+      detail: "brak danych historii",
+    });
+  });
+
+  it("judges the capture's Warsaw day, not today's", () => {
+    // Captured 23:50 on the 25th, read on the 26th: the 25th's row and the 25th's clock apply (done hour passed).
+    const captured = new Date("2026-09-25T23:50:00+02:00");
+    const rows25 = history({ pv_forecast_kwh: 10 });
+    const v = view(
+      row({ captured_at: captured.toISOString() }, { pv_today_kwh: 9 }),
+      new Date("2026-09-25T23:55:00+02:00"),
+      rows25,
+    );
+    expect(v.verdicts.pv).toMatchObject({ tone: "good", detail: "90% prognozy" });
+  });
+});
+
+describe("consumption verdict", () => {
+  // Norm 20 kWh a day; at 12:00 the pro-rated norm is 10 kWh.
+  const rows = (load: number | null) => history({ load_kwh: load });
+  const home = (load: number | null, at12 = "12:00") => verdictsAt(at12, rows(load), {}).home;
+
+  it.each([
+    [10, "good", "0% wobec normy"],
+    [11.5, "good", "+15,0% wobec normy"],
+    [11.51, "watch", "+15,1% wobec normy"],
+    [14, "watch", "+40,0% wobec normy"],
+    [14.01, "problem", "+40,1% wobec normy"],
+    [12, "watch", "+20% wobec normy"],
+    [16, "problem", "+60% wobec normy"],
+    [8, "good", "−20% wobec normy"],
+    [0, "good", "−100% wobec normy"],
+  ])("rates %j kWh at 12:00 as %s (%s)", (load, tone, detail) => {
+    expect(home(load)).toMatchObject({ tone, detail });
+  });
+
+  it("explains the figures in a full sentence", () => {
+    expect(home(12).explanation).toBe(
+      "Do 12:00 zużyto 12,0 kWh, a norma dla tej pory dnia to ok. 10,0 kWh (dzienna 20,0 kWh proporcjonalnie do godziny), czyli +20% wobec normy: do +15% dobrze, od +15% do +40% warto sprawdzić, powyżej +40% problem. Mniejsze zużycie nigdy nie jest złe.",
+    );
+  });
+
+  it("pro-rates the norm by the hours elapsed", () => {
+    // 18:00 expects 15 kWh; 17.25 is exactly +15%.
+    expect(home(17.25, "18:00")).toMatchObject({ tone: "good", detail: "+15,0% wobec normy" });
+    expect(home(17.26, "18:00")).toMatchObject({ tone: "watch" });
+  });
+
+  it("is not rated before 06:00 but is at 06:00", () => {
+    expect(home(3, "05:59")).toMatchObject({ tone: "insufficient", word: "bez oceny", detail: "za wcześnie" });
+    expect(home(5, "06:00")).toMatchObject({ tone: "good", detail: "0% wobec normy" });
+  });
+
+  it("is not rated without today's load", () => {
+    expect(home(null)).toMatchObject({ tone: "insufficient", detail: "brak odczytu" });
+    expect(verdictsAt("12:00", history(null), {}).home.detail).toBe("brak odczytu");
+  });
+
+  it("is not rated without a norm (the compared day plus 6 baseline days)", () => {
+    expect(verdictsAt("12:00", history({ load_kwh: 12 }, 7), {}).home).toMatchObject({
+      tone: "insufficient",
+      detail: "za mało danych",
+    });
+    expect(verdictsAt("12:00", history({ load_kwh: 10 }, 8), {}).home).toMatchObject({ tone: "good" });
+  });
+
+  it("ignores a row for another day", () => {
+    const wrongDay = history(null).map((r) => r);
+    wrongDay.push(daily("2026-09-26", { load_kwh: 10 }));
+    expect(verdictsAt("12:00", wrongDay, {}).home.detail).toBe("brak odczytu");
+  });
+
+  it.each([null, undefined, []])("says there is no history for %j rows", (noRows) => {
+    expect(verdictsAt("12:00", noRows, {}).home).toMatchObject({
+      tone: "insufficient",
+      detail: "brak danych historii",
+    });
+  });
+});
+
+describe("stale snapshots", () => {
+  it("rate neither PV nor consumption", () => {
+    const rows = history({ pv_forecast_kwh: 10, load_kwh: 10 });
+    const captured = new Date("2026-09-25T16:00:00+02:00");
+    const v = view(
+      row({ captured_at: captured.toISOString() }, { pv_today_kwh: 8 }),
+      new Date(captured.getTime() + 16 * 60_000),
+      rows,
+    );
+    expect(v.verdicts.pv).toMatchObject({ tone: "insufficient", word: "bez oceny", detail: "dane nieaktualne" });
+    expect(v.verdicts.home).toMatchObject({ tone: "insufficient", word: "bez oceny", detail: "dane nieaktualne" });
+  });
+
+  it("still rate a degraded but fresh snapshot", () => {
+    const rows = history({ pv_forecast_kwh: 10, load_kwh: 10 });
+    const v = verdictsAt("16:00", rows, { source_health: "degraded", pv_today_kwh: 9 });
+    expect(v.pv.tone).toBe("good");
+    expect(v.home.tone).not.toBe("insufficient");
   });
 });

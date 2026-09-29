@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { DailyEnergyRow } from "@/types";
 import { addDays } from "@/lib/format/warsaw-time";
-import { HISTORY_DAYS, loadDailyEnergy, median, toUsageInsightView } from "./usage-insight";
+import { dailyLoadNorm, HISTORY_DAYS, loadDailyEnergy, median, toUsageInsightView } from "./usage-insight";
 
 // 12:00 in Warsaw (CEST) on 25 September 2026: today is 2026-09-25, yesterday 2026-09-24.
 const now = new Date("2026-09-25T10:00:00Z");
@@ -415,5 +415,26 @@ describe("loadDailyEnergy", () => {
     const { client, calls } = mockClient([]);
     await loadDailyEnergy(client, new Date("2026-09-24T22:30:00Z"));
     expect(calls.gte).toEqual(["day", "2025-08-21"]);
+  });
+});
+
+describe("dailyLoadNorm", () => {
+  it("returns the median and baseline the usage card uses", () => {
+    const rows = [row(YESTERDAY, 12.34), ...daysBefore(YESTERDAY, 30, 10)];
+    expect(dailyLoadNorm(rows, now)).toEqual({ norm: 10, days: 30, kind: "fallback" });
+  });
+
+  it("ignores today's row", () => {
+    expect(dailyLoadNorm([row(TODAY, 99), ...daysBefore(TODAY, 10, 10)], now)).toEqual({
+      norm: 10,
+      days: 9,
+      kind: "fallback",
+    });
+  });
+
+  it("is null when the usage card would say insufficient", () => {
+    expect(dailyLoadNorm([], now)).toBeNull();
+    expect(dailyLoadNorm([row(YESTERDAY, 10), ...daysBefore(YESTERDAY, 5, 10)], now)).toBeNull();
+    expect(toUsageInsightView([row(YESTERDAY, 10), ...daysBefore(YESTERDAY, 5, 10)], now).kind).toBe("insufficient");
   });
 });

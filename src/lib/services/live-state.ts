@@ -1,9 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { LiveStateRow } from "@/types";
+import type { DailyEnergyRow, LiveStateRow } from "@/types";
 import { asNumber, asRecord, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
 import { TONE_WORD } from "@/lib/format/status";
 import type { Status, StatusTone } from "@/lib/format/status";
 import { formatDayMonth, warsawParts } from "@/lib/format/warsaw-time";
+import { dailyLoadNorm, deltaLabel, FAR_ABOVE_THRESHOLD, STATUS_THRESHOLD } from "@/lib/services/usage-insight";
 
 // The lab pushes every few minutes; a snapshot older than 15 minutes no longer describes "now".
 export const LIVE_STALE_AFTER_MS = 15 * 60 * 1000;
@@ -20,6 +21,35 @@ export const BATTERY_WARNING_AT = 10;
 // excluding GOOD_AT is worth watching, under PROBLEM_BELOW is a problem. Exactly on a line takes the milder status.
 export const BATTERY_GOOD_AT = BATTERY_LOW_AT;
 export const BATTERY_PROBLEM_BELOW = BATTERY_WARNING_AT;
+// PV verdict (live-flow-interaction): today's kWh so far against the day's forecast times the share expected by the
+// capture time. Rated only from PV_RATE_FROM_HOUR (Warsaw); a share at or above PV_GOOD_AT is good, from PV_WATCH_AT up
+// to but excluding PV_GOOD_AT worth watching, under PV_WATCH_AT a problem. Exactly on a line takes the milder status.
+export const PV_RATE_FROM_HOUR = 15;
+export const PV_GOOD_AT = 0.85;
+export const PV_WATCH_AT = 0.6;
+// Per calendar month (index 0 = January): [share of the day's PV expected by 15:00, hour the day's PV is done].
+// ESTIMATED from clear-sky solar geometry (52.2 N 21.0 E, flat array, mid-month), not measured: revisit after a
+// year of lab data.
+export const PV_EXPECTED_SHARE: readonly (readonly [number, number])[] = [
+  [0.98, 15.3],
+  [0.92, 16.1],
+  [0.89, 16.8],
+  [0.76, 18.5],
+  [0.75, 19.2],
+  [0.73, 19.7],
+  [0.73, 19.6],
+  [0.75, 18.9],
+  [0.8, 17.9],
+  [0.86, 16.9],
+  [0.99, 15.1],
+  [1.0, 14.8],
+];
+// Consumption verdict: today's kWh against the daily norm pro-rated by the hours elapsed; rated from this hour.
+// The bands reuse the usage card's STATUS_THRESHOLD (good up to +15%, lower is never bad) and FAR_ABOVE_THRESHOLD
+// (problem above +40%).
+export const LOAD_RATE_FROM_HOUR = 6;
+// Absorbs floating point error so an exact line stays on the milder side.
+const EPSILON = 1e-9;
 const MINUTE_MS = 60 * 1000;
 const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
@@ -60,8 +90,7 @@ export type LiveStateView =
       battery: FlowLabel & { socLabel: string; socPct: number | null; chargeLevel: BatteryChargeLevel | null };
       today: { pv: string; bought: string; sold: string; periodLabel: string };
       flows: { pv: FlowMotion; home: FlowMotion; grid: FlowMotion; battery: FlowMotion };
-      // pv and home are not rated yet (null).
-      verdicts: { battery: NodeVerdict; pv: NodeVerdict | null; home: NodeVerdict | null };
+      verdicts: { battery: NodeVerdict; pv: NodeVerdict; home: NodeVerdict };
     };
 
 // Newest homelab snapshot via the live_state view; RLS returns nothing for non-owners. Errors are thrown
@@ -131,6 +160,109 @@ function batteryVerdict(socPct: number | null, socLabel: string, isStale: boolea
   return verdict("problem", "prawie pusta", rule);
 }
 
+// Share of the day's PV expected by `decimalHour` (Warsaw) in `month` (1-12): the 15:00 share, rising linearly to
+// 1.0 at the done hour and 1.0 afterwards; null before PV_RATE_FROM_HOUR, when nothing is rated.
+export function expectedPvShare(month: number, decimalHour: number): number | null {
+  if (decimalHour < PV_RATE_FROM_HOUR) return null;
+  const [shareAtStart, doneHour] = PV_EXPECTED_SHARE[month - 1];
+  if (doneHour <= PV_RATE_FROM_HOUR || decimalHour >= doneHour) return 1;
+  return shareAtStart + ((1 - shareAtStart) * (decimalHour - PV_RATE_FROM_HOUR)) / (doneHour - PV_RATE_FROM_HOUR);
+}
+
+function unrated(detail: string, explanation: string): NodeVerdict {
+  return verdict("insufficient", detail, explanation);
+}
+
+const STALE_VERDICT = unrated("dane nieaktualne", "Migawka jest nieaktualna, więc ten odczyt nie jest oceniany.");
+const NO_HISTORY_DETAIL = "brak danych historii";
+
+// "94%"; at a line (85%, 60%) one decimal so the number never reads as the line while the badge says the other side
+// of it (84,9% is watch, 85,0% is good), as deltaLabel does for the consumption bands.
+function shareLabel(share: number): string {
+  const percent = share * 100;
+  const whole = Math.round(percent + EPSILON);
+  const line = [PV_GOOD_AT, PV_WATCH_AT].find((l) => whole === Math.round(l * 100));
+  if (line === undefined) return `${wholeNumber.format(whole)}%`;
+  const edge = line * 100;
+  const tenths = Math.round(percent * 10 + EPSILON) / 10;
+  const atOrAbove = share >= line - EPSILON;
+  return `${oneDecimal.format(atOrAbove ? Math.max(tenths, edge) : Math.min(tenths, edge - 0.1))}%`;
+}
+
+function pvVerdict(
+  captured: { hour: number; month: number; time: string; dayKey: string },
+  pvTodayKwh: number | null,
+  dailyRows: DailyEnergyRow[],
+  isStale: boolean,
+): NodeVerdict {
+  if (isStale) return STALE_VERDICT;
+  const expected = expectedPvShare(captured.month, captured.hour);
+  if (expected === null) {
+    return unrated(
+      "za wcześnie",
+      `Produkcja PV jest oceniana od ${String(PV_RATE_FROM_HOUR)}:00, gdy większość dziennej produkcji jest już za nami.`,
+    );
+  }
+  if (dailyRows.length === 0) {
+    return unrated(NO_HISTORY_DETAIL, "Brak danych historii, więc nie ma prognozy na dziś do porównania.");
+  }
+  const forecast = asNumber(dailyRows.find((day) => day.day === captured.dayKey)?.pv_forecast_kwh);
+  if (forecast === null || forecast <= 0) {
+    return unrated("brak prognozy", "Brak prognozy produkcji na dziś, więc produkcja PV nie jest oceniana.");
+  }
+  if (pvTodayKwh === null) {
+    return unrated("brak odczytu", "Brak odczytu dzisiejszej produkcji, więc produkcja PV nie jest oceniana.");
+  }
+  const expectedKwh = forecast * expected;
+  const share = pvTodayKwh / expectedKwh;
+  const shown = shareLabel(share);
+  const rule = `od ${String(Math.round(PV_GOOD_AT * 100))}% dobrze, ${String(Math.round(PV_WATCH_AT * 100))}–${String(Math.round(PV_GOOD_AT * 100))}% warto sprawdzić, poniżej ${String(Math.round(PV_WATCH_AT * 100))}% problem.`;
+  const explanation = `Do ${captured.time} wyprodukowano ${kwhLabel(pvTodayKwh)}, a wg prognozy na dziś (${kwhLabel(forecast)}) do tej pory powinno być ok. ${kwhLabel(expectedKwh)}, czyli ${shown} oczekiwanego: ${rule}`;
+  const detail = `${shown} prognozy`;
+  if (share >= PV_GOOD_AT - EPSILON) return verdict("good", detail, explanation);
+  if (share >= PV_WATCH_AT - EPSILON) return verdict("watch", detail, explanation);
+  return verdict("problem", detail, explanation);
+}
+
+function homeVerdict(
+  captured: { hour: number; time: string; dayKey: string },
+  dailyRows: DailyEnergyRow[],
+  now: Date,
+  isStale: boolean,
+): NodeVerdict {
+  if (isStale) return STALE_VERDICT;
+  if (captured.hour < LOAD_RATE_FROM_HOUR) {
+    return unrated(
+      "za wcześnie",
+      `Zużycie domu jest oceniane od ${String(LOAD_RATE_FROM_HOUR).padStart(2, "0")}:00, gdy dzienne zużycie ma już z czym się porównać.`,
+    );
+  }
+  if (dailyRows.length === 0) {
+    return unrated(NO_HISTORY_DETAIL, "Brak danych historii, więc nie ma normy zużycia do porównania.");
+  }
+  const load = asNumber(dailyRows.find((day) => day.day === captured.dayKey)?.load_kwh);
+  if (load === null) {
+    return unrated("brak odczytu", "Brak dzisiejszego zużycia, więc zużycie domu nie jest oceniane.");
+  }
+  const loadNorm = dailyLoadNorm(dailyRows, now);
+  if (loadNorm?.norm == null || loadNorm.norm <= 0) {
+    return unrated(
+      "za mało danych",
+      "Za mało dni z historii, by wyznaczyć normę zużycia, więc zużycie domu nie jest oceniane.",
+    );
+  }
+  const expectedKwh = (loadNorm.norm * captured.hour) / 24;
+  const shown = deltaLabel(load, expectedKwh);
+  const detail = `${shown} wobec normy`;
+  const line = String(Math.round(STATUS_THRESHOLD * 100));
+  const far = String(Math.round(FAR_ABOVE_THRESHOLD * 100));
+  const explanation = `Do ${captured.time} zużyto ${kwhLabel(load)}, a norma dla tej pory dnia to ok. ${kwhLabel(expectedKwh)} (dzienna ${kwhLabel(loadNorm.norm)} proporcjonalnie do godziny), czyli ${shown} wobec normy: do +${line}% dobrze, od +${line}% do +${far}% warto sprawdzić, powyżej +${far}% problem. Mniejsze zużycie nigdy nie jest złe.`;
+  const ratio = load / expectedKwh;
+  if (ratio > 1 + FAR_ABOVE_THRESHOLD + EPSILON) return verdict("problem", detail, explanation);
+  if (ratio > 1 + STATUS_THRESHOLD + EPSILON) return verdict("watch", detail, explanation);
+  return verdict("good", detail, explanation);
+}
+
 // "5 min" under an hour, "2 godz." under a day, "3 dni" beyond. A capture time in the future counts as 0.
 export function formatAge(ageMs: number): string {
   const age = Math.max(0, ageMs);
@@ -149,11 +281,26 @@ function liveStatus(ageMs: number, isDegraded: boolean): Status {
   return { tone: "good", label: "aktualne" };
 }
 
-export function toLiveStateView(row: LiveStateRow | null, now: Date): LiveStateView {
+// `dailyRows` are the daily totals the usage card reads; null, undefined or empty means no history (PV and
+// consumption are then not rated), never an error.
+export function toLiveStateView(
+  row: LiveStateRow | null,
+  now: Date,
+  dailyRows?: DailyEnergyRow[] | null,
+): LiveStateView {
   if (!row) return { kind: "empty", status: { tone: "insufficient", label: "laboratorium jeszcze nic nie przesłało" } };
 
   const capturedAt = new Date(row.captured_at);
   const captured = warsawParts(capturedAt);
+  // The capture's Warsaw clock: the verdicts judge "today so far" at this moment, not at `now`.
+  const [capturedHour, capturedMinute] = captured.time.split(":").map(Number);
+  const capturedClock = {
+    hour: capturedHour + capturedMinute / 60,
+    month: Number(captured.dayKey.slice(5, 7)),
+    time: captured.time,
+    dayKey: captured.dayKey,
+  };
+  const history = dailyRows ?? [];
   const ageMs = now.getTime() - capturedAt.getTime();
   const state = asRecord(row.state);
   const soc = asNumber(state.battery_soc_pct);
@@ -199,6 +346,10 @@ export function toLiveStateView(row: LiveStateRow | null, now: Date): LiveStateV
       grid: motion(grid.watts, isStale),
       battery: motion(batteryFlow.watts, isStale),
     },
-    verdicts: { battery: batteryVerdict(socWhole, socLabel, isStale), pv: null, home: null },
+    verdicts: {
+      battery: batteryVerdict(socWhole, socLabel, isStale),
+      pv: pvVerdict(capturedClock, asNumber(state.pv_today_kwh), history, isStale),
+      home: homeVerdict(capturedClock, history, now, isStale),
+    },
   };
 }

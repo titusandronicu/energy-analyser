@@ -26,7 +26,7 @@ import { connector } from "@/lib/flow-geometry";
 import { GLOSSARY, type GlossaryTerm } from "@/lib/format/glossary";
 import { FLOW_PAUSED_KEY, FLOW_VIEW_KEY } from "@/lib/preferences";
 import { MIN_FLOW_W } from "@/lib/services/live-state";
-import type { LiveStateView } from "@/lib/services/live-state";
+import type { LiveStateView, NodeVerdict } from "@/lib/services/live-state";
 import { cn } from "@/lib/utils";
 
 type StateView = Extract<LiveStateView, { kind: "state" }>;
@@ -48,7 +48,7 @@ interface NodeData {
   // The reading in words: value plus direction and, for the battery, the charge level.
   spoken: string;
   sub: string | null;
-  verdict: StateView["verdicts"]["battery"] | null;
+  verdict: NodeVerdict | null;
   // What the details strip says about the rating; the verdict's own explanation when there is one.
   why: string;
   terms: GlossaryTerm[];
@@ -84,7 +84,6 @@ function withDirection(value: string, direction: string | null): string {
 
 function buildNodes(props: LiveFlowProps): NodeData[] {
   const { pv, homeLoad, grid, battery, verdicts } = props;
-  const notRated = "Ten odczyt nie jest jeszcze oceniany.";
   return [
     {
       id: "pv",
@@ -94,7 +93,7 @@ function buildNodes(props: LiveFlowProps): NodeData[] {
       spoken: pv,
       sub: null,
       verdict: verdicts.pv,
-      why: verdicts.pv?.explanation ?? notRated,
+      why: verdicts.pv.explanation,
       terms: ["pv", "kw"],
     },
     {
@@ -105,7 +104,7 @@ function buildNodes(props: LiveFlowProps): NodeData[] {
       spoken: homeLoad,
       sub: null,
       verdict: verdicts.home,
-      why: verdicts.home?.explanation ?? notRated,
+      why: verdicts.home.explanation,
       terms: ["kw"],
     },
     {
