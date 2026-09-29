@@ -3,8 +3,10 @@ import type { DailyEnergyRow, LiveStateRow } from "@/types";
 import { asNumber, asRecord, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
 import { TONE_WORD } from "@/lib/format/status";
 import type { Status, StatusTone } from "@/lib/format/status";
-import { formatDayMonth, warsawParts } from "@/lib/format/warsaw-time";
+import { addDays, formatDayMonth, warsawParts } from "@/lib/format/warsaw-time";
 import { MIN_FLOW_W } from "@/lib/flow-constants";
+import { dailySeries, KPI_SERIES_DAYS } from "@/lib/services/daily-series";
+import type { DailySeries } from "@/lib/services/daily-series";
 import { dailyLoadNorm, deltaLabel, FAR_ABOVE_THRESHOLD, STATUS_THRESHOLD } from "@/lib/services/usage-insight";
 
 // The lab pushes every few minutes; a snapshot older than 15 minutes no longer describes "now".
@@ -98,6 +100,10 @@ export type LiveStateView =
         charging: boolean;
       };
       today: { pv: string; bought: string; sold: string; periodLabel: string };
+      // The previous KPI_SERIES_DAYS complete days of the three totals, ending the day before the capture day (the
+      // capture day's own row is a partial). null when loading the history FAILED, so the card says "historia
+      // niedostępna"; no history at all gives all-null series ("za mało dni").
+      series: { pv: DailySeries; bought: DailySeries; sold: DailySeries } | null;
       flows: { pv: FlowMotion; home: FlowMotion; grid: FlowMotion; battery: FlowMotion };
       verdicts: { battery: NodeVerdict; pv: NodeVerdict; home: NodeVerdict };
     };
@@ -351,6 +357,7 @@ export function toLiveStateView(
   };
   const history = dailyRows ?? [];
   const historyFailed = dailyRows === null;
+  const seriesLastDay = addDays(capturedClock.dayKey, -1);
   const ageMs = now.getTime() - capturedAt.getTime();
   const state = asRecord(row.state);
   const soc = asNumber(state.battery_soc_pct);
@@ -391,6 +398,13 @@ export function toLiveStateView(
         captured.dayKey === warsawParts(now).dayKey ? "dziś" : formatDayMonth(captured.dayKey)
       } od północy do ${captured.time}`,
     },
+    series: historyFailed
+      ? null
+      : {
+          pv: dailySeries(history, "pv_kwh", seriesLastDay, KPI_SERIES_DAYS),
+          bought: dailySeries(history, "grid_import_kwh", seriesLastDay, KPI_SERIES_DAYS),
+          sold: dailySeries(history, "grid_export_kwh", seriesLastDay, KPI_SERIES_DAYS),
+        },
     flows: {
       pv: motion(pvWatts, isStale),
       home: motion(homeLoadWatts, isStale),

@@ -613,12 +613,12 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [x] 3.1 Unit tests pass, including the new `src/lib/sparkline.test.ts`: `npm test`
-- [x] 3.2 Linting passes: `npm run lint`
-- [x] 3.3 Type checks pass: `npx astro check`
-- [x] 3.4 Production build succeeds: `npm run build`
-- [x] 3.5 No dependency was added or changed: `git diff --exit-code origin/main -- package.json package-lock.json`
-- [x] 3.6 The sparkline code has no animation, timers or hydration: `git grep -nE "animate|@keyframes|transition|setInterval|client:" -- src/lib/sparkline.ts src/components/ui/Sparkline.astro` prints nothing
+- [x] 3.1 Unit tests pass, including the new `src/lib/sparkline.test.ts`: `npm test` — 969cfc4
+- [x] 3.2 Linting passes: `npm run lint` — 969cfc4
+- [x] 3.3 Type checks pass: `npx astro check` — 969cfc4
+- [x] 3.4 Production build succeeds: `npm run build` — 969cfc4
+- [x] 3.5 No dependency was added or changed: `git diff --exit-code origin/main -- package.json package-lock.json` — 969cfc4
+- [x] 3.6 The sparkline code has no animation, timers or hydration: `git grep -nE "animate|@keyframes|transition|setInterval|client:" -- src/lib/sparkline.ts src/components/ui/Sparkline.astro` prints nothing — 969cfc4
 
 #### Manual
 
@@ -633,14 +633,14 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass: `npm test`
-- [ ] 4.2 Linting passes: `npm run lint`
-- [ ] 4.3 Type checks pass: `npx astro check`
-- [ ] 4.4 Production build succeeds: `npm run build`
-- [ ] 4.5 No new query: `git grep -n 'from("daily_energy")' -- src` prints exactly the two existing lines (`usage-insight.ts` and `live-state.ts`)
-- [ ] 4.6 No migration, contract or lab change: `git diff --exit-code origin/main -- supabase docs/ingest src/lib/ingest/contract.ts`
-- [ ] 4.7 "Z PV wykorzystane" is not rendered: `git grep -n "Z PV wykorzystane" -- src` prints nothing
-- [ ] 4.8 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
+- [x] 4.1 Unit tests pass: `npm test`
+- [x] 4.2 Linting passes: `npm run lint`
+- [x] 4.3 Type checks pass: `npx astro check`
+- [x] 4.4 Production build succeeds: `npm run build`
+- [x] 4.5 No new query: `git grep -n 'from("daily_energy")' -- src` prints exactly the two existing lines (`usage-insight.ts` and `live-state.ts`)
+- [x] 4.6 No migration, contract or lab change: `git diff --exit-code origin/main -- supabase docs/ingest src/lib/ingest/contract.ts`
+- [x] 4.7 "Z PV wykorzystane" is not rendered: `git grep -n "Z PV wykorzystane" -- src` prints nothing
+- [x] 4.8 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
 
 #### Manual
 

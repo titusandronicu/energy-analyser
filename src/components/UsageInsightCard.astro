@@ -2,6 +2,7 @@
 import { House } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import Panel from "@/components/ui/Panel.astro";
+import Sparkline from "@/components/ui/Sparkline.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { GLOSSARY } from "@/lib/format/glossary";
@@ -21,6 +22,30 @@ const status = view === null ? LOAD_FAILED : view.status;
 // "prąd, który …": the glossary sentence continues the "Kupione z sieci:" label, so it starts in lower case.
 const purchaseExplanation =
   GLOSSARY.grid_import.explanation.charAt(0).toLowerCase() + GLOSSARY.grid_import.explanation.slice(1);
+
+// The two rows of the compared day, each with the 7 days ending on it. The series come with the "insight" view, which
+// only exists when the rows loaded, so there is no "historia niedostępna" variant here.
+const rows =
+  view?.kind === "insight"
+    ? [
+        {
+          label: "Zużycie domu",
+          value: view.load.kwhLabel,
+          delta: view.load.deltaLabel,
+          series: view.series.load,
+          subject: "Zużycie domu",
+          tone: "home" as const,
+        },
+        {
+          label: "Kupione z sieci",
+          value: view.purchase.kwhLabel,
+          delta: view.purchase.deltaLabel,
+          series: view.series.purchase,
+          subject: "Energia kupiona z sieci",
+          tone: "neutral" as const,
+        },
+      ]
+    : [];
 ---
 
 <Panel>
@@ -44,18 +69,28 @@ const purchaseExplanation =
         {!view.isYesterday && <span class="text-muted-foreground/75"> — brak danych z wczoraj.</span>}
       </p>
 
-      <dl class="grid grid-cols-2 gap-3 text-sm">
-        <div class="bg-muted rounded-lg p-3">
-          <dt class="text-muted-foreground">Zużycie domu</dt>
-          <dd class="text-lg font-medium">{view.load.kwhLabel}</dd>
-          <dd class="text-muted-foreground mt-1 text-xs">{view.load.deltaLabel} wobec normy</dd>
-        </div>
-        <div class="bg-muted rounded-lg p-3">
-          <dt class="text-muted-foreground">Kupione z sieci</dt>
-          <dd class="text-lg font-medium">{view.purchase.kwhLabel}</dd>
-          <dd class="text-muted-foreground mt-1 text-xs">{view.purchase.deltaLabel} wobec normy</dd>
-        </div>
-      </dl>
+      <ul class="divide-hairline divide-y">
+        {rows.map(({ label, value, delta, series, subject, tone }) => (
+          <li class="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+            <div class="flex min-w-0 flex-col gap-0.5">
+              <span class="text-muted-foreground text-[13px]">{label}</span>
+              <span class="text-[19px] font-bold sm:text-xl">{value}</span>
+              <span class="text-muted-foreground text-xs">{delta} wobec normy</span>
+            </div>
+            <div class="w-[100px] flex-none sm:w-[110px]">
+              <Sparkline
+                values={series}
+                subject={subject}
+                windowLabel={`7 dni do ${view.dayLabel}`}
+                tone={tone}
+                width={110}
+                height={32}
+                class="h-auto w-[100px] sm:w-[110px]"
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
 
       {view.baseline.kind === "seasonal" ? (
         <p class="text-muted-foreground text-xs" data-testid="usage-baseline">

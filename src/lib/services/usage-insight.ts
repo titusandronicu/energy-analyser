@@ -5,6 +5,8 @@ import { referenceUsageSentence } from "@/lib/format/reference-usage";
 import type { Status } from "@/lib/format/status";
 import { asNumber, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
 import { addDays, formatDayMonth, utcMsToDayKey, warsawParts } from "@/lib/format/warsaw-time";
+import { dailySeries, USAGE_SERIES_DAYS } from "@/lib/services/daily-series";
+import type { DailySeries } from "@/lib/services/daily-series";
 
 // Enough history for a seasonal window a year back (365 days + 14 days + slack). The seasonal baseline therefore
 // only ever reaches one earlier year, even when older data exists.
@@ -45,6 +47,8 @@ export type UsageInsightView =
       isYesterday: boolean;
       load: { kwhLabel: string; deltaLabel: string; status: UsageStatus };
       purchase: { kwhLabel: string; deltaLabel: string };
+      // The USAGE_SERIES_DAYS ending on the compared day, so the last point is the value shown beside it.
+      series: { load: DailySeries; purchase: DailySeries };
       baseline: { kind: "seasonal" | "fallback"; days: number; periodLabel: string };
       // null when the norm is zero: no range can be drawn around it.
       meaning: UsageMeaning | null;
@@ -307,6 +311,10 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
     purchase: {
       kwhLabel: kwhLabel(comparedDay.purchase),
       deltaLabel: deltaLabel(comparedDay.purchase, purchaseNorm),
+    },
+    series: {
+      load: dailySeries(rows, "load_kwh", compared, USAGE_SERIES_DAYS),
+      purchase: dailySeries(rows, "grid_import_kwh", compared, USAGE_SERIES_DAYS),
     },
     baseline: {
       kind: baselineKind,
