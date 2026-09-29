@@ -8,7 +8,7 @@ status: complete
 
 # Research: dashboard refresh (icons, sparklines, bill delta, balance)
 
-Checked tree: `main` at `e2d176b` (origin/main `4e7b49c` adds docs only). PR 65's token cleanup (`context/changes/frosted-aurora-dashboard/plan.md`, new `global.css`) exists only on `origin/cursor/frosted-aurora-dashboard-8dba`; main still carries `text-blue-100` / `bg-white/5` literals in the cards. No production data volumes were queried.
+Checked tree: `main` at `e2d176b` (origin/main `4e7b49c` adds docs only). PR 65's token cleanup (`context/archive/2026-09-29-frosted-aurora-dashboard/plan.md`, new `global.css`) exists only on `origin/cursor/frosted-aurora-dashboard-8dba`; main still carries `text-blue-100` / `bg-white/5` literals in the cards. No production data volumes were queried.
 
 ## 1. Gap map: design element against the app
 
@@ -25,7 +25,7 @@ Checked tree: `main` at `e2d176b` (origin/main `4e7b49c` adds docs only). PR 65'
 | Usage rows                                                    | Partial | `UsageInsightCard.astro:45-56`: two tiles (home consumption, bought from grid) with delta against the norm; "Z PV wykorzystane" is missing.                                                                                                                          |
 | Footer legend                                                 | Partial | A tone legend exists inside the diagram only (`LiveFlow.tsx:149-154, 303-307`); no dashboard footer and no source-icon legend.                                                                                                                                       |
 
-Preserve (PR 65 field-preserving contract, `context/changes/frosted-aurora-dashboard/plan.md`): header e-mail and sign-out form; every live, bill, recommendation and usage field and state; every `data-testid` (smoke relies on "Stan na żywo", "3,1 kW", "Prognoza rachunku", "od 155 zł do 360 zł", "ok. 258 zł", the advice marker; it asserts neither "Nieaktualna" nor "Dane nieaktualne").
+Preserve (PR 65 field-preserving contract, `context/archive/2026-09-29-frosted-aurora-dashboard/plan.md`): header e-mail and sign-out form; every live, bill, recommendation and usage field and state; every `data-testid` (smoke relies on "Stan na żywo", "3,1 kW", "Prognoza rachunku", "od 155 zł do 360 zł", "ok. 258 zł", the advice marker; it asserts neither "Nieaktualna" nor "Dane nieaktualne").
 
 ## 2. Data for sparklines and deltas
 
