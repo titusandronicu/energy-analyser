@@ -69,7 +69,7 @@ Narration runs in the lab (`scripts/run-energy-advisory.py`), never in this app.
 - Owner row in `public.app_owners` (inserted by hand; see `context/deployment/micrus-runbook.md`).
 - Supabase "Magic link" and "Confirm signup" email templates set to `supabase/templates/magic-link.html`.
 - Ingest token hash row in `public.ingest_tokens` (`scripts/create-ingest-token.mjs`).
-- Each migration applied in production with its deploy. In particular `20260929130000_owner_read_daily_energy_captured_at.sql` (owners may read `daily_energy.captured_at`): if it is missing, the consumption chip on the live card reads "Bez oceny · brak czasu historii" and the server log shows "permission denied for table daily_energy".
+- Each migration applied in production with its deploy. In particular `20260929101548_owner_read_daily_energy_captured_at.sql` (owners may read `daily_energy.captured_at`): if it is missing, the consumption chip on the live card reads "Bez oceny · brak czasu historii" and the server log shows "permission denied for table daily_energy".
 
 ## Prerequisites by roadmap item
 
