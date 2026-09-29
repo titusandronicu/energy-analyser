@@ -210,6 +210,8 @@ Rewrite the card so the lead advice, findings and forecast are always visible an
 - The advisory sentence, the generation time, the stale warning and the testids `recommendation-status`, `stale-warning`, `recommendation-text` and `forecast-certainty` are still present on the dev page
 - Pushing a fixture with `--generated-at` on the owner's local stack shows the expected badge, and the flag exits with an error for a state-only push (Docker runs on the UGREEN and is not started by the assistant; the owner may defer this as in the earlier change)
 
+Note (2026-09-29): criterion 2.5 as written (`git grep -n ForecastCard -- src`) also matches `BillForecastCard` (2 lines in `dashboard.astro`, a substring false positive); the word-boundary check `git grep -nw ForecastCard -- src` prints nothing, and that is what was verified.
+
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase. The dev page stays untracked; do not stage or commit it.
 
 ---
@@ -370,40 +372,40 @@ None: no schema, contract or lab change; rows stored earlier render with the sam
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Type checks pass: `npx astro check`
-- [x] 1.4 Production build succeeds: `npm run build`
+- [x] 1.1 Unit tests pass: `npm test` — 2d1ab01
+- [x] 1.2 Linting passes: `npm run lint` — 2d1ab01
+- [x] 1.3 Type checks pass: `npx astro check` — 2d1ab01
+- [x] 1.4 Production build succeeds: `npm run build` — 2d1ab01
 
 #### Manual
 
-- [x] 1.5 The severity table, the stale-neutral rule and the first-block rule in the tests read as the owner decided (warn to watch, ok to good, info and unknown neutral, no problem tone; stale cards neutral with the word kept; leading heading, list and colon-plus-list rule)
+- [x] 1.5 The severity table, the stale-neutral rule and the first-block rule in the tests read as the owner decided (warn to watch, ok to good, info and unknown neutral, no problem tone; stale cards neutral with the word kept; leading heading, list and colon-plus-list rule) — 2d1ab01
 - [ ] 1.6 The recommendation card still renders on the owner's local stack, or in the CI `smoke` run on the draft PR, with the new view shape (findings shown as facts in the existing disclosure)
 
 ### Phase 2: Card structure, fixtures and the temporary dev page
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 Type checks pass: `npx astro check`
-- [ ] 2.4 Production build succeeds: `npm run build`
-- [ ] 2.5 No `ForecastCard` reference remains in the app: `git grep -n ForecastCard -- src` prints nothing
-- [ ] 2.6 No colour literal remains in the recommendation markup: `git grep -n --untracked -e text-blue-100 -e bg-white -- src/components/RecommendationCard.astro src/components/RecommendationFindings.astro src/components/RecommendationForecast.astro` prints nothing
-- [ ] 2.7 Contract schema has not drifted: `git diff --exit-code docs/ingest/contract-v1.schema.json`
-- [ ] 2.8 The push script parses: `node --check scripts/push-fixture.mjs`
-- [ ] 2.9 The fixtures are formatted: `npx prettier --check "scripts/fixtures/recommendation/*.json"`
-- [ ] 2.10 The dev page is not tracked: `git ls-files src/pages/dev` prints nothing
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 Type checks pass: `npx astro check`
+- [x] 2.4 Production build succeeds: `npm run build`
+- [x] 2.5 No `ForecastCard` reference remains in the app: `git grep -n ForecastCard -- src` prints nothing
+- [x] 2.6 No colour literal remains in the recommendation markup: `git grep -n --untracked -e text-blue-100 -e bg-white -- src/components/RecommendationCard.astro src/components/RecommendationFindings.astro src/components/RecommendationForecast.astro` prints nothing
+- [x] 2.7 Contract schema has not drifted: `git diff --exit-code docs/ingest/contract-v1.schema.json`
+- [x] 2.8 The push script parses: `node --check scripts/push-fixture.mjs`
+- [x] 2.9 The fixtures are formatted: `npx prettier --check "scripts/fixtures/recommendation/*.json"`
+- [x] 2.10 The dev page is not tracked: `git ls-files src/pages/dev` prints nothing
 
 #### Manual
 
-- [ ] 2.11 The temporary dev page renders with the local Supabase stack down (no hang, no redirect, no error from the middleware), and without any change to the middleware or other product code
-- [ ] 2.12 On the dev page the current fixture shows generation time, the lead of the advice, "Najważniejsze ustalenia" with a chip (icon and word) per finding, then the inline forecast with the certainty badge; the `colon-list` fixture shows its intro line and bullets above the disclosure
-- [ ] 2.13 "Pokaż szczegóły" opens the rest of the advice, the meaning and suggested check of each finding, any findings beyond the visible five (`odd-findings`), and the model; the chevron follows the open state and keyboard focus is visible
-- [ ] 2.14 Advice from an earlier day shows the forecast with date labels instead of "dziś" and "jutro", and neutral finding chips that keep their words ("Warto sprawdzić", "Dobrze"); no forecast section appears when the view is empty or failed
-- [ ] 2.15 The 2:1 grid reads well at 1440px and 390px with only the usage card in the right column (adjust the column only if it looks unbalanced, keeping both cards)
-- [ ] 2.16 The advisory sentence, the generation time, the stale warning and the testids `recommendation-status`, `stale-warning`, `recommendation-text` and `forecast-certainty` are still present on the dev page
-- [ ] 2.17 Pushing a fixture with `--generated-at` on the owner's local stack shows the expected badge, and the flag exits with an error for a state-only push (Docker runs on the UGREEN and is not started by the assistant; the owner may defer this as in the earlier change)
+- [x] 2.11 The temporary dev page renders with the local Supabase stack down (no hang, no redirect, no error from the middleware), and without any change to the middleware or other product code
+- [x] 2.12 On the dev page the current fixture shows generation time, the lead of the advice, "Najważniejsze ustalenia" with a chip (icon and word) per finding, then the inline forecast with the certainty badge; the `colon-list` fixture shows its intro line and bullets above the disclosure
+- [x] 2.13 "Pokaż szczegóły" opens the rest of the advice, the meaning and suggested check of each finding, any findings beyond the visible five (`odd-findings`), and the model; the chevron follows the open state and keyboard focus is visible
+- [x] 2.14 Advice from an earlier day shows the forecast with date labels instead of "dziś" and "jutro", and neutral finding chips that keep their words ("Warto sprawdzić", "Dobrze"); no forecast section appears when the view is empty or failed
+- [x] 2.15 The 2:1 grid reads well at 1440px and 390px with only the usage card in the right column (adjust the column only if it looks unbalanced, keeping both cards)
+- [x] 2.16 The advisory sentence, the generation time, the stale warning and the testids `recommendation-status`, `stale-warning`, `recommendation-text` and `forecast-certainty` are still present on the dev page
+- [x] 2.17 Pushing a fixture with `--generated-at` on the owner's local stack shows the expected badge, and the flag exits with an error for a state-only push (Docker runs on the UGREEN and is not started by the assistant; the owner may defer this as in the earlier change)
 
 ### Phase 3: Screenshot gate for the static states
 

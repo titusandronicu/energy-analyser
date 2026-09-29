@@ -1,0 +1,35 @@
+---
+import type { Block } from "@/lib/format/advice-markdown";
+
+interface Props {
+  blocks: Block[];
+}
+
+// Every segment is rendered as escaped text: model output can't inject markup.
+const { blocks } = Astro.props;
+---
+
+{blocks.map((block) =>
+  block.type === "paragraph" ? (
+    <p>
+      {block.lines.map((line, i) => (
+        <>
+          {i > 0 && <br />}
+          {line.map((segment) => (segment.bold ? <strong>{segment.text}</strong> : segment.text))}
+        </>
+      ))}
+    </p>
+  ) : block.ordered ? (
+    <ol class="list-decimal space-y-1 pl-5">
+      {block.items.map((item) => (
+        <li>{item.map((segment) => (segment.bold ? <strong>{segment.text}</strong> : segment.text))}</li>
+      ))}
+    </ol>
+  ) : (
+    <ul class="list-disc space-y-1 pl-5">
+      {block.items.map((item) => (
+        <li>{item.map((segment) => (segment.bold ? <strong>{segment.text}</strong> : segment.text))}</li>
+      ))}
+    </ul>
+  ),
+)}

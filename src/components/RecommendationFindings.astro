@@ -1,0 +1,29 @@
+---
+import { VerdictChip } from "@/components/live/VerdictChip";
+import type { RecommendationFinding } from "@/lib/services/recommendation";
+
+interface Props {
+  findings: RecommendationFinding[];
+}
+
+// The lab's own findings as a static list. Tone and word come from the mapper (a stale card arrives with neutral
+// chips), so this component holds no freshness logic. No category icons: a finding carries severity, not a kind.
+const { findings } = Astro.props;
+---
+
+{findings.length > 0 && (
+  <section class="border-t border-border pt-4" data-testid="recommendation-findings">
+    <h3 class="mb-2 text-sm font-semibold text-card-foreground">Najważniejsze ustalenia</h3>
+    <ul class="space-y-3">
+      {findings.map((finding) => (
+        <li class="flex flex-col items-start gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+          <div class="min-w-0 text-sm [overflow-wrap:anywhere]">
+            <p class="font-medium text-card-foreground">{finding.title ?? finding.fact}</p>
+            {finding.title !== null && finding.fact !== null && <p class="text-muted-foreground">{finding.fact}</p>}
+          </div>
+          <VerdictChip tone={finding.tone} word={finding.word} className="shrink-0" />
+        </li>
+      ))}
+    </ul>
+  </section>
+)}

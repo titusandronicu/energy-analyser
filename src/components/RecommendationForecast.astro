@@ -1,0 +1,46 @@
+---
+import StatusBadge from "@/components/StatusBadge.astro";
+import TermsExplained from "@/components/TermsExplained.astro";
+import type { RecommendationView } from "@/lib/services/recommendation";
+
+type Forecast = Extract<RecommendationView, { kind: "recommendation" }>["forecast"];
+
+interface Props {
+  forecast: Forecast;
+  isFromEarlierDay: boolean;
+}
+
+// The PV forecast the lab generated with the advice, shown inside the recommendation card. Advice from an earlier
+// day gets date-only labels: its "today" and "tomorrow" are other days than the reader's.
+const { forecast, isFromEarlierDay } = Astro.props;
+---
+
+<section class="border-t border-border pt-4" data-testid="recommendation-forecast">
+  <h3 class="mb-2 text-sm font-semibold text-card-foreground">Prognoza produkcji</h3>
+  <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+    <div>
+      <dt class="text-muted-foreground">
+        {isFromEarlierDay
+          ? `Prognoza produkcji z paneli — ${forecast.todayDayLabel}`
+          : `Prognoza produkcji z paneli — dziś (${forecast.todayDayLabel})`}
+      </dt>
+      <dd class="font-medium">{forecast.todayLabel}</dd>
+    </div>
+    <div>
+      <dt class="text-muted-foreground">
+        {isFromEarlierDay
+          ? `Prognoza produkcji z paneli — ${forecast.tomorrowDayLabel}`
+          : `Prognoza produkcji z paneli — jutro (${forecast.tomorrowDayLabel})`}
+      </dt>
+      <dd class="font-medium">{forecast.tomorrowLabel}</dd>
+    </div>
+    <div class="sm:col-span-2">
+      <dt class="text-muted-foreground">Pewność prognozy</dt>
+      <dd class="mt-1">
+        <StatusBadge status={forecast.certainty} testId="forecast-certainty" />
+      </dd>
+    </div>
+  </dl>
+
+  <TermsExplained terms={["forecast", "forecast_certainty", "kwh"]} />
+</section>

@@ -1,7 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import BillForecastCard from "@/components/BillForecastCard.astro";
-import ForecastCard from "@/components/ForecastCard.astro";
 import LiveStateCard from "@/components/LiveStateCard.astro";
 import RecommendationCard from "@/components/RecommendationCard.astro";
 import UsageInsightCard from "@/components/UsageInsightCard.astro";
@@ -90,16 +89,12 @@ const [liveView, billView, usageView, view]: [
 
       <LiveStateCard view={liveView} />
       <BillForecastCard view={billView} />
-      <div class="grid gap-6 lg:grid-cols-3">
+      <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
         <div class="lg:col-span-2">
           <RecommendationCard view={view} />
         </div>
         <div class="space-y-6">
           <UsageInsightCard view={usageView} />
-          <ForecastCard
-            forecast={view?.kind === "recommendation" ? view.forecast : null}
-            isFromEarlierDay={view?.kind === "recommendation" && view.isFromEarlierDay}
-          />
         </div>
       </div>
     </div>
