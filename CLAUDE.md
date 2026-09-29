@@ -63,3 +63,10 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 ## CI
 
 GitHub Actions runs lint, unit tests, type checks, build and a local-Supabase smoke test on pushes and pull requests to `main`. A successful push publishes an immutable GHCR image; production deployment is manual through the protected `production` environment.
+
+## Cursor Cloud specific instructions
+
+- Install with `npm ci && npx astro sync`. Lint type-checks Astro locals, so `npx astro sync` has to run first; without the generated `.astro/` types, `npm run lint` reports unresolved Astro types.
+- Local Supabase needs Docker. This VM does not use systemd as PID 1, so start `containerd` and `dockerd` when `docker info` fails, then run the same reduced stack as CI: `npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,storage-api,postgres-meta,supavisor`. Mailpit stays on `http://127.0.0.1:54324`. The excluded services keep the stack inside the VM memory budget.
+- Write the gitignored `.env` from `npx supabase status -o env`: map `API_URL` to `SUPABASE_URL` and `ANON_KEY` to `SUPABASE_ANON_KEY`, and set `ALLOW_SIGNUP=true` plus `APP_ORIGIN=http://127.0.0.1:4321`. Leave `SERVICE_ROLE_KEY` out of `.env`.
+- Dev server: `npm run dev -- --host 127.0.0.1 --port 4321`. `npm run lint`, `npm test`, `npx astro check`, and `npm run build` do not need Supabase. Sign-in and `npm run smoke` do. Run smoke only against this local stack: `BASE_URL=http://127.0.0.1:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.
