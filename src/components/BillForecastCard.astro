@@ -1,4 +1,6 @@
 ---
+import { FileText } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
 import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
@@ -52,7 +54,7 @@ const checkLine =
 ---
 
 <Panel>
-  <h2 class="mb-2 text-lg font-semibold text-card-foreground">Prognoza rachunku</h2>
+  <CardHeading class="mb-2" title="Prognoza rachunku" icon={FileText} iconClass="text-primary" />
   <div class="mb-4">
     <StatusBadge status={status} testId="bill-status" />
   </div>

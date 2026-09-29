@@ -13,7 +13,7 @@ import {
   Play,
   Scale,
   Sun,
-  Zap,
+  TowerControl,
   type LucideIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -121,7 +121,7 @@ function buildNodes(props: LiveFlowProps): NodeData[] {
     {
       id: "grid",
       label: "Sieć",
-      Icon: Zap,
+      Icon: TowerControl,
       value: grid.value,
       spoken: withDirection(grid.value, grid.direction),
       sub: grid.direction ?? "bez przepływu",
@@ -210,77 +210,79 @@ export function LiveFlow(props: LiveFlowProps) {
 
       {view === "diagram" ? (
         <>
-          <div ref={stageRef} className="relative mx-auto max-w-[720px]">
-            {layout && (
-              <svg
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 size-full overflow-visible"
-                viewBox={`0 0 ${String(layout.width)} ${String(layout.height)}`}
-              >
-                {nodes.map(({ id }) => {
-                  const rect = layout.nodes[id];
-                  if (!rect) return null;
-                  const watts = flows[id].watts;
-                  const active = isActive(watts);
-                  const line = connector(rect, layout.junction, SIDE[id], active ? flowDirection(id, watts) : 1);
-                  const d = `M${String(line.start.x)} ${String(line.start.y)} L${String(line.end.x)} ${String(line.end.y)}`;
-                  if (!active) {
+          <div className="bg-inset border-hairline mx-auto max-w-[720px] rounded-2xl border p-2 sm:p-4">
+            <div ref={stageRef} className="relative">
+              {layout && (
+                <svg
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 size-full overflow-visible"
+                  viewBox={`0 0 ${String(layout.width)} ${String(layout.height)}`}
+                >
+                  {nodes.map(({ id }) => {
+                    const rect = layout.nodes[id];
+                    if (!rect) return null;
+                    const watts = flows[id].watts;
+                    const active = isActive(watts);
+                    const line = connector(rect, layout.junction, SIDE[id], active ? flowDirection(id, watts) : 1);
+                    const d = `M${String(line.start.x)} ${String(line.start.y)} L${String(line.end.x)} ${String(line.end.y)}`;
+                    if (!active) {
+                      return (
+                        <path
+                          key={id}
+                          d={d}
+                          className="text-border"
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                          strokeLinecap="round"
+                          strokeDasharray="2 6"
+                          fill="none"
+                        />
+                      );
+                    }
+                    const animated = flows[id].moving && !paused;
                     return (
-                      <path
-                        key={id}
-                        d={d}
-                        className="text-border"
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        strokeDasharray="2 6"
-                        fill="none"
-                      />
+                      <g key={id} className={cn(LINE_TEXT[id], isStale && "opacity-45")}>
+                        <path
+                          d={d}
+                          className={cn(animated && "animate-flow-dash")}
+                          stroke="currentColor"
+                          strokeWidth={2.5}
+                          strokeLinecap="round"
+                          fill="none"
+                        />
+                        <polygon
+                          points="-6,-5 6,0 -6,5"
+                          fill="currentColor"
+                          transform={`translate(${String(line.mid.x)},${String(line.mid.y)}) rotate(${String(line.angle)})`}
+                        />
+                      </g>
                     );
-                  }
-                  const animated = flows[id].moving && !paused;
-                  return (
-                    <g key={id} className={cn(LINE_TEXT[id], isStale && "opacity-45")}>
-                      <path
-                        d={d}
-                        className={cn(animated && "animate-flow-dash")}
-                        stroke="currentColor"
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        fill="none"
-                      />
-                      <polygon
-                        points="-6,-5 6,0 -6,5"
-                        fill="currentColor"
-                        transform={`translate(${String(line.mid.x)},${String(line.mid.y)}) rotate(${String(line.angle)})`}
-                      />
-                    </g>
-                  );
-                })}
-              </svg>
-            )}
-            <div className="grid grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)] items-stretch gap-y-9 max-[480px]:grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)]">
-              {nodes.map((node) => (
-                <FlowNode
-                  key={node.id}
-                  id={node.id}
-                  label={node.label}
-                  value={node.value}
-                  spoken={node.spoken}
-                  sub={node.sub}
-                  Icon={node.Icon}
-                  verdict={node.verdict}
-                  selected={node.id === selected}
-                  onSelect={setSelected}
-                />
-              ))}
-              <span
-                data-flow-junction
-                aria-hidden="true"
-                className="border-muted-foreground/50 bg-muted text-ring col-start-2 row-span-2 row-start-1 flex size-[34px] items-center justify-center self-center justify-self-center rounded-full border"
-              >
-                <Scale className="size-[18px]" />
-              </span>
+                  })}
+                </svg>
+              )}
+              <div className="grid grid-cols-[minmax(0,1fr)_92px_minmax(0,1fr)] items-stretch gap-y-9 max-[480px]:grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)]">
+                {nodes.map((node) => (
+                  <FlowNode
+                    key={node.id}
+                    id={node.id}
+                    label={node.label}
+                    value={node.value}
+                    spoken={node.spoken}
+                    sub={node.sub}
+                    Icon={node.Icon}
+                    verdict={node.verdict}
+                    selected={node.id === selected}
+                    onSelect={setSelected}
+                  />
+                ))}
+                <span
+                  data-flow-junction
+                  aria-hidden="true"
+                  className="border-muted-foreground/50 bg-muted text-ring col-start-2 row-span-2 row-start-1 flex size-[34px] items-center justify-center self-center justify-self-center rounded-full border"
+                >
+                  <Scale className="size-[18px]" />
+                </span>
+              </div>
             </div>
           </div>
 

@@ -1,4 +1,6 @@
 ---
+import { House } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
 import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
@@ -22,7 +24,7 @@ const purchaseExplanation =
 ---
 
 <Panel>
-  <h2 class="mb-2 text-lg font-semibold text-card-foreground">{heading}</h2>
+  <CardHeading class="mb-2" title={heading} icon={House} iconClass="text-flow-home" />
   <div class="mb-4">
     <StatusBadge status={status} testId="usage-status" />
   </div>

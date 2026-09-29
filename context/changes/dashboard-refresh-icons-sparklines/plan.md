@@ -566,15 +566,15 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [x] 1.1 PR 65 is merged on the branch base and its own acceptance check passes: `git grep -nE "text-white|border-white|bg-white/|text-blue-100" -- src/components/LiveStateCard.astro src/components/BillForecastCard.astro src/components/UsageInsightCard.astro src/components/TermsExplained.astro src/pages/dashboard.astro` prints nothing and `git grep -n "bg-aurora" -- src/pages/dashboard.astro` prints one line
-- [x] 1.2 Unit tests pass: `npm test`
-- [x] 1.3 Linting passes: `npm run lint`
-- [x] 1.4 Type checks pass: `npx astro check`
-- [x] 1.5 Production build succeeds: `npm run build`
-- [x] 1.6 No pre-move palette value remains: `git grep -nE "#7cc4f5|#e9a3d3|#9aa7c7|#6ee7b7|#fcd34d|#fca5a5|#064e3b|#78350f|#7f1d1d|#101218|#1c1f29|#08111f|#111827|#18223a|#b8c4d9|#27344f" -- src ':!src/components/Banner.astro'` prints nothing
-- [x] 1.7 The tone surfaces no longer carry the old fade: `git grep -n "surface/60" -- src` prints nothing
-- [x] 1.8 The design reference is saved: `test -f context/changes/dashboard-refresh-icons-sparklines/design/Main.dc.html && test -f context/changes/dashboard-refresh-icons-sparklines/design/Mobile.dc.html`
-- [x] 1.9 The dev page is not tracked: `git ls-files src/pages/dev` prints nothing
+- [x] 1.1 PR 65 is merged on the branch base and its own acceptance check passes: `git grep -nE "text-white|border-white|bg-white/|text-blue-100" -- src/components/LiveStateCard.astro src/components/BillForecastCard.astro src/components/UsageInsightCard.astro src/components/TermsExplained.astro src/pages/dashboard.astro` prints nothing and `git grep -n "bg-aurora" -- src/pages/dashboard.astro` prints one line — 508d9be
+- [x] 1.2 Unit tests pass: `npm test` — 508d9be
+- [x] 1.3 Linting passes: `npm run lint` — 508d9be
+- [x] 1.4 Type checks pass: `npx astro check` — 508d9be
+- [x] 1.5 Production build succeeds: `npm run build` — 508d9be
+- [x] 1.6 No pre-move palette value remains: `git grep -nE "#7cc4f5|#e9a3d3|#9aa7c7|#6ee7b7|#fcd34d|#fca5a5|#064e3b|#78350f|#7f1d1d|#101218|#1c1f29|#08111f|#111827|#18223a|#b8c4d9|#27344f" -- src ':!src/components/Banner.astro'` prints nothing — 508d9be
+- [x] 1.7 The tone surfaces no longer carry the old fade: `git grep -n "surface/60" -- src` prints nothing — 508d9be
+- [x] 1.8 The design reference is saved: `test -f context/changes/dashboard-refresh-icons-sparklines/design/Main.dc.html && test -f context/changes/dashboard-refresh-icons-sparklines/design/Mobile.dc.html` — 508d9be
+- [x] 1.9 The dev page is not tracked: `git ls-files src/pages/dev` prints nothing — 508d9be
 
 #### Manual
 
@@ -589,15 +589,15 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass: `npm test`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 Type checks pass: `npx astro check`
-- [ ] 2.4 Production build succeeds: `npm run build`
-- [ ] 2.5 The header carries the new copy and the sign-out form is intact: `git grep -n "Wyloguj się" -- src/components` prints the header line and `git grep -n 'action="/api/auth/signout"' -- src` prints one line
-- [ ] 2.6 Icons are server-rendered and no new island appeared: `git --no-pager grep -nE "[[:space:]]client:(load|idle|visible|media|only)" -- "src/**/*.astro"` prints exactly four lines, `src/components/LiveStateCard.astro` (the `LiveFlow` island), `src/components/RecommendationCard.astro` and the two form islands in `src/pages/auth/signin.astro`; any other line, an icon among them, fails the check
-- [ ] 2.7 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
-- [ ] 2.8 The status testids are unchanged: `git grep -nE 'testId="(live|bill|usage)-status"' -- src` prints three lines
-- [ ] 2.9 The dev page is still untracked: `git ls-files src/pages/dev` prints nothing
+- [x] 2.1 Unit tests pass: `npm test`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 Type checks pass: `npx astro check`
+- [x] 2.4 Production build succeeds: `npm run build`
+- [x] 2.5 The header carries the new copy and the sign-out form is intact: `git grep -n "Wyloguj się" -- src/components` prints the header line and `git grep -n 'action="/api/auth/signout"' -- src` prints one line
+- [x] 2.6 Icons are server-rendered and no new island appeared: `git --no-pager grep -nE "[[:space:]]client:(load|idle|visible|media|only)" -- "src/**/*.astro"` prints exactly four lines, `src/components/LiveStateCard.astro` (the `LiveFlow` island), `src/components/RecommendationCard.astro` and the two form islands in `src/pages/auth/signin.astro`; any other line, an icon among them, fails the check
+- [x] 2.7 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
+- [x] 2.8 The status testids are unchanged: `git grep -nE 'testId="(live|bill|usage)-status"' -- src` prints three lines
+- [x] 2.9 The dev page is still untracked: `git ls-files src/pages/dev` prints nothing
 
 #### Manual
 
