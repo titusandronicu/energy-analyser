@@ -114,12 +114,12 @@ The four implementation steps above as one phase: tokens and aurora background, 
 
 #### Automated
 
-- [ ] 1.1 Unit tests pass: `npm test`
-- [ ] 1.2 Linting passes: `npm run lint`
-- [ ] 1.3 Type checks pass: `npx astro check`
-- [ ] 1.4 Production build succeeds: `npm run build`
-- [ ] 1.5 Touched files are formatted: `npx prettier --check src/styles/global.css src/components/ui/Panel.astro`
-- [ ] 1.6 No colour literal remains in the dashboard cards (`git grep` of `text-white|border-white|bg-white/|text-blue-100` in the four cards and `dashboard.astro` prints nothing)
+- [x] 1.1 Unit tests pass: `npm test` — bc11c16
+- [x] 1.2 Linting passes: `npm run lint` — bc11c16
+- [x] 1.3 Type checks pass: `npx astro check` — bc11c16
+- [x] 1.4 Production build succeeds: `npm run build` — bc11c16
+- [x] 1.5 Touched files are formatted: `npx prettier --check src/styles/global.css src/components/ui/Panel.astro` — bc11c16
+- [x] 1.6 No colour literal remains in the dashboard cards (`git grep` of `text-white|border-white|bg-white/|text-blue-100` in the four cards and `dashboard.astro` prints nothing) — bc11c16
 
 #### Manual
 
