@@ -359,6 +359,22 @@ describe("toBillForecastView", () => {
     expect(view.centralLabel).toBe("ok. 258 zł");
   });
 
+  // The lab publishes the connector's own period text; the month named is the one the period ends in.
+  it("names the settled month from the lab's period text", () => {
+    const period = "01.08.2026 - 31.08.2026";
+    const view = forecast(
+      okRow({
+        settlement: { ...settlement, reference_period: period },
+        closed_month_check: { ...ok.closed_month_check, period },
+      }),
+    );
+    expect(view.basis.referenceMonthLabel).toBe("sierpień 2026");
+    expect(view.closedMonthCheck?.monthLabel).toBe("sierpień 2026");
+    expect(forecast(okRow({ settlement: { ...settlement, reference_period: "31.13.2026 - x" } })).basis).toMatchObject({
+      referenceMonthLabel: "—",
+    });
+  });
+
   // A forecast generated at 23:58 on the last day of a month and read at 00:05 the next is still fresh.
   it("keeps the figure but drops the badge to a problem for another month", () => {
     const view = forecast(okRow({ month: "2026-08" }));

@@ -200,6 +200,28 @@ describe("ingest contract v1", () => {
     expect(firstIssuePath(withChanges((p) => (okForecast(p).month = "2026-00")))).toBe("bill_forecast.month");
   });
 
+  it("accepts the lab's period text and a numeric or null implied factor", () => {
+    const payload = withChanges((p) => {
+      const forecast = okForecast(p);
+      forecast.settlement.reference_period = "01.08.2026 - 31.08.2026";
+      forecast.settlement.factor_implied = 0.8;
+      if (forecast.closed_month_check) forecast.closed_month_check.period = "01.08.2026 - 31.08.2026";
+    });
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+    expect(
+      validateIngestPayload(
+        withChanges((p) => (okForecast(p).settlement.factor_implied = null)),
+        now,
+      ).success,
+    ).toBe(true);
+  });
+
+  it("rejects a reference period that is neither a month nor the lab's period text", () => {
+    expect(firstIssuePath(withChanges((p) => (okForecast(p).settlement.reference_period = "August 2026")))).toBe(
+      "bill_forecast.settlement.reference_period",
+    );
+  });
+
   it("rejects a repeated day in observed_days", () => {
     expect(
       firstIssuePath(

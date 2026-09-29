@@ -123,6 +123,16 @@ function monthLabel(value: unknown): string {
   return typeof value === "string" && MONTH_KEY.test(value) ? formatMonth(value) : MISSING;
 }
 
+// The lab publishes a settled period as the connector's text, "01.08.2026 - 31.08.2026" (the contract also still
+// accepts "2026-08"). The month it names is the one the period ends in, as the lab's own lag calculation reads it.
+const SETTLED_PERIOD = /^\d{2}\.(0[1-9]|1[0-2])\.\d{4} - \d{2}\.(0[1-9]|1[0-2])\.(\d{4})$/;
+
+function periodMonthLabel(value: unknown): string {
+  if (typeof value !== "string") return MISSING;
+  const settled = SETTLED_PERIOD.exec(value);
+  return settled ? monthLabel(`${settled[3]}-${settled[2]}`) : monthLabel(value);
+}
+
 function dayMonthLabel(value: unknown): string {
   return typeof value === "string" && DAY_KEY.test(value) ? formatDayMonth(value) : MISSING;
 }
@@ -178,7 +188,7 @@ function isConfidence(value: unknown): value is Confidence {
 function confidenceStatus(value: unknown, referenceMonth: unknown, lagMonths: number): Status {
   const base = isConfidence(value) ? CONFIDENCE_STATUS[value] : { tone: "insufficient" as StatusTone, label: "" };
   if (lagMonths <= 0) return { ...base };
-  const month = monthLabel(referenceMonth);
+  const month = periodMonthLabel(referenceMonth);
   const detail = `rozliczenie za ${month}, nie za ostatni miesiąc`;
   return { tone: base.tone, label: base.label ? `${base.label} — ${detail}` : detail };
 }
@@ -343,7 +353,7 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
     confidence: confidenceStatus(body.confidence, settlement.reference_period, lagMonths),
     creditLeftLabel: creditLeft > 0 ? kwhLabel(creditLeft) : null,
     basis: {
-      referenceMonthLabel: monthLabel(settlement.reference_period),
+      referenceMonthLabel: periodMonthLabel(settlement.reference_period),
       referenceLagMonths: lagMonths,
       exportRatioLabel: percentLabel(settlement.export_ratio),
       rateLabel: rateLabel(pricing.variable_gross_pln_per_kwh, "/kWh"),
@@ -354,7 +364,7 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
       check === null
         ? null
         : {
-            monthLabel: monthLabel(check.period),
+            monthLabel: periodMonthLabel(check.period),
             computedLabel: plnLabel(check.computed_gross_pln),
             invoiceLabel: plnLabel(check.invoice_gross_pln),
             diffLabel: signedPercentLabel(check.diff_pct),
