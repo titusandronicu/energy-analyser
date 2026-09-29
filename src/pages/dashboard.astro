@@ -7,7 +7,8 @@ import RecommendationCard from "@/components/RecommendationCard.astro";
 import UsageInsightCard from "@/components/UsageInsightCard.astro";
 import { buttonVariants } from "@/components/ui/button";
 import { loadBillForecast, toBillForecastView, type BillForecastView } from "@/lib/services/bill-forecast";
-import { loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
+import { warsawParts } from "@/lib/format/warsaw-time";
+import { loadDailyRowCapturedAt, loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
 import { loadLatestRecommendation, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 import { loadDailyEnergy, toUsageInsightView, type UsageInsightView } from "@/lib/services/usage-insight";
 import { createClient } from "@/lib/supabase";
@@ -35,6 +36,12 @@ function getClient() {
 }
 
 const now = new Date();
+// The daily rows feed both the usage card and the live verdicts, so they load once; a failure (null) shows the usage
+// card's load error and leaves the live card's PV and consumption verdicts unrated.
+const dailyRowsPromise = orLoadError(async () => {
+  const supabase = getClient();
+  return supabase ? await loadDailyEnergy(supabase, now) : [];
+});
 const [liveView, billView, usageView, view]: [
   LiveStateView | null,
   BillForecastView | null,
@@ -43,15 +50,21 @@ const [liveView, billView, usageView, view]: [
 ] = await Promise.all([
   orLoadError(async () => {
     const supabase = getClient();
-    return toLiveStateView(supabase ? await loadLiveState(supabase) : null, now);
+    const liveRow = supabase ? await loadLiveState(supabase) : null;
+    // Own isolation: a failure (for example the column grant not applied yet) only leaves consumption unrated.
+    const rowCapturedAt =
+      supabase && liveRow
+        ? await orLoadError(() => loadDailyRowCapturedAt(supabase, warsawParts(new Date(liveRow.captured_at)).dayKey))
+        : null;
+    return toLiveStateView(liveRow, now, await dailyRowsPromise, rowCapturedAt);
   }),
   orLoadError(async () => {
     const supabase = getClient();
     return toBillForecastView(supabase ? await loadBillForecast(supabase) : null, now);
   }),
   orLoadError(async () => {
-    const supabase = getClient();
-    return toUsageInsightView(supabase ? await loadDailyEnergy(supabase, now) : [], now);
+    const dailyRows = await dailyRowsPromise;
+    return dailyRows === null ? null : toUsageInsightView(dailyRows, now);
   }),
   orLoadError(async () => {
     const supabase = getClient();

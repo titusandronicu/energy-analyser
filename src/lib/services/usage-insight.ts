@@ -165,7 +165,7 @@ function insufficient(reason: string): UsageInsightView {
 }
 
 // "+12%", "−8%" (minus sign), "0%"; MISSING without a usable baseline.
-function deltaLabel(value: number | null, baseline: number | null): string {
+export function deltaLabel(value: number | null, baseline: number | null): string {
   if (value === null || baseline === null || baseline === 0) return MISSING;
   const raw = (value / baseline - 1) * 100;
   // Round half away from zero, symmetric for increases and decreases.
@@ -194,9 +194,21 @@ function deltaLabel(value: number | null, baseline: number | null): string {
   return `${sign}${oneDecimal.format(shown)}%`;
 }
 
-export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsightView {
+type BaselineSelection =
+  | { ok: false; reason: string }
+  | {
+      ok: true;
+      today: string;
+      compared: string;
+      comparedDay: Day;
+      kind: "seasonal" | "fallback";
+      baselineDays: string[];
+      baseline: Day[];
+    };
+
+// The compared day and its baseline (seasonal, else the fallback window), or why there is none.
+function selectBaseline(rows: DailyEnergyRow[], now: Date): BaselineSelection {
   const today = warsawParts(now).dayKey;
-  const yesterday = addDays(today, -1);
 
   // Days with a load only; a day without one is skipped everywhere. Today is never compared or a baseline.
   const days = new Map<string, Day>();
@@ -216,7 +228,7 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
   }
   const comparedDay = compared === null ? undefined : days.get(compared);
   if (compared === null || comparedDay === undefined) {
-    return insufficient(`brak zużycia z ostatnich ${String(LOOKBACK_DAYS)} dni`);
+    return { ok: false, reason: `brak zużycia z ostatnich ${String(LOOKBACK_DAYS)} dni` };
   }
 
   // Seasonal: ±14 days around the compared day's month-day in every earlier year that has data (with
@@ -234,26 +246,51 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
     }
   }
 
-  let baselineKind: "seasonal" | "fallback";
+  let kind: "seasonal" | "fallback";
   let baselineDays: string[];
   if (seasonal.length >= MIN_SEASONAL_DAYS) {
-    baselineKind = "seasonal";
+    kind = "seasonal";
     baselineDays = seasonal;
   } else {
-    baselineKind = "fallback";
+    kind = "fallback";
     baselineDays = [];
     for (let offset = 1; offset <= FALLBACK_DAYS; offset++) {
       const key = addDays(compared, -offset);
       if (days.has(key)) baselineDays.push(key);
     }
     if (baselineDays.length < MIN_FALLBACK_DAYS) {
-      return insufficient(
-        `potrzeba co najmniej ${String(MIN_FALLBACK_DAYS)} dni z ostatnich ${String(FALLBACK_DAYS)}, jest ${String(baselineDays.length)}`,
-      );
+      return {
+        ok: false,
+        reason: `potrzeba co najmniej ${String(MIN_FALLBACK_DAYS)} dni z ostatnich ${String(FALLBACK_DAYS)}, jest ${String(baselineDays.length)}`,
+      };
     }
   }
 
   const baseline = baselineDays.map((key) => days.get(key)).filter((d): d is Day => d !== undefined);
+  return { ok: true, today, compared, comparedDay, kind, baselineDays, baseline };
+}
+
+// The typical daily load (median of the baseline days) with the baseline the usage card would use; null exactly
+// when the usage card would say "insufficient". The live card pro-rates it by the hour, so both share one norm.
+export function dailyLoadNorm(
+  rows: DailyEnergyRow[],
+  now: Date,
+): { norm: number | null; days: number; kind: "seasonal" | "fallback" } | null {
+  const selection = selectBaseline(rows, now);
+  if (!selection.ok) return null;
+  return {
+    norm: median(selection.baseline.map((d) => d.load)),
+    days: selection.baseline.length,
+    kind: selection.kind,
+  };
+}
+
+export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsightView {
+  const selection = selectBaseline(rows, now);
+  if (!selection.ok) return insufficient(selection.reason);
+  const { today, compared, comparedDay, kind: baselineKind, baselineDays, baseline } = selection;
+  const yesterday = addDays(today, -1);
+
   const loadNorm = median(baseline.map((d) => d.load));
   const purchaseNorm = median(baseline.map((d) => d.purchase).filter((p): p is number => p !== null));
 

@@ -319,6 +319,8 @@ Make every state reproducible, prove the layout, verify the sign convention inde
 - The sign check on real pushes passes for grid and battery, and the result is written in research.md and the ingest README
 - `docs/logic.md` and `docs/decisions.md` reflect every constant and decision above
 
+Note (2026-09-29): 5.5 (`npm run smoke`) was skipped by the owner because it needs a local Supabase stack (Docker on the UGREEN); CI ran `ci` and `smoke` green on PR #58. 5.7 was computed from the token colours (not measured on screen); 5.8 confirmed import and both battery signs on real pushes, export is inferred (no export in the three-day window); the screenshots come from the fixtures through the real mapper and card on a temporary dev page.
+
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful.
 
 ---
@@ -350,6 +352,8 @@ One extra measurement pass per resize and one small island; no new dependency an
 ## Migration Notes
 
 No schema or contract change. Rolling back is reverting the phase commits; stored `localStorage` keys are harmless leftovers.
+
+Addendum (2026-09-29, after the implementation review and PR 58 review): one migration was added, `supabase/migrations/20260929130000_owner_read_daily_energy_captured_at.sql` (a column grant so owners can read `daily_energy.captured_at`); the live card reads it in an isolated query and does not rate consumption from a daily row more than 15 minutes older than the snapshot. Apply it in production with the deploy; without it the consumption chip reads "brak czasu historii". Other deviations, all with the intent met: the fixture test is a separate file (`src/lib/ingest/live-flow-fixtures.test.ts`) instead of an extension of `contract.test.ts`; reduced-motion and paused screenshots were not captured (see `screenshots/README.md`); `text-blue-100` and `bg-white/5` literals remain in untouched markup of `LiveStateCard.astro` and in the neutral tone of `tone-classes.ts`; `preferences.ts`, `tone-classes.ts` and `VerdictChip.tsx` were added as small shared modules; and the PV chip says "oczekiwanego" instead of "prognozy" because the share is measured against the forecast pro-rated to the capture time.
 
 ## References
 
@@ -398,44 +402,44 @@ No schema or contract change. Rolling back is reverting the phase commits; store
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test`
-- [x] 3.2 Linting and type checks pass: `npm run lint`
-- [x] 3.3 Production build succeeds: `npm run build`
+- [x] 3.1 Unit tests pass: `npm test` — 07a5f28
+- [x] 3.2 Linting and type checks pass: `npm run lint` — 07a5f28
+- [x] 3.3 Production build succeeds: `npm run build` — 07a5f28
 
 #### Manual
 
-- [x] 3.4 With a fresh push, active connectors move; a flow under 50 W and a stale snapshot show static arrowheads only
-- [x] 3.5 Pause stops all motion, keeps arrowheads, and persists after a manual reload; clearing `localStorage` (or blocking it) leaves the page working with defaults
-- [x] 3.6 With `prefers-reduced-motion: reduce` emulated, nothing moves and arrowheads remain
-- [x] 3.7 Polling continues while paused: a new push after five minutes still appears
+- [x] 3.4 With a fresh push, active connectors move; a flow under 50 W and a stale snapshot show static arrowheads only — 07a5f28
+- [x] 3.5 Pause stops all motion, keeps arrowheads, and persists after a manual reload; clearing `localStorage` (or blocking it) leaves the page working with defaults — 07a5f28
+- [x] 3.6 With `prefers-reduced-motion: reduce` emulated, nothing moves and arrowheads remain — 07a5f28
+- [x] 3.7 Polling continues while paused: a new push after five minutes still appears — 07a5f28
 
 ### Phase 4: PV and consumption verdicts
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass: `npm test`
-- [ ] 4.2 Linting and type checks pass: `npm run lint`
-- [ ] 4.3 Production build succeeds: `npm run build`
+- [x] 4.1 Unit tests pass: `npm test` — 45071d1
+- [x] 4.2 Linting and type checks pass: `npm run lint` — 45071d1
+- [x] 4.3 Production build succeeds: `npm run build` — 45071d1
 
 #### Manual
 
-- [ ] 4.4 On a real or fixture snapshot after 15:00, the PV chip and figure match a hand calculation from the day's totals
-- [ ] 4.5 On a snapshot after 06:00 with enough history, the consumption chip matches a hand calculation against the usage card's norm
-- [ ] 4.6 Breaking the daily-energy load (for example an invalid table name locally) leaves the live card and usage card error state working
+- [x] 4.4 On a real or fixture snapshot after 15:00, the PV chip and figure match a hand calculation from the day's totals — 45071d1
+- [x] 4.5 On a snapshot after 06:00 with enough history, the consumption chip matches a hand calculation against the usage card's norm — 45071d1
+- [x] 4.6 Breaking the daily-energy load (for example an invalid table name locally) leaves the live card and usage card error state working — 45071d1
 
 ### Phase 5: Fixtures, visual gate, sign check and docs
 
 #### Automated
 
-- [ ] 5.1 Unit tests pass: `npm test`
-- [ ] 5.2 Linting and type checks pass: `npm run lint`
-- [ ] 5.3 Production build succeeds: `npm run build`
-- [ ] 5.4 Contract schema has not drifted: `npm test` passes (it fails on drift) and `git diff --exit-code docs/ingest/contract-v1.schema.json` is clean
+- [x] 5.1 Unit tests pass: `npm test` — 217d73a
+- [x] 5.2 Linting and type checks pass: `npm run lint` — 217d73a
+- [x] 5.3 Production build succeeds: `npm run build` — 217d73a
+- [x] 5.4 Contract schema has not drifted: `npm test` passes (it fails on drift) and `git diff --exit-code docs/ingest/contract-v1.schema.json` is clean — 217d73a
 - [ ] 5.5 Smoke test passes on the local stack (magic-link steps may fail for the known unrelated reason): `npm run smoke`
 
 #### Manual
 
-- [ ] 5.6 Screenshots for every state at 1440px and 390px show no overflow, clipped label or overlapping control, and are saved in the change folder
-- [ ] 5.7 Text and chip contrast on the tinted squares is at least 4.5:1 (spot-check with a contrast tool), and status is never conveyed by colour alone
-- [ ] 5.8 The sign check on real pushes passes for grid and battery, and the result is written in research.md and the ingest README
-- [ ] 5.9 `docs/logic.md` and `docs/decisions.md` reflect every constant and decision above
+- [x] 5.6 Screenshots for every state at 1440px and 390px show no overflow, clipped label or overlapping control, and are saved in the change folder — 217d73a
+- [x] 5.7 Text and chip contrast on the tinted squares is at least 4.5:1 (spot-check with a contrast tool), and status is never conveyed by colour alone — 217d73a
+- [x] 5.8 The sign check on real pushes passes for grid and battery, and the result is written in research.md and the ingest README — 217d73a
+- [x] 5.9 `docs/logic.md` and `docs/decisions.md` reflect every constant and decision above — 217d73a

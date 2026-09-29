@@ -1,0 +1,122 @@
+{
+  "contract_version": 1,
+  "source": "homelab",
+  "captured_at": "2026-09-10T16:10:00+02:00",
+  "state": {
+    "pv_w": 3300,
+    "home_load_w": 1100,
+    "grid_w": -2200,
+    "battery_w": null,
+    "battery_soc_pct": null,
+    "pv_today_kwh": 23,
+    "grid_import_today_kwh": 5.8,
+    "grid_export_today_kwh": 7.9,
+    "source_health": "degraded"
+  },
+  "daily_history": [
+    {
+      "day": "2026-08-29",
+      "pv_kwh": 22.4,
+      "load_kwh": 34.8,
+      "grid_import_kwh": 9.6,
+      "grid_export_kwh": 6.1,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-08-30",
+      "pv_kwh": 24.9,
+      "load_kwh": 35.6,
+      "grid_import_kwh": 8.8,
+      "grid_export_kwh": 7.4,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-08-31",
+      "pv_kwh": 19.7,
+      "load_kwh": 36.4,
+      "grid_import_kwh": 11.2,
+      "grid_export_kwh": 4.9,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-01",
+      "pv_kwh": 25.3,
+      "load_kwh": 37.2,
+      "grid_import_kwh": 9.1,
+      "grid_export_kwh": 8,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-02",
+      "pv_kwh": 23.6,
+      "load_kwh": 35,
+      "grid_import_kwh": 10.4,
+      "grid_export_kwh": 6.6,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-03",
+      "pv_kwh": 26.1,
+      "load_kwh": 36,
+      "grid_import_kwh": 8.2,
+      "grid_export_kwh": 8.9,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-04",
+      "pv_kwh": 21.2,
+      "load_kwh": 38.1,
+      "grid_import_kwh": 12,
+      "grid_export_kwh": 5.3,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-05",
+      "pv_kwh": 24.4,
+      "load_kwh": 33.9,
+      "grid_import_kwh": 9.9,
+      "grid_export_kwh": 7.2,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-06",
+      "pv_kwh": 20.8,
+      "load_kwh": 36.8,
+      "grid_import_kwh": 11.5,
+      "grid_export_kwh": 5,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-07",
+      "pv_kwh": 25.7,
+      "load_kwh": 35.4,
+      "grid_import_kwh": 8.6,
+      "grid_export_kwh": 8.4,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-08",
+      "pv_kwh": 23.1,
+      "load_kwh": 36.5,
+      "grid_import_kwh": 10.1,
+      "grid_export_kwh": 6.8,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-09",
+      "pv_kwh": 22,
+      "load_kwh": 37.5,
+      "grid_import_kwh": 11,
+      "grid_export_kwh": 5.7,
+      "pv_forecast_kwh": 27.6
+    },
+    {
+      "day": "2026-09-10",
+      "pv_forecast_kwh": 27.6,
+      "pv_kwh": 23,
+      "load_kwh": 24.5,
+      "grid_import_kwh": 5.8,
+      "grid_export_kwh": 7.9
+    }
+  ]
+}

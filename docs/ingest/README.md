@@ -22,6 +22,12 @@ Content-Type: application/json
 - `pv_forecast_kwh` (optional, may be `null`) in a `daily_history` entry is the PV forecast for that day as known in the morning. A missing or `null` value keeps a forecast already stored for that day.
 - Every object is strict: unknown keys are rejected with 422. Add a field only after this contract gains it.
 
+## Sign conventions
+
+`state.grid_w`: positive is power bought from the grid (import), negative is power fed into it (export). `state.battery_w`: positive is discharge, negative is charge. `pv_w` and `home_load_w` are not signed. The app shows each value unsigned with a direction word and draws the direction arrows from these signs (`docs/logic.md`, Live state). The lab collector documents the same convention (homelab-2 `collect-ha-snapshot.py`, `sign_conventions`).
+
+Checked on 2026-09-29 against 400 real pushes from 2026-09-27 to 2026-09-29: import positive (the import counter rose in 74 of 74 intervals with `grid_w > 0`), battery discharge positive (SOC fell in 110 of 110) and charge negative (SOC rose in 98 of 99). Export negative was not observed in that window because the house did not export; it follows from import being positive. Evidence: `context/changes/live-flow-interaction/research.md`.
+
 ## Never send
 
 PGE CSV rows, customer or POD identifiers, hourly private readings, Home Assistant entity IDs or tokens, LLM credentials, hostnames or IPs. The contract doesn't accept the lab bundle's `prompt`, `comparison_values` or `safety` blocks, so leave them out.
@@ -50,8 +56,9 @@ Tokens are stored only as SHA-256 hashes in `public.ingest_tokens`, and there is
 Payload validation (strict keys, size cap, capture-time window) happens in the app, not in the database. The `ingest_push` function checks only the token, so someone holding both an ingest token and the app's Supabase anon key could bypass validation by calling it directly. That's accepted for v1 because the home lab never receives the anon key. Keep it that way: give pushers only the ingest token, and never both secrets.
 
 1. **Create:** `node scripts/create-ingest-token.mjs <label>` prints the token once, plus an `insert` statement. Run the statement in the Supabase SQL editor and put the token in the home lab's push config (never in either repo).
-2. **Verify:** `BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs` should print `201`. It sends only the live `state` section, which the next real push supersedes. `--full` also sends the example's made-up recommendation, daily history and bill forecast; use it only against a local database, because recommendations are never pruned.
+2. **Verify:** `BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs` should print `201`. It sends only the live `state` section, which the next real push supersedes. `--full` also sends the example's made-up recommendation, daily history and bill forecast; use it only against a local database, because recommendations are never pruned. Against a non-local `BASE_URL` a whole body is refused unless `--allow-remote` is passed, which exists for a deliberate staging push.
    - `--file <path>` sends a whole body from another file instead of the example — the variants in `scripts/fixtures/bill-forecast/` cover the forecast's refusal paths and verdict boundaries. A named file is always sent whole, so it is local-only for the same reason as `--full`.
+   - `--captured-at <iso>` sets `captured_at` instead of now and `--shift-days` moves every `daily_history` day so the newest is the Warsaw calendar day of the capture time actually sent; with the variants in `scripts/fixtures/live-flow/` they reproduce each state of the live card, and the ordering rules are in the script's header.
    - Both forms rewrite `bill_forecast.generated_at` to now (and say so), because the committed bodies carry fixed timestamps that are always past the card's 30-minute freshness rule. `--keep-generated-at` leaves it alone, which is what the deliberately stale variant needs.
 3. **Rotate:** create a new token, switch the lab to it, then revoke the old one. Both work in the meantime.
 4. **Revoke:** `update public.ingest_tokens set revoked_at = now() where label = '<label>';`
