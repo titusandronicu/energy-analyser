@@ -439,5 +439,5 @@ None: no schema, contract or lab change; rows stored earlier render with the sam
 - [x] 4.7 With reduced motion enabled (operating system setting or browser rendering emulation) nothing animates and all content is visible at once — 469c51b
 - [x] 4.8 Screenshots of the current and stale states are re-taken at 1440px and 390px after the motion change and replace the Phase 3 files — 469c51b
 - [x] 4.9 `docs/logic.md` and the five dated entries in `docs/decisions.md` describe every rule above, and `docs/prerequisites.md` needs no change — 469c51b
-- [x] 4.10 After the draft PR is opened, the CI `ci` and `smoke` jobs are green (smoke still finds the advice marker and the live text; it does not run locally)
+- [x] 4.10 After the draft PR is opened, the CI `ci` and `smoke` jobs are green (smoke still finds the advice marker and the live text; it does not run locally) — 202cba2
 - [x] 4.11 The temporary dev page is deleted as the last step and never entered git: `test ! -e src/pages/dev/recommendation-fixtures.astro` and `git log --all --oneline -- src/pages/dev` prints nothing — 469c51b
