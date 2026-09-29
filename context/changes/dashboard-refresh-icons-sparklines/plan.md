@@ -380,7 +380,7 @@ Derive the delta against the last invoice and the days-in-estimate share in `bil
 - Linting passes: `npm run lint`
 - Type checks pass: `npx astro check`
 - Production build succeeds: `npm run build`
-- The percent edge rule has one implementation: `git --no-pager grep -ln "edgePercentLabel" -- src` lists exactly `src/lib/format/edge-percent.ts`, `src/lib/format/edge-percent.test.ts`, `src/lib/services/usage-insight.ts` and `src/lib/services/bill-forecast.ts`, and `git --no-pager grep -n "Math.min(tenths" -- src` prints exactly one line (in `edge-percent.ts`)
+- The percent edge rule has one implementation: `git --no-pager grep -ln "edgePercentLabel" -- src` lists exactly `src/lib/format/edge-percent.ts`, `src/lib/format/edge-percent.test.ts`, `src/lib/services/usage-insight.ts` and `src/lib/services/bill-forecast.ts`, and `git --no-pager grep -n "Math.min(tenths" -- src ':!src/lib/services/live-state.ts'` prints exactly one line (in `edge-percent.ts`; `live-state.ts` `shareLabel` holds an older, unsigned variant of the clamp for the PV share that predates this change and is out of scope, so it is excluded)
 - The delta is not derived from the check's own drift figure: `git grep -n "diff_pct" -- src/lib/services/bill-forecast.ts` prints one line (the closed-month check's `signedPercentLabel`)
 - No contract or migration change: `git diff --exit-code origin/main -- supabase docs/ingest src/lib/ingest/contract.ts`
 - Every bill testid survives: `for id in bill-status bill-unavailable-reason bill-month bill-range bill-central bill-days bill-confidence bill-basis bill-credit-left bill-closed-month-check; do git grep -q "$id" -- src/components/BillForecastCard.astro || echo "missing $id"; done` prints nothing
@@ -633,14 +633,14 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [x] 4.1 Unit tests pass: `npm test`
-- [x] 4.2 Linting passes: `npm run lint`
-- [x] 4.3 Type checks pass: `npx astro check`
-- [x] 4.4 Production build succeeds: `npm run build`
-- [x] 4.5 No new query: `git grep -n 'from("daily_energy")' -- src` prints exactly the two existing lines (`usage-insight.ts` and `live-state.ts`)
-- [x] 4.6 No migration, contract or lab change: `git diff --exit-code origin/main -- supabase docs/ingest src/lib/ingest/contract.ts`
-- [x] 4.7 "Z PV wykorzystane" is not rendered: `git grep -n "Z PV wykorzystane" -- src` prints nothing
-- [x] 4.8 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
+- [x] 4.1 Unit tests pass: `npm test` — 17c04a5
+- [x] 4.2 Linting passes: `npm run lint` — 17c04a5
+- [x] 4.3 Type checks pass: `npx astro check` — 17c04a5
+- [x] 4.4 Production build succeeds: `npm run build` — 17c04a5
+- [x] 4.5 No new query: `git grep -n 'from("daily_energy")' -- src` prints exactly the two existing lines (`usage-insight.ts` and `live-state.ts`) — 17c04a5
+- [x] 4.6 No migration, contract or lab change: `git diff --exit-code origin/main -- supabase docs/ingest src/lib/ingest/contract.ts` — 17c04a5
+- [x] 4.7 "Z PV wykorzystane" is not rendered: `git grep -n "Z PV wykorzystane" -- src` prints nothing — 17c04a5
+- [x] 4.8 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing — 17c04a5
 
 #### Manual
 
@@ -655,15 +655,15 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [ ] 5.1 Unit tests pass: `npm test`
-- [ ] 5.2 Linting passes: `npm run lint`
-- [ ] 5.3 Type checks pass: `npx astro check`
-- [ ] 5.4 Production build succeeds: `npm run build`
-- [ ] 5.5 The percent edge rule has one implementation: `git --no-pager grep -ln "edgePercentLabel" -- src` lists exactly `src/lib/format/edge-percent.ts`, `src/lib/format/edge-percent.test.ts`, `src/lib/services/usage-insight.ts` and `src/lib/services/bill-forecast.ts`, and `git --no-pager grep -n "Math.min(tenths" -- src` prints exactly one line (in `edge-percent.ts`)
-- [ ] 5.6 The delta is not derived from the check's own drift figure: `git grep -n "diff_pct" -- src/lib/services/bill-forecast.ts` prints one line (the closed-month check's `signedPercentLabel`)
-- [ ] 5.7 No contract or migration change: `git diff --exit-code origin/main -- supabase docs/ingest src/lib/ingest/contract.ts`
-- [ ] 5.8 Every bill testid survives: `for id in bill-status bill-unavailable-reason bill-month bill-range bill-central bill-days bill-confidence bill-basis bill-credit-left bill-closed-month-check; do git grep -q "$id" -- src/components/BillForecastCard.astro || echo "missing $id"; done` prints nothing
-- [ ] 5.9 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
+- [x] 5.1 Unit tests pass: `npm test`
+- [x] 5.2 Linting passes: `npm run lint`
+- [x] 5.3 Type checks pass: `npx astro check`
+- [x] 5.4 Production build succeeds: `npm run build`
+- [x] 5.5 The percent edge rule has one implementation: `git --no-pager grep -ln "edgePercentLabel" -- src` lists exactly `src/lib/format/edge-percent.ts`, `src/lib/format/edge-percent.test.ts`, `src/lib/services/usage-insight.ts` and `src/lib/services/bill-forecast.ts`, and `git --no-pager grep -n "Math.min(tenths" -- src ':!src/lib/services/live-state.ts'` prints exactly one line (in `edge-percent.ts`; `live-state.ts` `shareLabel` holds an older, unsigned variant of the clamp for the PV share that predates this change and is out of scope, so it is excluded)
+- [x] 5.6 The delta is not derived from the check's own drift figure: `git grep -n "diff_pct" -- src/lib/services/bill-forecast.ts` prints one line (the closed-month check's `signedPercentLabel`)
+- [x] 5.7 No contract or migration change: `git diff --exit-code origin/main -- supabase docs/ingest src/lib/ingest/contract.ts`
+- [x] 5.8 Every bill testid survives: `for id in bill-status bill-unavailable-reason bill-month bill-range bill-central bill-days bill-confidence bill-basis bill-credit-left bill-closed-month-check; do git grep -q "$id" -- src/components/BillForecastCard.astro || echo "missing $id"; done` prints nothing
+- [x] 5.9 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
 
 #### Manual
 

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BillForecastRow } from "@/types";
+import { edgePercentLabel } from "@/lib/format/edge-percent";
 import { formatPeriod } from "@/lib/format/period";
 import type { Status, StatusTone } from "@/lib/format/status";
 import { asNumber, asRecord, kwhLabel, MISSING, plnLabel } from "@/lib/format/values";
@@ -27,6 +28,8 @@ export const MAX_PLAUSIBLE_BILL_PLN = 7000;
 // The verdict bands against the last real invoice: at or below it is good, up to +20% is worth watching, above
 // is a problem (context/changes/bill-forecast/change.md:14).
 export const BILL_AMBER_RATIO = 1.2;
+// The same line in whole percent.
+const BILL_AMBER_PERCENT = Math.round((BILL_AMBER_RATIO - 1) * 100);
 // The contract's cap on `observed_days` (one entry per day of the longest month). The mapper applies it itself so
 // a body that skipped validation cannot make the day label or the count unbounded.
 export const MAX_OBSERVED_DAYS = 31;
@@ -83,7 +86,26 @@ export type BillForecastView =
       creditLeftLabel: string | null;
       basis: BillForecastBasis;
       closedMonthCheck: ClosedMonthCheckView | null;
+      // The central figure against the invoice the verdict uses; null where no honest comparison exists (no
+      // invoice, another month, or an invoice month that cannot be read).
+      delta: BillDeltaView | null;
+      // How much of the month the estimate rests on; null when the body is inconsistent.
+      days: BillDaysView | null;
     };
+
+export interface BillDeltaView {
+  text: string;
+  tone: "good" | "watch" | "problem";
+  direction: "up" | "down" | "flat";
+}
+
+// `label` is "15 z 30", `share` 0 to 1.
+export interface BillDaysView {
+  used: number;
+  inMonth: number;
+  label: string;
+  share: number;
+}
 
 // Newest pushed bill forecast via the bill_forecast view; RLS returns nothing for non-owners. Errors are
 // thrown so the page can show a load failure instead of pretending there is no forecast.
@@ -210,17 +232,65 @@ function verdictStatus(central: number, invoice: number | null): Status {
     return { tone: "insufficient", label: "brak zamkniętego rachunku do porównania" };
   }
   const reference = plnLabel(invoice);
+  const band = `${String(BILL_AMBER_PERCENT)}%`;
+  switch (verdictTone(central, invoice)) {
+    case "good":
+      return { tone: "good", label: `nie więcej niż ostatni rachunek (${reference})` };
+    case "watch":
+      return { tone: "watch", label: `do ${band} powyżej ostatniego rachunku (${reference})` };
+    case "problem":
+      return { tone: "problem", label: `ponad ${band} powyżej ostatniego rachunku (${reference})` };
+  }
+}
+
+// The tone of the central figure against a real invoice, shared by the badge and the delta line so they can never
+// disagree.
+export type VerdictTone = "good" | "watch" | "problem";
+
+export function verdictTone(central: number, invoice: number): VerdictTone {
   // "Not more than the last invoice" is judged on the whole-złoty amounts the card shows, so 214.90 against
   // 214.66 does not read as "above" 215 zł with 215 zł on both sides. The +20% line is not displayed as an amount
   // and stays exact.
-  if (Math.round(central) <= Math.round(invoice) || central <= invoice + EPSILON) {
-    return { tone: "good", label: `nie więcej niż ostatni rachunek (${reference})` };
+  if (Math.round(central) <= Math.round(invoice) || central <= invoice + EPSILON) return "good";
+  if (central <= invoice * BILL_AMBER_RATIO + EPSILON) return "watch";
+  return "problem";
+}
+
+// "+43 zł (+20,1%) względem ostatniego rachunku za sierpień 2026", or "bez zmian względem…" on a zero difference.
+// Only where the comparison is honest: the caller passes a real invoice and its readable month.
+function billDelta(central: number, invoice: number, invoiceMonth: string): BillDeltaView {
+  const tone = verdictTone(central, invoice);
+  const amount = Math.round(central) - Math.round(invoice);
+  const against = `względem ostatniego rachunku za ${invoiceMonth}`;
+  if (amount === 0) return { text: `bez zmian ${against}`, tone, direction: "flat" };
+
+  let percentText = "";
+  if (Math.round(invoice) !== 0) {
+    const raw = (central / invoice - 1) * 100;
+    // Round half away from zero, symmetric for increases and decreases.
+    const whole = Math.sign(raw) * Math.round(Math.abs(raw) + EPSILON);
+    if (whole !== 0) {
+      // On the +20% verdict line a whole percent could read "+20%" next to either status (the same rule as the
+      // usage card's ±15%), so the whole 19,5 to 20,5% band is shown with one decimal, decided like the tone.
+      percentText =
+        amount > 0 && whole === BILL_AMBER_PERCENT
+          ? edgePercentLabel(raw, BILL_AMBER_PERCENT, tone !== "problem")
+          : `${whole > 0 ? "+" : "−"}${String(Math.abs(whole))}%`;
+    }
   }
-  const band = `${String(Math.round((BILL_AMBER_RATIO - 1) * 100))}%`;
-  if (central <= invoice * BILL_AMBER_RATIO + EPSILON) {
-    return { tone: "watch", label: `do ${band} powyżej ostatniego rachunku (${reference})` };
-  }
-  return { tone: "problem", label: `ponad ${band} powyżej ostatniego rachunku (${reference})` };
+  const sign = amount > 0 ? "+" : "−";
+  const figures = `${sign}${plnLabel(Math.abs(amount))}${percentText ? ` (${percentText})` : ""}`;
+  return { text: `${figures} ${against}`, tone, direction: amount > 0 ? "up" : "down" };
+}
+
+// The share of the forecast month's days the estimate rests on. Its own month key, else the Warsaw month now;
+// null when the body claims more complete days than the month has.
+function billDays(monthKey: unknown, used: number, now: Date): BillDaysView | null {
+  const key = typeof monthKey === "string" && MONTH_KEY.test(monthKey) ? monthKey : warsawMonthKey(now);
+  const [year, month] = key.split("-").map(Number);
+  const inMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  if (used > inMonth) return null;
+  return { used, inMonth, label: `${String(used)} z ${String(inMonth)}`, share: used / inMonth };
 }
 
 // The complete days the estimate rests on (FR-018). `formatPeriod` throws on an empty list, so a body without
@@ -372,6 +442,8 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
   const rawCheck = body.closed_month_check;
   const check = rawCheck && typeof rawCheck === "object" && !Array.isArray(rawCheck) ? asRecord(rawCheck) : null;
   const invoice = check === null ? null : asNumber(check.invoice_gross_pln);
+  // The delta names the invoice's own month (the closed-month check's period), not the settlement's reference.
+  const invoiceMonth = check === null ? MISSING : periodMonthLabel(check.period);
   // A forecast generated at 23:58 on the last day of a month and read at 00:05 the next is still fresh, but it
   // describes the month before. The repo's rule for wrong-period data is relabel-and-keep-showing (as the
   // recommendation card does for advice from an earlier day), never withholding.
@@ -410,5 +482,8 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
             diffLabel: signedPercentLabel(check.diff_pct),
             ok: check.ok === true,
           },
+    delta:
+      invoiceMonth === MISSING || invoice === null || isOtherMonth ? null : billDelta(central, invoice, invoiceMonth),
+    days: billDays(body.month, completedDays, now),
   };
 }

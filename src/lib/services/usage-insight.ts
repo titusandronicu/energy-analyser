@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DailyEnergyRow } from "@/types";
+import { edgePercentLabel } from "@/lib/format/edge-percent";
 import { formatPeriod } from "@/lib/format/period";
 import { referenceUsageSentence } from "@/lib/format/reference-usage";
 import type { Status } from "@/lib/format/status";
@@ -193,9 +194,7 @@ export function deltaLabel(value: number | null, baseline: number | null): strin
   } else {
     return `${sign}${String(whole)}%`;
   }
-  const tenths = Math.round(Math.abs(raw) * 10 + EPSILON) / 10;
-  const shown = milder ? Math.min(tenths, edge) : Math.max(tenths, edge + 0.1);
-  return `${sign}${oneDecimal.format(shown)}%`;
+  return edgePercentLabel(raw, edge, milder);
 }
 
 type BaselineSelection =
