@@ -370,14 +370,14 @@ None: no schema, contract or lab change; rows stored earlier render with the sam
 
 #### Automated
 
-- [ ] 1.1 Unit tests pass: `npm test`
-- [ ] 1.2 Linting passes: `npm run lint`
-- [ ] 1.3 Type checks pass: `npx astro check`
-- [ ] 1.4 Production build succeeds: `npm run build`
+- [x] 1.1 Unit tests pass: `npm test`
+- [x] 1.2 Linting passes: `npm run lint`
+- [x] 1.3 Type checks pass: `npx astro check`
+- [x] 1.4 Production build succeeds: `npm run build`
 
 #### Manual
 
-- [ ] 1.5 The severity table, the stale-neutral rule and the first-block rule in the tests read as the owner decided (warn to watch, ok to good, info and unknown neutral, no problem tone; stale cards neutral with the word kept; leading heading, list and colon-plus-list rule)
+- [x] 1.5 The severity table, the stale-neutral rule and the first-block rule in the tests read as the owner decided (warn to watch, ok to good, info and unknown neutral, no problem tone; stale cards neutral with the word kept; leading heading, list and colon-plus-list rule)
 - [ ] 1.6 The recommendation card still renders on the owner's local stack, or in the CI `smoke` run on the draft PR, with the new view shape (findings shown as facts in the existing disclosure)
 
 ### Phase 2: Card structure, fixtures and the temporary dev page

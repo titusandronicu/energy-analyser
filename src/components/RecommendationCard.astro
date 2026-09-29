@@ -67,12 +67,12 @@ const status = view === null ? LOAD_FAILED : view.status;
         closeLabel="Ukryj szczegóły"
         controlsId="recommendation-details"
       >
-        {view.findings.length > 0 && (
+        {[...view.findings, ...view.moreFindings].length > 0 && (
           <>
             <p class="mt-2 text-xs font-medium text-blue-100">Na podstawie</p>
             <ul class="mt-1 list-disc space-y-1 pl-5 text-sm text-blue-100/80">
-              {view.findings.map((finding) => (
-                <li>{finding}</li>
+              {[...view.findings, ...view.moreFindings].map((finding) => (
+                <li>{finding.fact ?? finding.title}</li>
               ))}
             </ul>
           </>
