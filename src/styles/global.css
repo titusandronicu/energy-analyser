@@ -8,22 +8,22 @@
      light mode and never applies a `.dark` class, so the dark palette goes straight into :root. */
   --radius: 12px;
   --radius-panel: 20px;
-  --background: #101218;
+  --background: #08111f;
   --foreground: #f3f4f8;
-  --card: #1c1f29;
+  --card: #111827;
   --card-foreground: #f3f4f8;
-  --popover: #1c1f29;
+  --popover: #111827;
   --popover-foreground: #f3f4f8;
   --primary: #b5a3f5;
   --primary-foreground: #171222;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: #252936;
-  --muted-foreground: #b0b6c6;
+  --muted: #18223a;
+  --muted-foreground: #b8c4d9;
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: #fda4af;
-  --border: #353b4b;
+  --border: #27344f;
   --input: oklch(0.922 0 0);
   --ring: #d2c5ff;
   --chart-1: oklch(0.646 0.222 41.116);
@@ -140,13 +140,46 @@
   background-image: linear-gradient(to bottom, #0a0e1a, #0f1529, #0a0e1a);
 }
 
+/* Selected "Frosted Aurora" dashboard direction: a restrained ambient wash behind opaque data panels. */
+@utility bg-aurora {
+  background-color: var(--color-background);
+  background-image: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-background) 88%, white) 0%,
+    var(--color-background) 48%,
+    color-mix(in srgb, var(--color-background) 70%, black) 100%
+  );
+  background-attachment: fixed;
+  /* Browsers without color-mix keep the plain gradient above instead of opaque colour discs. */
+  @supports (color: color-mix(in srgb, red, blue)) {
+    background-image:
+      radial-gradient(
+        circle at 18% 0%,
+        color-mix(in srgb, var(--color-primary) 22%, transparent) 0 20rem,
+        transparent 42rem
+      ),
+      radial-gradient(
+        circle at 86% 10%,
+        color-mix(in srgb, var(--color-flow-home) 18%, transparent) 0 18rem,
+        transparent 40rem
+      ),
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-background) 88%, white) 0%,
+        var(--color-background) 48%,
+        color-mix(in srgb, var(--color-background) 70%, black) 100%
+      );
+  }
+}
+
 /* Glass treatment for the header only (dashboard-glass-restyle design brief): translucent + blurred,
    with an opaque fallback when backdrop-filter isn't supported. */
 @utility glass-surface {
-  background: color-mix(in srgb, var(--color-card) 78%, transparent);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-card) 88%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
+  box-shadow: 0 18px 60px color-mix(in srgb, var(--color-background) 60%, transparent);
 }
 @supports not (backdrop-filter: blur(1px)) {
   .glass-surface {
