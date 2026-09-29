@@ -8,6 +8,8 @@ interface Props {
 }
 
 const { title = "Energy Analyser" } = Astro.props;
+// No main landmark in the layout: each page supplies exactly one around its own content, so a page-level header
+// and footer can stay outside it and keep their banner and contentinfo roles.
 ---
 
 <!doctype html>

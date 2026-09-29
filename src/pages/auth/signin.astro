@@ -8,7 +8,7 @@ const passwordError = Astro.url.searchParams.get("method") === "password";
 ---
 
 <Layout title="Logowanie">
-  <div class="bg-cosmic flex min-h-screen items-center justify-center p-4">
+  <main class="bg-cosmic flex min-h-screen items-center justify-center p-4">
     <div class="w-full max-w-sm rounded-2xl border border-white/10 bg-white/10 p-8 text-white backdrop-blur-xl">
       <h1 class="mb-2 text-center text-2xl font-bold">Zaloguj się</h1>
       <p class="mb-6 text-center text-sm text-blue-100/70">Wyślemy Ci jednorazowy link do logowania.</p>
@@ -22,5 +22,5 @@ const passwordError = Astro.url.searchParams.get("method") === "password";
 
       <PasswordSignInForm serverError={passwordError ? error : null} client:load />
     </div>
-  </div>
+  </main>
 </Layout>
