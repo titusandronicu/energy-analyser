@@ -655,15 +655,15 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [x] 5.1 Unit tests pass: `npm test`
-- [x] 5.2 Linting passes: `npm run lint`
-- [x] 5.3 Type checks pass: `npx astro check`
-- [x] 5.4 Production build succeeds: `npm run build`
-- [x] 5.5 The percent edge rule has one implementation: `git --no-pager grep -ln "edgePercentLabel" -- src` lists exactly `src/lib/format/edge-percent.ts`, `src/lib/format/edge-percent.test.ts`, `src/lib/services/usage-insight.ts` and `src/lib/services/bill-forecast.ts`, and `git --no-pager grep -n "Math.min(tenths" -- src ':!src/lib/services/live-state.ts'` prints exactly one line (in `edge-percent.ts`; `live-state.ts` `shareLabel` holds an older, unsigned variant of the clamp for the PV share that predates this change and is out of scope, so it is excluded)
-- [x] 5.6 The delta is not derived from the check's own drift figure: `git grep -n "diff_pct" -- src/lib/services/bill-forecast.ts` prints one line (the closed-month check's `signedPercentLabel`)
-- [x] 5.7 No contract or migration change: `git diff --exit-code origin/main -- supabase docs/ingest src/lib/ingest/contract.ts`
-- [x] 5.8 Every bill testid survives: `for id in bill-status bill-unavailable-reason bill-month bill-range bill-central bill-days bill-confidence bill-basis bill-credit-left bill-closed-month-check; do git grep -q "$id" -- src/components/BillForecastCard.astro || echo "missing $id"; done` prints nothing
-- [x] 5.9 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
+- [x] 5.1 Unit tests pass: `npm test` — e0744f4
+- [x] 5.2 Linting passes: `npm run lint` — e0744f4
+- [x] 5.3 Type checks pass: `npx astro check` — e0744f4
+- [x] 5.4 Production build succeeds: `npm run build` — e0744f4
+- [x] 5.5 The percent edge rule has one implementation: `git --no-pager grep -ln "edgePercentLabel" -- src` lists exactly `src/lib/format/edge-percent.ts`, `src/lib/format/edge-percent.test.ts`, `src/lib/services/usage-insight.ts` and `src/lib/services/bill-forecast.ts`, and `git --no-pager grep -n "Math.min(tenths" -- src ':!src/lib/services/live-state.ts'` prints exactly one line (in `edge-percent.ts`; `live-state.ts` `shareLabel` holds an older, unsigned variant of the clamp for the PV share that predates this change and is out of scope, so it is excluded) — e0744f4
+- [x] 5.6 The delta is not derived from the check's own drift figure: `git grep -n "diff_pct" -- src/lib/services/bill-forecast.ts` prints one line (the closed-month check's `signedPercentLabel`) — e0744f4
+- [x] 5.7 No contract or migration change: `git diff --exit-code origin/main -- supabase docs/ingest src/lib/ingest/contract.ts` — e0744f4
+- [x] 5.8 Every bill testid survives: `for id in bill-status bill-unavailable-reason bill-month bill-range bill-central bill-days bill-confidence bill-basis bill-credit-left bill-closed-month-check; do git grep -q "$id" -- src/components/BillForecastCard.astro || echo "missing $id"; done` prints nothing — e0744f4
+- [x] 5.9 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing — e0744f4
 
 #### Manual
 
@@ -677,13 +677,13 @@ None: no schema, contract, lab or infrastructure change; no data is written. Rol
 
 #### Automated
 
-- [ ] 6.1 Unit tests pass: `npm test`
-- [ ] 6.2 Linting passes: `npm run lint`
-- [ ] 6.3 Type checks pass: `npx astro check`
-- [ ] 6.4 Production build succeeds: `npm run build`
-- [ ] 6.5 The glossary term exists and is shown: `git grep -n "system_balance" -- src` lists the glossary and the live card
-- [ ] 6.6 The motion, pause and geometry code is untouched: `git diff --exit-code origin/main -- src/lib/flow-geometry.ts src/components/hooks/useFlowLines.ts src/components/hooks/usePreference.ts src/lib/preferences.ts src/lib/flow-constants.ts`
-- [ ] 6.7 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
+- [x] 6.1 Unit tests pass: `npm test`
+- [x] 6.2 Linting passes: `npm run lint`
+- [x] 6.3 Type checks pass: `npx astro check`
+- [x] 6.4 Production build succeeds: `npm run build`
+- [x] 6.5 The glossary term exists and is shown: `git grep -n "system_balance" -- src` lists the glossary and the live card
+- [x] 6.6 The motion, pause and geometry code is untouched: `git diff --exit-code origin/main -- src/lib/flow-geometry.ts src/components/hooks/useFlowLines.ts src/components/hooks/usePreference.ts src/lib/preferences.ts src/lib/flow-constants.ts`
+- [x] 6.7 The smoke strings never appear in new copy: `git grep -nE "Nieaktualna|Dane nieaktualne" -- src` prints nothing
 
 #### Manual
 

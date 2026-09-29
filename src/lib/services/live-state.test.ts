@@ -69,6 +69,7 @@ describe("toLiveStateView", () => {
         charging: true,
       },
       today: { pv: "12,3 kWh", bought: "1,2 kWh", sold: "5,0 kWh", periodLabel: "dziś od północy do 12:00" },
+      balance: { watts: 2570, label: "+2,6 kW", word: "nadwyżka" },
       series: { pv: NULL_DAYS, bought: NULL_DAYS, sold: NULL_DAYS },
       flows: {
         pv: { watts: 3420, moving: true },
@@ -677,6 +678,53 @@ describe("stale snapshots", () => {
     const v = verdictsAt("16:00", rows, { source_health: "degraded", pv_today_kwh: 9 });
     expect(v.pv.tone).toBe("good");
     expect(v.home.tone).not.toBe("insufficient");
+  });
+});
+
+describe("system balance", () => {
+  const balance = (pv_w: unknown, home_load_w: unknown, clock: Date = now, extra: Record<string, unknown> = {}) =>
+    view(row({}, { pv_w, home_load_w, ...extra }), clock).balance;
+
+  it.each([
+    [3100, 900, 2200, "+2,2 kW", "nadwyżka"],
+    [900, 1300, -400, "\u22120,4 kW", "niedobór"],
+    [849, 800, 49, "0,0 kW", "zbilansowany"],
+    [800, 849, -49, "0,0 kW", "zbilansowany"],
+    [850, 800, 50, "+0,1 kW", "nadwyżka"],
+    [800, 850, -50, "\u22120,1 kW", "niedobór"],
+    [1200, 1200, 0, "0,0 kW", "zbilansowany"],
+  ])("pv %j W minus home load %j W is %j W: %s", (pv, home, watts, label, word) => {
+    expect(balance(pv, home)).toEqual({ watts, label, word });
+  });
+
+  it("is computed from the unrounded watts", () => {
+    // The panel and home figures display as 3,1 and 1,0 kW (difference 2,1), the unrounded 2011 W as 2,0 kW.
+    const b = balance(3060, 1049);
+    expect(b.label).toBe("+2,0 kW");
+    expect(b.watts).toBe(2011);
+  });
+
+  it.each([
+    ["pv_w missing", null, 900],
+    ["home_load_w missing", 3100, null],
+    ["both missing", null, null],
+    ["pv_w undefined", undefined, 900],
+    ["a non-numeric pv_w", "3100", 900],
+    ["a non-numeric home_load_w", 3100, "900"],
+    ["a NaN reading", Number.NaN, 900],
+  ])("shows a dash and no word when %s, never a zero", (_name, pv, home) => {
+    expect(balance(pv, home)).toEqual({ watts: null, label: "—", word: null });
+  });
+
+  it("is still computed for a stale snapshot", () => {
+    const v = view(row({}, { pv_w: 3100, home_load_w: 900 }), at("2026-09-25T10:40:00Z"));
+    expect(v.isStale).toBe(true);
+    expect(v.balance).toEqual({ watts: 2200, label: "+2,2 kW", word: "nadwyżka" });
+  });
+
+  it("is still computed for a degraded snapshot", () => {
+    const b = balance(900, 1300, now, { source_health: "degraded" });
+    expect(b).toEqual({ watts: -400, label: "\u22120,4 kW", word: "niedobór" });
   });
 });
 

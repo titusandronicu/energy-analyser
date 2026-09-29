@@ -80,6 +80,7 @@ const kpis =
         homeLoad={view.homeLoad}
         grid={view.grid}
         battery={view.battery}
+        balance={view.balance}
         flows={view.flows}
         verdicts={view.verdicts}
         capturedAtLabel={view.capturedAtLabel}
@@ -119,7 +120,7 @@ const kpis =
         </p>
       </div>
 
-      <TermsExplained terms={["pv", "kw", "kwh", "battery_soc", "grid_import", "grid_export"]} />
+      <TermsExplained terms={["pv", "kw", "kwh", "battery_soc", "grid_import", "grid_export", "system_balance"]} />
     </div>
   )}
 </Panel>

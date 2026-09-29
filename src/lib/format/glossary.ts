@@ -11,7 +11,8 @@ export type GlossaryTerm =
   | "forecast_certainty"
   | "bill_forecast"
   | "bill_range"
-  | "net_metering";
+  | "net_metering"
+  | "system_balance";
 
 export const GLOSSARY: Record<GlossaryTerm, { term: string; explanation: string }> = {
   pv: {
@@ -66,5 +67,10 @@ export const GLOSSARY: Record<GlossaryTerm, { term: string; explanation: string 
     term: "Opust (rozliczenie z PGE)",
     explanation:
       "Prąd oddany do sieci nie jest sprzedawany za pieniądze, tylko odkładany: za każdą oddaną kilowatogodzinę możesz później pobrać 0,8 kWh bez płacenia za energię, a niewykorzystany zapas przechodzi na kolejne miesiące.",
+  },
+  system_balance: {
+    term: "Bilans systemu",
+    explanation:
+      "Panele minus zużycie domu w tej chwili. Plus to nadwyżka: prąd z paneli, którego dom nie zużywa, idzie do baterii albo do sieci. Minus to niedobór: dom bierze brakujący prąd z baterii albo z sieci.",
   },
 };

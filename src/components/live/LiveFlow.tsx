@@ -34,7 +34,7 @@ type StateView = Extract<LiveStateView, { kind: "state" }>;
 // The serializable part of the "state" view: everything the diagram and the readings list show, nothing else.
 export type LiveFlowProps = Pick<
   StateView,
-  "pv" | "homeLoad" | "grid" | "battery" | "flows" | "verdicts" | "capturedAtLabel" | "ageLabel" | "isStale"
+  "pv" | "homeLoad" | "grid" | "battery" | "balance" | "flows" | "verdicts" | "capturedAtLabel" | "ageLabel" | "isStale"
 >;
 
 const VIEWS = ["diagram", "readings"] as const;
@@ -154,7 +154,7 @@ const LEGEND = [
 ] as const;
 
 export function LiveFlow(props: LiveFlowProps) {
-  const { flows, capturedAtLabel, ageLabel, isStale } = props;
+  const { flows, balance, capturedAtLabel, ageLabel, isStale } = props;
   // View and pause survive the periodic page reload; the selected node and the readings never do.
   const [view, setView] = usePreference(FLOW_VIEW_KEY, VIEWS, "diagram");
   const [pausedValue, setPausedValue] = usePreference(FLOW_PAUSED_KEY, PAUSED, "0");
@@ -276,11 +276,28 @@ export function LiveFlow(props: LiveFlowProps) {
                   />
                 ))}
                 <span
+                  className={cn(
+                    "text-muted-foreground pointer-events-none col-start-1 row-span-2 row-start-1 self-center justify-self-end pr-3 text-right text-[11px] leading-tight",
+                    isStale && "opacity-45",
+                  )}
+                >
+                  Bilans systemu
+                </span>
+                <span
                   data-flow-junction
                   aria-hidden="true"
-                  className="border-muted-foreground/50 bg-muted text-ring col-start-2 row-span-2 row-start-1 flex size-[34px] items-center justify-center self-center justify-self-center rounded-full border"
+                  className="border-primary bg-muted text-primary col-start-2 row-span-2 row-start-1 flex size-[34px] items-center justify-center self-center justify-self-center rounded-full border"
                 >
                   <Scale className="size-[18px]" />
+                </span>
+                <span
+                  className={cn(
+                    "text-primary pointer-events-none col-start-3 row-span-2 row-start-1 self-center justify-self-start pl-3 text-base font-semibold whitespace-nowrap md:text-xl",
+                    isStale && "opacity-45",
+                  )}
+                >
+                  {balance.label}
+                  {balance.word && <span className="sr-only"> {balance.word}</span>}
                 </span>
               </div>
             </div>
@@ -323,6 +340,11 @@ export function LiveFlow(props: LiveFlowProps) {
               )}
             </div>
           ))}
+          <div className="bg-muted col-span-full rounded-lg p-3" data-testid="live-balance">
+            <dt className="text-muted-foreground">Bilans systemu</dt>
+            <dd className="text-lg font-medium">{balance.label}</dd>
+            {balance.word && <dd className="text-muted-foreground text-xs">{balance.word}</dd>}
+          </div>
         </dl>
       )}
     </div>

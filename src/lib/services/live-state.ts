@@ -80,6 +80,16 @@ export interface FlowMotion {
   moving: boolean;
 }
 
+// "Bilans systemu": panels minus home load right now. Positive is surplus (it goes to the battery or the grid),
+// negative is deficit (the home draws from the battery or the grid).
+export type BalanceWord = "nadwyżka" | "niedobór" | "zbilansowany";
+
+export interface BalanceLabel {
+  watts: number | null;
+  label: string;
+  word: BalanceWord | null;
+}
+
 export type LiveStateView =
   | { kind: "empty"; status: Status }
   | {
@@ -100,6 +110,7 @@ export type LiveStateView =
         charging: boolean;
       };
       today: { pv: string; bought: string; sold: string; periodLabel: string };
+      balance: BalanceLabel;
       // The previous KPI_SERIES_DAYS complete days of the three totals, ending the day before the capture day (the
       // capture day's own row is a partial). null when loading the history FAILED, so the card says "historia
       // niedostępna"; no history at all gives all-null series ("za mało dni").
@@ -144,6 +155,17 @@ function flow(value: unknown, positive: string, negative: string): FlowLabel {
   const watts = asNumber(value);
   const direction = watts === null || Math.abs(watts) < MIN_FLOW_W ? null : watts > 0 ? positive : negative;
   return { value: kwLabel(watts), direction, watts };
+}
+
+// One rule for "Bilans systemu" (pv_w minus home_load_w). A missing reading is never treated as 0. Below MIN_FLOW_W
+// (the noise floor flow() uses) it is balanced with no sign; otherwise the sign is `+` or a real minus. Computed from
+// the unrounded watts, so it can differ by 0,1 kW from the difference of the two displayed figures.
+function balanceOf(pvWatts: number | null, homeLoadWatts: number | null): BalanceLabel {
+  if (pvWatts === null || homeLoadWatts === null) return { watts: null, label: MISSING, word: null };
+  const watts = pvWatts - homeLoadWatts;
+  if (Math.abs(watts) < MIN_FLOW_W) return { watts, label: kwLabel(0), word: "zbilansowany" };
+  const sign = watts > 0 ? "+" : "\u2212";
+  return { watts, label: `${sign}${kwLabel(watts)}`, word: watts > 0 ? "nadwyżka" : "niedobór" };
 }
 
 // Which icon the flow diagram shows for the battery; null exactly when the percentage itself is unknown.
@@ -398,6 +420,7 @@ export function toLiveStateView(
         captured.dayKey === warsawParts(now).dayKey ? "dziś" : formatDayMonth(captured.dayKey)
       } od północy do ${captured.time}`,
     },
+    balance: balanceOf(pvWatts, homeLoadWatts),
     series: historyFailed
       ? null
       : {
