@@ -1,10 +1,10 @@
 ---
 change_id: bill-forecast
 title: Projected cost of the current month with a range (S-07)
-status: impl_reviewed
+status: archived
 created: 2026-09-27
 updated: 2026-09-29
-archived_at: null
+archived_at: 2026-09-29T17:10:54Z
 ---
 
 ## Notes
@@ -22,3 +22,5 @@ What the card has to work with now, on top of the existing `month`, `confidence`
 - `method: "net_metering_credit_estimate"`, `projected_credit_kwh`, `projected_billable_kwh`, `credit_left_kwh`, and `pricing` (`source`, `rates_verified_on`, `variable_gross_pln_per_kwh`, `fixed_gross_pln_per_month`).
 - **A `status`/`reason` gate the card must honour.** `status` is `"ok"` or `"no_data"`; on `no_data` the only other keys are `reason`, `message`, `generated_at`, `month` and `method`, and no figure may be shown. The reasons are `no_complete_days`, `settlement_facts_missing` and `rates_unavailable`.
 - **`confidence` is forced to `low` whenever `reference_lag_months` > 0**, however many days are behind the estimate. PGE issues an invoice about three weeks after the month ends, so that is the normal state from the 1st of a month until roughly the 22nd — the card will see `low` most of the time, not rarely. The "za mało danych" decision above already gives the card a grey state; decide when planning whether a lagging reference shows that state, or an "ok but disclosed" one naming the reference month. `confidence` is forced to `low` by a second condition too: a closed-month check missing by more than 25%.
+
+**Archived 2026-09-29 with check 5.6 not run live (owner's decision).** 5.6 would stop the lab's forecast job in production and watch the card blank the figure after 30 minutes. It is left unticked and treated as covered instead: the 30-minute rule is unit-tested at its boundary against the body's own `generated_at` (`src/lib/services/bill-forecast.test.ts`, "is not stale at exactly 30 minutes" / "is stale at 30 minutes and 1 second"; stale wins over the day count; a stale `no_data` body shows as stale), and 5.7, verified on production, shows that a push without `bill_forecast` keeps the last good body on the card, so a stopped job reaches the freshness rule rather than an empty row. Each dashboard card loads on its own (`src/pages/dashboard.astro`), so the others keep updating. Residual risk: the stale state has not been watched end to end in production; the first real lab outage will exercise it. The implementation review covers phases 1–4; phase 5 (lab push and production) was verified by its production checks, not reviewed.
