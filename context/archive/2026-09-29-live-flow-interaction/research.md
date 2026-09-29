@@ -58,7 +58,7 @@ Gaps and contradiction:
 ### Q1. Source colours
 
 - Tone colours are raw utilities, not tokens: good `emerald`, watch `amber`, problem `red`, insufficient `white/blue-100` (`StatusBadge.astro:13-16`). Text always carries the meaning (`status.ts:1`).
-- The lab page colour-coded by data category: solar amber, battery green, grid blue, cost orange (`context/changes/dashboard-glass-restyle/old-lab-page-reference.md`, "Color tokens"); that note already says not to adopt it silently over the tone system.
+- The lab page colour-coded by data category: solar amber, battery green, grid blue, cost orange (`context/archive/2026-09-28-dashboard-glass-restyle/old-lab-page-reference.md`, "Color tokens"); that note already says not to adopt it silently over the tone system.
 - `global.css:29-33` (`:root`) holds chart values `oklch(0.646 0.222 41.116)` orange, `0.6 0.118 184.704` teal, `0.398 0.07 227.392` dark blue, and two ambers; `global.css:102-106` publishes them as `--color-chart-*`. Worker grep found no consuming class in `src/`; whether `bg-chart-*` compiles was not checked, only that the theme entries exist.
 - The `.dark` block (`global.css:44-76`) is documented as unused (the app never applies `.dark`, `global.css:7-8`).
 
@@ -104,15 +104,15 @@ The house pattern holds: pure mapper, dumb `.astro` renderer, one hydrated islan
 
 ## Historical Context (from prior changes)
 
-- `context/changes/live-state-flow-visual/plan.md` (supported): pulse chosen over moving dots for simplicity; `MIN_FLOW_W` reused; no proportional fill except battery SOC. Partly superseded by the owner's 2026-09-29 decision for static arrows plus freshness-gated motion.
-- `context/changes/dashboard-glass-restyle/design-brief.md` (partial): "avoid decorative energy-flow animations" and "never show stale readings as fresh"; the second still binds, the first is relaxed by the owner for arrows that show real direction.
-- `context/changes/dashboard-glass-restyle/old-lab-page-reference.md` (supported): category colours not to be adopted silently.
+- `context/archive/2026-09-28-live-state-flow-visual/plan.md` (supported): pulse chosen over moving dots for simplicity; `MIN_FLOW_W` reused; no proportional fill except battery SOC. Partly superseded by the owner's 2026-09-29 decision for static arrows plus freshness-gated motion.
+- `context/archive/2026-09-28-dashboard-glass-restyle/design-brief.md` (partial): "avoid decorative energy-flow animations" and "never show stale readings as fresh"; the second still binds, the first is relaxed by the owner for arrows that show real direction.
+- `context/archive/2026-09-28-dashboard-glass-restyle/old-lab-page-reference.md` (supported): category colours not to be adopted silently.
 - `context/foundation/lessons.md` (supported): docs updated in the same change; prerequisites listed. The contract sign documentation fits the first rule.
 
 ## Related Research
 
-- `context/changes/live-state-flow-visual/research.md`
-- `context/changes/dashboard-glass-restyle/research.md`
+- `context/archive/2026-09-28-live-state-flow-visual/research.md`
+- `context/archive/2026-09-28-dashboard-glass-restyle/research.md`
 
 ## Open Questions
 

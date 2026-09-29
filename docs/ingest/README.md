@@ -26,7 +26,7 @@ Content-Type: application/json
 
 `state.grid_w`: positive is power bought from the grid (import), negative is power fed into it (export). `state.battery_w`: positive is discharge, negative is charge. `pv_w` and `home_load_w` are not signed. The app shows each value unsigned with a direction word and draws the direction arrows from these signs (`docs/logic.md`, Live state). The lab collector documents the same convention (homelab-2 `collect-ha-snapshot.py`, `sign_conventions`).
 
-Checked on 2026-09-29 against 400 real pushes from 2026-09-27 to 2026-09-29: import positive (the import counter rose in 74 of 74 intervals with `grid_w > 0`), battery discharge positive (SOC fell in 110 of 110) and charge negative (SOC rose in 98 of 99). Export negative was not observed in that window because the house did not export; it follows from import being positive. Evidence: `context/changes/live-flow-interaction/research.md`.
+Checked on 2026-09-29 against 400 real pushes from 2026-09-27 to 2026-09-29: import positive (the import counter rose in 74 of 74 intervals with `grid_w > 0`), battery discharge positive (SOC fell in 110 of 110) and charge negative (SOC rose in 98 of 99). Export negative was not observed in that window because the house did not export; it follows from import being positive. Evidence: `context/archive/2026-09-29-live-flow-interaction/research.md`.
 
 ## Never send
 
