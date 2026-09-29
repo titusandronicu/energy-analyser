@@ -39,7 +39,7 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  /* Dashboard refresh palette (context/changes/dashboard-refresh-icons-sparklines/design/): one source for
+  /* Dashboard refresh palette (context/archive/2026-09-29-dashboard-refresh-icons-sparklines/design/): one source for
      nodes, chips, arrows and sparklines. The tone surfaces are opaque 10% tints over the card, so tone text
      sits on its -surface counterpart without a fade. Solar yellow and the watch tone share a hex on purpose. */
   --flow-pv: #f5c462;
