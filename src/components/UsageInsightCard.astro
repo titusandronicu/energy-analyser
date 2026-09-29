@@ -81,7 +81,12 @@ const purchaseExplanation =
               {view.meaning.ranges.map((range) => {
                 const current = range.band === view.meaning?.band;
                 return (
-                  <div class:list={cn("contents", current ? "text-card-foreground font-semibold" : "text-muted-foreground")}>
+                  <div
+                    class:list={cn(
+                      "contents",
+                      current ? "text-card-foreground font-semibold" : "text-muted-foreground",
+                    )}
+                  >
                     <dt>{range.name}</dt>
                     <dd>
                       {range.label}
