@@ -1,0 +1,18 @@
+---
+import CardHeading from "@/components/CardHeading.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import type { Status } from "@/lib/format/status";
+
+interface Props {
+  status: Status;
+}
+
+// The live card's title row: heading and badge. Also handed to the LiveFlow island as its `heading` slot, which
+// puts the view and pause controls on the same row.
+const { status } = Astro.props;
+---
+
+<div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+  <CardHeading title="Stan na żywo" size="lg" />
+  <StatusBadge status={status} testId="live-status" dot />
+</div>

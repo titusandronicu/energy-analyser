@@ -1,10 +1,9 @@
 ---
 import { Sun, TowerControl, Upload } from "lucide-react";
-import CardHeading from "@/components/CardHeading.astro";
+import LiveCardTitle from "@/components/LiveCardTitle.astro";
 import { LiveFlow } from "@/components/live/LiveFlow";
 import Panel from "@/components/ui/Panel.astro";
 import Sparkline from "@/components/ui/Sparkline.astro";
-import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED } from "@/lib/format/status";
 import type { LiveStateView } from "@/lib/services/live-state";
@@ -55,25 +54,17 @@ const kpis =
     : [];
 ---
 
-<Panel>
-  <div class="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-    <CardHeading title="Stan na żywo" size="lg" />
-    <StatusBadge status={status} testId="live-status" dot />
-  </div>
+<Panel class="p-4 sm:p-6">
+  {view?.kind !== "state" && (
+    <div class="mb-4">
+      <LiveCardTitle status={status} />
+    </div>
+  )}
 
   {view === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
 
   {view?.kind === "state" && (
     <div class="space-y-4">
-      {view.isDegraded && (
-        <p class="text-muted-foreground text-sm">Część odczytów z Home Assistant może być niedostępna.</p>
-      )}
-      {view.isStale && (
-        <p class="text-muted-foreground text-sm">
-          Ruch i oceny wstrzymane: odczyty starsze niż 15 minut nie opisują stanu teraz.
-        </p>
-      )}
-
       <LiveFlow
         client:load
         pv={view.pv}
@@ -86,7 +77,25 @@ const kpis =
         capturedAtLabel={view.capturedAtLabel}
         ageLabel={view.ageLabel}
         isStale={view.isStale}
-      />
+      >
+        <Fragment slot="heading">
+          <LiveCardTitle status={status} />
+        </Fragment>
+        <Fragment slot="notices">
+          {(view.isDegraded || view.isStale) && (
+            <div class="space-y-1">
+              {view.isDegraded && (
+                <p class="text-muted-foreground text-sm">Część odczytów z Home Assistant może być niedostępna.</p>
+              )}
+              {view.isStale && (
+                <p class="text-muted-foreground text-sm">
+                  Ruch i oceny wstrzymane: odczyty starsze niż 15 minut nie opisują stanu teraz.
+                </p>
+              )}
+            </div>
+          )}
+        </Fragment>
+      </LiveFlow>
 
       <ul class="bg-inset border-hairline grid rounded-2xl border md:grid-cols-3">
         {kpis.map(({ label, value, Icon, iconClass, series, subject, tone }) => (

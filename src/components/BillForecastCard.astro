@@ -82,7 +82,7 @@ const checkLine =
             ? `Rachunek za ${forecast.monthLabel}`
             : `Rachunek za ten miesiąc (${forecast.monthLabel})`}
         </p>
-        <p class="mt-1 text-2xl font-semibold" data-testid="bill-range">
+        <p class="text-primary mt-1 text-[30px] leading-tight font-bold" data-testid="bill-range">
           {forecast.rangeLabel}
         </p>
         <p class="text-muted-foreground mt-1 text-sm" data-testid="bill-central">
@@ -115,7 +115,7 @@ const checkLine =
             </p>
           </dd>
         </div>
-        <div>
+        <div class="sm:col-span-2">
           <dt class="text-muted-foreground">Pewność tej kwoty</dt>
           <dd class="mt-1">
             <StatusBadge status={forecast.confidence} testId="bill-confidence" />

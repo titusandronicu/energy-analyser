@@ -12,15 +12,7 @@ export interface Point {
   y: number;
 }
 
-export interface Connector {
-  start: Point;
-  end: Point;
-  // Where the arrowhead sits, and the direction (degrees, SVG orientation: 0 = right, 90 = down) it points.
-  mid: Point;
-  angle: number;
-}
-
-// Space kept between a connector and the junction circle.
+// Space kept between a connector and the hub circle.
 export const JUNCTION_GAP = 4;
 // Space kept between a flow path and its node's edge, so the arrowhead does not touch the icon tile.
 export const NODE_GAP = 6;
@@ -69,39 +61,4 @@ export function flowPath(nodeRect: Rect, hubRect: Rect, side: "left" | "right", 
   const run = span * CURVE_TENSION * (angle === 0 ? 1 : -1);
   const d = `M${fmt(start.x)} ${fmt(start.y)} C${fmt(start.x + run)} ${fmt(start.y)} ${fmt(end.x - run)} ${fmt(end.y)} ${fmt(end.x)} ${fmt(end.y)}`;
   return { d, start, end, angle };
-}
-
-// The node's anchor is its edge facing the junction at vertical middle: the right edge for a node on the left,
-// the left edge for a node on the right. The line stops at the junction circle's radius plus JUNCTION_GAP.
-// direction 1 runs from the node to the junction, -1 the reverse (start and end swap).
-export function connector(nodeRect: Rect, junctionRect: Rect, side: "left" | "right", direction: 1 | -1): Connector {
-  const anchor: Point = {
-    x: side === "left" ? nodeRect.left + nodeRect.width : nodeRect.left,
-    y: nodeRect.top + nodeRect.height / 2,
-  };
-  const centre: Point = {
-    x: junctionRect.left + junctionRect.width / 2,
-    y: junctionRect.top + junctionRect.height / 2,
-  };
-  const radius = junctionRect.width / 2 + JUNCTION_GAP;
-
-  const dx = centre.x - anchor.x;
-  const dy = centre.y - anchor.y;
-  const length = Math.hypot(dx, dy);
-  // A node that touches (or overlaps) the junction's reach has nothing left to draw: the line collapses to a point.
-  const reach = length === 0 ? 0 : Math.max(0, length - radius);
-  const stop: Point =
-    length === 0 ? anchor : { x: anchor.x + (dx / length) * reach, y: anchor.y + (dy / length) * reach };
-
-  const start = direction === 1 ? anchor : stop;
-  const end = direction === 1 ? stop : anchor;
-  const sx = end.x - start.x;
-  const sy = end.y - start.y;
-
-  return {
-    start,
-    end,
-    mid: { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 },
-    angle: sx === 0 && sy === 0 ? 0 : (Math.atan2(sy, sx) * 180) / Math.PI,
-  };
 }
