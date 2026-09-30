@@ -7,8 +7,8 @@ interface Props {
   status: Status;
   testId?: string;
   dot?: boolean;
-  // Replaces the "<word> · <detail>" text, for a card that rates nothing: its badge keeps the tone's colour and
-  // says in its own words what the figures rest on ("Pełne dane z 30 dni").
+  // Replaces the "<word> · <detail>" text with the caller's own badge text, which keeps the tone's colour: what a
+  // card's figures rest on ("Pełne dane: 18 z 30 dni") or a rating's word ("Przeciętny dzień").
   text?: string;
 }
 

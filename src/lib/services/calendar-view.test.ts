@@ -40,7 +40,7 @@ import {
   type MonthView,
 } from "./calendar-view";
 import { isCompleteDay } from "./complete-day";
-import { DAY_NO_USE, rowsNeededFrom } from "./period-rating";
+import { DAY_NO_USE, notRated, rowsNeededFrom } from "./period-rating";
 
 // All data here is synthetic. The repository is public, so no test uses the owner's real figures; only the shape of
 // the production history (which days are missing or empty) is copied.
@@ -265,7 +265,7 @@ describe("buildMonthView", () => {
     expect(view.grid[0].slice(0, 6)).toEqual([null, null, null, null, null, null]);
     expect(view.grid[0][6]).toEqual({ day: "2026-11-01", status: "missing", hasRecommendation: false });
     expect([view.note, view.summary]).toEqual([null, null]);
-    expect(view.rating).toEqual({ kind: "none", reason: MONTH_NOT_RATED });
+    expect(view.rating).toEqual(notRated(MONTH_NOT_RATED));
   });
 });
 
@@ -360,7 +360,7 @@ describe("buildDayView", () => {
     });
     expect([view.note, view.summary]).toEqual([null, null]);
     // Only the day's own row was read, so its norm has no days.
-    expect(view.rating).toMatchObject({ kind: "insufficient", word: "za mało danych: 0 z 7" });
+    expect(view.rating).toMatchObject({ kind: "insufficient", word: "Za mało danych: 0 z 7" });
   });
 
   it("says why a missing or empty day has no totals", () => {
@@ -458,7 +458,7 @@ describe("ratings in the views", () => {
 
   it("says the current month is not rated yet", () => {
     const view = buildMonthView("2026-09", [...norm, ...september], noTimes, "2026-09-30");
-    expect(view.rating).toEqual({ kind: "none", reason: MONTH_NOT_RATED });
+    expect(view.rating).toEqual(notRated(MONTH_NOT_RATED));
     expect(sentence(MONTH_NOT_RATED)).toBe("Miesiąc jeszcze trwa — oceniamy tylko zakończone miesiące.");
   });
 
@@ -487,7 +487,7 @@ describe("ratings in the views", () => {
       "2026-10-05",
       now,
     );
-    expect(view.rating).toEqual({ kind: "none", reason: DAY_NO_USE });
+    expect(view.rating).toEqual(notRated(DAY_NO_USE));
   });
 
   it("names an inconsistent day", () => {
@@ -498,7 +498,7 @@ describe("ratings in the views", () => {
       "2026-10-05",
       now,
     );
-    expect(view.rating).toMatchObject({ kind: "inconsistent", word: "dane niespójne" });
+    expect(view.rating).toMatchObject({ kind: "inconsistent", word: "Poza oceną" });
   });
 
   it("never rates the quarter", () => {
@@ -580,7 +580,7 @@ describe("history copy", () => {
     );
     expect(RATING_TERM).toBe("Ocena dnia i miesiąca");
     expect(RATING_EXPLANATION).toBe(
-      "Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród 14 dni przed nim. Norma potrzebuje co najmniej 7 takich dni, inaczej dzień nie jest oceniany. Więcej niż 10 punktów procentowych powyżej normy to dobry dzień, więcej niż 10 poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż 70% tego, co zwykle, ocena mówi „Mało słońca”. Zawyżony od 4 sierpnia prąd kupiony z sieci obniża samowystarczalność wszystkich dni podobnie, a dzień jest porównywany z dniami tuż przed nim, więc ocena mało się przez to zmienia. Dni, w których prąd kupiony z sieci jest większy niż zużycie domu, są pomijane jako „dane niespójne”.",
+      "Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród 14 dni przed nim. Norma potrzebuje co najmniej 7 takich dni, inaczej dzień nie jest oceniany. Więcej niż 10 punktów procentowych powyżej normy to dobry dzień, więcej niż 10 poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż 70% tego, co zwykle, ocena mówi „Mało słońca”. Zawyżony od 4 sierpnia prąd kupiony z sieci obniża samowystarczalność wszystkich dni podobnie, a dzień jest porównywany z dniami tuż przed nim, więc ocena mało się przez to zmienia. Dni, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika), są „Poza oceną”: nie są oceniane ani liczone do norm.",
     );
     expect(FORECAST_EXPLANATION).toBe(
       "Porównanie prognozy produkcji z tym, co panele naprawdę dały. Prognozy zapisujemy od 27 września 2026, więc wcześniejsze dni nie mają porównania.",

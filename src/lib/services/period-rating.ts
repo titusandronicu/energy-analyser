@@ -30,8 +30,12 @@ export const DAY_FUTURE = "dzień jeszcze nie nadszedł";
 export const DAY_NO_DATA = "brak danych z tego dnia";
 export const DAY_INCOMPLETE = "dane z tego dnia są niepełne";
 export const DAY_NO_USE = "dom nie zużył tego dnia prądu, więc nie ma czego oceniać";
-export const INCONSISTENT_WORD = "dane niespójne";
 export const MONTH_RUNNING = "miesiąc jeszcze trwa";
+export const MONTH_NO_DATA = "Brak danych z tego miesiąca";
+
+// The badge words of the unrated kinds; the rated kinds use DAY_WORD / MONTH_WORD.
+export const INCONSISTENT_WORD = "Poza oceną";
+export const NOT_RATED_WORD = "Bez oceny";
 
 // The norm is always the recent one: same-season history does not exist yet.
 const RECENT_NORM = "ostatnie dni, bo z tej pory roku jest za mało danych";
@@ -50,13 +54,15 @@ const MONTH_WORD: Record<RatingBand, string> = {
   bad: "Słaby miesiąc",
 };
 
-// The day's PV next to the norm days' median PV: "Mało słońca: 10,9 kWh z paneli, zwykle 23,4 kWh."
+// The day's PV next to the norm days' median PV: "Mało słońca: 8,0 kWh z paneli, zwykle 20,0 kWh."
 export interface LowSunNote {
   pvKwh: number;
   normPvKwh: number;
   text: string;
 }
 
+// Every kind carries its badge tone and its badge text (`word`, already capitalised) and the sentence under it
+// (`basis`), so the panel only renders them.
 export type PeriodRating =
   | {
       kind: "rated";
@@ -76,15 +82,25 @@ export type PeriodRating =
       // Days only; null when the sun was not low, and always null on a month.
       lowSun: LowSunNote | null;
     }
-  // Too few qualifying days: "za mało danych: 5 z 7".
+  // Too few qualifying days: "Za mało danych: 5 z 7" (a month with none: MONTH_NO_DATA).
   | { kind: "insufficient"; tone: StatusTone; word: string; days: number; needed: number; basis: string }
-  // The day's grid import exceeds its use; it is not rated and never enters a norm.
+  // The day's grid import exceeds its use: "Poza oceną". It is not rated and never enters a norm.
   | { kind: "inconsistent"; tone: StatusTone; word: string; basis: string }
-  // Not rated at all (today, the future, incomplete days, the current month); the reason says why.
-  | { kind: "none"; reason: string };
+  // Not rated at all (today, the future, incomplete days, the current month): "Bez oceny", and the reason says why.
+  | { kind: "none"; tone: StatusTone; word: string; reason: string; basis: string };
 
-// 1 − import ÷ use in percent, clamped to 0–100, for a complete day with use above 0; "inconsistent" when the import
-// exceeds the use; otherwise null.
+// "brak danych" → "Brak danych".
+function capitalized(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}
+
+// A slot with nothing to rate: the grey "Bez oceny" badge and the reason as a sentence.
+export function notRated(reason: string): PeriodRating {
+  return { kind: "none", tone: "insufficient", word: NOT_RATED_WORD, reason, basis: `${capitalized(reason)}.` };
+}
+
+// 1 − import ÷ use in percent for a complete day with use above 0; "inconsistent" when the import exceeds the use;
+// otherwise null. Since import ≤ use here, the value is already within 0–100%; the clamp only guards float error.
 export function selfSufficiency(row: DailyEnergyRow | undefined, today: string): number | "inconsistent" | null {
   if (row === undefined || !isCompleteDay(row, today)) return null;
   const load = kwh(row.load_kwh);
@@ -105,7 +121,7 @@ function bandOf(delta: number): RatingBand {
   return "neutral";
 }
 
-// "27,4 punktu poniżej normy", "3,5 punktu powyżej normy", or "tyle, ile norma" when the gap rounds to zero.
+// "25,0 punktu poniżej normy", "4,5 punktu powyżej normy", or "tyle, ile norma" when the gap rounds to zero.
 function gapPhrase(delta: number, band: RatingBand): string {
   if (Math.round(Math.abs(delta) * 10 + EPSILON) === 0) return "tyle, ile norma";
   const points = edgePointsLabel(delta, RATING_THRESHOLD_POINTS, band === "neutral");
@@ -113,7 +129,7 @@ function gapPhrase(delta: number, band: RatingBand): string {
 }
 
 function tooFew(have: number): string {
-  return `za mało danych: ${String(have)} z ${String(RATING_MIN_DAYS)}`;
+  return `Za mało danych: ${String(have)} z ${String(RATING_MIN_DAYS)}`;
 }
 
 // "9 dni: 5–20 września" → "5–20 września", when the count is already said.
@@ -121,24 +137,29 @@ function rangeOf(periodLabel: string): string {
   return periodLabel.slice(periodLabel.indexOf(": ") + 2);
 }
 
+// "9 dni: 5–20 września" → "9 dni (5–20 września)".
+function countWithRange(periodLabel: string): string {
+  return `${periodLabel.slice(0, periodLabel.indexOf(": "))} (${rangeOf(periodLabel)})`;
+}
+
 function byDay(rows: readonly DailyEnergyRow[]): Map<string, DailyEnergyRow> {
   return new Map(rows.map((row) => [row.day, row]));
 }
 
 function rateDayIn(day: string, rows: Map<string, DailyEnergyRow>, today: string): PeriodRating {
-  if (day === today) return { kind: "none", reason: DAY_RUNNING };
-  if (day > today) return { kind: "none", reason: DAY_FUTURE };
+  if (day === today) return notRated(DAY_RUNNING);
+  if (day > today) return notRated(DAY_FUTURE);
   const row = rows.get(day);
-  if (row === undefined) return { kind: "none", reason: DAY_NO_DATA };
-  if (!isCompleteDay(row, today)) return { kind: "none", reason: DAY_INCOMPLETE };
+  if (row === undefined) return notRated(DAY_NO_DATA);
+  if (!isCompleteDay(row, today)) return notRated(DAY_INCOMPLETE);
   const value = selfSufficiency(row, today);
-  if (value === null) return { kind: "none", reason: DAY_NO_USE };
+  if (value === null) return notRated(DAY_NO_USE);
   if (value === "inconsistent") {
     return {
       kind: "inconsistent",
       tone: "insufficient",
       word: INCONSISTENT_WORD,
-      basis: `Prąd kupiony z sieci (${kwhLabel(row.grid_import_kwh)}) jest większy niż zużycie domu (${kwhLabel(row.load_kwh)}), więc ten dzień nie jest oceniany ani liczony do norm.`,
+      basis: `Z sieci kupiono więcej (${kwhLabel(row.grid_import_kwh)}), niż dom zużył (${kwhLabel(row.load_kwh)}) — np. ładowanie baterii z sieci albo błąd licznika — więc ten dzień nie jest oceniany ani liczony do norm.`,
     };
   }
 
@@ -158,7 +179,7 @@ function rateDayIn(day: string, rows: Map<string, DailyEnergyRow>, today: string
       word: tooFew(normDays.length),
       days: normDays.length,
       needed: RATING_MIN_DAYS,
-      basis: `Norma to mediana samowystarczalności z pełnych dni wśród ${String(RATING_WINDOW_DAYS)} poprzednich; potrzeba co najmniej ${String(RATING_MIN_DAYS)}, a jest ${String(normDays.length)}.`,
+      basis: `Norma to mediana samowystarczalności z pełnych dni wśród ${String(RATING_WINDOW_DAYS)} poprzednich; potrzeba co najmniej ${String(RATING_MIN_DAYS)}, a jest ich ${String(normDays.length)}.`,
     };
   }
 
@@ -190,7 +211,7 @@ function rateDayIn(day: string, rows: Map<string, DailyEnergyRow>, today: string
     delta,
     days: period.days,
     periodLabel: period.label,
-    basis: `Samowystarczalność ${oneDecimal.format(value)}% — ${gapPhrase(delta, band)}. Norma: mediana z ${period.label} (${RECENT_NORM}).`,
+    basis: `Samowystarczalność ${oneDecimal.format(value)}% — ${gapPhrase(delta, band)}. Norma: mediana z ${countWithRange(period.label)}, ${RECENT_NORM}.`,
     lowSun,
   };
 }
@@ -203,7 +224,7 @@ export function rateDay(day: string, rows: readonly DailyEnergyRow[], today: str
 // A completed month: the median of the gaps of its rated days, by the same ±10 points rule. `rows` must reach
 // RATING_WINDOW_DAYS before the month (rowsNeededFrom) so its first days have their norm.
 export function rateMonth(month: string, rows: readonly DailyEnergyRow[], today: string): PeriodRating {
-  if (month >= today.slice(0, 7)) return { kind: "none", reason: MONTH_RUNNING };
+  if (month >= today.slice(0, 7)) return notRated(MONTH_RUNNING);
   const map = byDay(rows);
   const rated: { day: string; delta: number }[] = [];
   for (const day of periodDays({ kind: "month", month })) {
@@ -214,7 +235,7 @@ export function rateMonth(month: string, rows: readonly DailyEnergyRow[], today:
     return {
       kind: "insufficient",
       tone: "insufficient",
-      word: tooFew(rated.length),
+      word: rated.length === 0 ? MONTH_NO_DATA : tooFew(rated.length),
       days: rated.length,
       needed: RATING_MIN_DAYS,
       basis: `Miesiąc jest oceniany z co najmniej ${String(RATING_MIN_DAYS)} ocenionych dni, a ma ich ${String(rated.length)}.`,

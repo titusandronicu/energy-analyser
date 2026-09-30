@@ -26,8 +26,8 @@ describe("edgePointsLabel", () => {
     [10.02, 10, false, "10,1 punktu"],
     // Short of the edge but rounding to it: the edge.
     [9.98, 10, true, "10,0 punktu"],
-    [-27.387, 10, false, "27,4 punktu"],
-    [3.532, 10, true, "3,5 punktu"],
+    [-25.387, 10, false, "25,4 punktu"],
+    [4.532, 10, true, "4,5 punktu"],
     [0, 10, true, "0,0 punktu"],
   ])("labels %d against an edge of %d (milder %s) as %s", (raw, edge, milder, expected) => {
     expect(edgePointsLabel(raw, edge, milder)).toBe(expected);
