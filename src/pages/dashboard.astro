@@ -4,6 +4,7 @@ import DashboardBody from "@/components/DashboardBody.astro";
 import { loadBillForecast, toBillForecastView, type BillForecastView } from "@/lib/services/bill-forecast";
 import { warsawParts } from "@/lib/format/warsaw-time";
 import { loadDailyRowCapturedAt, loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
+import { loadHourlyEnergy, toHourlyUsageView, type HourlyUsageView } from "@/lib/services/hourly-usage";
 import { loadLatestRecommendation, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 import { loadDailyEnergy, toUsageInsightView, type UsageInsightView } from "@/lib/services/usage-insight";
 import { createClient } from "@/lib/supabase";
@@ -37,11 +38,12 @@ const dailyRowsPromise = orLoadError(async () => {
   const supabase = getClient();
   return supabase ? await loadDailyEnergy(supabase, now) : [];
 });
-const [liveView, billView, usageView, view]: [
+const [liveView, billView, usageView, view, hourlyView]: [
   LiveStateView | null,
   BillForecastView | null,
   UsageInsightView | null,
   RecommendationView | null,
+  HourlyUsageView | null,
 ] = await Promise.all([
   orLoadError(async () => {
     const supabase = getClient();
@@ -65,6 +67,10 @@ const [liveView, billView, usageView, view]: [
     const supabase = getClient();
     return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
   }),
+  orLoadError(async () => {
+    const supabase = getClient();
+    return toHourlyUsageView(supabase ? await loadHourlyEnergy(supabase, now) : [], now);
+  }),
 ]);
 ---
 
@@ -74,6 +80,7 @@ const [liveView, billView, usageView, view]: [
     billView={billView}
     usageView={usageView}
     recommendationView={view}
+    hourlyView={hourlyView}
     email={user?.email}
   />
 </Layout>

@@ -12,7 +12,9 @@ export type GlossaryTerm =
   | "bill_forecast"
   | "bill_range"
   | "net_metering"
-  | "system_balance";
+  | "system_balance"
+  | "house_use"
+  | "night_grid_draw";
 
 export const GLOSSARY: Record<GlossaryTerm, { term: string; explanation: string }> = {
   pv: {
@@ -72,5 +74,15 @@ export const GLOSSARY: Record<GlossaryTerm, { term: string; explanation: string 
     term: "Bilans systemu",
     explanation:
       "Panele minus zużycie domu w tej chwili. Plus to nadwyżka: prąd z paneli, którego dom nie zużywa, idzie do baterii albo do sieci. Minus to niedobór: dom bierze brakujący prąd z baterii albo z sieci.",
+  },
+  house_use: {
+    term: "Zużycie domu",
+    explanation:
+      "Cały prąd, który dom zużył w danej godzinie lub dniu, bez względu na to, skąd przyszedł: z paneli, z baterii czy z sieci.",
+  },
+  night_grid_draw: {
+    term: "Pobór z sieci w nocy",
+    explanation:
+      "Prąd kupiony z sieci między 22:00 a 6:00, kiedy panele nie pracują; liczony godzina po godzinie, tak jak rozlicza go PGE, więc prąd oddany do sieci w jednej godzinie nie pomniejsza poboru w innej.",
   },
 };

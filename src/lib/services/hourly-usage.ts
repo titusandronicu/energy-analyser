@@ -20,7 +20,8 @@ export const HOURLY_HISTORY_DAYS = 35;
 export const MIN_HOUR_SAMPLES = 10;
 // Day rankings need at least this many complete days; below it the card says "za mało dni".
 export const MIN_RANKED_DAYS = 7;
-// Hour rankings need at least one complete day, so they never rest on a few stray hours.
+// Hour rankings need at least one complete day, so they never rest on a few stray hours; without one the card says
+// "za mało danych: brak pełnego dnia".
 export const MIN_RANKED_HOUR_DAYS = 1;
 export const RANKED_HOURS = 5;
 export const RANKED_DAYS = 3;
@@ -32,6 +33,7 @@ export const LAST_NIGHT_LOOKBACK = 3;
 
 export const NO_HOURLY_DATA = "brak danych godzinowych";
 export const INCOMPLETE_NIGHTS = "niepełne dane za ostatnie noce";
+export const NO_COMPLETE_DAY = "za mało danych: brak pełnego dnia";
 
 export interface RankedHour {
   hourStart: string;
@@ -271,7 +273,7 @@ export function toHourlyUsageView(rows: HourlyEnergyRow[], now: Date): HourlyUsa
       average === null ? null : { gridDrawKwh: average, gridDrawLabel: kwhLabel(average), nights: draws.length },
     hours:
       completeDays.length < MIN_RANKED_HOUR_DAYS
-        ? tooFewDays(completeDays.length, MIN_RANKED_HOUR_DAYS)
+        ? { kind: "insufficient", reason: NO_COMPLETE_DAY, completeDays: completeDays.length }
         : {
             kind: "ranked",
             ...rank(

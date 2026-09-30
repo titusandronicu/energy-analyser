@@ -438,30 +438,30 @@ One additive migration (new table, redefined `ingest_push`, grants). Rollback: t
 
 #### Automated
 
-- [x] 2.1 Unit tests pass, including the cases listed above: `npm test`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Type checks pass: `npx astro check`
-- [x] 2.4 The rules are documented: `git grep -n "MIN_HOUR_SAMPLES\|Godziny zużycia" -- docs/logic.md` prints at least two lines
+- [x] 2.1 Unit tests pass, including the cases listed above: `npm test` — 132c643
+- [x] 2.2 Linting passes: `npm run lint` — 132c643
+- [x] 2.3 Type checks pass: `npx astro check` — 132c643
+- [x] 2.4 The rules are documented: `git grep -n "MIN_HOUR_SAMPLES\|Godziny zużycia" -- docs/logic.md` prints at least two lines — 132c643
 
 #### Manual
 
-- [x] 2.5 The synthetic August-shaped fixture, read through the view, ranks its two ~8 kW days highest and one of their evening hours among the highest hours, the pattern of the frame's worked example
+- [x] 2.5 The synthetic August-shaped fixture, read through the view, ranks its two ~8 kW days highest and one of their evening hours among the highest hours, the pattern of the frame's worked example — 132c643
 
 ### Phase 3: The card
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm test`
-- [ ] 3.2 Linting passes: `npm run lint`
-- [ ] 3.3 Type checks pass: `npx astro check`
-- [ ] 3.4 Production build succeeds: `npm run build`
-- [ ] 3.5 The decision is recorded: `git grep -n "hourly_history\|Godziny zużycia" -- docs/decisions.md` prints at least one line
+- [x] 3.1 Unit tests pass: `npm test`
+- [x] 3.2 Linting passes: `npm run lint`
+- [x] 3.3 Type checks pass: `npx astro check`
+- [x] 3.4 Production build succeeds: `npm run build`
+- [x] 3.5 The decision is recorded: `git grep -n "hourly_history\|Godziny zużycia" -- docs/decisions.md` prints at least one line
 
 #### Manual
 
-- [ ] 3.6 On the local stack after `push-fixture.mjs --hourly-days 35`, the card shows last night, 5+5 hours and 3+3 days, the window text and the caveat, at 1440px and 390px without clipping or horizontal scroll
-- [ ] 3.7 With 3 days of data the day lists say "za mało dni: 3 z 7" and the hour lists still show; with no hourly data the card shows its empty state and the other cards are unaffected
-- [ ] 3.8 The card is inside the main landmark, its heading is an `h2`, and the lists read in a sensible order in the accessibility tree
+- [x] 3.6 On the local stack after `push-fixture.mjs --hourly-days 35`, the card shows last night, 5+5 hours and 3+3 days, the window text and the caveat, at 1440px and 390px without clipping or horizontal scroll
+- [x] 3.7 With 3 days of data the day lists say "za mało dni: 3 z 7" and the hour lists still show; with no hourly data the card shows its empty state and the other cards are unaffected
+- [x] 3.8 The card is inside the main landmark, its heading is an `h2`, and the lists read in a sensible order in the accessibility tree
 
 ### Phase 4: Lab push, production and roadmap
 

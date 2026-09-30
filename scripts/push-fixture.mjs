@@ -37,12 +37,20 @@
 // - The recommendations table keeps the first push per generated_at (later pushes with the same value are
 //   ignored) and the dashboard shows the newest by generated_at. Push oldest first (earlier day, then older
 //   than 2 h, then current), or reset the local recommendations table between states.
-// Usage: BASE_URL=https://… INGEST_TOKEN=… node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--generated-at <iso>] [--shift-days] [--allow-remote]
+//
+// Synthetic hourly data (local databases only, like every whole body):
+// - --hourly-days <n> (1–35) replaces hourly_history with made-up hours for the "Godziny zużycia" card: the n whole
+//   Europe/Warsaw days before the capture day, plus the capture day's hours up to the last one that has ended, so the
+//   card counts exactly n complete days (35 gives 34: the app prunes hours older than 35 × 24 hours). The load has
+//   a daily shape (low at night, a morning and a larger evening peak), two of the days are high-load days, and the
+//   capture day's first three hours are gaps (fewer than 10 of 12 readings), which also leaves last night incomplete
+//   so the card falls back to the night before. It works with the default state-only push and with --full or --file.
+// Usage: BASE_URL=https://… INGEST_TOKEN=… node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--generated-at <iso>] [--shift-days] [--hourly-days <n>] [--allow-remote]
 import { readFileSync } from "node:fs";
 import { URL } from "node:url";
 
 const usage =
-  "Usage: BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--generated-at <iso>] [--shift-days] [--allow-remote]";
+  "Usage: BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs [--full] [--file <path>] [--keep-generated-at] [--captured-at <iso>] [--generated-at <iso>] [--shift-days] [--hourly-days <n>] [--allow-remote]";
 
 const { BASE_URL, INGEST_TOKEN } = process.env;
 if (!BASE_URL || !INGEST_TOKEN) {
@@ -78,6 +86,14 @@ if (generatedAtFlag !== -1 && (!generatedAtValue || generatedAtValue.startsWith(
 const generatedAtOverride = generatedAtValue === null ? null : new Date(generatedAtValue);
 if (generatedAtOverride !== null && Number.isNaN(generatedAtOverride.getTime())) {
   console.error(`--generated-at is not a valid timestamp: ${generatedAtValue}\n${usage}`);
+  process.exit(1);
+}
+
+const hourlyDaysFlag = process.argv.indexOf("--hourly-days");
+const hourlyDaysValue = hourlyDaysFlag === -1 ? null : process.argv[hourlyDaysFlag + 1];
+const hourlyDays = hourlyDaysValue === null ? null : Number(hourlyDaysValue);
+if (hourlyDays !== null && !(Number.isInteger(hourlyDays) && hourlyDays >= 1 && hourlyDays <= 35)) {
+  console.error(`--hourly-days needs a whole number of days from 1 to 35\n${usage}`);
   process.exit(1);
 }
 
@@ -118,9 +134,9 @@ try {
   console.error(`BASE_URL is not a valid URL: ${BASE_URL}\n${usage}`);
   process.exit(1);
 }
-if (full && !isLocalHost(baseHost) && !process.argv.includes("--allow-remote")) {
+if ((full || hourlyDays !== null) && !isLocalHost(baseHost) && !process.argv.includes("--allow-remote")) {
   console.error(
-    `refusing to send a whole body (--file or --full) to ${baseHost}: it writes made-up recommendations, daily rows and hours. Pass --allow-remote for a deliberate staging push.\n${usage}`,
+    `refusing to send a whole body (--file, --full or --hourly-days) to ${baseHost}: it writes made-up recommendations, daily rows and hours. Pass --allow-remote for a deliberate staging push.\n${usage}`,
   );
   process.exit(1);
 }
@@ -159,6 +175,64 @@ if (process.argv.includes("--shift-days")) {
     }));
     console.log(`hourly_history shifted by ${String(shift)} day(s)`);
   }
+}
+
+// Made-up hours for --hourly-days. Deterministic, so two pushes of the same n at the same time give the same card.
+const HOUR_MS = 60 * 60 * 1000;
+const warsawHourOf = (ms) =>
+  Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Warsaw", hour: "2-digit", hourCycle: "h23" }).format(ms));
+// A typical day's house use per clock hour (kWh): low at night, a morning peak, a larger evening peak.
+const LOAD_SHAPE = [
+  0.32, 0.28, 0.26, 0.25, 0.26, 0.3, 0.55, 0.85, 0.75, 0.5, 0.45, 0.5, 0.6, 0.55, 0.5, 0.55, 0.7, 0.95, 1.25, 1.4, 1.3,
+  1.0, 0.7, 0.45,
+];
+// PV per clock hour on a clear-ish autumn day (kWh), zero outside daylight.
+const PV_SHAPE = [0, 0, 0, 0, 0, 0, 0, 0.1, 0.5, 1.2, 1.9, 2.4, 2.6, 2.4, 1.9, 1.2, 0.5, 0.1, 0, 0, 0, 0, 0, 0];
+// A repeatable number in [0, 1) for a seed, so the made-up figures vary without Math.random.
+function pseudoRandom(seed) {
+  const x = Math.sin(seed * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+}
+function syntheticHours(days, capture) {
+  const lastStart = Math.floor(capture.getTime() / HOUR_MS) * HOUR_MS - HOUR_MS;
+  const today = warsawDay(capture);
+  const firstDay = dayKey(dayNumber(today) - days);
+  // The day's first hour: the whole hour whose Warsaw date is firstDay and clock hour 0 (UTC+1 or UTC+2).
+  let start = Date.parse(`${firstDay}T00:00:00Z`) - 3 * HOUR_MS;
+  while (warsawDay(start) !== firstDay) start += HOUR_MS;
+  // Two high-load days among the complete ones (the second and the sixth before today, or the oldest when fewer).
+  const highDays = new Set([
+    dayKey(dayNumber(today) - Math.min(2, days)),
+    dayKey(dayNumber(today) - Math.min(6, days)),
+  ]);
+  const hours = [];
+  for (let ms = start, i = 0; ms <= lastStart; ms += HOUR_MS, i++) {
+    const day = warsawDay(ms);
+    const hour = warsawHourOf(ms);
+    const noise = 0.85 + 0.3 * pseudoRandom(i);
+    const dayFactor = 0.6 + 0.4 * pseudoRandom(dayNumber(day) + 0.5);
+    const high = highDays.has(day) && hour >= 12 ? 1.8 : 1;
+    const load = LOAD_SHAPE[hour] * noise * high;
+    const pv = PV_SHAPE[hour] * dayFactor;
+    // At night the battery covers part of the load; by day the surplus is exported (negative net).
+    const net = PV_SHAPE[hour] === 0 ? load * 0.7 : load - pv;
+    const round = (value) => Math.round(value * 1000) / 1000;
+    hours.push({
+      hour_start: new Date(ms).toISOString(),
+      load_kwh: round(load),
+      grid_net_kwh: round(net),
+      pv_kwh: round(pv),
+      // The capture day's first three hours are gaps: fewer than the 10 of 12 readings a complete hour needs.
+      samples: day === today && hour < 3 ? 7 + hour : 12,
+    });
+  }
+  return hours;
+}
+if (hourlyDays !== null) {
+  hourlyHistory = syntheticHours(hourlyDays, captureTime);
+  console.log(
+    `hourly_history replaced by ${String(hourlyHistory.length)} synthetic hours: ${String(hourlyDays)} whole day(s) up to the last complete hour`,
+  );
 }
 
 const payload = {

@@ -242,7 +242,11 @@ describe("toHourlyUsageView", () => {
 
     it("needs one complete day for the hour lists", () => {
       const partial = without(day("2026-08-09"), "2026-08-09T10:00:00.000Z");
-      expect(usage(partial).hours).toEqual({ kind: "insufficient", reason: "za mało dni: 0 z 1", completeDays: 0 });
+      expect(usage(partial).hours).toEqual({
+        kind: "insufficient",
+        reason: "za mało danych: brak pełnego dnia",
+        completeDays: 0,
+      });
     });
 
     it("shows the hour's grid draw beside its house use", () => {
