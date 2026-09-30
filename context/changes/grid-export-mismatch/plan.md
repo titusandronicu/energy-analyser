@@ -451,25 +451,25 @@ One additive migration (new table, redefined `ingest_push`, grants). Rollback: t
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test`
-- [x] 3.2 Linting passes: `npm run lint`
-- [x] 3.3 Type checks pass: `npx astro check`
-- [x] 3.4 Production build succeeds: `npm run build`
-- [x] 3.5 The decision is recorded: `git grep -n "hourly_history\|Godziny zużycia" -- docs/decisions.md` prints at least one line
+- [x] 3.1 Unit tests pass: `npm test` — f82a7e1
+- [x] 3.2 Linting passes: `npm run lint` — f82a7e1
+- [x] 3.3 Type checks pass: `npx astro check` — f82a7e1
+- [x] 3.4 Production build succeeds: `npm run build` — f82a7e1
+- [x] 3.5 The decision is recorded: `git grep -n "hourly_history\|Godziny zużycia" -- docs/decisions.md` prints at least one line — f82a7e1
 
 #### Manual
 
-- [x] 3.6 On the local stack after `push-fixture.mjs --hourly-days 35`, the card shows last night, 5+5 hours and 3+3 days, the window text and the caveat, at 1440px and 390px without clipping or horizontal scroll
-- [x] 3.7 With 3 days of data the day lists say "za mało dni: 3 z 7" and the hour lists still show; with no hourly data the card shows its empty state and the other cards are unaffected
-- [x] 3.8 The card is inside the main landmark, its heading is an `h2`, and the lists read in a sensible order in the accessibility tree
+- [x] 3.6 On the local stack after `push-fixture.mjs --hourly-days 35`, the card shows last night, 5+5 hours and 3+3 days, the window text and the caveat, at 1440px and 390px without clipping or horizontal scroll — f82a7e1
+- [x] 3.7 With 3 days of data the day lists say "za mało dni: 3 z 7" and the hour lists still show; with no hourly data the card shows its empty state and the other cards are unaffected — f82a7e1
+- [x] 3.8 The card is inside the main landmark, its heading is an `h2`, and the lists read in a sensible order in the accessibility tree — f82a7e1
 
 ### Phase 4: Lab push, production and roadmap
 
 #### Automated
 
-- [ ] 4.1 Lab tests pass: `python3 -m unittest infra/compose/energy-app/scripts/test_push_energy_analyser.py` (in homelab-2)
-- [ ] 4.2 App checks still pass: `npm test`, `npm run lint`
-- [ ] 4.3 The roadmap and prerequisites carry the change: `git grep -n "hourly_history" -- docs/prerequisites.md context/foundation/roadmap.md` prints at least two lines
+- [x] 4.1 Lab tests pass: `python3 -m unittest infra/compose/energy-app/scripts/test_push_energy_analyser.py` (in homelab-2)
+- [x] 4.2 App checks still pass: `npm test`, `npm run lint`
+- [x] 4.3 The roadmap and prerequisites carry the change: `git grep -n "hourly_history" -- docs/prerequisites.md context/foundation/roadmap.md` prints at least two lines
 - [ ] 4.4 After the draft PR is opened the CI `ci` and `smoke` jobs are green
 
 #### Manual
