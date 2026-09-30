@@ -250,14 +250,14 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Automated
 
-- [x] 2.1 Unit tests pass, including the widened row range not changing month totals or charts: `npm test`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Type checks pass: `npx astro check`
-- [x] 2.4 Production build succeeds: `npm run build`
-- [x] 2.5 Docs record the rules: `git grep -n "Ocena dni" -- docs/logic.md` prints at least one line
+- [x] 2.1 Unit tests pass, including the widened row range not changing month totals or charts: `npm test` — e96794e
+- [x] 2.2 Linting passes: `npm run lint` — e96794e
+- [x] 2.3 Type checks pass: `npx astro check` — e96794e
+- [x] 2.4 Production build succeeds: `npm run build` — e96794e
+- [x] 2.5 Docs record the rules: `git grep -n "Ocena dni" -- docs/logic.md` prints at least one line — e96794e
 
 #### Manual
 
-- [ ] 2.6 Local stack: 09-11 Słaby dzień with basis and Mało słońca, 09-12 Przeciętny dzień, 09-29 za mało danych 5 z 7, 07-28 dane niespójne, August rated, the current month not rated yet and September (once finished) rated
-- [ ] 2.7 At 375 px the badge and basis wrap without horizontal scroll and the badge words are read by a screen reader
+- [x] 2.6 Local stack: 09-11 Słaby dzień with basis and Mało słońca, 09-12 Przeciętny dzień, 09-29 za mało danych 5 z 7, 07-28 dane niespójne, August rated, the current month not rated yet and September (once finished) rated — e96794e
+- [x] 2.7 At 375 px the badge and basis wrap without horizontal scroll and the badge words are read by a screen reader — e96794e
 - [ ] 2.8 Production after deploy: the same four days and August read as above
