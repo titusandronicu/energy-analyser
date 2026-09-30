@@ -3,7 +3,7 @@ project: energy-analyser
 version: 2
 status: draft
 created: 2026-09-23
-updated: 2026-09-29
+updated: 2026-09-30
 prd_version: 3
 main_goal: speed
 top_blocker: time
@@ -138,7 +138,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:**
   - Which facts go into a day and a month bundle (totals, self-sufficiency, weather, season), and which provider narrates them? — Owner: user. Block: no.
-- **Risk:** homelab-2 plus a new optional contract section; the narration must stay description-only, like the recommendation's facts-only rule.
+- **Risk:** homelab-2 plus a new optional contract section; the narration must stay description-only, like the recommendation's facts-only rule. The new section carries its facts apart from the narration, so a failed LLM call leaves the facts in the push instead of dropping the whole section the way the recommendation block does today (owner's decision 2026-09-30, `lab-feature-port`; the old recommendation block keeps its gate).
 - **Status:** ready
 
 ### F-05: Solar forecast source
@@ -226,7 +226,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Parallel with:** F-03, F-04, F-05
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** The main new surface; it must stay usable on a phone and reuse S-14's period and minimum-data rule rather than invent its own.
+- **Risk:** The main new surface; it must stay usable on a phone and reuse S-14's period and minimum-data rule rather than invent its own. Charts (owner's decision 2026-09-30, `lab-feature-port`): the day and month charts extend the hand-rolled server-rendered SVG of the sparklines, with no chart library; the Home Assistant 30-day PV-vs-consumption and import-vs-export charts (`energy-glass.yaml:624-737` in homelab-2) are the visual reference.
 - **Status:** proposed
 
 ### S-16: Calendar year view
@@ -349,7 +349,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Parallel with:** S-07, S-09, S-12
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** Built from imported PGE data in the lab; only hour-of-day aggregates may leave, never single readings or timestamps.
+- **Risk:** Built from imported PGE data in the lab; only hour-of-day aggregates may leave, never single readings or timestamps. Scope (owner's decision 2026-09-30, `lab-feature-port`): the FR-014 count of unusual consumption by hour only; the lab's explained anomaly list is parked.
 - **Status:** proposed
 
 ### S-12: Inverter schedule view
@@ -428,6 +428,11 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Pre-issued reusable access link** — Why parked: a link that works on every visit is a password in a URL; the magic link plus a long session covers the single owner.
 - **Meter-grade live data over wM-Bus** — Why parked: owner's decision 2026-09-27, future development. The PGE smart meter's wM-Bus/HAN interface would give live import and export straight from the billing meter (read with `wmbusmeters` or ESPHome + an 868 MHz receiver), replacing the inverter as the export source. Needs the meter model checked, a request to PGE Dystrybucja to enable it and issue the key, and a receiver near the meter. MojeIRE (CSIRE) 15-minute data is the official alternative once its consumer API is published. Details: `context/changes/bill-accuracy/change.md`.
 - **On-demand features over the Tailscale channel** — Why parked: infrastructure.md keeps Tailscale off the v1 critical path.
+- **Per-day battery charge/discharge totals, battery history charts and the daily energy-balance check** — Why parked: owner's decision 2026-09-30 (`lab-feature-port`, candidates 17–18): wanted, but after M-1. The lab computes battery totals for today only (`collect-ha-snapshot.py:347-354` in homelab-2) and does not send them per day; reviving it is a foundation item across both repos (lab emits `battery_charged_kwh` / `battery_discharged_kwh` in `daily_history`, contract field, `daily_energy` migration), after which the Home Assistant battery chart (`energy-glass.yaml:740-792`) and balance check (`:838-894`) become presentation work.
+- **Explained PGE hourly anomaly list** — Why parked: owner's decision 2026-09-30 (`lab-feature-port`, candidate 12): S-10 ships the FR-014 count only, after M-1 for the rest. The lab's list (`pge_anomalies.py:103-139`: hour, kWh against typical, Polish explanation, severity) names single timestamped hours, so reviving it also means revisiting S-10's aggregates-only rule.
+- **One-sentence summary of the current flow** — Why parked: owner's decision 2026-09-30 (`lab-feature-port`, candidate 2): no new scope in M-1. The live card already rates each node and shows "Bilans systemu"; the Home Assistant narrative card (`energy-glass.yaml:224-314`) is the reference.
+- **Battery-plan proposal with confirm/skip** — Why parked: owner's decision 2026-09-30 (`lab-feature-port`, candidate 23): a confirm button reads as control even when advisory, so it stays next to the device-control guardrail above.
+- **Visible local micro-analysis feed** — Why parked: owner's decision 2026-09-30 (`lab-feature-port`, candidate 16): the local model's observations stay input to the stronger model's explanations (FR-030) and are not shown raw to the owner.
 
 ## Milestone History
 
