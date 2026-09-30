@@ -30,6 +30,7 @@ From `context/changes/inverter-grid-correction/research.md`:
 - **4 August 2026 appears only as "sensor direction changed".**
 - **Ratings:** a day from 2026-08-03 (the mixed change day) to 2026-08-17 reads "Poza oceną", with a neutral basis that names the sensor change. No rating norm mixes days from both sides of the change. A month is rated from its rated days, as today, so August rests on 18–30 August.
 - **The usage card** adds one sentence when its baseline spans the sensor change.
+- **Addendum (2026-09-30, post-plan):** at production check 3.4 the owner decided that the month holding the sensor change is rated from its days from 2026-08-04 only (3bef11e), so August 2026 never mixes days from both sides even when 1–2 August are rated as days. This replaces "as today" in the Ratings bullet above; "Co to znaczy?" states the rule (impl-review F1).
 - **Docs and roadmap match all of this.** No sentence in `docs/` or the roadmap says the import is "overstated from 4 August" or that the error "largely cancels".
 
 ## What We're NOT Doing

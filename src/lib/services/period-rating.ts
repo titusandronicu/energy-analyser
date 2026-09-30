@@ -9,6 +9,7 @@ import { isCompleteDay, kwh } from "@/lib/services/complete-day";
 import {
   crossesSensorChange,
   SENSOR_CHANGE_DAY,
+  SENSOR_CHANGE_DAY_BASIS,
   SENSOR_CHANGE_RATING_BASIS,
   SENSOR_DIRECTION_CHANGED_ON,
 } from "@/lib/services/grid-sensor";
@@ -163,7 +164,10 @@ function rateDayIn(day: string, rows: Map<string, DailyEnergyRow>, today: string
   if (value === null) return notRated(DAY_NO_USE);
   // The mixed change day, and every day whose norm window would reach before the sensor's direction changed: its value
   // and its norm would not rest on one side of the change. Checked before import above use, so it names the sensor.
-  if (day === SENSOR_CHANGE_DAY || crossesSensorChange(addDays(day, -RATING_WINDOW_DAYS), day)) {
+  if (day === SENSOR_CHANGE_DAY) {
+    return { kind: "inconsistent", tone: "insufficient", word: INCONSISTENT_WORD, basis: SENSOR_CHANGE_DAY_BASIS };
+  }
+  if (crossesSensorChange(addDays(day, -RATING_WINDOW_DAYS), day)) {
     return { kind: "inconsistent", tone: "insufficient", word: INCONSISTENT_WORD, basis: SENSOR_CHANGE_RATING_BASIS };
   }
   if (value === "inconsistent") {
@@ -241,9 +245,9 @@ export function rateMonth(month: string, rows: readonly DailyEnergyRow[], today:
   const rated: { day: string; delta: number }[] = [];
   // The month holding the sensor's direction change is rated from its post-change days only, so its rating never
   // mixes days from both sides of the change (owner's decision, inverter-grid-correction check 3.4).
-  const firstDay = SENSOR_CHANGE_DAY.startsWith(month) ? SENSOR_DIRECTION_CHANGED_ON : "";
+  const firstDay = SENSOR_CHANGE_DAY.slice(0, 7) === month ? SENSOR_DIRECTION_CHANGED_ON : null;
   for (const day of periodDays({ kind: "month", month })) {
-    if (day < firstDay) continue;
+    if (firstDay !== null && day < firstDay) continue;
     const rating = rateDayIn(day, map, today);
     if (rating.kind === "rated") rated.push({ day, delta: rating.delta });
   }

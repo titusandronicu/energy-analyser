@@ -22,7 +22,7 @@ import {
   selfSufficiency,
   type PeriodRating,
 } from "./period-rating";
-import { SENSOR_CHANGE_RATING_BASIS } from "./grid-sensor";
+import { SENSOR_CHANGE_DAY_BASIS, SENSOR_CHANGE_RATING_BASIS } from "./grid-sensor";
 
 // All data here is synthetic. The repository is public, so no test uses the owner's real figures: the production
 // history's shape is copied (which days are missing, empty or inconsistent), and every value is invented, so no printed
@@ -86,13 +86,15 @@ function steadyDays(first: string, count: number, share: number, pv = 20): Daily
   return Array.from({ length: count }, (_, i) => row(addDays(first, i), pv, 20, (20 * (100 - share)) / 100));
 }
 
-// A day in the sensor-change window (08-03 – 08-17).
+// A day in the sensor-change window after the mixed day (08-04 – 08-17).
 const SENSOR_RATING: PeriodRating = {
   kind: "inconsistent",
   tone: "insufficient",
   word: INCONSISTENT_WORD,
   basis: SENSOR_CHANGE_RATING_BASIS,
 };
+// The mixed change day itself (08-03).
+const CHANGE_DAY_RATING: PeriodRating = { ...SENSOR_RATING, basis: SENSOR_CHANGE_DAY_BASIS };
 
 describe("constants", () => {
   it("uses a 14-day window, 7 days minimum, ±10 points and 70% for low sun", () => {
@@ -188,8 +190,8 @@ describe("rateDay on the production-shaped history", () => {
   });
 
   it("puts the early days in the sensor-change window under the sensor basis", () => {
-    // 08-03 has import above use too, but the sensor-change window wins; 08-04 would have a norm of only 3 days.
-    expect(rateDay("2026-08-03", FIXTURE, TODAY)).toEqual(SENSOR_RATING);
+    // 08-03 has import above use too, but the mixed-day basis wins; 08-04 would have a norm of only 3 days.
+    expect(rateDay("2026-08-03", FIXTURE, TODAY)).toEqual(CHANGE_DAY_RATING);
     expect(rateDay("2026-08-04", [...FIXTURE, row("2026-08-04", 20, 20, 10)], TODAY)).toEqual(SENSOR_RATING);
   });
 
@@ -290,8 +292,9 @@ describe("the sensor-change window", () => {
   // Steady 50% days from the start of the history to the end of August: every day has a full norm.
   const history = steadyDays("2026-07-16", 47, 50);
 
-  it("reads Poza oceną with the sensor basis from 08-03 to 08-17, even with a full norm", () => {
-    for (const day of ["2026-08-03", "2026-08-04", "2026-08-10", "2026-08-17"]) {
+  it("reads Poza oceną from 08-03 to 08-17, even with a full norm: 08-03 as the mixed day, later days by their norm", () => {
+    expect(rateDay("2026-08-03", history, TODAY)).toEqual(CHANGE_DAY_RATING);
+    for (const day of ["2026-08-04", "2026-08-10", "2026-08-17"]) {
       expect(rateDay(day, history, TODAY)).toEqual(SENSOR_RATING);
     }
   });
