@@ -87,14 +87,16 @@ function windowStartMs(now: Date): number {
 }
 
 // Hourly totals for the last HOURLY_HISTORY_DAYS Warsaw days, newest first; RLS returns nothing for non-owners. At
-// most 36 × 25 = 900 rows, under PostgREST's default row cap. Errors are thrown so the page can show a load failure
-// instead of pretending there is no history.
+// most 36 × 25 = 900 rows, under PostgREST's default row cap. The read stops at `now`: the contract accepts any whole
+// hour, so a bad future row would otherwise sort first and could push real hours past the cap. Errors are thrown so
+// the page can show a load failure instead of pretending there is no history.
 export async function loadHourlyEnergy(client: SupabaseClient, now: Date = new Date()): Promise<HourlyEnergyRow[]> {
   const since = new Date(windowStartMs(now)).toISOString();
   const { data, error } = await client
     .from("hourly_energy")
     .select("hour_start, load_kwh, grid_net_kwh, pv_kwh, samples")
     .gte("hour_start", since)
+    .lt("hour_start", now.toISOString())
     .order("hour_start", { ascending: false })
     .overrideTypes<HourlyEnergyRow[], { merge: false }>();
   if (error) throw new Error(`loading hourly energy failed: ${error.message}`);
