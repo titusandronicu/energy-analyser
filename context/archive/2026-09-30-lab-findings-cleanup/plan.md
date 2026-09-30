@@ -164,21 +164,21 @@ There are no data migrations. Rollback is restoring the `.bak` copy of the scrip
 
 #### Automated
 
-- [x] 1.1 Solar analyser tests pass: `make test-solar-analyser` — 6e92c27
-- [x] 1.2 Push script tests still pass: `python3 -m unittest scripts/test_push_energy_analyser.py` — 6e92c27
-- [x] 1.3 The script compiles: `python3 -m py_compile …/build-energy-agent-briefing.py` — 6e92c27
-- [x] 1.4 No stale copy remains: the grep prints nothing — 6e92c27
+- [x] 1.1 Solar analyser tests pass: `make test-solar-analyser` — 6d23a94
+- [x] 1.2 Push script tests still pass: `python3 -m unittest scripts/test_push_energy_analyser.py` — 6d23a94
+- [x] 1.3 The script compiles: `python3 -m py_compile …/build-energy-agent-briefing.py` — 6d23a94
+- [x] 1.4 No stale copy remains: the grep prints nothing — 6d23a94
 
 #### Manual
 
-- [x] 1.5 Dry run on copies of the lab files: no "Wysoki import", no stale "Rozjazd", natural Polish — 6e92c27
+- [x] 1.5 Dry run on copies of the lab files: no "Wysoki import", no stale "Rozjazd", natural Polish — 6d23a94
 
 ### Phase 2: Runbook and lab deploy
 
 #### Automated
 
-- [x] 2.1 Runbook lists the script: grep prints at least one line — 214bc80
-- [x] 2.2 App docs formatted: `npx prettier --check docs` — 49f4c53
+- [x] 2.1 Runbook lists the script: grep prints at least one line — 6d23a94
+- [x] 2.2 App docs formatted: `npx prettier --check docs` — 44ca020
 
 #### Manual
 

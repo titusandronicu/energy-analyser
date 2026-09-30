@@ -1,10 +1,10 @@
 ---
 change_id: lab-findings-cleanup
 title: Fix the lab's rule-based findings shown as "Najważniejsze ustalenia"
-status: impl_reviewed
+status: archived
 created: 2026-09-30
 updated: 2026-09-30
-archived_at: null
+archived_at: 2026-09-30T18:26:45Z
 ---
 
 ## Notes
