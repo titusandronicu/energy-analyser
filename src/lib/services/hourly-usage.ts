@@ -154,6 +154,15 @@ function nightDraw(dayKey: string, hours: Map<number, Hour>): number | null {
   return sum;
 }
 
+// Grid draw above house use by more than this marks an hour's house use as suspect for the lowest list. Found in
+// production on 2026-09-30: 7 of 547 complete hours showed ~0.2 kWh of house use against ~1.9 kWh from the grid at
+// night, where a normal night hour uses ~1.0 kWh.
+export const SUSPECT_GRID_MARGIN_KWH = 0.5;
+
+export function isSuspectLowHour(hour: { loadKwh: number; gridDrawKwh: number }): boolean {
+  return hour.gridDrawKwh - hour.loadKwh > SUSPECT_GRID_MARGIN_KWH;
+}
+
 // Highest first; the more recent wins a tie. Lowest first; the more recent also wins a tie.
 function rank<T>(items: T[], value: (item: T) => number, recency: (item: T) => number | string, count: number) {
   const byRecency = (a: T, b: T) => {
@@ -276,12 +285,20 @@ export function toHourlyUsageView(rows: HourlyEnergyRow[], now: Date): HourlyUsa
         ? { kind: "insufficient", reason: NO_COMPLETE_DAY, completeDays: completeDays.length }
         : {
             kind: "ranked",
-            ...rank(
+            highest: rank(
               rankedHours,
               (h) => h.loadKwh,
               (h) => h.hourStart,
               RANKED_HOURS,
-            ),
+            ).highest,
+            // An hour that drew from the grid far more than the house used is left out of the lowest list: its house
+            // use is suspect (a load reading drop-out, or the battery charging from the grid), not a quiet hour.
+            lowest: rank(
+              rankedHours.filter((h) => !isSuspectLowHour(h)),
+              (h) => h.loadKwh,
+              (h) => h.hourStart,
+              RANKED_HOURS,
+            ).lowest,
           },
     days:
       completeDays.length < MIN_RANKED_DAYS

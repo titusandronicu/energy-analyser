@@ -1,7 +1,7 @@
 ---
 change_id: grid-export-mismatch
 title: Why PGE records grid export the inverter never sees
-status: implementing
+status: implemented
 created: 2026-09-28
 updated: 2026-09-30
 archived_at: null
@@ -27,3 +27,5 @@ Why it matters:
 Possible directions, none decided: check the meter model and whether the connection is balanced across phases; compare the PGE hourly eBOK CSV with the inverter's night-time grid power hour by hour; reconsider a meter-grade source (wM-Bus, roadmap Parked; MojeIRE once its consumer API is published).
 
 **Owner's feature request (2026-09-30), after the frame's verification:** "I would like to have this feature when I see hours of lowest and highest consumption, and highlighted some days when we had lowest and highest, so as a consumer I can try to pinpoint what was going on on those days." Worked example from August (PGE hourly CSV plus the lab's 5-minute history): the house used 113 and 131 kWh on 1 and 2 August against a normal 28–43 kWh, drawing about 8 kW for hours including at night, with grid draw switching between ~5 and 0 kWh in neighbouring hours; 124 of 744 hours drew nothing from the grid. Conflicts with S-10's "hour-of-day aggregates only, never single readings or timestamps" rule, so the plan must settle that with the owner. Goes to `/10x-plan` together with the night-import view the frame points at.
+
+**Rollout and production checks (2026-09-30):** migration applied in production as `20260930081229` (PR 75, app `a1ddf48` deployed); lab push installed on docker-core (homelab-2 PR 35, `dce6b33`); one-off backfill stored 585 hours (26 August–30 September; the lab's own history has gaps). 4.5: rows present and growing with each push. 4.6: met with a caveat. Over the five nights in both the backfill and the owner's August CSV (26–31 August, 22:00–06:00) the inverter read **11.8%** above PGE's hourly-balanced import (single nights +5% to +21%), a little over the plan's ~10%; the card now says "usually about 10–20% at night" instead of "agrees with PGE" (`1d7ac4f`). 4.7: roadmap open question 5 carries the on-site CT check and per-phase data. A finding from production, fixed in `1d7ac4f`: 7 of 547 complete hours showed ~0.2 kWh house use against ~1.9 kWh from the grid (a load-reading drop-out or battery grid charging) and filled the "lowest hours" list; such hours are now kept off that list.

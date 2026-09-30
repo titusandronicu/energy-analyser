@@ -470,10 +470,10 @@ One additive migration (new table, redefined `ingest_push`, grants). Rollback: t
 - [x] 4.1 Lab tests pass: `python3 -m unittest infra/compose/energy-app/scripts/test_push_energy_analyser.py` (in homelab-2) — b946339
 - [x] 4.2 App checks still pass: `npm test`, `npm run lint` — 5410ef4
 - [x] 4.3 The roadmap and prerequisites carry the change: `git grep -n "hourly_history" -- docs/prerequisites.md context/foundation/roadmap.md` prints at least two lines — 5410ef4
-- [ ] 4.4 After the draft PR is opened the CI `ci` and `smoke` jobs are green
+- [x] 4.4 After the draft PR is opened the CI `ci` and `smoke` jobs are green — b79b1cf
 
 #### Manual
 
-- [ ] 4.5 In production, after the backfill, `hourly_energy` holds about 35 days of hours, and new hours arrive with each push
-- [ ] 4.6 The production card shows last night's grid draw close to what PGE's CSV shows for a recent night (within ~10%), and the highest days match what the owner remembers or the frame's August example where still in the window
-- [ ] 4.7 The export-mismatch follow-up (on-site CT check, per-phase data) is recorded in roadmap open question 5
+- [x] 4.5 In production, after the backfill, `hourly_energy` holds about 35 days of hours, and new hours arrive with each push — 1d7ac4f
+- [x] 4.6 The production card shows last night's grid draw close to what PGE's CSV shows for a recent night (within ~10%), and the highest days match what the owner remembers or the frame's August example where still in the window — 1d7ac4f
+- [x] 4.7 The export-mismatch follow-up (on-site CT check, per-phase data) is recorded in roadmap open question 5 — 1d7ac4f
