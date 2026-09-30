@@ -299,9 +299,9 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Automated
 
-- [x] 3.1 Formatting passes: `npx prettier --check docs context/foundation/roadmap.md context/changes/inverter-grid-correction`
-- [x] 3.2 The old claims are gone: `git grep -n -i "largely cancel\|grid import is overstated\|close to PGE at night\|10–20" -- docs context/foundation` prints nothing (the new decisions entry quotes none of these)
-- [x] 3.3 The new rule is recorded: `git grep -n "grid-sensor.ts" -- docs/logic.md` prints at least one line
+- [x] 3.1 Formatting passes: `npx prettier --check docs context/foundation/roadmap.md context/changes/inverter-grid-correction` — b20f6eb
+- [x] 3.2 The old claims are gone: `git grep -n -i "largely cancel\|grid import is overstated\|close to PGE at night\|10–20" -- docs context/foundation` prints nothing (the new decisions entry quotes none of these) — b20f6eb
+- [x] 3.3 The new rule is recorded: `git grep -n "grid-sensor.ts" -- docs/logic.md` prints at least one line — b20f6eb
 
 #### Manual
 
