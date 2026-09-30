@@ -393,7 +393,7 @@ None. There is no schema or contract change, and rollback is reverting the PR. E
 
 #### Manual
 
-- [ ] 1.4 `buildMonthView("2026-09", …)` on production-shaped September data reports missing and empty days, 18 complete days, and forecast against actual as "za mało danych"
+- [x] 1.4 `buildMonthView("2026-09", …)` on production-shaped September data reports missing and empty days, 18 complete days, and forecast against actual as "za mało danych" — 5e00c2e
 
 ### Phase 2: Charts
 
@@ -405,22 +405,22 @@ None. There is no schema or contract change, and rollback is reverting the PR. E
 
 #### Manual
 
-- [ ] 2.4 Both charts render with September data and show gaps as missing bars
+- [x] 2.4 Both charts render with September data and show gaps as missing bars — 11cc71c
 
 ### Phase 3: Page and navigation
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test`
-- [x] 3.2 Linting passes: `npm run lint`
-- [x] 3.3 Type checks pass: `npx astro check`
-- [x] 3.4 Production build succeeds: `npm run build`
-- [x] 3.5 Local smoke passes, including the three new history steps: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`
-- [x] 3.6 The docs record the calendar: `git grep -n "Historia" -- docs/logic.md docs/decisions.md` prints at least two lines
+- [x] 3.1 Unit tests pass: `npm test` — e044078
+- [x] 3.2 Linting passes: `npm run lint` — e044078
+- [x] 3.3 Type checks pass: `npx astro check` — e044078
+- [x] 3.4 Production build succeeds: `npm run build` — e044078
+- [x] 3.5 Local smoke passes, including the three new history steps: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke` — e044078
+- [x] 3.6 The docs record the calendar: `git grep -n "Historia" -- docs/logic.md docs/decisions.md` prints at least two lines — e044078
 
 #### Manual
 
-- [ ] 3.7 The dashboard looks and reads the same as before the shell extraction, now with the "Pulpit / Historia" nav
-- [ ] 3.8 Local stack at 1440 px and 390 px: views render without clipping or horizontal scroll, navigation stops at 2026-07-16 and today, and missing, empty and today's days read correctly
-- [ ] 3.9 Accessibility tree: one main and one h1, h2/h3 view headings, nav with aria-current, labelled chart images and named day links
+- [x] 3.7 The dashboard looks and reads the same as before the shell extraction, now with the "Pulpit / Historia" nav — e044078
+- [x] 3.8 Local stack at 1440 px and 390 px: views render without clipping or horizontal scroll, navigation stops at 2026-07-16 and today, and missing, empty and today's days read correctly — e044078
+- [x] 3.9 Accessibility tree: one main and one h1, h2/h3 view headings, nav with aria-current, labelled chart images and named day links — e044078
 - [ ] 3.10 Production after deploy: September 2026 shows gaps and day-counted totals, 2026-09-27 shows its morning recommendation, and Q3 2026 shows July from the 16th
