@@ -41,7 +41,8 @@ export async function loadRecommendationTimes(
   return { times: data.map((row) => row.generated_at), truncated: data.length >= RECOMMENDATION_TIMES_LIMIT };
 }
 
-// Full recommendations generated in [fromMs, toMs), one Warsaw day, oldest first.
+// Full recommendations generated in [fromMs, toMs), one Warsaw day, oldest first. No explicit limit or truncation flag:
+// PostgREST's 1000-row cap is irrelevant for one day, which holds about 24 (one an hour).
 export async function loadRecommendationsForDay(
   client: SupabaseClient,
   fromMs: number,

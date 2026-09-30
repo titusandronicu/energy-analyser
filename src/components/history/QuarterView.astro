@@ -7,7 +7,13 @@ import TotalsPanel from "@/components/history/TotalsPanel.astro";
 import Panel from "@/components/ui/Panel.astro";
 import { periodHref } from "@/lib/calendar/nav";
 import { LOAD_FAILED } from "@/lib/format/status";
-import { completeDaysText, quarterChartMonths, type QuarterView } from "@/lib/services/calendar-view";
+import {
+  completeDaysText,
+  QUARTER_CHART_NOTE,
+  quarterChartMonths,
+  sentence,
+  type QuarterView,
+} from "@/lib/services/calendar-view";
 
 interface Props {
   // null: the quarter's daily rows failed to load.
@@ -18,7 +24,6 @@ interface Props {
 // The quarter view: totals over its complete days, one row per month (each links to its month when it can be opened)
 // and the months side by side in a grouped bar chart. A month before 16 July 2026 or after today is plain text.
 const { view, today } = Astro.props;
-const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 const months = (view?.months ?? []).map((month) => ({
   month,
   href: month.kind === "before-history" ? null : periodHref({ kind: "month", month: month.month }, today),
@@ -98,9 +103,7 @@ const months = (view?.months ?? []).map((month) => ({
   ) : (
     <div class="space-y-2">
       <MonthGroupChart months={quarterChartMonths(view)} emptyText="za mało miesięcy z danymi" />
-      <p class="text-muted-foreground text-xs">
-        Miesiąc z mniej niż 7 pełnymi dniami zostaje pusty. Prąd kupiony z sieci jest od 4 sierpnia zawyżony.
-      </p>
+      <p class="text-muted-foreground text-xs">{QUARTER_CHART_NOTE}</p>
     </div>
   )}
 </Panel>

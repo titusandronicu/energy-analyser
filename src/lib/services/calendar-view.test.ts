@@ -7,20 +7,31 @@ import {
   buildDayView,
   buildMonthView,
   buildQuarterView,
+  capitalize,
   completeDaysText,
   dayCellName,
   dayCellWord,
+  defaultPeriodFromRows,
+  defaultPeriodRange,
+  FORECAST_EXPLANATION,
   FORECAST_NOT_COLLECTED,
   FORECAST_TOO_FEW,
   forecastDaysText,
+  GRID_IMPORT_EXPLANATION,
+  GRID_IMPORT_OVERSTATED_FROM,
+  GRID_IMPORT_TERM,
   HISTORY_START_NOTE,
   INCOMPLETE_DAY,
   isCompleteDay,
   MARKERS_INCOMPLETE,
+  MONTH_CHART_NOTE,
   NO_DAY_DATA,
   NO_FORECAST,
   NO_RECOMMENDATION,
+  QUARTER_CHART_NOTE,
   quarterChartMonths,
+  sentence,
+  TOO_FEW_EXPLANATION,
   type DayCell,
   type MonthView,
 } from "./calendar-view";
@@ -78,6 +89,33 @@ describe("isCompleteDay", () => {
   it("never counts today or a later day", () => {
     expect(isCompleteDay(row("2026-09-30"), "2026-09-30")).toBe(false);
     expect(isCompleteDay(row("2026-10-01"), "2026-09-30")).toBe(false);
+  });
+});
+
+describe("defaultPeriodFromRows", () => {
+  it("reads the previous and the current month", () => {
+    expect(defaultPeriodRange("2026-09-30")).toEqual({ first: "2026-08-01", last: "2026-09-30" });
+    expect(defaultPeriodRange("2026-01-05")).toEqual({ first: "2025-12-01", last: "2026-01-31" });
+  });
+
+  it("opens the current month once it has 7 complete days", () => {
+    const read = [...rows("2026-08-01", 31), ...rows("2026-09-01", 7)];
+    expect(defaultPeriodFromRows(read, "2026-09-08")).toEqual({ kind: "month", month: "2026-09" });
+  });
+
+  it("opens the previous month below 7 complete days, whatever the previous month holds", () => {
+    // Six complete days, an empty one, and today's partial row, which never counts.
+    const read = [
+      ...rows("2026-08-01", 31),
+      ...rows("2026-09-01", 8, (day) => (day === "2026-09-04" ? { pv_kwh: null } : {})),
+    ];
+    expect(defaultPeriodFromRows(read, "2026-09-08")).toEqual({ kind: "month", month: "2026-08" });
+    expect(defaultPeriodFromRows([], "2026-09-08")).toEqual({ kind: "month", month: "2026-08" });
+  });
+
+  it("never opens a month before July 2026", () => {
+    expect(defaultPeriodFromRows(rows("2026-07-16", 3), "2026-07-19")).toEqual({ kind: "month", month: "2026-07" });
+    expect(defaultPeriodFromRows(rows("2026-07-16", 16), "2026-08-02")).toEqual({ kind: "month", month: "2026-07" });
   });
 });
 
@@ -430,5 +468,33 @@ describe("history start and display helpers", () => {
       [null, 0, 31],
       [null, 0, 30],
     ]);
+  });
+});
+
+describe("history copy", () => {
+  it("states the rule values from their constants", () => {
+    expect(GRID_IMPORT_OVERSTATED_FROM).toBe("2026-08-04");
+    expect(MONTH_CHART_NOTE).toBe(
+      "Dni bez danych zostają puste, a dzisiejszy dzień nie jest rysowany, bo jeszcze trwa. Prąd kupiony z sieci jest od 4 sierpnia zawyżony (zobacz „Co to znaczy?”).",
+    );
+    expect(QUARTER_CHART_NOTE).toBe(
+      "Miesiąc z mniej niż 7 pełnymi dniami zostaje pusty. Prąd kupiony z sieci jest od 4 sierpnia zawyżony.",
+    );
+    expect(TOO_FEW_EXPLANATION).toBe(
+      "Gdy okres ma mniej niż 7 pełnych dni, sumy nie są pokazywane, bo mówiłyby więcej, niż wiadomo. Niedokończony miesiąc albo kwartał pokazuje to, co już jest, bez przeliczania na całość.",
+    );
+    expect(GRID_IMPORT_TERM).toBe("Prąd kupiony z sieci od 4 sierpnia");
+    expect(GRID_IMPORT_EXPLANATION).toBe(
+      "Od 4 sierpnia 2026 falownik pokazuje więcej prądu kupionego z sieci, niż naprawdę było, zwłaszcza w dzień. Najpewniej to sprawa czujnika prądu, do sprawdzenia na miejscu. Do tego czasu te liczby są zawyżone.",
+    );
+    expect(FORECAST_EXPLANATION).toBe(
+      "Porównanie prognozy produkcji z tym, co panele naprawdę dały. Prognozy zapisujemy od 27 września 2026, więc wcześniejsze dni nie mają porównania.",
+    );
+  });
+
+  it("capitalizes a label and ends a sentence with one full stop", () => {
+    expect(capitalize(NO_DAY_DATA)).toBe("Brak danych z tego dnia");
+    expect(sentence(MARKERS_INCOMPLETE)).toBe("Znaczniki rekomendacji mogą być niepełne.");
+    expect(sentence(HISTORY_START_NOTE)).toBe("Dane od 16 lipca 2026 — wcześniejszych dni aplikacja nie ma.");
   });
 });
