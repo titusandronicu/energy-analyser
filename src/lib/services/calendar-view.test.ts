@@ -22,19 +22,25 @@ import {
   GRID_IMPORT_TERM,
   HISTORY_START_NOTE,
   INCOMPLETE_DAY,
-  isCompleteDay,
   MARKERS_INCOMPLETE,
   MONTH_CHART_NOTE,
+  MONTH_NOT_RATED,
   NO_DAY_DATA,
   NO_FORECAST,
   NO_RECOMMENDATION,
   QUARTER_CHART_NOTE,
   quarterChartMonths,
+  RATING_EXPLANATION,
+  RATING_TERM,
+  ratedPeriodRange,
+  SELF_SUFFICIENCY_EXPLANATION,
   sentence,
   TOO_FEW_EXPLANATION,
   type DayCell,
   type MonthView,
 } from "./calendar-view";
+import { isCompleteDay } from "./complete-day";
+import { DAY_NO_USE, rowsNeededFrom } from "./period-rating";
 
 // All data here is synthetic. The repository is public, so no test uses the owner's real figures; only the shape of
 // the production history (which days are missing or empty) is copied.
@@ -93,9 +99,12 @@ describe("isCompleteDay", () => {
 });
 
 describe("defaultPeriodFromRows", () => {
-  it("reads the previous and the current month", () => {
-    expect(defaultPeriodRange("2026-09-30")).toEqual({ first: "2026-08-01", last: "2026-09-30" });
-    expect(defaultPeriodRange("2026-01-05")).toEqual({ first: "2025-12-01", last: "2026-01-31" });
+  it("reads the previous and the current month, and the 14 days before them for the rating", () => {
+    expect(defaultPeriodRange("2026-09-30")).toEqual({ first: "2026-07-18", last: "2026-09-30" });
+    expect(defaultPeriodRange("2026-01-05")).toEqual({ first: "2025-11-17", last: "2026-01-31" });
+    // Whichever month it picks, the read reaches 14 days before that month's first day.
+    expect(defaultPeriodRange("2026-09-30").first <= rowsNeededFrom("2026-08-01")).toBe(true);
+    expect(defaultPeriodRange("2026-09-30").first <= rowsNeededFrom("2026-09-01")).toBe(true);
   });
 
   it("opens the current month once it has 7 complete days", () => {
@@ -255,7 +264,8 @@ describe("buildMonthView", () => {
     const view = buildMonthView("2026-11", [], noTimes, "2026-11-10");
     expect(view.grid[0].slice(0, 6)).toEqual([null, null, null, null, null, null]);
     expect(view.grid[0][6]).toEqual({ day: "2026-11-01", status: "missing", hasRecommendation: false });
-    expect([view.rating, view.note, view.summary]).toEqual([null, null, null]);
+    expect([view.note, view.summary]).toEqual([null, null]);
+    expect(view.rating).toEqual({ kind: "none", reason: MONTH_NOT_RATED });
   });
 });
 
@@ -327,7 +337,7 @@ describe("buildDayView", () => {
   const todayKey = "2026-09-30";
 
   it("shows a complete past day's totals", () => {
-    const view = buildDayView("2026-09-27", row("2026-09-27", { pv_forecast_kwh: 12 }), [], todayKey, now);
+    const view = buildDayView("2026-09-27", [row("2026-09-27", { pv_forecast_kwh: 12 })], [], todayKey, now);
     expect(view.label).toBe("27 września 2026, niedziela");
     expect(view.inProgress).toBe(false);
     expect(view.totals).toEqual({
@@ -348,25 +358,27 @@ describe("buildDayView", () => {
       forecastLabel: "12,0 kWh",
       actualLabel: "10,0 kWh",
     });
-    expect([view.rating, view.note, view.summary]).toEqual([null, null, null]);
+    expect([view.note, view.summary]).toEqual([null, null]);
+    // Only the day's own row was read, so its norm has no days.
+    expect(view.rating).toMatchObject({ kind: "insufficient", word: "za mało danych: 0 z 7" });
   });
 
   it("says why a missing or empty day has no totals", () => {
-    expect(buildDayView("2026-09-14", null, [], todayKey, now).totals).toEqual({ kind: "none", reason: NO_DAY_DATA });
-    const empty = buildDayView("2026-09-13", row("2026-09-13", { load_kwh: null }), [], todayKey, now);
+    expect(buildDayView("2026-09-14", [], [], todayKey, now).totals).toEqual({ kind: "none", reason: NO_DAY_DATA });
+    const empty = buildDayView("2026-09-13", [row("2026-09-13", { load_kwh: null })], [], todayKey, now);
     expect(empty.totals).toEqual({ kind: "none", reason: INCOMPLETE_DAY });
     expect(NO_DAY_DATA).toBe("brak danych z tego dnia");
     expect(INCOMPLETE_DAY).toBe("dane z tego dnia są niepełne");
   });
 
   it("ignores a row for another day", () => {
-    expect(buildDayView("2026-09-14", row("2026-09-15"), [], todayKey, now).totals.kind).toBe("none");
+    expect(buildDayView("2026-09-14", [row("2026-09-15")], [], todayKey, now).totals.kind).toBe("none");
   });
 
   it("marks today as in progress with running totals", () => {
     const view = buildDayView(
       todayKey,
-      row(todayKey, { pv_kwh: 3, load_kwh: null, pv_forecast_kwh: 12 }),
+      [row(todayKey, { pv_kwh: 3, load_kwh: null, pv_forecast_kwh: 12 })],
       [],
       todayKey,
       now,
@@ -377,17 +389,17 @@ describe("buildDayView", () => {
   });
 
   it("says the forecast was not collected before 27 September, and when a later day has none", () => {
-    const early = buildDayView("2026-09-26", row("2026-09-26", { pv_forecast_kwh: 20 }), [], todayKey, now);
+    const early = buildDayView("2026-09-26", [row("2026-09-26", { pv_forecast_kwh: 20 })], [], todayKey, now);
     expect(early.forecast).toEqual({ kind: "none", reason: FORECAST_NOT_COLLECTED });
-    const none = buildDayView("2026-09-28", row("2026-09-28"), [], todayKey, now);
+    const none = buildDayView("2026-09-28", [row("2026-09-28")], [], todayKey, now);
     expect(none.forecast).toEqual({ kind: "none", reason: NO_FORECAST });
-    expect(buildDayView("2026-09-28", null, [], todayKey, now).forecast).toEqual({ kind: "none", reason: NO_FORECAST });
+    expect(buildDayView("2026-09-28", [], [], todayKey, now).forecast).toEqual({ kind: "none", reason: NO_FORECAST });
   });
 
   it("picks the first recommendation from 06:00 Warsaw and keeps the others in time order", () => {
     // 04:10 UTC is 06:10 in Warsaw; 03:50 UTC is 05:50.
     const recs = [rec("2026-09-27T10:00:00Z"), rec("2026-09-27T04:10:00Z"), rec("2026-09-27T03:50:00Z")];
-    const view = buildDayView("2026-09-27", row("2026-09-27"), recs, todayKey, now);
+    const view = buildDayView("2026-09-27", [row("2026-09-27")], recs, todayKey, now);
     if (view.advice.kind !== "advice") throw new Error("expected advice");
     expect(view.advice.main.text).toBe("2026-09-27T04:10:00Z");
     expect(view.advice.mainNote).toBeNull();
@@ -396,7 +408,7 @@ describe("buildDayView", () => {
 
   it("falls back to the day's first recommendation when all came before 06:00", () => {
     const recs = [rec("2026-09-27T03:00:00Z"), rec("2026-09-26T22:30:00Z")];
-    const view = buildDayView("2026-09-27", row("2026-09-27"), recs, todayKey, now);
+    const view = buildDayView("2026-09-27", [row("2026-09-27")], recs, todayKey, now);
     if (view.advice.kind !== "advice") throw new Error("expected advice");
     expect(view.advice.main.text).toBe("2026-09-26T22:30:00Z");
     expect(view.advice.mainNote).toBe(BEFORE_MORNING);
@@ -404,7 +416,7 @@ describe("buildDayView", () => {
   });
 
   it("maps advice through the historical view", () => {
-    const view = buildDayView("2026-09-27", row("2026-09-27"), [rec("2026-09-27T12:00:00Z")], todayKey, now);
+    const view = buildDayView("2026-09-27", [row("2026-09-27")], [rec("2026-09-27T12:00:00Z")], todayKey, now);
     if (view.advice.kind !== "advice") throw new Error("expected advice");
     expect(view.advice.main.status).toEqual({ tone: "insufficient", label: "z 27 września, 14:00" });
     expect(view.advice.main.isStale).toBe(false);
@@ -413,8 +425,84 @@ describe("buildDayView", () => {
 
   it("leaves out recommendations from other Warsaw days and says when there is none", () => {
     // 22:30 UTC on the 27th is 00:30 on the 28th in Warsaw.
-    const view = buildDayView("2026-09-27", row("2026-09-27"), [rec("2026-09-27T22:30:00Z")], todayKey, now);
+    const view = buildDayView("2026-09-27", [row("2026-09-27")], [rec("2026-09-27T22:30:00Z")], todayKey, now);
     expect(view.advice).toEqual({ kind: "none", reason: NO_RECOMMENDATION });
+  });
+});
+
+describe("ratings in the views", () => {
+  const now = new Date("2026-10-05T10:00:00Z");
+  // Fourteen norm days before September at 75% (import 5 of use 20), then September at the same share.
+  const norm = rows(rowsNeededFrom("2026-09-01"), 14);
+
+  it("reads the day or month and the 14 days before it", () => {
+    expect(ratedPeriodRange({ kind: "month", month: "2026-09" })).toEqual({ first: "2026-08-18", last: "2026-09-30" });
+    expect(ratedPeriodRange({ kind: "day", day: "2026-09-11" })).toEqual({ first: "2026-08-28", last: "2026-09-11" });
+  });
+
+  it("leaves the month's totals, grid, charts and forecast unchanged by the norm days read before it", () => {
+    const own = buildMonthView("2026-09", september, noTimes, "2026-09-30");
+    const widened = buildMonthView("2026-09", [...norm, ...september], noTimes, "2026-09-30");
+    expect(widened.totals).toEqual(own.totals);
+    expect(widened.grid).toEqual(own.grid);
+    expect(widened.series).toEqual(own.series);
+    expect(widened.forecast).toEqual(own.forecast);
+    expect(widened.unfinishedNote).toEqual(own.unfinishedNote);
+  });
+
+  it("rates a completed month from the widened rows", () => {
+    const view = buildMonthView("2026-09", [...norm, ...rows("2026-09-01", 30)], noTimes, "2026-10-05");
+    expect(view.totals).toMatchObject({ kind: "totals", completeDays: 30 });
+    expect(view.rating).toMatchObject({ kind: "rated", band: "neutral", word: "Przeciętny miesiąc", days: 30 });
+  });
+
+  it("says the current month is not rated yet", () => {
+    const view = buildMonthView("2026-09", [...norm, ...september], noTimes, "2026-09-30");
+    expect(view.rating).toEqual({ kind: "none", reason: MONTH_NOT_RATED });
+    expect(sentence(MONTH_NOT_RATED)).toBe("Miesiąc jeszcze trwa — oceniamy tylko zakończone miesiące.");
+  });
+
+  it("rates a past day against the 14 days before it, keeping the totals to the day's own row", () => {
+    const day = row("2026-09-01", { grid_import_kwh: 1 });
+    const view = buildDayView("2026-09-01", [...norm, day], [], "2026-10-05", now);
+    expect(view.totals).toMatchObject({ kind: "totals", importKwh: 1 });
+    // 95% against a norm of 75%: 20 points above.
+    expect(view.rating).toMatchObject({ kind: "rated", band: "good", word: "Dobry dzień", days: 14 });
+  });
+
+  it("shows no rating for today, a later day, or a day whose totals already say it is missing or incomplete", () => {
+    const history = [...norm, ...rows("2026-09-01", 5)];
+    expect(buildDayView("2026-09-05", history, [], "2026-09-05", now).rating).toBeNull();
+    expect(buildDayView("2026-09-10", [], [], "2026-10-05", now).rating).toBeNull();
+    expect(
+      buildDayView("2026-09-06", [...history, row("2026-09-06", { load_kwh: null })], [], "2026-10-05", now).rating,
+    ).toBeNull();
+  });
+
+  it("says why a day with no house use is not rated", () => {
+    const view = buildDayView(
+      "2026-09-01",
+      [...norm, row("2026-09-01", { load_kwh: 0, grid_import_kwh: 0 })],
+      [],
+      "2026-10-05",
+      now,
+    );
+    expect(view.rating).toEqual({ kind: "none", reason: DAY_NO_USE });
+  });
+
+  it("names an inconsistent day", () => {
+    const view = buildDayView(
+      "2026-09-01",
+      [...norm, row("2026-09-01", { grid_import_kwh: 25 })],
+      [],
+      "2026-10-05",
+      now,
+    );
+    expect(view.rating).toMatchObject({ kind: "inconsistent", word: "dane niespójne" });
+  });
+
+  it("never rates the quarter", () => {
+    expect(buildQuarterView(2026, 3, [...norm, ...rows("2026-09-01", 30)], "2026-10-05").rating).toBeNull();
   });
 });
 
@@ -486,6 +574,13 @@ describe("history copy", () => {
     expect(GRID_IMPORT_TERM).toBe("Prąd kupiony z sieci od 4 sierpnia");
     expect(GRID_IMPORT_EXPLANATION).toBe(
       "Od 4 sierpnia 2026 falownik pokazuje więcej prądu kupionego z sieci, niż naprawdę było, zwłaszcza w dzień. Najpewniej to sprawa czujnika prądu, do sprawdzenia na miejscu. Do tego czasu te liczby są zawyżone.",
+    );
+    expect(SELF_SUFFICIENCY_EXPLANATION).toBe(
+      "Jaka część zużycia domu nie była kupiona z sieci, tylko przyszła z paneli albo z baterii. 100% to dzień bez prądu z sieci, 0% to dzień, w którym cały prąd był kupiony.",
+    );
+    expect(RATING_TERM).toBe("Ocena dnia i miesiąca");
+    expect(RATING_EXPLANATION).toBe(
+      "Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród 14 dni przed nim. Norma potrzebuje co najmniej 7 takich dni, inaczej dzień nie jest oceniany. Więcej niż 10 punktów procentowych powyżej normy to dobry dzień, więcej niż 10 poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż 70% tego, co zwykle, ocena mówi „Mało słońca”. Zawyżony od 4 sierpnia prąd kupiony z sieci obniża samowystarczalność wszystkich dni podobnie, a dzień jest porównywany z dniami tuż przed nim, więc ocena mało się przez to zmienia. Dni, w których prąd kupiony z sieci jest większy niż zużycie domu, są pomijane jako „dane niespójne”.",
     );
     expect(FORECAST_EXPLANATION).toBe(
       "Porównanie prognozy produkcji z tym, co panele naprawdę dały. Prognozy zapisujemy od 27 września 2026, więc wcześniejsze dni nie mają porównania.",

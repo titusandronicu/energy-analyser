@@ -242,19 +242,19 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, covering the worked examples, the ±10 edges, unrated days, inconsistent days excluded from norms, and the month minimum and current month: `npm test`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Type checks pass: `npx astro check`
+- [x] 1.1 Unit tests pass, covering the worked examples, the ±10 edges, unrated days, inconsistent days excluded from norms, and the month minimum and current month: `npm test` — a0d51e0
+- [x] 1.2 Linting passes: `npm run lint` — a0d51e0
+- [x] 1.3 Type checks pass: `npx astro check` — a0d51e0
 
 ### Phase 2: Calendar display and docs
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass, including the widened row range not changing month totals or charts: `npm test`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 Type checks pass: `npx astro check`
-- [ ] 2.4 Production build succeeds: `npm run build`
-- [ ] 2.5 Docs record the rules: `git grep -n "Ocena dni" -- docs/logic.md` prints at least one line
+- [x] 2.1 Unit tests pass, including the widened row range not changing month totals or charts: `npm test`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 Type checks pass: `npx astro check`
+- [x] 2.4 Production build succeeds: `npm run build`
+- [x] 2.5 Docs record the rules: `git grep -n "Ocena dni" -- docs/logic.md` prints at least one line
 
 #### Manual
 

@@ -4,6 +4,10 @@ import {
   FORECAST_EXPLANATION,
   GRID_IMPORT_EXPLANATION,
   GRID_IMPORT_TERM,
+  RATING_EXPLANATION,
+  RATING_TERM,
+  SELF_SUFFICIENCY_EXPLANATION,
+  SELF_SUFFICIENCY_TERM,
   TOO_FEW_EXPLANATION,
 } from "@/lib/services/calendar-view";
 
@@ -29,6 +33,8 @@ const NOTES = [
       "Licznik falownika pokazuje za mało prądu oddanego do sieci, a od połowy sierpnia pokazuje zero, choć PGE zapisało prawdziwy zwrot. Dlatego kalendarz go nie pokazuje.",
   },
   { term: "Prognoza a rzeczywistość", explanation: FORECAST_EXPLANATION },
+  { term: SELF_SUFFICIENCY_TERM, explanation: SELF_SUFFICIENCY_EXPLANATION },
+  { term: RATING_TERM, explanation: RATING_EXPLANATION },
 ];
 ---
 

@@ -5,7 +5,7 @@ import { formatPeriod } from "@/lib/format/period";
 import type { StatusTone } from "@/lib/format/status";
 import { kwhLabel, oneDecimal } from "@/lib/format/values";
 import { addDays } from "@/lib/format/warsaw-time";
-import { isCompleteDay } from "@/lib/services/calendar-view";
+import { isCompleteDay, kwh } from "@/lib/services/complete-day";
 import { MIN_RANKED_DAYS } from "@/lib/services/hourly-usage";
 import { median } from "@/lib/services/usage-insight";
 
@@ -82,11 +82,6 @@ export type PeriodRating =
   | { kind: "inconsistent"; tone: StatusTone; word: string; basis: string }
   // Not rated at all (today, the future, incomplete days, the current month); the reason says why.
   | { kind: "none"; reason: string };
-
-// A usable daily total: finite and not negative, else null (as calendar-view reads it).
-function kwh(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
-}
 
 // 1 − import ÷ use in percent, clamped to 0–100, for a complete day with use above 0; "inconsistent" when the import
 // exceeds the use; otherwise null.

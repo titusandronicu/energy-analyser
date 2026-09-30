@@ -16,8 +16,21 @@ import { formatPeriod } from "@/lib/format/period";
 import type { Status } from "@/lib/format/status";
 import { kwhLabel } from "@/lib/format/values";
 import { formatDayMonth, formatMonth, warsawHour, warsawParts } from "@/lib/format/warsaw-time";
+import { isCompleteDay, kwh } from "@/lib/services/complete-day";
 import { dailySeries, type DailySeries } from "@/lib/services/daily-series";
 import { MIN_RANKED_DAYS } from "@/lib/services/hourly-usage";
+import {
+  DAY_NO_USE,
+  LOW_SUN_SHARE,
+  MONTH_RUNNING,
+  RATING_MIN_DAYS,
+  RATING_THRESHOLD_POINTS,
+  RATING_WINDOW_DAYS,
+  rateDay,
+  rateMonth,
+  rowsNeededFrom,
+  type PeriodRating,
+} from "@/lib/services/period-rating";
 import { FORECAST_HISTORY_START, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 
 // View models for the history calendar (S-15): every figure, status and sentence of the day, month and quarter views
@@ -59,6 +72,16 @@ export const TOO_FEW_EXPLANATION = `Gdy okres ma mniej niż ${String(MIN_RANKED_
 export const GRID_IMPORT_TERM = `Prąd kupiony z sieci od ${formatDayMonth(GRID_IMPORT_OVERSTATED_FROM)}`;
 export const GRID_IMPORT_EXPLANATION = `Od ${dayMonthYear(GRID_IMPORT_OVERSTATED_FROM)} falownik pokazuje więcej prądu kupionego z sieci, niż naprawdę było, zwłaszcza w dzień. Najpewniej to sprawa czujnika prądu, do sprawdzenia na miejscu. Do tego czasu te liczby są zawyżone.`;
 export const FORECAST_EXPLANATION = `Porównanie prognozy produkcji z tym, co panele naprawdę dały. Prognozy zapisujemy od ${dayMonthYear(FORECAST_HISTORY_START)}, więc wcześniejsze dni nie mają porównania.`;
+// The "Co to znaczy?" entries for the day and month ratings (S-17), their numbers taken from the rating constants.
+export const SELF_SUFFICIENCY_TERM = "Samowystarczalność";
+export const SELF_SUFFICIENCY_EXPLANATION =
+  "Jaka część zużycia domu nie była kupiona z sieci, tylko przyszła z paneli albo z baterii. 100% to dzień bez prądu z sieci, 0% to dzień, w którym cały prąd był kupiony.";
+export const RATING_TERM = "Ocena dnia i miesiąca";
+export const RATING_EXPLANATION = `Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród ${String(RATING_WINDOW_DAYS)} dni przed nim. Norma potrzebuje co najmniej ${String(RATING_MIN_DAYS)} takich dni, inaczej dzień nie jest oceniany. Więcej niż ${String(RATING_THRESHOLD_POINTS)} punktów procentowych powyżej normy to dobry dzień, więcej niż ${String(RATING_THRESHOLD_POINTS)} poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż ${String(Math.round(LOW_SUN_SHARE * 100))}% tego, co zwykle, ocena mówi „Mało słońca”. Zawyżony od ${formatDayMonth(GRID_IMPORT_OVERSTATED_FROM)} prąd kupiony z sieci obniża samowystarczalność wszystkich dni podobnie, a dzień jest porównywany z dniami tuż przed nim, więc ocena mało się przez to zmienia. Dni, w których prąd kupiony z sieci jest większy niż zużycie domu, są pomijane jako „dane niespójne”.`;
+
+// A rating slot with nothing to rate still says why, under a grey "Bez oceny" badge.
+export const NOT_RATED_WORD = "Bez oceny";
+export const MONTH_NOT_RATED = `${MONTH_RUNNING} — oceniamy tylko zakończone miesiące`;
 
 // The views' badges rate nothing, so they keep the neutral tone.
 export const NEUTRAL: Status = { tone: "insufficient", label: "" };
@@ -159,9 +182,9 @@ export type ForecastComparison =
     }
   | { kind: "insufficient"; days: number; needed: number; reason: string };
 
-// Slots reserved for S-17 (rating), S-19 (note) and S-18 (lab summary); empty until those slices fill them.
+// Slots reserved for S-19 (note) and S-18 (lab summary); empty until those slices fill them. The rating (S-17) is
+// filled on the day and month views and stays null on the quarter.
 interface ReservedSlots {
-  rating: null;
   note: null;
   summary: null;
 }
@@ -171,6 +194,8 @@ export interface MonthView extends ReservedSlots {
   month: string;
   label: string;
   totals: PeriodTotals;
+  // The completed month's rating; while the month runs, "none" with MONTH_NOT_RATED as the reason.
+  rating: PeriodRating;
   unfinishedNote: string | null;
   // HISTORY_START_NOTE for the month that holds HISTORY_START, else null.
   startNote: string | null;
@@ -189,6 +214,8 @@ export type QuarterMonth =
 
 export interface QuarterView extends ReservedSlots {
   kind: "quarter";
+  // The quarter is not rated.
+  rating: null;
   year: number;
   quarter: Quarter;
   label: string;
@@ -247,19 +274,12 @@ export interface DayView extends ReservedSlots {
   totals: DayTotals;
   forecast: DayForecast;
   advice: DayAdvice;
+  // The day's rating; null when there is nothing worth saying (today, the future, or a day whose missing or
+  // incomplete data the totals already name).
+  rating: PeriodRating | null;
 }
 
-const RESERVED: ReservedSlots = { rating: null, note: null, summary: null };
-
-// A usable daily total: finite and not negative (as dailySeries reads it), else null.
-function kwh(value: unknown): number | null {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? value : null;
-}
-
-export function isCompleteDay(row: DailyEnergyRow | undefined, today: string): boolean {
-  if (row === undefined || row.day >= today) return false;
-  return kwh(row.pv_kwh) !== null && kwh(row.load_kwh) !== null && kwh(row.grid_import_kwh) !== null;
-}
+const RESERVED: ReservedSlots = { note: null, summary: null };
 
 // The month the calendar opens on without a period in the URL, from the rows of the current and the previous month
 // (read together, so the chosen month needs no second read): defaultMonth over the current month's complete days.
@@ -269,10 +289,21 @@ export function defaultPeriodFromRows(rows: readonly DailyEnergyRow[], today: st
   return { kind: "month", month: defaultMonth(today, complete) };
 }
 
-// The days defaultPeriodFromRows needs: the first of the previous month to the last of the current one.
+// The days defaultPeriodFromRows needs, the previous and the current month, reaching RATING_WINDOW_DAYS before the
+// previous month (rowsNeededFrom) so whichever month it picks has its rating's norm days.
 export function defaultPeriodRange(today: string): { first: string; last: string } {
   const current = today.slice(0, 7);
-  return { first: `${addMonths(current, -1)}-01`, last: periodBounds({ kind: "month", month: current }).last };
+  return {
+    first: rowsNeededFrom(`${addMonths(current, -1)}-01`),
+    last: periodBounds({ kind: "month", month: current }).last,
+  };
+}
+
+// The daily rows a day or month view reads: its own days plus the RATING_WINDOW_DAYS before them, for the rating.
+// Totals, grid, charts and forecast still use only the period's own days.
+export function ratedPeriodRange(p: CalendarPeriod): { first: string; last: string } {
+  const { first, last } = periodBounds(p);
+  return { first: rowsNeededFrom(first), last };
 }
 
 function byDay(rows: readonly DailyEnergyRow[]): Map<string, DailyEnergyRow> {
@@ -370,6 +401,20 @@ function startNote(p: CalendarPeriod): string | null {
   return first < HISTORY_START && HISTORY_START <= last ? HISTORY_START_NOTE : null;
 }
 
+// The month's rating over all the rows read (they reach RATING_WINDOW_DAYS before the month); a running month says it
+// is not rated yet.
+function monthRating(month: string, rows: readonly DailyEnergyRow[], today: string): PeriodRating {
+  const rating = rateMonth(month, rows, today);
+  return rating.kind === "none" ? { kind: "none", reason: MONTH_NOT_RATED } : rating;
+}
+
+// The day's rating, or null when the view has nothing to add: today and later days are not over, and a missing or
+// incomplete day already says so in its totals. A day with no house use says why it has no rating.
+function dayRating(day: string, rows: readonly DailyEnergyRow[], today: string): PeriodRating | null {
+  const rating = rateDay(day, rows, today);
+  return rating.kind === "none" && rating.reason !== DAY_NO_USE ? null : rating;
+}
+
 export function buildMonthView(
   month: string,
   rows: readonly DailyEnergyRow[],
@@ -407,6 +452,7 @@ export function buildMonthView(
     },
     forecast: forecastComparison(days, monthRows, today),
     markersNote: recTimes.truncated ? MARKERS_INCOMPLETE : null,
+    rating: monthRating(month, rows, today),
     ...RESERVED,
   };
 }
@@ -439,6 +485,7 @@ export function buildQuarterView(
     totals,
     unfinishedNote: unfinishedNote(totals, "Kwartał"),
     startNote: startNote(period),
+    rating: null,
     ...RESERVED,
   };
 }
@@ -522,14 +569,16 @@ function dayAdvice(day: string, recs: readonly RecommendationRow[], now: Date): 
   };
 }
 
+// `rows` are the day's row and the RATING_WINDOW_DAYS before it (ratedPeriodRange); only the day's own row gives the
+// totals and the forecast.
 export function buildDayView(
   day: string,
-  row: DailyEnergyRow | null,
+  rows: readonly DailyEnergyRow[],
   recs: readonly RecommendationRow[],
   today: string,
   now: Date,
 ): DayView {
-  const dayRow = row !== null && row.day === day ? row : undefined;
+  const dayRow = rows.find((row) => row.day === day);
   return {
     kind: "day",
     day,
@@ -538,6 +587,7 @@ export function buildDayView(
     totals: dayTotals(day, dayRow, today),
     forecast: dayForecast(day, dayRow, today),
     advice: dayAdvice(day, recs, now),
+    rating: dayRating(day, rows, today),
     ...RESERVED,
   };
 }
