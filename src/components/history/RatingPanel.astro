@@ -3,7 +3,6 @@ import { Gauge } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import Panel from "@/components/ui/Panel.astro";
-import { capitalize, NEUTRAL, NOT_RATED_WORD, sentence } from "@/lib/services/calendar-view";
 import type { PeriodRating } from "@/lib/services/period-rating";
 
 interface Props {
@@ -14,9 +13,9 @@ interface Props {
 }
 
 // A day's or a month's rating (S-17): the badge carries the rating's word in its tone (green "Dobry", grey
-// "Przeciętny", red "Słaby"; "za mało danych" and "dane niespójne" grey with their own words), so the colour never
-// stands alone. Under it the basis the rating rests on, and on a cloudy day the low-sun note. Every word and sentence
-// comes from the rating service; the panel only renders them.
+// "Przeciętny", red "Słaby"; "Za mało danych", "Poza oceną" and "Bez oceny" grey with their own words), so the colour
+// never stands alone. Under it the basis the rating rests on, and on a cloudy day the low-sun note. Every word and
+// sentence comes from the rating service, already capitalised; the panel only renders them.
 const { title, rating, testId } = Astro.props;
 ---
 
@@ -24,16 +23,10 @@ const { title, rating, testId } = Astro.props;
   <Panel>
     <CardHeading class="mb-2" title={title} icon={Gauge} iconClass="text-primary" />
     <div class="mb-3">
-      {rating.kind === "rated" ? (
-        <StatusBadge status={{ tone: rating.tone, label: "" }} text={rating.word} testId={testId} />
-      ) : rating.kind === "none" ? (
-        <StatusBadge status={NEUTRAL} text={NOT_RATED_WORD} testId={testId} />
-      ) : (
-        <StatusBadge status={{ tone: rating.tone, label: "" }} text={capitalize(rating.word)} testId={testId} />
-      )}
+      <StatusBadge status={{ tone: rating.tone, label: "" }} text={rating.word} testId={testId} />
     </div>
     <div class="text-muted-foreground space-y-1 text-sm [overflow-wrap:anywhere]">
-      <p>{rating.kind === "none" ? sentence(rating.reason) : rating.basis}</p>
+      <p>{rating.basis}</p>
       {rating.kind === "rated" && rating.lowSun !== null && <p>{rating.lowSun.text}</p>}
     </div>
   </Panel>

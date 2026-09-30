@@ -23,6 +23,7 @@ import {
   DAY_NO_USE,
   LOW_SUN_SHARE,
   MONTH_RUNNING,
+  notRated,
   RATING_MIN_DAYS,
   RATING_THRESHOLD_POINTS,
   RATING_WINDOW_DAYS,
@@ -77,10 +78,9 @@ export const SELF_SUFFICIENCY_TERM = "Samowystarczalność";
 export const SELF_SUFFICIENCY_EXPLANATION =
   "Jaka część zużycia domu nie była kupiona z sieci, tylko przyszła z paneli albo z baterii. 100% to dzień bez prądu z sieci, 0% to dzień, w którym cały prąd był kupiony.";
 export const RATING_TERM = "Ocena dnia i miesiąca";
-export const RATING_EXPLANATION = `Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród ${String(RATING_WINDOW_DAYS)} dni przed nim. Norma potrzebuje co najmniej ${String(RATING_MIN_DAYS)} takich dni, inaczej dzień nie jest oceniany. Więcej niż ${String(RATING_THRESHOLD_POINTS)} punktów procentowych powyżej normy to dobry dzień, więcej niż ${String(RATING_THRESHOLD_POINTS)} poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż ${String(Math.round(LOW_SUN_SHARE * 100))}% tego, co zwykle, ocena mówi „Mało słońca”. Zawyżony od ${formatDayMonth(GRID_IMPORT_OVERSTATED_FROM)} prąd kupiony z sieci obniża samowystarczalność wszystkich dni podobnie, a dzień jest porównywany z dniami tuż przed nim, więc ocena mało się przez to zmienia. Dni, w których prąd kupiony z sieci jest większy niż zużycie domu, są pomijane jako „dane niespójne”.`;
+export const RATING_EXPLANATION = `Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród ${String(RATING_WINDOW_DAYS)} dni przed nim. Norma potrzebuje co najmniej ${String(RATING_MIN_DAYS)} takich dni, inaczej dzień nie jest oceniany. Więcej niż ${String(RATING_THRESHOLD_POINTS)} punktów procentowych powyżej normy to dobry dzień, więcej niż ${String(RATING_THRESHOLD_POINTS)} poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż ${String(Math.round(LOW_SUN_SHARE * 100))}% tego, co zwykle, ocena mówi „Mało słońca”. Zawyżony od ${formatDayMonth(GRID_IMPORT_OVERSTATED_FROM)} prąd kupiony z sieci obniża samowystarczalność wszystkich dni podobnie, a dzień jest porównywany z dniami tuż przed nim, więc ocena mało się przez to zmienia. Dni, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika), są „Poza oceną”: nie są oceniane ani liczone do norm.`;
 
-// A rating slot with nothing to rate still says why, under a grey "Bez oceny" badge.
-export const NOT_RATED_WORD = "Bez oceny";
+// A running month's rating slot still says why it is not rated, under the grey "Bez oceny" badge.
 export const MONTH_NOT_RATED = `${MONTH_RUNNING} — oceniamy tylko zakończone miesiące`;
 
 // The views' badges rate nothing, so they keep the neutral tone.
@@ -405,7 +405,7 @@ function startNote(p: CalendarPeriod): string | null {
 // is not rated yet.
 function monthRating(month: string, rows: readonly DailyEnergyRow[], today: string): PeriodRating {
   const rating = rateMonth(month, rows, today);
-  return rating.kind === "none" ? { kind: "none", reason: MONTH_NOT_RATED } : rating;
+  return rating.kind === "none" ? notRated(MONTH_NOT_RATED) : rating;
 }
 
 // The day's rating, or null when the view has nothing to add: today and later days are not over, and a missing or

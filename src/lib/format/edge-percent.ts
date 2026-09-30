@@ -22,7 +22,7 @@ export function edgePercentLabel(raw: number, edge: number, milder: boolean): st
 }
 
 // The same rule for a gap in percentage points, printed without a sign because the sentence says the direction
-// ("27,4 punktu poniżej normy"). One decimal always takes "punktu": exactly on the line is "10,0 punktu" (the milder
+// ("25,4 punktu poniżej normy"). One decimal always takes "punktu": exactly on the line is "10,0 punktu" (the milder
 // status) and anything past it at least "10,1 punktu".
 export function edgePointsLabel(raw: number, edge: number, milder: boolean): string {
   return `${oneDecimal.format(edgeTenths(raw, edge, milder))} punktu`;
