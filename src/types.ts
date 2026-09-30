@@ -39,3 +39,14 @@ export interface BillForecastRow {
   received_at: string;
   bill_forecast: unknown;
 }
+
+// A row of public.hourly_energy as the dashboard reads it: one clock hour keyed by the instant it starts
+// (`hour_start`, timestamptz). `grid_net_kwh` is signed, import positive and export negative; `samples` is how many
+// 5-minute readings the hour rests on (12 for a full hour). Any total may be missing (null).
+export interface HourlyEnergyRow {
+  hour_start: string;
+  load_kwh: number | null;
+  grid_net_kwh: number | null;
+  pv_kwh: number | null;
+  samples: number;
+}

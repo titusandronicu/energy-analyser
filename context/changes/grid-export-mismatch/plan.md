@@ -421,31 +421,31 @@ One additive migration (new table, redefined `ingest_push`, grants). Rollback: t
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, including new contract cases (accepts a valid section; rejects a duplicate `hour_start`, a non-whole hour, `samples` over 12, more than 900 entries; accepts a push without the section): `npm test`
-- [x] 1.2 The committed schema matches the contract: `npm run contract:export` then `git diff --exit-code docs/ingest/contract-v1.schema.json`
-- [x] 1.3 Linting passes: `npm run lint`
-- [x] 1.4 Type checks pass: `npx astro check`
-- [x] 1.5 Production build succeeds: `npm run build`
-- [x] 1.6 The migration applies on a reset local database: `supabase db reset --local` (through `scripts/remote-docker.sh` in dev-hub)
-- [x] 1.7 Local smoke passes, with the example push now carrying `hourly_history`: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`
+- [x] 1.1 Unit tests pass, including new contract cases (accepts a valid section; rejects a duplicate `hour_start`, a non-whole hour, `samples` over 12, more than 900 entries; accepts a push without the section): `npm test` — 3590152
+- [x] 1.2 The committed schema matches the contract: `npm run contract:export` then `git diff --exit-code docs/ingest/contract-v1.schema.json` — 3590152
+- [x] 1.3 Linting passes: `npm run lint` — 3590152
+- [x] 1.4 Type checks pass: `npx astro check` — 3590152
+- [x] 1.5 Production build succeeds: `npm run build` — 3590152
+- [x] 1.6 The migration applies on a reset local database: `supabase db reset --local` (through `scripts/remote-docker.sh` in dev-hub) — 3590152
+- [x] 1.7 Local smoke passes, with the example push now carrying `hourly_history`: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke` — 3590152
 
 #### Manual
 
-- [x] 1.8 On the local stack, a push with `hourly_history` fills `hourly_energy`; a second push with a newer `captured_at` and changed values for the same hour replaces them; an older capture does not
-- [x] 1.9 As a signed-in owner, `hourly_energy` is readable through the API without `push_id`; anonymous access returns nothing
+- [x] 1.8 On the local stack, a push with `hourly_history` fills `hourly_energy`; a second push with a newer `captured_at` and changed values for the same hour replaces them; an older capture does not — 3590152
+- [x] 1.9 As a signed-in owner, `hourly_energy` is readable through the API without `push_id`; anonymous access returns nothing — 3590152
 
 ### Phase 2: Rules and read path
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass, including the cases listed above: `npm test`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 Type checks pass: `npx astro check`
-- [ ] 2.4 The rules are documented: `git grep -n "MIN_HOUR_SAMPLES\|Godziny zużycia" -- docs/logic.md` prints at least two lines
+- [x] 2.1 Unit tests pass, including the cases listed above: `npm test`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 Type checks pass: `npx astro check`
+- [x] 2.4 The rules are documented: `git grep -n "MIN_HOUR_SAMPLES\|Godziny zużycia" -- docs/logic.md` prints at least two lines
 
 #### Manual
 
-- [ ] 2.5 The synthetic August-shaped fixture, read through the view, ranks its two ~8 kW days highest and one of their evening hours among the highest hours, the pattern of the frame's worked example
+- [x] 2.5 The synthetic August-shaped fixture, read through the view, ranks its two ~8 kW days highest and one of their evening hours among the highest hours, the pattern of the frame's worked example
 
 ### Phase 3: The card
 

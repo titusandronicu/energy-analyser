@@ -8,6 +8,7 @@ The rules Energy Analyser and the home lab apply to the data, with the exact thr
 | -------------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
 | Live state, its staleness and the node verdicts                                  | App                                           | `src/lib/services/live-state.ts`                                                  |
 | Usage insight (season-adjusted baseline)                                         | App                                           | `src/lib/services/usage-insight.ts`                                               |
+| Hourly usage: complete hours, days and nights, night draw, rankings              | App                                           | `src/lib/services/hourly-usage.ts`                                                |
 | Recommendation staleness and labels                                              | App                                           | `src/lib/services/recommendation.ts`                                              |
 | Bill forecast card: freshness, minimum days, verdict bands, plausibility ceiling | App                                           | `src/lib/services/bill-forecast.ts`                                               |
 | Status colours, period text, term explanations                                   | App                                           | `src/lib/format/status.ts`, `period.ts`, `glossary.ts`                            |
@@ -83,6 +84,24 @@ The app compares the most recent complete day's consumption with a baseline and 
 Why the median: the mean was a default, never a decision. On the real data (2026-08-26 to 2026-09-25) the two disagreed on 3 of 19 days, each time because a few inconsistent early rows (2026-07-26 to 2026-08-03) pulled the mean down; one unusual day moves a median far less. Why the typical house stays out of the norm: this house used about 36 kWh a day in September 2026 against about 13 kWh for the estimate, so blending the estimate in would mark ordinary days as above the norm. The norm corrects itself over time from the house's own days: the 30-day window moves daily, and the seasonal baseline takes over once a year of history exists.
 
 Why seasonal: a flat recent average mislabels normal seasonal change (winter heating, summer air conditioning) as anomalies. The app's history starts on 2026-07-26 and the lab's on 2026-07-16 (the backfill, roadmap F-03, adds those ten days), so the fallback is what runs until about July 2027, when a year of history exists.
+
+## Godziny zużycia
+
+The hourly rules behind the "Godziny zużycia" card: how much the house draws from the grid at night, and which hours and days had the highest and lowest house use. The lab sends one row per clock hour (`hourly_history`, stored in `hourly_energy`, kept **35 days**); the rules run in `src/lib/services/hourly-usage.ts`, with the Warsaw hour helpers in `src/lib/format/warsaw-time.ts`.
+
+- **Window:** the last **35** Warsaw days (`HOURLY_HISTORY_DAYS`), from Warsaw midnight 35 days before today. An hour that has not ended yet is ignored. The card names the days the complete hours come from ("19 dni: 1–19 sierpnia", the usual [period text](#status-colours-and-data-periods)) and states the completeness rule in words.
+- **Hours:** keyed by the UTC instant they start at and labelled in Europe/Warsaw ("9 sierpnia", "niedziela", "20:00–21:00"). Both hours of the autumn change read "02:00–03:00".
+- **Complete hour:** at least **10** of its 12 five-minute readings (`MIN_HOUR_SAMPLES`), with both house use and net grid present. Anything else is a gap and is left out of every figure; only complete hours are ranked.
+- **Complete day:** every clock hour of the Warsaw date is present and complete: **24** hours, **23** on the spring change (no 02:00) and **25** on the autumn change (02:00 twice). Only complete days are ranked; a day's total is the sum of its hours' house use.
+- **Grid draw:** per hour `max(grid_net_kwh, 0)`, the net hourly import, which is what PGE bills after hourly balancing; export is never subtracted from another hour. Checked against PGE's August data at night, where the two agree within about ±10%.
+- **Night:** 22:00 to 06:00 local time (`NIGHT_START_HOUR`, `NIGHT_END_HOUR`), named by both dates: "noc z 1 na 2 sierpnia", "noc z 31 lipca na 1 sierpnia". That is **8** clock hours, **7** across the spring change and **9** across the autumn change. A night is complete when all its hours are present and complete, and counts only once its 06:00 end has passed. Its grid draw is the sum of its hours' grid draw, so an exporting night hour adds 0, not a negative amount.
+- **Last night:** the most recent complete night among the last **3** that have ended (`LAST_NIGHT_LOOKBACK`), shown by its name. When none of the three is complete the card says "niepełne dane za ostatnie noce" and shows no figure.
+- **Night average:** the mean grid draw of every complete night in the window, with how many nights it rests on.
+- **Hour rankings:** the **5** highest and **5** lowest complete hours by house use (`RANKED_HOURS`), each with its date, weekday, clock hour, house use and grid draw. They need at least **1** complete day (`MIN_RANKED_HOUR_DAYS`); below that the card says "za mało dni: 0 z 1".
+- **Day rankings:** the **3** highest and **3** lowest complete days by house use (`RANKED_DAYS`), each with its date, weekday and total. They need at least **7** complete days (`MIN_RANKED_DAYS`); below that the card says "za mało dni: N z 7".
+- **Ties** go to the more recent hour or day, in both the highest and the lowest list.
+- **No data:** no hour in the window is "brak danych godzinowych"; rows without a single complete hour say so after the same words. A failure to load is the card's load error, as for every card.
+- **Daytime grid draw comes with a caveat.** The inverter's grid reading agrees with PGE at night, but from 4 August 2026 it over-reports net import at every hour, growing with house load (up to about 0.8 kWh an hour in the evening): most likely a current-sensor placement or polarity fault to check on site. The card therefore ranks by house use, and shows daytime grid draw with a note that it may be overstated until the sensor is checked (`context/changes/grid-export-mismatch/frame.md`).
 
 ## Today's recommendation
 
