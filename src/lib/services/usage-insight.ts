@@ -8,6 +8,7 @@ import { asNumber, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
 import { addDays, formatDayMonth, utcMsToDayKey, warsawParts } from "@/lib/format/warsaw-time";
 import { dailySeries, USAGE_SERIES_DAYS } from "@/lib/services/daily-series";
 import type { DailySeries } from "@/lib/services/daily-series";
+import { crossesSensorChange } from "@/lib/services/grid-sensor";
 
 // Enough history for a seasonal window a year back (365 days + 14 days + slack). The seasonal baseline therefore
 // only ever reaches one earlier year, even when older data exists.
@@ -50,7 +51,9 @@ export type UsageInsightView =
       purchase: { kwhLabel: string; deltaLabel: string };
       // The USAGE_SERIES_DAYS ending on the compared day, so the last point is the value shown beside it.
       series: { load: DailySeries; purchase: DailySeries };
-      baseline: { kind: "seasonal" | "fallback"; days: number; periodLabel: string };
+      // crossesSensorChange: the baseline starts before the grid sensor's direction changed and the compared day is
+      // on or after it, so the comparison mixes both sides of the change (grid-sensor.ts).
+      baseline: { kind: "seasonal" | "fallback"; days: number; periodLabel: string; crossesSensorChange: boolean };
       // null when the norm is zero: no range can be drawn around it.
       meaning: UsageMeaning | null;
     };
@@ -296,6 +299,8 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
 
   const loadNorm = median(baseline.map((d) => d.load));
   const purchaseNorm = median(baseline.map((d) => d.purchase).filter((p): p is number => p !== null));
+  // Day keys sort as dates; a baseline always holds at least MIN_FALLBACK_DAYS days.
+  const earliestBaselineDay = baselineDays.reduce((a, b) => (b < a ? b : a));
 
   return {
     kind: "insight",
@@ -319,6 +324,7 @@ export function toUsageInsightView(rows: DailyEnergyRow[], now: Date): UsageInsi
       kind: baselineKind,
       days: baseline.length,
       periodLabel: formatPeriod(baselineDays, today.slice(0, 4)).label,
+      crossesSensorChange: crossesSensorChange(earliestBaselineDay, compared),
     },
     meaning: meaningOf(comparedDay.load, loadNorm, compared),
   };

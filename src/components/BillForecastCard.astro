@@ -7,6 +7,7 @@ import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED } from "@/lib/format/status";
 import { cn } from "@/lib/utils";
 import type { BillForecastView } from "@/lib/services/bill-forecast";
+import { SENSOR_CAVEAT } from "@/lib/services/grid-sensor";
 
 interface Props {
   view: BillForecastView | null;
@@ -95,6 +96,10 @@ const checkLine =
           </p>
         )}
       </div>
+
+      <p class="text-muted-foreground text-xs" data-testid="bill-sensor-caveat">
+        {SENSOR_CAVEAT}
+      </p>
 
       <dl class="bg-muted grid grid-cols-1 gap-3 rounded-lg p-3 text-sm sm:grid-cols-2">
         <div class="flex flex-wrap items-baseline justify-between gap-x-3 sm:col-span-2">
