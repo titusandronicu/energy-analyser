@@ -171,7 +171,7 @@ There are no data migrations. Rollback is restoring the `.bak` copy of the scrip
 
 #### Manual
 
-- [ ] 1.5 Dry run on copies of the lab files: no "Wysoki import", no stale "Rozjazd", natural Polish
+- [x] 1.5 Dry run on copies of the lab files: no "Wysoki import", no stale "Rozjazd", natural Polish — 6e92c27
 
 ### Phase 2: Runbook and lab deploy
 
@@ -182,5 +182,5 @@ There are no data migrations. Rollback is restoring the `.bak` copy of the scrip
 
 #### Manual
 
-- [ ] 2.3 With the owner's OK, the script is deployed to docker-core and the next briefing shows the new findings
+- [x] 2.3 With the owner's OK, the script is deployed to docker-core and the next briefing shows the new findings — 6d23a94
 - [ ] 2.4 The dashboard's "Najważniejsze ustalenia" show the new findings after the next LLM refresh
