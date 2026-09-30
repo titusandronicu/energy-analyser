@@ -423,4 +423,4 @@ None. There is no schema or contract change, and rollback is reverting the PR. E
 - [x] 3.7 The dashboard looks and reads the same as before the shell extraction, now with the "Pulpit / Historia" nav — e044078
 - [x] 3.8 Local stack at 1440 px and 390 px: views render without clipping or horizontal scroll, navigation stops at 2026-07-16 and today, and missing, empty and today's days read correctly — e044078
 - [x] 3.9 Accessibility tree: one main and one h1, h2/h3 view headings, nav with aria-current, labelled chart images and named day links — e044078
-- [ ] 3.10 Production after deploy: September 2026 shows gaps and day-counted totals, 2026-09-27 shows its morning recommendation, and Q3 2026 shows July from the 16th
+- [x] 3.10 Production after deploy: September 2026 shows gaps and day-counted totals, 2026-09-27 shows its morning recommendation, and Q3 2026 shows July from the 16th — 5738f1f
