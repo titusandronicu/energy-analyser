@@ -285,11 +285,11 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Automated
 
-- [x] 2.1 Unit tests pass, covering the usage baseline's `crossesSensorChange` on fallback and seasonal baselines: `npm test`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Type checks pass: `npx astro check`
-- [x] 2.4 Production build succeeds: `npm run build`
-- [x] 2.5 The unstable night figure is gone: `git grep -n "10–20" -- src` prints nothing
+- [x] 2.1 Unit tests pass, covering the usage baseline's `crossesSensorChange` on fallback and seasonal baselines: `npm test` — bc9790a
+- [x] 2.2 Linting passes: `npm run lint` — bc9790a
+- [x] 2.3 Type checks pass: `npx astro check` — bc9790a
+- [x] 2.4 Production build succeeds: `npm run build` — bc9790a
+- [x] 2.5 The unstable night figure is gone: `git grep -n "10–20" -- src` prints nothing — bc9790a
 
 #### Manual
 
@@ -299,9 +299,9 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Automated
 
-- [ ] 3.1 Formatting passes: `npx prettier --check docs context/foundation/roadmap.md context/changes/inverter-grid-correction`
-- [ ] 3.2 The old claims are gone: `git grep -n -i "largely cancel\|grid import is overstated\|close to PGE at night\|10–20" -- docs context/foundation` prints nothing (the new decisions entry quotes none of these)
-- [ ] 3.3 The new rule is recorded: `git grep -n "grid-sensor.ts" -- docs/logic.md` prints at least one line
+- [x] 3.1 Formatting passes: `npx prettier --check docs context/foundation/roadmap.md context/changes/inverter-grid-correction`
+- [x] 3.2 The old claims are gone: `git grep -n -i "largely cancel\|grid import is overstated\|close to PGE at night\|10–20" -- docs context/foundation` prints nothing (the new decisions entry quotes none of these)
+- [x] 3.3 The new rule is recorded: `git grep -n "grid-sensor.ts" -- docs/logic.md` prints at least one line
 
 #### Manual
 
