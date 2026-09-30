@@ -5,6 +5,7 @@ import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED, type Status } from "@/lib/format/status";
+import { SENSOR_CAVEAT } from "@/lib/services/grid-sensor";
 import type { HourlyUsageView, RankedDay, RankedHour, Ranking } from "@/lib/services/hourly-usage";
 
 interface Props {
@@ -26,6 +27,10 @@ const badgeText =
     : completeDays === 0
       ? "Dane bez pełnego dnia"
       : `Pełne dane z ${String(completeDays)} ${completeDays === 1 ? "dnia" : "dni"}`;
+
+// Why the lists rank by house use and leave some hours out; it follows the sensor caveat in the footer.
+const RANKING_NOTE =
+  "Godziny i dni są uszeregowane według zużycia domu, a godziny, w których pobór z sieci wyraźnie przewyższa zużycie domu, nie trafiają na listę najniższych.";
 
 const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 
@@ -150,9 +155,7 @@ const dayLists: { title: string; items: RankedDay[] }[] = usage === null ? [] : 
       <div class="text-muted-foreground space-y-2 text-xs" data-testid="hourly-window">
         <p>{`Okres danych — ${usage.window.label}. ${usage.window.completenessRule}`}</p>
         <p class="border-hairline border-l-2 pl-3" data-testid="hourly-caveat">
-          Pobór z sieci pochodzi z falownika i do czasu sprawdzenia jego czujnika prądu jest zawyżony: w ciągu dnia
-          wyraźnie, w nocy zwykle o około 10–20% względem PGE. Dlatego godziny i dni są uszeregowane według zużycia
-          domu, a godziny, w których pobór z sieci wyraźnie przewyższa zużycie domu, nie trafiają na listę najniższych.
+          {`${SENSOR_CAVEAT} ${RANKING_NOTE}`}
         </p>
       </div>
 

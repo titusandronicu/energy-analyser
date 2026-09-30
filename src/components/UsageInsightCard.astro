@@ -7,6 +7,7 @@ import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { GLOSSARY } from "@/lib/format/glossary";
 import { LOAD_FAILED } from "@/lib/format/status";
+import { SENSOR_CAVEAT, SENSOR_CHANGE_BASELINE_NOTE } from "@/lib/services/grid-sensor";
 import type { UsageInsightView } from "@/lib/services/usage-insight";
 import { cn } from "@/lib/utils";
 
@@ -102,6 +103,15 @@ const rows =
           ostatnimi dniami.
         </p>
       )}
+
+      {view.baseline.crossesSensorChange && (
+        <p class="text-muted-foreground text-xs" data-testid="usage-baseline-sensor-note">
+          {SENSOR_CHANGE_BASELINE_NOTE}
+        </p>
+      )}
+      <p class="text-muted-foreground text-xs" data-testid="usage-sensor-caveat">
+        {SENSOR_CAVEAT}
+      </p>
 
       {view.meaning === null ? (
         <TermsExplained terms={["kwh", "norm", "grid_import"]} />

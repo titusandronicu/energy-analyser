@@ -40,7 +40,12 @@ describe("toUsageInsightView", () => {
       load: { kwhLabel: "12,3 kWh", deltaLabel: "+23%", status: "above" },
       purchase: { kwhLabel: "4,0 kWh", deltaLabel: "−20%" },
       series: { load: [10, 10, 10, 10, 10, 10, 12.34], purchase: [5, 5, 5, 5, 5, 5, 4] },
-      baseline: { kind: "fallback", days: 30, periodLabel: "30 dni: 25 sierpnia – 23 września" },
+      baseline: {
+        kind: "fallback",
+        days: 30,
+        periodLabel: "30 dni: 25 sierpnia – 23 września",
+        crossesSensorChange: false,
+      },
       meaning: {
         normKwhLabel: "10,0 kWh",
         band: "high",
@@ -272,7 +277,13 @@ describe("toUsageInsightView", () => {
 
   it("names the seasonal baseline days", () => {
     const rows = [row(YESTERDAY, 10), ...seasonalWindow("2025-09-24", 10, null, 20)];
-    expect(insight(rows).baseline).toEqual({ kind: "seasonal", days: 20, periodLabel: "20 dni: 10–29 września 2025" });
+    // A 2025 baseline against a 2026 day after the sensor change spans it.
+    expect(insight(rows).baseline).toEqual({
+      kind: "seasonal",
+      days: 20,
+      periodLabel: "20 dni: 10–29 września 2025",
+      crossesSensorChange: true,
+    });
   });
 
   it("names the fallback days actually used, gaps included", () => {
@@ -282,6 +293,7 @@ describe("toUsageInsightView", () => {
       kind: "fallback",
       days: 11,
       periodLabel: "11 dni: 23 sierpnia – 21 września",
+      crossesSensorChange: false,
     });
   });
 
@@ -412,6 +424,37 @@ describe("toUsageInsightView", () => {
     const v = insight([row(YESTERDAY, 2), ...daysBefore(YESTERDAY, 7, 0)]);
     expect(v.meaning).toBeNull();
     expect(v.status).toEqual({ tone: "good", label: "w normie" });
+  });
+});
+
+// The grid sensor's direction changed on 2026-08-04 (grid-sensor.ts); synthetic rows only.
+describe("baseline.crossesSensorChange", () => {
+  it("is true for a fallback baseline from before the change", () => {
+    const clock = new Date("2026-08-21T10:00:00Z"); // compared day 2026-08-20
+    const v = insight([row("2026-08-20", 10), ...daysBefore("2026-08-20", 30, 10)], clock);
+    expect(v.baseline).toMatchObject({ kind: "fallback", periodLabel: "30 dni: 21 lipca – 19 sierpnia" });
+    expect(v.baseline.crossesSensorChange).toBe(true);
+  });
+
+  it("is false for a fallback baseline wholly after the change", () => {
+    const clock = new Date("2026-09-30T10:00:00Z"); // compared day 2026-09-29
+    const v = insight([row("2026-09-29", 10), ...daysBefore("2026-09-29", 30, 10)], clock);
+    expect(v.baseline.kind).toBe("fallback");
+    expect(v.baseline.crossesSensorChange).toBe(false);
+  });
+
+  it("is true for a seasonal baseline in 2027 that spans the change", () => {
+    const clock = new Date("2027-08-11T10:00:00Z"); // compared day 2027-08-10; window 27 July – 24 August 2026
+    const v = insight([row("2027-08-10", 10), ...seasonalWindow("2026-08-10", 10)], clock);
+    expect(v.baseline).toMatchObject({ kind: "seasonal", days: 29 });
+    expect(v.baseline.crossesSensorChange).toBe(true);
+  });
+
+  it("is false for a seasonal baseline in 2027 wholly after the change", () => {
+    const clock = new Date("2027-09-21T10:00:00Z"); // compared day 2027-09-20; window 6 September – 4 October 2026
+    const v = insight([row("2027-09-20", 10), ...seasonalWindow("2026-09-20", 10)], clock);
+    expect(v.baseline).toMatchObject({ kind: "seasonal", days: 29 });
+    expect(v.baseline.crossesSensorChange).toBe(false);
   });
 });
 

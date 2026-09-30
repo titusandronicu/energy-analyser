@@ -83,6 +83,6 @@ export const GLOSSARY: Record<GlossaryTerm, { term: string; explanation: string 
   night_grid_draw: {
     term: "Pobór z sieci w nocy",
     explanation:
-      "Prąd kupiony z sieci między 22:00 a 6:00, kiedy panele nie pracują; liczony godzina po godzinie, tak jak rozlicza go PGE, więc prąd oddany do sieci w jednej godzinie nie pomniejsza poboru w innej.",
+      "Prąd kupiony z sieci między 22:00 a 6:00, kiedy panele nie pracują; liczony godzina po godzinie, w ten sam sposób, w jaki rozlicza go PGE, więc prąd oddany do sieci w jednej godzinie nie pomniejsza poboru w innej.",
   },
 };

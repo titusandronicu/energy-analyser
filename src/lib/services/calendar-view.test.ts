@@ -17,9 +17,6 @@ import {
   FORECAST_NOT_COLLECTED,
   FORECAST_TOO_FEW,
   forecastDaysText,
-  GRID_IMPORT_EXPLANATION,
-  GRID_IMPORT_OVERSTATED_FROM,
-  GRID_IMPORT_TERM,
   HISTORY_START_NOTE,
   INCOMPLETE_DAY,
   MARKERS_INCOMPLETE,
@@ -39,6 +36,7 @@ import {
   type DayCell,
   type MonthView,
 } from "./calendar-view";
+import * as calendarView from "./calendar-view";
 import { isCompleteDay } from "./complete-day";
 import { DAY_NO_USE, notRated, rowsNeededFrom } from "./period-rating";
 
@@ -561,30 +559,31 @@ describe("history start and display helpers", () => {
 
 describe("history copy", () => {
   it("states the rule values from their constants", () => {
-    expect(GRID_IMPORT_OVERSTATED_FROM).toBe("2026-08-04");
     expect(MONTH_CHART_NOTE).toBe(
-      "Dni bez danych zostają puste, a dzisiejszy dzień nie jest rysowany, bo jeszcze trwa. Prąd kupiony z sieci jest od 4 sierpnia zawyżony (zobacz „Co to znaczy?”).",
+      "Dni bez danych zostają puste, a dzisiejszy dzień nie jest rysowany, bo jeszcze trwa. Prąd kupiony z sieci i zużycie domu są przez całą historię niepewne (zobacz „Co to znaczy?”).",
     );
     expect(QUARTER_CHART_NOTE).toBe(
-      "Miesiąc z mniej niż 7 pełnymi dniami zostaje pusty. Prąd kupiony z sieci jest od 4 sierpnia zawyżony.",
+      "Miesiąc z mniej niż 7 pełnymi dniami zostaje pusty. Prąd kupiony z sieci i zużycie domu są przez całą historię niepewne.",
     );
     expect(TOO_FEW_EXPLANATION).toBe(
       "Gdy okres ma mniej niż 7 pełnych dni, sumy nie są pokazywane, bo mówiłyby więcej, niż wiadomo. Niedokończony miesiąc albo kwartał pokazuje to, co już jest, bez przeliczania na całość.",
-    );
-    expect(GRID_IMPORT_TERM).toBe("Prąd kupiony z sieci od 4 sierpnia");
-    expect(GRID_IMPORT_EXPLANATION).toBe(
-      "Od 4 sierpnia 2026 falownik pokazuje więcej prądu kupionego z sieci, niż naprawdę było, zwłaszcza w dzień. Najpewniej to sprawa czujnika prądu, do sprawdzenia na miejscu. Do tego czasu te liczby są zawyżone.",
     );
     expect(SELF_SUFFICIENCY_EXPLANATION).toBe(
       "Jaka część zużycia domu nie była kupiona z sieci, tylko przyszła z paneli albo z baterii. 100% to dzień bez prądu z sieci, 0% to dzień, w którym cały prąd był kupiony.",
     );
     expect(RATING_TERM).toBe("Ocena dnia i miesiąca");
     expect(RATING_EXPLANATION).toBe(
-      "Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród 14 dni przed nim. Norma potrzebuje co najmniej 7 takich dni, inaczej dzień nie jest oceniany. Więcej niż 10 punktów procentowych powyżej normy to dobry dzień, więcej niż 10 poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż 70% tego, co zwykle, ocena mówi „Mało słońca”. Zawyżony od 4 sierpnia prąd kupiony z sieci obniża samowystarczalność wszystkich dni podobnie, a dzień jest porównywany z dniami tuż przed nim, więc ocena mało się przez to zmienia. Dni, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika), są „Poza oceną”: nie są oceniane ani liczone do norm.",
+      "Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród 14 dni przed nim. Norma potrzebuje co najmniej 7 takich dni, inaczej dzień nie jest oceniany. Więcej niż 10 punktów procentowych powyżej normy to dobry dzień, więcej niż 10 poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż 70% tego, co zwykle, ocena mówi „Mało słońca”. 4 sierpnia 2026 zmienił się kierunek czujnika prądu falownika, więc dni od 3 do 17 sierpnia (3 sierpnia sam łączy obie strony), których norma sięgałaby sprzed tej zmiany, są „Poza oceną”, a norma nigdy nie łączy dni sprzed i po zmianie. Dni, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika), są „Poza oceną”: nie są oceniane ani liczone do norm.",
     );
     expect(FORECAST_EXPLANATION).toBe(
       "Porównanie prognozy produkcji z tym, co panele naprawdę dały. Prognozy zapisujemy od 27 września 2026, więc wcześniejsze dni nie mają porównania.",
     );
+  });
+
+  it("keeps no copy saying grid import is overstated from a date", () => {
+    const texts = Object.values(calendarView).filter((value): value is string => typeof value === "string");
+    expect(texts.length).toBeGreaterThan(0);
+    for (const text of texts) expect(text).not.toContain("zawyżony od");
   });
 
   it("capitalizes a label and ends a sentence with one full stop", () => {
