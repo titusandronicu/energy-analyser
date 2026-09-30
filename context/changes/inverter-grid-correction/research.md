@@ -137,3 +137,10 @@ An hourly comparison of PGE's meter data with the inverter (16 July – 31 Augus
 3. Is the fit stable enough to apply? It rests on import-only hours of 6.5 weeks; R² 0.90 after the flip; export hours were not fitted.
 4. May PGE-derived figures (not raw rows) be shown in the app? This is the parked privacy decision (`roadmap.md:451`).
 5. After the physical fix, what happens to the history before it — kept raw with a note, corrected, or replaced by PGE?
+
+## Follow-up (2026-09-30): owner's decisions
+
+- **Open question 1, answered:** house use is derived from the same sensor. From 2026-08-04 the inverter's power balance `pv + grid + battery − load` closes on every sample, with a +130–190 W residual that is losses. True night load (PGE net + inverter output) stays at about 0.7–0.8 kW, while the inverter's load swings between 0.48 and 1.79 kW. Every house-use figure, and every rating denominator, carries the same caveat as grid import.
+- **Option A is chosen.** One caveat for the whole history, with 4 August kept only as the day the sensor's direction changed. Days whose 14-day rating norm would span the change (2026-08-04 – 08-17) read "Poza oceną", and norms never mix days from both sides of it.
+- **Option D** (the installer) runs in parallel outside the app. **Option B** is rejected. **Option C** becomes a separate later change.
+- **Open question 5** (history after the fix): it is kept with the caveat; replacing it with PGE data is option C's job.
