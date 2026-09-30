@@ -22,6 +22,7 @@ import {
   selfSufficiency,
   type PeriodRating,
 } from "./period-rating";
+import { SENSOR_CHANGE_RATING_BASIS } from "./grid-sensor";
 
 // All data here is synthetic. The repository is public, so no test uses the owner's real figures: the production
 // history's shape is copied (which days are missing, empty or inconsistent), and every value is invented, so no printed
@@ -84,6 +85,14 @@ function rated(rating: PeriodRating) {
 function steadyDays(first: string, count: number, share: number, pv = 20): DailyEnergyRow[] {
   return Array.from({ length: count }, (_, i) => row(addDays(first, i), pv, 20, (20 * (100 - share)) / 100));
 }
+
+// A day in the sensor-change window (08-03 – 08-17).
+const SENSOR_RATING: PeriodRating = {
+  kind: "inconsistent",
+  tone: "insufficient",
+  word: INCONSISTENT_WORD,
+  basis: SENSOR_CHANGE_RATING_BASIS,
+};
 
 describe("constants", () => {
   it("uses a 14-day window, 7 days minimum, ±10 points and 70% for low sun", () => {
@@ -178,13 +187,10 @@ describe("rateDay on the production-shaped history", () => {
     );
   });
 
-  it("leaves the inconsistent early days out of the norm", () => {
-    // 07-21 – 08-03 holds eight rows, but five have import above use: only 07-26, 07-29 and 08-01 count.
-    expect(rateDay("2026-08-03", FIXTURE, TODAY)).toMatchObject({ kind: "inconsistent" });
-    expect(rateDay("2026-08-04", [...FIXTURE, row("2026-08-04", 20, 20, 10)], TODAY)).toMatchObject({
-      kind: "insufficient",
-      word: "Za mało danych: 3 z 7",
-    });
+  it("puts the early days in the sensor-change window under the sensor basis", () => {
+    // 08-03 has import above use too, but the sensor-change window wins; 08-04 would have a norm of only 3 days.
+    expect(rateDay("2026-08-03", FIXTURE, TODAY)).toEqual(SENSOR_RATING);
+    expect(rateDay("2026-08-04", [...FIXTURE, row("2026-08-04", 20, 20, 10)], TODAY)).toEqual(SENSOR_RATING);
   });
 
   it("does not rate missing or incomplete days", () => {
@@ -277,6 +283,40 @@ describe("rateDay", () => {
     expect(rating.days).toBe(14);
     expect(rating.periodLabel).toBe("14 dni: 20 grudnia 2026 – 2 stycznia 2027");
     expect(rating.basis).toContain("Norma: mediana z 14 dni (20 grudnia 2026 – 2 stycznia 2027), ostatnie dni");
+  });
+});
+
+describe("the sensor-change window", () => {
+  // Steady 50% days from the start of the history to the end of August: every day has a full norm.
+  const history = steadyDays("2026-07-16", 47, 50);
+
+  it("reads Poza oceną with the sensor basis from 08-03 to 08-17, even with a full norm", () => {
+    for (const day of ["2026-08-03", "2026-08-04", "2026-08-10", "2026-08-17"]) {
+      expect(rateDay(day, history, TODAY)).toEqual(SENSOR_RATING);
+    }
+  });
+
+  it("rates 08-02 and 08-18 normally, 08-18 on post-change days only", () => {
+    expect(rated(rateDay("2026-08-02", history, TODAY)).periodLabel).toBe("14 dni: 19 lipca – 1 sierpnia");
+    const after = rated(rateDay("2026-08-18", history, TODAY));
+    expect(after.periodLabel).toBe("14 dni: 4–17 sierpnia");
+    expect(after.band).toBe("neutral");
+  });
+
+  it("names the sensor rather than the import above use on a window day", () => {
+    const rows = history.map((r) => (r.day === "2026-08-10" ? row("2026-08-10", 20, 10, 15) : r));
+    expect(rateDay("2026-08-10", rows, TODAY)).toEqual(SENSOR_RATING);
+  });
+
+  it("rates August from 18 August only when its first days lack a pre-change norm", () => {
+    // As in production, the history before the change is short: from 07-27, 08-01 and 08-02 have under 7 norm days.
+    const short = history.filter((r) => r.day >= "2026-07-27");
+    expect(rated(rateMonth("2026-08", short, TODAY)).periodLabel).toBe("14 dni: 18–31 sierpnia");
+    // Without totals on 08-31 (as in production), the rated days are 18–30 August.
+    const withoutLast = short.map((r) => (r.day === "2026-08-31" ? row("2026-08-31", null, null, null) : r));
+    expect(rated(rateMonth("2026-08", withoutLast, TODAY)).periodLabel).toBe("13 dni: 18–30 sierpnia");
+    // With a full pre-change norm, 08-01 and 08-02 are rated too: their value and norm both lie before the change.
+    expect(rated(rateMonth("2026-08", history, TODAY)).days).toBe(16);
   });
 });
 

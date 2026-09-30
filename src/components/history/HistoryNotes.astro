@@ -2,14 +2,13 @@
 import { GLOSSARY, type GlossaryTerm } from "@/lib/format/glossary";
 import {
   FORECAST_EXPLANATION,
-  GRID_IMPORT_EXPLANATION,
-  GRID_IMPORT_TERM,
   RATING_EXPLANATION,
   RATING_TERM,
   SELF_SUFFICIENCY_EXPLANATION,
   SELF_SUFFICIENCY_TERM,
   TOO_FEW_EXPLANATION,
 } from "@/lib/services/calendar-view";
+import { SENSOR_EXPLANATION, SENSOR_TERM } from "@/lib/services/grid-sensor";
 
 // The history page's "Co to znaczy?": the terms its figures use, and why some figures are missing or shown with a
 // caveat. A native <details>, so it works without a script; py-1 keeps the summary's tap target at least 24 px tall.
@@ -26,11 +25,11 @@ const NOTES = [
       "Dni, z których aplikacja nie dostała danych albo dostała niepełne, zostają puste: na wykresie nie mają słupka, w sumach się nie liczą. Nie wpisujemy za nie zera ani szacunku.",
   },
   { term: "Za mało danych", explanation: TOO_FEW_EXPLANATION },
-  { term: GRID_IMPORT_TERM, explanation: GRID_IMPORT_EXPLANATION },
+  { term: SENSOR_TERM, explanation: SENSOR_EXPLANATION },
   {
     term: "Dlaczego nie ma prądu sprzedanego do sieci",
     explanation:
-      "Licznik falownika pokazuje za mało prądu oddanego do sieci, a od połowy sierpnia pokazuje zero, choć PGE zapisało prawdziwy zwrot. Dlatego kalendarz go nie pokazuje.",
+      "Ten sam czujnik falownika pokazuje za mało prądu oddanego do sieci, a od połowy sierpnia prawie zero, choć PGE zapisało prawdziwy zwrot. Dlatego kalendarz go nie pokazuje.",
   },
   { term: "Prognoza a rzeczywistość", explanation: FORECAST_EXPLANATION },
   { term: SELF_SUFFICIENCY_TERM, explanation: SELF_SUFFICIENCY_EXPLANATION },

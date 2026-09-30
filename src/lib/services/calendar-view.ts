@@ -15,9 +15,10 @@ import type { MonthGroup } from "@/lib/bars";
 import { formatPeriod } from "@/lib/format/period";
 import type { Status } from "@/lib/format/status";
 import { kwhLabel } from "@/lib/format/values";
-import { formatDayMonth, formatMonth, warsawHour, warsawParts } from "@/lib/format/warsaw-time";
+import { addDays, formatDayMonth, formatMonth, warsawHour, warsawParts } from "@/lib/format/warsaw-time";
 import { isCompleteDay, kwh } from "@/lib/services/complete-day";
 import { dailySeries, type DailySeries } from "@/lib/services/daily-series";
+import { SENSOR_CHANGE_DAY, SENSOR_DIRECTION_CHANGED_ON } from "@/lib/services/grid-sensor";
 import { MIN_RANKED_DAYS } from "@/lib/services/hourly-usage";
 import {
   DAY_NO_USE,
@@ -53,32 +54,32 @@ export const BEFORE_HISTORY = "brak danych";
 // still covers the whole calendar period.
 export const HISTORY_START_NOTE = `Dane od ${formatDayMonth(HISTORY_START)} ${HISTORY_START.slice(0, 4)} — wcześniejszych dni aplikacja nie ma`;
 
-// The first Warsaw day the inverter over-reports grid import (most likely a current-sensor fault, docs/logic.md).
-export const GRID_IMPORT_OVERSTATED_FROM = "2026-08-04";
-
 // "4 sierpnia 2026".
 function dayMonthYear(day: string): string {
   return `${formatDayMonth(day)} ${day.slice(0, 4)}`;
 }
 
-const GRID_IMPORT_OVERSTATED = `Prąd kupiony z sieci jest od ${formatDayMonth(GRID_IMPORT_OVERSTATED_FROM)} zawyżony`;
+// The chart captions' pointer to the sensor caveat (grid-sensor.ts), which covers the whole history.
+const SENSOR_UNCERTAIN = "Prąd kupiony z sieci i zużycie domu są przez całą historię niepewne";
+
+// The last day whose rating norm would still reach a day before the sensor's direction changed ("17 sierpnia"); the
+// rating window's days run from SENSOR_CHANGE_DAY, both in August, so the first is said as its day number only.
+const SENSOR_WINDOW_LAST = addDays(SENSOR_DIRECTION_CHANGED_ON, RATING_WINDOW_DAYS - 1);
 
 // The caption under the month's daily charts.
-export const MONTH_CHART_NOTE = `Dni bez danych zostają puste, a dzisiejszy dzień nie jest rysowany, bo jeszcze trwa. ${GRID_IMPORT_OVERSTATED} (zobacz „Co to znaczy?”).`;
+export const MONTH_CHART_NOTE = `Dni bez danych zostają puste, a dzisiejszy dzień nie jest rysowany, bo jeszcze trwa. ${SENSOR_UNCERTAIN} (zobacz „Co to znaczy?”).`;
 // The caption under the quarter's grouped chart.
-export const QUARTER_CHART_NOTE = `Miesiąc z mniej niż ${String(MIN_RANKED_DAYS)} pełnymi dniami zostaje pusty. ${GRID_IMPORT_OVERSTATED}.`;
+export const QUARTER_CHART_NOTE = `Miesiąc z mniej niż ${String(MIN_RANKED_DAYS)} pełnymi dniami zostaje pusty. ${SENSOR_UNCERTAIN}.`;
 
 // The "Co to znaczy?" entries that state a rule's value.
 export const TOO_FEW_EXPLANATION = `Gdy okres ma mniej niż ${String(MIN_RANKED_DAYS)} pełnych dni, sumy nie są pokazywane, bo mówiłyby więcej, niż wiadomo. Niedokończony miesiąc albo kwartał pokazuje to, co już jest, bez przeliczania na całość.`;
-export const GRID_IMPORT_TERM = `Prąd kupiony z sieci od ${formatDayMonth(GRID_IMPORT_OVERSTATED_FROM)}`;
-export const GRID_IMPORT_EXPLANATION = `Od ${dayMonthYear(GRID_IMPORT_OVERSTATED_FROM)} falownik pokazuje więcej prądu kupionego z sieci, niż naprawdę było, zwłaszcza w dzień. Najpewniej to sprawa czujnika prądu, do sprawdzenia na miejscu. Do tego czasu te liczby są zawyżone.`;
 export const FORECAST_EXPLANATION = `Porównanie prognozy produkcji z tym, co panele naprawdę dały. Prognozy zapisujemy od ${dayMonthYear(FORECAST_HISTORY_START)}, więc wcześniejsze dni nie mają porównania.`;
 // The "Co to znaczy?" entries for the day and month ratings (S-17), their numbers taken from the rating constants.
 export const SELF_SUFFICIENCY_TERM = "Samowystarczalność";
 export const SELF_SUFFICIENCY_EXPLANATION =
   "Jaka część zużycia domu nie była kupiona z sieci, tylko przyszła z paneli albo z baterii. 100% to dzień bez prądu z sieci, 0% to dzień, w którym cały prąd był kupiony.";
 export const RATING_TERM = "Ocena dnia i miesiąca";
-export const RATING_EXPLANATION = `Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród ${String(RATING_WINDOW_DAYS)} dni przed nim. Norma potrzebuje co najmniej ${String(RATING_MIN_DAYS)} takich dni, inaczej dzień nie jest oceniany. Więcej niż ${String(RATING_THRESHOLD_POINTS)} punktów procentowych powyżej normy to dobry dzień, więcej niż ${String(RATING_THRESHOLD_POINTS)} poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż ${String(Math.round(LOW_SUN_SHARE * 100))}% tego, co zwykle, ocena mówi „Mało słońca”. Zawyżony od ${formatDayMonth(GRID_IMPORT_OVERSTATED_FROM)} prąd kupiony z sieci obniża samowystarczalność wszystkich dni podobnie, a dzień jest porównywany z dniami tuż przed nim, więc ocena mało się przez to zmienia. Dni, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika), są „Poza oceną”: nie są oceniane ani liczone do norm.`;
+export const RATING_EXPLANATION = `Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród ${String(RATING_WINDOW_DAYS)} dni przed nim. Norma potrzebuje co najmniej ${String(RATING_MIN_DAYS)} takich dni, inaczej dzień nie jest oceniany. Więcej niż ${String(RATING_THRESHOLD_POINTS)} punktów procentowych powyżej normy to dobry dzień, więcej niż ${String(RATING_THRESHOLD_POINTS)} poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż ${String(Math.round(LOW_SUN_SHARE * 100))}% tego, co zwykle, ocena mówi „Mało słońca”. ${dayMonthYear(SENSOR_DIRECTION_CHANGED_ON)} zmienił się kierunek czujnika prądu falownika, więc dni od ${String(Number(SENSOR_CHANGE_DAY.slice(8)))} do ${formatDayMonth(SENSOR_WINDOW_LAST)} (${formatDayMonth(SENSOR_CHANGE_DAY)} sam łączy obie strony), których norma sięgałaby sprzed tej zmiany, są „Poza oceną”, a norma nigdy nie łączy dni sprzed i po zmianie. Dni, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika), są „Poza oceną”: nie są oceniane ani liczone do norm.`;
 
 // A running month's rating slot still says why it is not rated, under the grey "Bez oceny" badge.
 export const MONTH_NOT_RATED = `${MONTH_RUNNING} — oceniamy tylko zakończone miesiące`;

@@ -6,6 +6,7 @@ import type { StatusTone } from "@/lib/format/status";
 import { kwhLabel, oneDecimal } from "@/lib/format/values";
 import { addDays } from "@/lib/format/warsaw-time";
 import { isCompleteDay, kwh } from "@/lib/services/complete-day";
+import { crossesSensorChange, SENSOR_CHANGE_DAY, SENSOR_CHANGE_RATING_BASIS } from "@/lib/services/grid-sensor";
 import { MIN_RANKED_DAYS } from "@/lib/services/hourly-usage";
 import { median } from "@/lib/services/usage-insight";
 
@@ -84,7 +85,8 @@ export type PeriodRating =
     }
   // Too few qualifying days: "Za mało danych: 5 z 7" (a month with none: MONTH_NO_DATA).
   | { kind: "insufficient"; tone: StatusTone; word: string; days: number; needed: number; basis: string }
-  // The day's grid import exceeds its use: "Poza oceną". It is not rated and never enters a norm.
+  // "Poza oceną": the day's grid import exceeds its use (it is not rated and never enters a norm), or the day is in the
+  // sensor-change window, SENSOR_CHANGE_DAY – 08-17 (it is not rated, but a consistent one still counts in later norms).
   | { kind: "inconsistent"; tone: StatusTone; word: string; basis: string }
   // Not rated at all (today, the future, incomplete days, the current month): "Bez oceny", and the reason says why.
   | { kind: "none"; tone: StatusTone; word: string; reason: string; basis: string };
@@ -154,6 +156,11 @@ function rateDayIn(day: string, rows: Map<string, DailyEnergyRow>, today: string
   if (!isCompleteDay(row, today)) return notRated(DAY_INCOMPLETE);
   const value = selfSufficiency(row, today);
   if (value === null) return notRated(DAY_NO_USE);
+  // The mixed change day, and every day whose norm window would reach before the sensor's direction changed: its value
+  // and its norm would not rest on one side of the change. Checked before import above use, so it names the sensor.
+  if (day === SENSOR_CHANGE_DAY || crossesSensorChange(addDays(day, -RATING_WINDOW_DAYS), day)) {
+    return { kind: "inconsistent", tone: "insufficient", word: INCONSISTENT_WORD, basis: SENSOR_CHANGE_RATING_BASIS };
+  }
   if (value === "inconsistent") {
     return {
       kind: "inconsistent",
