@@ -124,7 +124,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Parallel with:** F-04, F-05, S-14, S-15
 - **Blockers:** —
 - **Unknowns:** — (resolved 2026-09-26: the lab's `energy-history.jsonl` starts on 2026-07-16.)
-- **Risk:** Small, homelab-2 only. The push script's `--days` counts back from today and stops at 62, and 2026-07-16 is 72 days back, so the script needs a date-range option (e.g. `--from 2026-07-16 --to 2026-07-26`). The app contract caps a push at 62 entries but not their age, so it does not change. The push must stay idempotent with the regular 35-day push; incomplete days stay empty. **Time-bound:** the lab's history file keeps 25,920 rows (90 days at a 5-minute cadence), and the oldest rows start dropping around 2026-10-28, so F-03 must run before then.
+- **Risk:** Small, homelab-2 only. The push script's `--days` counts back from today and stops at 62, and 2026-07-16 was 76 days back, so the script needed a date-range option (`--from 2026-07-16 --to 2026-07-25`; added and pushed once on 2026-09-30). The app contract caps a push at 62 entries but not their age, so it does not change. The push must stay idempotent with the regular 35-day push; incomplete days stay empty. **Time-bound:** the lab's history file keeps 25,920 rows (90 days at a 5-minute cadence), and the oldest rows start dropping about 2026-10-30, so F-03 had to run before then.
 - **Status:** in-progress
 
 ### F-04: Lab period summaries

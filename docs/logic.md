@@ -83,7 +83,7 @@ The app compares the most recent complete day's consumption with a baseline and 
 
 Why the median: the mean was a default, never a decision. On the real data (2026-08-26 to 2026-09-25) the two disagreed on 3 of 19 days, each time because a few inconsistent early rows (2026-07-26 to 2026-08-03) pulled the mean down; one unusual day moves a median far less. Why the typical house stays out of the norm: this house used about 36 kWh a day in September 2026 against about 13 kWh for the estimate, so blending the estimate in would mark ordinary days as above the norm. The norm corrects itself over time from the house's own days: the 30-day window moves daily, and the seasonal baseline takes over once a year of history exists.
 
-Why seasonal: a flat recent average mislabels normal seasonal change (winter heating, summer air conditioning) as anomalies. The app's history starts on 2026-07-26 and the lab's on 2026-07-16 (the backfill, roadmap F-03, adds those ten days), so the fallback is what runs until about July 2027, when a year of history exists.
+Why seasonal: a flat recent average mislabels normal seasonal change (winter heating, summer air conditioning) as anomalies. The app's history starts on 2026-07-16, like the lab's (the F-03 backfill added 2026-07-16 to 2026-07-25 on 2026-09-30; 2026-07-20 has no totals), so the fallback is what runs until about July 2027, when a year of history exists.
 
 ## Godziny zużycia
 
@@ -148,6 +148,7 @@ The badge reads "<word> · <detail>", e.g. "Warto sprawdzić · dane sprzed 40 m
 
 - Every push carries up to the last **35 days** of per-day totals (PV production, consumption, grid import, grid export, PV forecast); the contract allows at most **62**. Today's entry is partial and replaced by each later push.
 - A past day counts only when its counters were read correctly (`counters_ok`) and the data covers the day to its end; incomplete days are sent with empty totals rather than wrong ones.
+- The earliest days do not always balance. The early PV and export counters are off, so on 2026-07-18, 07-21, 07-23 and 07-24 PV + import and house use + export differ by 8–32 kWh, and stored days of the same period (such as 07-26 and 07-27) show the same gap. They are kept as sent, under the rules above (owner's decision, 2026-09-30, `history-backfill`).
 - The day's PV forecast is the first forecast reading at or after **06:00** local time.
 - Forecast source since 2026-09-26: **Solcast** (forecast plus low/high estimates, recorded in the lab's history). Forecast.Solar is kept only for comparison; it overshot real production on this flat array. Its today/tomorrow values are recorded in the lab's history once homelab-2 #28 is installed, so the two sources can be compared.
 
