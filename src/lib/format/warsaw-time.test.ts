@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatWeekday, HOUR_MS, warsawDayHours, warsawHour } from "./warsaw-time";
+import { dayMonthYear, formatWeekday, HOUR_MS, warsawDayHours, warsawHour } from "./warsaw-time";
 
 describe("warsawHour", () => {
   it("labels an hour by its Warsaw date and clock hour in summer (UTC+2)", () => {
@@ -57,5 +57,12 @@ describe("formatWeekday", () => {
   it("names the weekday in Polish", () => {
     expect(formatWeekday("2026-08-01")).toBe("sobota");
     expect(formatWeekday("2026-08-03")).toBe("poniedziałek");
+  });
+});
+
+describe("dayMonthYear", () => {
+  it("names the day, the genitive month and the year", () => {
+    expect(dayMonthYear("2026-08-04")).toBe("4 sierpnia 2026");
+    expect(dayMonthYear("2027-01-02")).toBe("2 stycznia 2027");
   });
 });

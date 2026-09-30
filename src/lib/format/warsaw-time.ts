@@ -55,6 +55,11 @@ export function formatDayMonth(dayKey: string): string {
   return dayMonth.format(new Date(dayKeyToUtcMs(dayKey)));
 }
 
+// "4 sierpnia 2026" for "2026-08-04" (formatDayMonth plus the year).
+export function dayMonthYear(dayKey: string): string {
+  return `${formatDayMonth(dayKey)} ${dayKey.slice(0, 4)}`;
+}
+
 const monthYear = new Intl.DateTimeFormat("pl-PL", { timeZone: "UTC", month: "long", year: "numeric" });
 
 // "wrzesień 2026" for the month key "2026-09" (nominative month, so it reads after "za" or "na").

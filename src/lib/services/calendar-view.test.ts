@@ -573,7 +573,7 @@ describe("history copy", () => {
     );
     expect(RATING_TERM).toBe("Ocena dnia i miesiąca");
     expect(RATING_EXPLANATION).toBe(
-      "Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród 14 dni przed nim. Norma potrzebuje co najmniej 7 takich dni, inaczej dzień nie jest oceniany. Więcej niż 10 punktów procentowych powyżej normy to dobry dzień, więcej niż 10 poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż 70% tego, co zwykle, ocena mówi „Mało słońca”. 4 sierpnia 2026 zmienił się kierunek czujnika prądu falownika, więc dni od 3 do 17 sierpnia (3 sierpnia sam łączy obie strony), których norma sięgałaby sprzed tej zmiany, są „Poza oceną”, a norma nigdy nie łączy dni sprzed i po zmianie. Dni, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika), są „Poza oceną”: nie są oceniane ani liczone do norm.",
+      "Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród 14 dni przed nim. Norma potrzebuje co najmniej 7 takich dni, inaczej dzień nie jest oceniany. Więcej niż 10 punktów procentowych powyżej normy to dobry dzień, więcej niż 10 poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż 70% tego, co zwykle, ocena mówi „Mało słońca”. Po południu 3 sierpnia 2026 zmienił się kierunek czujnika prądu falownika, więc dni od 3 do 17 sierpnia (3 sierpnia sam łączy obie strony), których norma sięgałaby sprzed tej zmiany, są „Poza oceną”, a norma nigdy nie łączy dni sprzed i po zmianie. Miesiąc zmiany (sierpień 2026) jest oceniany tylko z dni od 4 sierpnia. Dni z okna zmiany, choć „Poza oceną”, liczą się do późniejszych norm. Inaczej jest z dniami, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika): są „Poza oceną” i nie są ani oceniane, ani liczone do norm.",
     );
     expect(FORECAST_EXPLANATION).toBe(
       "Porównanie prognozy produkcji z tym, co panele naprawdę dały. Prognozy zapisujemy od 27 września 2026, więc wcześniejsze dni nie mają porównania.",
@@ -583,7 +583,7 @@ describe("history copy", () => {
   it("keeps no copy saying grid import is overstated from a date", () => {
     const texts = Object.values(calendarView).filter((value): value is string => typeof value === "string");
     expect(texts.length).toBeGreaterThan(0);
-    for (const text of texts) expect(text).not.toContain("zawyżony od");
+    for (const text of texts) expect(text).not.toMatch(/zawyżon\w* od/i);
   });
 
   it("capitalizes a label and ends a sentence with one full stop", () => {

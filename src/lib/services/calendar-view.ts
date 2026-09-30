@@ -15,7 +15,7 @@ import type { MonthGroup } from "@/lib/bars";
 import { formatPeriod } from "@/lib/format/period";
 import type { Status } from "@/lib/format/status";
 import { kwhLabel } from "@/lib/format/values";
-import { addDays, formatDayMonth, formatMonth, warsawHour, warsawParts } from "@/lib/format/warsaw-time";
+import { addDays, dayMonthYear, formatDayMonth, formatMonth, warsawHour, warsawParts } from "@/lib/format/warsaw-time";
 import { isCompleteDay, kwh } from "@/lib/services/complete-day";
 import { dailySeries, type DailySeries } from "@/lib/services/daily-series";
 import { SENSOR_CHANGE_DAY, SENSOR_DIRECTION_CHANGED_ON } from "@/lib/services/grid-sensor";
@@ -54,11 +54,6 @@ export const BEFORE_HISTORY = "brak danych";
 // still covers the whole calendar period.
 export const HISTORY_START_NOTE = `Dane od ${formatDayMonth(HISTORY_START)} ${HISTORY_START.slice(0, 4)} — wcześniejszych dni aplikacja nie ma`;
 
-// "4 sierpnia 2026".
-function dayMonthYear(day: string): string {
-  return `${formatDayMonth(day)} ${day.slice(0, 4)}`;
-}
-
 // The chart captions' pointer to the sensor caveat (grid-sensor.ts), which covers the whole history.
 const SENSOR_UNCERTAIN = "Prąd kupiony z sieci i zużycie domu są przez całą historię niepewne";
 
@@ -79,7 +74,7 @@ export const SELF_SUFFICIENCY_TERM = "Samowystarczalność";
 export const SELF_SUFFICIENCY_EXPLANATION =
   "Jaka część zużycia domu nie była kupiona z sieci, tylko przyszła z paneli albo z baterii. 100% to dzień bez prądu z sieci, 0% to dzień, w którym cały prąd był kupiony.";
 export const RATING_TERM = "Ocena dnia i miesiąca";
-export const RATING_EXPLANATION = `Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród ${String(RATING_WINDOW_DAYS)} dni przed nim. Norma potrzebuje co najmniej ${String(RATING_MIN_DAYS)} takich dni, inaczej dzień nie jest oceniany. Więcej niż ${String(RATING_THRESHOLD_POINTS)} punktów procentowych powyżej normy to dobry dzień, więcej niż ${String(RATING_THRESHOLD_POINTS)} poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż ${String(Math.round(LOW_SUN_SHARE * 100))}% tego, co zwykle, ocena mówi „Mało słońca”. ${dayMonthYear(SENSOR_DIRECTION_CHANGED_ON)} zmienił się kierunek czujnika prądu falownika, więc dni od ${String(Number(SENSOR_CHANGE_DAY.slice(8)))} do ${formatDayMonth(SENSOR_WINDOW_LAST)} (${formatDayMonth(SENSOR_CHANGE_DAY)} sam łączy obie strony), których norma sięgałaby sprzed tej zmiany, są „Poza oceną”, a norma nigdy nie łączy dni sprzed i po zmianie. Dni, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika), są „Poza oceną”: nie są oceniane ani liczone do norm.`;
+export const RATING_EXPLANATION = `Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród ${String(RATING_WINDOW_DAYS)} dni przed nim. Norma potrzebuje co najmniej ${String(RATING_MIN_DAYS)} takich dni, inaczej dzień nie jest oceniany. Więcej niż ${String(RATING_THRESHOLD_POINTS)} punktów procentowych powyżej normy to dobry dzień, więcej niż ${String(RATING_THRESHOLD_POINTS)} poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż ${String(Math.round(LOW_SUN_SHARE * 100))}% tego, co zwykle, ocena mówi „Mało słońca”. Po południu ${dayMonthYear(SENSOR_CHANGE_DAY)} zmienił się kierunek czujnika prądu falownika, więc dni od ${String(Number(SENSOR_CHANGE_DAY.slice(8)))} do ${formatDayMonth(SENSOR_WINDOW_LAST)} (${formatDayMonth(SENSOR_CHANGE_DAY)} sam łączy obie strony), których norma sięgałaby sprzed tej zmiany, są „Poza oceną”, a norma nigdy nie łączy dni sprzed i po zmianie. Miesiąc zmiany (${formatMonth(SENSOR_CHANGE_DAY.slice(0, 7))}) jest oceniany tylko z dni od ${formatDayMonth(SENSOR_DIRECTION_CHANGED_ON)}. Dni z okna zmiany, choć „Poza oceną”, liczą się do późniejszych norm. Inaczej jest z dniami, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika): są „Poza oceną” i nie są ani oceniane, ani liczone do norm.`;
 
 // A running month's rating slot still says why it is not rated, under the grey "Bez oceny" badge.
 export const MONTH_NOT_RATED = `${MONTH_RUNNING} — oceniamy tylko zakończone miesiące`;
