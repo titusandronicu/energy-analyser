@@ -260,4 +260,4 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 - [x] 2.6 Local stack: 09-11 Słaby dzień with basis and Mało słońca, 09-12 Przeciętny dzień, 09-29 za mało danych 5 z 7, 07-28 dane niespójne, August rated, the current month not rated yet and September (once finished) rated — e96794e
 - [x] 2.7 At 375 px the badge and basis wrap without horizontal scroll and the badge words are read by a screen reader — e96794e
-- [ ] 2.8 Production after deploy: the same four days and August read as above
+- [x] 2.8 Production after deploy: the same four days and August read as above — b9a7829
