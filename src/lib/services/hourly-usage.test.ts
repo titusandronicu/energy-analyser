@@ -4,6 +4,7 @@ import type { HourlyEnergyRow } from "@/types";
 import { addDays, warsawDayHours } from "@/lib/format/warsaw-time";
 import {
   INCOMPLETE_NIGHTS,
+  isSuspectLowHour,
   loadHourlyEnergy,
   MIN_HOUR_SAMPLES,
   MIN_RANKED_DAYS,
@@ -247,6 +248,18 @@ describe("toHourlyUsageView", () => {
         reason: "za mało danych: brak pełnego dnia",
         completeDays: 0,
       });
+    });
+
+    it("leaves an hour that drew far more from the grid than the house used out of the lowest list only", () => {
+      // 03:00: 0.2 kWh of house use against 1.9 kWh from the grid, the shape seen in production on 2026-09-30.
+      const v = usage(day("2026-08-09", (h) => (h === 3 ? { load: 0.2, net: 1.9 } : h === 4 ? { load: 0.3 } : {})));
+      if (v.hours.kind !== "ranked") throw new Error("expected ranked hours");
+      const lowest = v.hours.lowest.map((h) => h.hourLabel);
+      expect(lowest).not.toContain("03:00–04:00");
+      expect(lowest[0]).toBe("04:00–05:00");
+      // A margin of exactly 0.5 kWh is not suspect.
+      expect(isSuspectLowHour({ loadKwh: 1, gridDrawKwh: 1.5 })).toBe(false);
+      expect(isSuspectLowHour({ loadKwh: 1, gridDrawKwh: 1.51 })).toBe(true);
     });
 
     it("shows the hour's grid draw beside its house use", () => {

@@ -150,8 +150,9 @@ const dayLists: { title: string; items: RankedDay[] }[] = usage === null ? [] : 
       <div class="text-muted-foreground space-y-2 text-xs" data-testid="hourly-window">
         <p>{`Okres danych — ${usage.window.label}. ${usage.window.completenessRule}`}</p>
         <p class="border-hairline border-l-2 pl-3" data-testid="hourly-caveat">
-          Pobór z sieci w ciągu dnia może być zawyżony do czasu sprawdzenia czujnika prądu przy falowniku. Nocne
-          wartości zgadzają się z danymi z PGE, dlatego godziny i dni są uszeregowane według zużycia domu.
+          Pobór z sieci pochodzi z falownika i do czasu sprawdzenia jego czujnika prądu jest zawyżony: w ciągu dnia
+          wyraźnie, w nocy zwykle o około 10–20% względem PGE. Dlatego godziny i dni są uszeregowane według zużycia
+          domu, a godziny, w których pobór z sieci wyraźnie przewyższa zużycie domu, nie trafiają na listę najniższych.
         </p>
       </div>
 
