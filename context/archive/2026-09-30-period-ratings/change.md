@@ -1,10 +1,10 @@
 ---
 change_id: period-ratings
 title: Rate each completed day and month good, neutral or bad
-status: impl_reviewed
+status: archived
 created: 2026-09-30
 updated: 2026-09-30
-archived_at: null
+archived_at: 2026-09-30T14:22:18Z
 ---
 
 ## Notes
