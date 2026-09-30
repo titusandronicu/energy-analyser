@@ -10,9 +10,6 @@ export const MAX_CAPTURE_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
 const reading = z.number().nullable();
 const energyKwh = z.number().nonnegative().nullable();
-// Signed counterpart of `energyKwh` for net grid energy: import positive, export negative. Finite (zod rejects
-// Infinity and NaN) and nullable like `energyKwh`, but not bounded at 0.
-const signedEnergyKwh = z.number().nullable();
 // Non-null counterpart of `energyKwh`, for the bill forecast's kWh and PLN figures. Hoisted so the
 // deliberate bare `z.number()` inside `settlement` reads as the exception it is.
 const nonNegative = z.number().nonnegative();
@@ -70,13 +67,20 @@ const dailyEnergy = z.strictObject({
 // import (import positive, export negative), the quantity PGE balances hourly. `samples` is how many 5-minute
 // readings the hour rests on (12 for a full hour); the app decides from it whether the hour is complete.
 const HOUR_MS = 60 * 60 * 1000;
+// A sanity bound on one hour's energy: the house peaked at about 8 kWh in an hour (August 2026), so 50 kWh can only be
+// a sensor glitch, which would otherwise be stored and ranked highest. A push carrying one is refused whole (422).
+export const MAX_HOURLY_KWH = 50;
+// Plain min/max rather than a refine, so the bound also appears in the exported JSON Schema the lab reads. Net grid
+// energy is signed (import positive, export negative); zod rejects Infinity and NaN.
+const hourlyKwh = z.number().nonnegative().max(MAX_HOURLY_KWH).nullable();
+const hourlyNetKwh = z.number().min(-MAX_HOURLY_KWH).max(MAX_HOURLY_KWH).nullable();
 const hourlyEnergy = z.strictObject({
   hour_start: z.iso
     .datetime({ offset: true })
     .refine((value) => Date.parse(value) % HOUR_MS === 0, { message: "hour_start must be on a whole hour" }),
-  load_kwh: energyKwh,
-  grid_net_kwh: signedEnergyKwh,
-  pv_kwh: energyKwh,
+  load_kwh: hourlyKwh,
+  grid_net_kwh: hourlyNetKwh,
+  pv_kwh: hourlyKwh,
   samples: z.number().int().min(0).max(12),
 });
 

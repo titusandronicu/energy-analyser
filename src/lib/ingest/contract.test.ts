@@ -311,6 +311,24 @@ describe("ingest contract v1", () => {
     );
   });
 
+  it.each([
+    ["load_kwh", 50.1],
+    ["pv_kwh", 50.1],
+    ["grid_net_kwh", 50.1],
+    ["grid_net_kwh", -50.1],
+  ] as const)("rejects an implausible %s of %s kWh in one hour", (field, value) => {
+    expect(firstIssuePath(withChanges((p) => (sections(p).hours[0][field] = value)))).toBe(`hourly_history.0.${field}`);
+  });
+
+  it("accepts an hour exactly at the sanity bound", () => {
+    const payload = withChanges((p) => {
+      const hour = sections(p).hours[0];
+      hour.load_kwh = 50;
+      hour.grid_net_kwh = -50;
+    });
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
   it.each([13, -1, 10.5])("rejects %s samples in an hour", (samples) => {
     expect(firstIssuePath(withChanges((p) => (sections(p).hours[0].samples = samples)))).toBe(
       "hourly_history.0.samples",

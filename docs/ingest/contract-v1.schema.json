@@ -713,7 +713,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0
+                "minimum": 0,
+                "maximum": 50
               },
               {
                 "type": "null"
@@ -721,16 +722,23 @@
             ]
           },
           "grid_net_kwh": {
-            "type": [
-              "number",
-              "null"
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -50,
+                "maximum": 50
+              },
+              {
+                "type": "null"
+              }
             ]
           },
           "pv_kwh": {
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0
+                "minimum": 0,
+                "maximum": 50
               },
               {
                 "type": "null"

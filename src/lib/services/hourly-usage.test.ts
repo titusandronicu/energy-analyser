@@ -357,6 +357,7 @@ describe("loadHourlyEnergy", () => {
       from: (...args: unknown[]) => ((calls.from = args), chain),
       select: (...args: unknown[]) => ((calls.select = args), chain),
       gte: (...args: unknown[]) => ((calls.gte = args), chain),
+      lt: (...args: unknown[]) => ((calls.lt = args), chain),
       order: (...args: unknown[]) => ((calls.order = args), chain),
       overrideTypes: () => Promise.resolve(result),
     };
@@ -371,6 +372,8 @@ describe("loadHourlyEnergy", () => {
     expect(calls.select).toEqual(["hour_start, load_kwh, grid_net_kwh, pv_kwh, samples"]);
     // Warsaw midnight of 6 July 2026 (35 days before 10 August), in UTC.
     expect(calls.gte).toEqual(["hour_start", "2026-07-05T22:00:00.000Z"]);
+    // Nothing from the future: a bad future row can't crowd real hours out of the row cap.
+    expect(calls.lt).toEqual(["hour_start", "2026-08-10T10:00:00.000Z"]);
     expect(calls.order).toEqual(["hour_start", { ascending: false }]);
   });
 
