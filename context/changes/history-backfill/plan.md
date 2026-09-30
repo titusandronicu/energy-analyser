@@ -183,10 +183,10 @@ External prerequisites (lessons: name every prerequisite outside the repo): the 
 
 #### Automated
 
-- [x] 2.1 App checks still pass: `npm test`, `npm run lint`
-- [x] 2.2 The docs record the backfill: `git grep -n "2026-07-16" -- docs/logic.md docs/prerequisites.md` prints at least two lines
+- [x] 2.1 App checks still pass: `npm test`, `npm run lint` — 6bab807
+- [x] 2.2 The docs record the backfill: `git grep -n "2026-07-16" -- docs/logic.md docs/prerequisites.md` prints at least two lines — 6bab807
 
 #### Manual
 
-- [x] 2.3 In production, `daily_energy` holds 2026-07-16 to 2026-07-25: nine days with totals and 2026-07-20 with null totals, all with the backfill push's `captured_at`; days from 2026-07-26 on are unchanged
-- [x] 2.4 The next regular timer push after the backfill returns 201, and the dashboard cards still render
+- [x] 2.3 In production, `daily_energy` holds 2026-07-16 to 2026-07-25: nine days with totals and 2026-07-20 with null totals, all with the backfill push's `captured_at`; days from 2026-07-26 on are unchanged — 6bab807
+- [x] 2.4 The next regular timer push after the backfill returns 201, and the dashboard cards still render — 6bab807
