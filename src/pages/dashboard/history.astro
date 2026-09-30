@@ -1,0 +1,177 @@
+---
+import AppShell from "@/components/AppShell.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import DayView from "@/components/history/DayView.astro";
+import HistoryNotes from "@/components/history/HistoryNotes.astro";
+import MonthView from "@/components/history/MonthView.astro";
+import PeriodNav from "@/components/history/PeriodNav.astro";
+import QuarterView from "@/components/history/QuarterView.astro";
+import Panel from "@/components/ui/Panel.astro";
+import Layout from "@/layouts/Layout.astro";
+import { HISTORY_PATH, periodNav } from "@/lib/calendar/nav";
+import {
+  addMonths,
+  defaultMonth,
+  parsePeriod,
+  periodBounds,
+  periodInstants,
+  periodLabel,
+  type CalendarPeriod,
+} from "@/lib/calendar/period";
+import { LOAD_FAILED } from "@/lib/format/status";
+import { warsawParts } from "@/lib/format/warsaw-time";
+import { loadDailyRange, loadRecommendationsForDay, loadRecommendationTimes } from "@/lib/services/calendar-data";
+import {
+  buildDayView,
+  buildMonthView,
+  buildQuarterView,
+  isCompleteDay,
+  type DayView as DayViewModel,
+  type MonthView as MonthViewModel,
+  type QuarterView as QuarterViewModel,
+} from "@/lib/services/calendar-view";
+import { createClient } from "@/lib/supabase";
+import type { DailyEnergyRow } from "@/types";
+
+// The history calendar (S-15): the period comes from the URL (?day=, ?month=, ?quarter=), only its rows are loaded,
+// and each section fails on its own. Past periods don't change every few minutes, so unlike the dashboard this page
+// has no reload script.
+const { user } = Astro.locals;
+
+// A section whose data failed to load shows its load error (null); the page never throws a 500 for a data problem.
+async function orLoadError<T>(load: () => Promise<T>): Promise<T | null> {
+  try {
+    return await load();
+  } catch (error) {
+    // eslint-disable-next-line no-console -- server-side detail; the page shows a generic load error
+    console.error(error);
+    return null;
+  }
+}
+
+// One Supabase client for the page, created on the first loader's call, as on the dashboard. Without a configuration
+// (null) the sections show their empty states.
+let client: ReturnType<typeof createClient> | undefined;
+function getClient() {
+  if (client === undefined) client = createClient(Astro.request.headers, Astro.cookies);
+  return client;
+}
+
+function dailyRange(from: string, to: string): Promise<DailyEnergyRow[] | null> {
+  return orLoadError(async () => {
+    const supabase = getClient();
+    return supabase ? await loadDailyRange(supabase, from, to) : [];
+  });
+}
+
+const now = new Date();
+const today = warsawParts(now).dayKey;
+
+type PageData =
+  | { kind: "month"; period: CalendarPeriod; view: MonthViewModel | null; markersFailed: boolean }
+  | {
+      kind: "day";
+      period: CalendarPeriod;
+      view: DayViewModel | null;
+      rowFailed: boolean;
+      adviceFailed: boolean;
+    }
+  | { kind: "quarter"; period: CalendarPeriod; view: QuarterViewModel | null };
+
+// Loads only the chosen period's rows, each section on its own.
+async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
+  // No period in the URL: the current month once it has 7 complete days, else the previous one. Its rows are loaded
+  // with the previous month's, so the chosen month needs no second read; if they fail, the current month is shown
+  // with its load error.
+  let period: CalendarPeriod;
+  let preloaded: DailyEnergyRow[] | null | undefined;
+  if (parsed === "default") {
+    const current = today.slice(0, 7);
+    preloaded = await dailyRange(`${addMonths(current, -1)}-01`, periodBounds({ kind: "month", month: current }).last);
+    const complete =
+      preloaded === null
+        ? null
+        : preloaded.filter((row) => row.day.startsWith(current) && isCompleteDay(row, today)).length;
+    period = { kind: "month", month: complete === null ? current : defaultMonth(today, complete) };
+  } else {
+    period = parsed;
+  }
+
+  const { first, last } = periodBounds(period);
+  const { fromMs, toMs } = periodInstants(period);
+
+  if (period.kind === "month") {
+    const month = period.month;
+    const [rows, times] = await Promise.all([
+      preloaded === undefined ? dailyRange(first, last) : Promise.resolve(preloaded),
+      orLoadError(async () => {
+        const supabase = getClient();
+        return supabase ? await loadRecommendationTimes(supabase, fromMs, toMs) : { times: [], truncated: false };
+      }),
+    ]);
+    const view =
+      rows === null
+        ? null
+        : await orLoadError(async () =>
+            Promise.resolve(buildMonthView(month, rows, times ?? { times: [], truncated: false }, today)),
+          );
+    return { kind: "month", period, view, markersFailed: times === null };
+  }
+
+  if (period.kind === "day") {
+    const day = period.day;
+    const [rows, recs] = await Promise.all([
+      dailyRange(day, day),
+      orLoadError(async () => {
+        const supabase = getClient();
+        return supabase ? await loadRecommendationsForDay(supabase, fromMs, toMs) : [];
+      }),
+    ]);
+    const view = await orLoadError(async () =>
+      Promise.resolve(buildDayView(day, rows?.find((row) => row.day === day) ?? null, recs ?? [], today, now)),
+    );
+    return { kind: "day", period, view, rowFailed: rows === null, adviceFailed: recs === null };
+  }
+
+  const { year, quarter } = period;
+  const rows = await dailyRange(first, last);
+  const view =
+    rows === null ? null : await orLoadError(async () => Promise.resolve(buildQuarterView(year, quarter, rows, today)));
+  return { kind: "quarter", period, view };
+}
+
+const parsed = parsePeriod(Astro.url.searchParams, today);
+// A malformed, combined or out-of-range period redirects (302) to the default month: exactly the page's path, no
+// query. It is set on Astro.response and nothing is rendered, because a top-level `return Astro.redirect()` in the
+// frontmatter crashes typescript-eslint's no-misused-promises rule.
+if (parsed === null) {
+  Astro.response.status = 302;
+  Astro.response.headers.set("Location", HISTORY_PATH);
+}
+const page = parsed === null ? null : await loadPage(parsed);
+const nav = page === null ? null : periodNav(page.period, today);
+---
+
+{page !== null && nav !== null && (
+  <Layout title={`Historia — ${periodLabel(page.period)}`}>
+    <AppShell email={user?.email} current="history">
+      <PeriodNav nav={nav} />
+
+      {page.kind === "month" && <MonthView view={page.view} markersFailed={page.markersFailed} today={today} />}
+      {page.kind === "day" &&
+        (page.view === null ? (
+          <Panel>
+            <StatusBadge status={LOAD_FAILED} testId="history-day-status" />
+            <p class="text-muted-foreground mt-2 text-sm">Spróbuj odświeżyć stronę.</p>
+          </Panel>
+        ) : (
+          <DayView view={page.view} rowFailed={page.rowFailed} adviceFailed={page.adviceFailed} />
+        ))}
+      {page.kind === "quarter" && <QuarterView view={page.view} today={today} />}
+
+      <Panel class="py-4">
+        <HistoryNotes />
+      </Panel>
+    </AppShell>
+  </Layout>
+)}

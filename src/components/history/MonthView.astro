@@ -1,0 +1,221 @@
+---
+import { CalendarDays, ChartColumn, Sun } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import DailyBarsChart from "@/components/history/DailyBarsChart.astro";
+import TotalsPanel from "@/components/history/TotalsPanel.astro";
+import Panel from "@/components/ui/Panel.astro";
+import { periodHref } from "@/lib/calendar/nav";
+import { LOAD_FAILED, type Status } from "@/lib/format/status";
+import {
+  DAY_STATUS_WORD,
+  dayCellName,
+  forecastDaysText,
+  HAS_RECOMMENDATION_WORD,
+  type DayCell,
+  type DayStatus,
+  type MonthView,
+} from "@/lib/services/calendar-view";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  // null: the month's daily rows failed to load.
+  view: MonthView | null;
+  // The recommendation times failed to load, so the grid has no markers.
+  markersFailed: boolean;
+  today: string;
+}
+
+// The month view: totals over complete days, a tappable Monday-first grid of days, the daily charts and forecast
+// against actual. Every figure and word comes from the view model; days that cannot be opened (before 16 July 2026,
+// after today) are plain text, never links.
+const { view, markersFailed, today } = Astro.props;
+const NEUTRAL: Status = { tone: "insufficient", label: "" };
+const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
+const WEEKDAYS = [
+  ["Pn", "poniedziałek"],
+  ["Wt", "wtorek"],
+  ["Śr", "środa"],
+  ["Cz", "czwartek"],
+  ["Pt", "piątek"],
+  ["So", "sobota"],
+  ["Nd", "niedziela"],
+] as const;
+// Colour and border style together, so a status never rests on colour alone; the legend names each one.
+const CELL_CLASS: Record<DayStatus, string> = {
+  complete: "bg-inset border-border text-card-foreground",
+  empty: "border-dashed border-tone-watch/70 text-tone-watch",
+  missing: "border-dashed border-border-strong text-muted-foreground",
+  today: "border-primary text-card-foreground border-2",
+  future: "border-transparent text-muted-foreground",
+};
+const LEGEND: DayStatus[] = ["complete", "empty", "missing", "today"];
+const cellClass = (cell: DayCell) =>
+  cn(
+    "relative flex h-11 w-full flex-col items-center justify-center rounded-lg border text-sm tabular-nums",
+    CELL_CLASS[cell.status],
+  );
+const days = view === null ? [] : view.grid.flat().filter((cell): cell is DayCell => cell !== null);
+const dayKeys = days.map((cell) => cell.day);
+---
+
+<TotalsPanel
+  title="Suma za miesiąc"
+  totals={view?.totals ?? null}
+  notes={[view?.unfinishedNote ?? null, view?.startNote ?? null]}
+  testId="history-month-status"
+/>
+
+<Panel>
+  <CardHeading class="mb-4" title="Dni miesiąca" icon={CalendarDays} iconClass="text-primary" />
+  {view === null ? (
+    <div class="space-y-2">
+      <StatusBadge status={LOAD_FAILED} />
+      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+    </div>
+  ) : (
+    <div class="space-y-4">
+      <table class="w-full table-fixed border-separate border-spacing-1" data-testid="history-month-grid">
+        <caption class="sr-only">Dni miesiąca {view.label}; dzień otwiera jego szczegóły</caption>
+        <thead>
+          <tr>
+            {WEEKDAYS.map(([short, long]) => (
+              <th scope="col" class="text-muted-foreground pb-1 text-xs font-medium">
+                <abbr title={long} class="no-underline">
+                  {short}
+                </abbr>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {view.grid.map((week) => (
+            <tr>
+              {week.map((cell) => {
+                if (cell === null) return <td />;
+                const href = periodHref({ kind: "day", day: cell.day }, today);
+                // The visible number is hidden from the accessibility tree; the day's full name is read instead.
+                const content = (
+                  <>
+                    <span aria-hidden="true">{Number(cell.day.slice(8, 10))}</span>
+                    <span class="sr-only">{dayCellName(cell)}</span>
+                    {cell.hasRecommendation && (
+                      <span aria-hidden="true" class="bg-primary absolute bottom-1 size-1.5 rounded-full" />
+                    )}
+                  </>
+                );
+                return (
+                  <td>
+                    {href === null ? (
+                      <span class:list={cellClass({ ...cell, status: "future" })}>{content}</span>
+                    ) : (
+                      <a href={href} class:list={cn(cellClass(cell), "hover:border-primary")}>
+                        {content}
+                      </a>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <ul class="text-muted-foreground flex flex-wrap gap-x-4 gap-y-2 text-xs" aria-label="Legenda dni">
+        {LEGEND.map((status) => (
+          <li class="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" class:list={cn("inline-block size-3.5 rounded border", CELL_CLASS[status])} />
+            {DAY_STATUS_WORD[status]}
+          </li>
+        ))}
+        <li class="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" class="bg-primary inline-block size-1.5 rounded-full" />
+          {HAS_RECOMMENDATION_WORD}
+        </li>
+      </ul>
+
+      {markersFailed && (
+        <div class="flex flex-wrap items-center gap-2">
+          <StatusBadge status={LOAD_FAILED} />
+          <span class="text-muted-foreground text-sm">Znaczniki rekomendacji nie są pokazane.</span>
+        </div>
+      )}
+      {view.markersNote !== null && <p class="text-muted-foreground text-sm">{sentence(view.markersNote)}</p>}
+    </div>
+  )}
+</Panel>
+
+<Panel>
+  <CardHeading class="mb-4" title="Dzień po dniu" icon={ChartColumn} iconClass="text-primary" />
+  {view === null ? (
+    <div class="space-y-2">
+      <StatusBadge status={LOAD_FAILED} />
+      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+    </div>
+  ) : (
+    <div class="space-y-5">
+      <section aria-labelledby="history-chart-pv-heading" class="space-y-2">
+        <h3 id="history-chart-pv-heading" class="text-card-foreground text-base font-semibold">
+          Produkcja z paneli i zużycie domu
+        </h3>
+        <DailyBarsChart
+          bars={view.series.pv}
+          line={view.series.load}
+          days={dayKeys}
+          subject="Produkcja z paneli"
+          windowLabel={view.label}
+          barTone="pv"
+          lineTone="home"
+        />
+      </section>
+      <section aria-labelledby="history-chart-grid-heading" class="space-y-2">
+        <h3 id="history-chart-grid-heading" class="text-card-foreground text-base font-semibold">
+          Prąd kupiony z sieci
+        </h3>
+        <DailyBarsChart
+          bars={view.series.import}
+          days={dayKeys}
+          subject="Prąd kupiony z sieci"
+          windowLabel={view.label}
+          barTone="grid"
+        />
+      </section>
+      <p class="text-muted-foreground text-xs">
+        Dni bez danych zostają puste, a dzisiejszy dzień nie jest rysowany, bo jeszcze trwa. Prąd kupiony z sieci jest
+        od 4 sierpnia zawyżony (zobacz „Co to znaczy?”).
+      </p>
+    </div>
+  )}
+</Panel>
+
+<Panel>
+  <CardHeading class="mb-2" title="Prognoza a rzeczywistość" icon={Sun} iconClass="text-flow-pv" />
+  {view === null ? (
+    <div class="space-y-2">
+      <StatusBadge status={LOAD_FAILED} />
+      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+    </div>
+  ) : view.forecast.kind === "comparison" ? (
+    <div class="space-y-3">
+      <StatusBadge status={NEUTRAL} text={`Dni z prognozą: ${String(view.forecast.days)}`} />
+      <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div class="bg-inset rounded-xl px-4 py-3">
+          <dt class="text-muted-foreground text-[13px]">Prognoza produkcji z paneli</dt>
+          <dd class="text-xl font-bold tabular-nums">{view.forecast.forecastLabel}</dd>
+        </div>
+        <div class="bg-inset rounded-xl px-4 py-3">
+          <dt class="text-muted-foreground text-[13px]">Rzeczywista produkcja z paneli</dt>
+          <dd class="text-xl font-bold tabular-nums">{view.forecast.actualLabel}</dd>
+        </div>
+      </dl>
+      <p class="text-muted-foreground text-xs">Suma z {view.forecast.periodLabel}.</p>
+    </div>
+  ) : (
+    <div class="space-y-2">
+      <StatusBadge status={NEUTRAL} />
+      <p class="text-muted-foreground text-sm">
+        {sentence(view.forecast.reason)} Teraz: {forecastDaysText(view.forecast.days, view.forecast.needed)}.
+      </p>
+    </div>
+  )}
+</Panel>

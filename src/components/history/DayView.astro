@@ -1,0 +1,232 @@
+---
+import { CalendarCheck, Sparkles, Sun } from "lucide-react";
+import AdviceBlocks from "@/components/AdviceBlocks.astro";
+import CardHeading from "@/components/CardHeading.astro";
+import RecommendationFindings from "@/components/RecommendationFindings.astro";
+import RecommendationForecast from "@/components/RecommendationForecast.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import { VerdictChip } from "@/components/live/VerdictChip";
+import Panel from "@/components/ui/Panel.astro";
+import { parseAdviceMarkdown, splitAdviceLead } from "@/lib/format/advice-markdown";
+import { LOAD_FAILED, type Status } from "@/lib/format/status";
+import type { DayView } from "@/lib/services/calendar-view";
+
+interface Props {
+  view: DayView;
+  // The day's row failed to load: the totals and forecast show a load error.
+  rowFailed: boolean;
+  // The day's recommendations failed to load: the advice shows a load error.
+  adviceFailed: boolean;
+}
+
+// The day view: the day's totals, its forecast against actual, and the advice it was given. The advice is a record of
+// that day, not judged against today, so this is its own section rather than the dashboard's "Rekomendacja na dziś"
+// card: a neutral badge with the generation time, no stale warning, no motion, and native <details> only.
+const { view, rowFailed, adviceFailed } = Astro.props;
+const NEUTRAL: Status = { tone: "insufficient", label: "" };
+const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+
+const totals = view.totals;
+const forecast = view.forecast;
+const advice = adviceFailed ? null : view.advice;
+const main = advice?.kind === "advice" ? advice.main : null;
+const { lead, rest } = splitAdviceLead(main === null ? [] : parseAdviceMarkdown(main.text));
+const explained =
+  main === null ? [] : main.findings.filter((finding) => finding.meaning !== null || finding.suggestedCheck !== null);
+const hasDetails = main !== null && (rest.length > 0 || explained.length > 0 || main.moreFindings.length > 0);
+const others = advice?.kind === "advice" ? advice.others : [];
+const figures =
+  totals.kind === "totals"
+    ? [
+        { term: "Produkcja z paneli", value: totals.pvLabel, dot: "bg-flow-pv" },
+        { term: "Zużycie domu", value: totals.loadLabel, dot: "bg-flow-home" },
+        { term: "Prąd kupiony z sieci", value: totals.importLabel, dot: "bg-flow-grid" },
+      ]
+    : [];
+---
+
+<Panel>
+  <CardHeading class="mb-2" title="Dzień w liczbach" icon={CalendarCheck} iconClass="text-primary" />
+  <div class="mb-4">
+    {rowFailed ? (
+      <StatusBadge status={LOAD_FAILED} testId="history-day-status" />
+    ) : totals.kind === "none" ? (
+      <StatusBadge status={NEUTRAL} text={sentence(totals.reason)} testId="history-day-status" />
+    ) : (
+      <StatusBadge
+        status={NEUTRAL}
+        text={totals.running ? "Dzień jeszcze trwa" : "Pełne dane"}
+        testId="history-day-status"
+      />
+    )}
+  </div>
+
+  {rowFailed && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+
+  {!rowFailed && totals.kind === "none" && (
+    <p class="text-muted-foreground text-sm">
+      {view.inProgress
+        ? "Dzień jeszcze trwa, a z dzisiaj nie ma jeszcze danych."
+        : "Ten dzień zostaje pusty: nie wpisujemy za niego zera ani szacunku."}
+    </p>
+  )}
+
+  {!rowFailed && totals.kind === "totals" && (
+    <div class="space-y-3">
+      <dl class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {figures.map(({ term, value, dot }) => (
+          <div class="bg-inset rounded-xl px-4 py-3">
+            <dt class="text-muted-foreground inline-flex items-center gap-1.5 text-[13px]">
+              <span aria-hidden="true" class:list={["size-2.5 rounded-full", dot]} />
+              {term}
+            </dt>
+            <dd class="text-xl font-bold tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {totals.running && (
+        <p class="text-muted-foreground text-sm">
+          Dzień jeszcze trwa: to liczby do tej pory, nie całość dnia. Pełne będą jutro.
+        </p>
+      )}
+    </div>
+  )}
+</Panel>
+
+<Panel>
+  <CardHeading class="mb-2" title="Prognoza a rzeczywistość" icon={Sun} iconClass="text-flow-pv" />
+  {rowFailed ? (
+    <div class="space-y-2">
+      <StatusBadge status={LOAD_FAILED} />
+      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+    </div>
+  ) : forecast.kind === "none" ? (
+    <StatusBadge status={NEUTRAL} text={sentence(forecast.reason)} />
+  ) : (
+    <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div class="bg-inset rounded-xl px-4 py-3">
+        <dt class="text-muted-foreground text-[13px]">Prognoza produkcji z paneli</dt>
+        <dd class="text-xl font-bold tabular-nums">{forecast.forecastLabel}</dd>
+      </div>
+      <div class="bg-inset rounded-xl px-4 py-3">
+        <dt class="text-muted-foreground text-[13px]">
+          {forecast.running ? "Produkcja z paneli do tej pory" : "Rzeczywista produkcja z paneli"}
+        </dt>
+        <dd class="text-xl font-bold tabular-nums">{forecast.actualLabel}</dd>
+      </div>
+    </dl>
+  )}
+</Panel>
+
+<Panel>
+  <CardHeading class="mb-2" title="Rekomendacja z tego dnia" size="lead" icon={Sparkles} iconClass="text-primary" />
+  <div class="mb-4 flex flex-wrap items-center gap-2">
+    {advice === null ? (
+      <StatusBadge status={LOAD_FAILED} testId="history-advice-status" />
+    ) : advice.kind === "none" ? (
+      <StatusBadge status={NEUTRAL} text={sentence(advice.reason)} testId="history-advice-status" />
+    ) : (
+      <>
+        <StatusBadge
+          status={advice.main.status}
+          text={sentence(advice.main.status.label)}
+          testId="history-advice-status"
+        />
+        {advice.mainNote !== null && <span class="text-muted-foreground text-xs">{sentence(advice.mainNote)}</span>}
+      </>
+    )}
+  </div>
+
+  {advice === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+
+  {main !== null && (
+    <div class="space-y-4">
+      <p class="text-muted-foreground text-sm">
+        {advice?.kind === "advice" && advice.mainNote !== null
+          ? "Tego dnia nie było rekomendacji od 6:00, więc to pierwsza z dnia."
+          : "Pierwsza rekomendacja od 6:00 rano, bo to ona ustalała plan baterii na ten dzień."}
+      </p>
+      <div class="space-y-3 leading-relaxed">
+        <AdviceBlocks blocks={lead} />
+      </div>
+
+      <RecommendationFindings findings={main.findings} />
+
+      <RecommendationForecast forecast={main.forecast} isFromEarlierDay={main.isFromEarlierDay} />
+
+      {hasDetails && (
+        <details class="text-sm">
+          <summary class="text-card-foreground cursor-pointer py-1">Pokaż całą rekomendację</summary>
+          <div class="mt-3 space-y-4">
+            {rest.length > 0 && (
+              <div class="space-y-3 leading-relaxed">
+                <AdviceBlocks blocks={rest} />
+              </div>
+            )}
+
+            {explained.length > 0 && (
+              <div>
+                <h3 class="text-card-foreground text-sm font-semibold">Co to znaczy i co sprawdzić</h3>
+                <ul class="mt-2 space-y-3">
+                  {explained.map((finding) => (
+                    <li class="[overflow-wrap:anywhere]">
+                      <p class="text-card-foreground font-medium">{finding.title ?? finding.fact}</p>
+                      {finding.meaning !== null && <p class="text-muted-foreground">{finding.meaning}</p>}
+                      {finding.suggestedCheck !== null && (
+                        <p class="text-muted-foreground">
+                          <span class="text-card-foreground font-medium">Co sprawdzić:</span> {finding.suggestedCheck}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {main.moreFindings.length > 0 && (
+              <div>
+                <h3 class="text-card-foreground text-sm font-semibold">Pozostałe ustalenia</h3>
+                <ul class="mt-2 space-y-3">
+                  {main.moreFindings.map((finding) => (
+                    <li class="flex flex-col items-start gap-1 sm:flex-row sm:justify-between sm:gap-3">
+                      <div class="min-w-0 [overflow-wrap:anywhere]">
+                        <p class="text-card-foreground font-medium">{finding.title ?? finding.fact}</p>
+                        {finding.title !== null && finding.fact !== null && (
+                          <p class="text-muted-foreground">{finding.fact}</p>
+                        )}
+                      </div>
+                      <VerdictChip tone={finding.tone} word={finding.word} className="shrink-0" />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <p class="text-muted-foreground text-xs">{main.modelLabel}</p>
+          </div>
+        </details>
+      )}
+
+      {others.length > 0 && (
+        <details class="text-sm" data-testid="history-advice-others">
+          <summary class="text-card-foreground cursor-pointer py-1">Pozostałe ({others.length})</summary>
+          <ol class="divide-hairline mt-2 divide-y">
+            {others.map((other) => (
+              <li class="space-y-2 py-3">
+                <StatusBadge status={other.status} text={sentence(other.status.label)} />
+                <div class="space-y-3 leading-relaxed [overflow-wrap:anywhere]">
+                  <AdviceBlocks blocks={parseAdviceMarkdown(other.text)} />
+                </div>
+                <p class="text-muted-foreground text-xs">{other.modelLabel}</p>
+              </li>
+            ))}
+          </ol>
+        </details>
+      )}
+    </div>
+  )}
+
+  <p class="text-muted-foreground mt-4 text-xs">
+    To tylko porada. Aplikacja niczego nie zmienia w falowniku ani w Home Assistant.
+  </p>
+</Panel>

@@ -157,16 +157,30 @@ function findingsFrom(facts: unknown, isStale: boolean): RecommendationFinding[]
   return mapped.sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]);
 }
 
-export function toRecommendationView(row: RecommendationRow | null, now: Date): RecommendationView {
+// A past day's advice in the history calendar (S-15) is read as a record of that day, not judged against today: its
+// status only says when it was generated ("z 27 września, 14:00"), in the neutral tone.
+function historicalStatus(generatedAt: Date): Status {
+  const { dayKey, time } = warsawParts(generatedAt);
+  return { tone: "insufficient", label: `z ${formatDayMonth(dayKey)}, ${time}` };
+}
+
+// With `historical`, the view is not stale or current and findings keep their real tones; the forecast day labels
+// and `isFromEarlierDay` are the same as without it.
+export function toRecommendationView(
+  row: RecommendationRow | null,
+  now: Date,
+  opts: { historical?: boolean } = {},
+): RecommendationView {
   if (!row) return { kind: "empty", status: { tone: "insufficient", label: "laboratorium jeszcze nic nie przesłało" } };
 
+  const historical = opts.historical === true;
   const generatedAt = new Date(row.generated_at);
   const forecast = asRecord(row.forecast);
   // The lab's "today" and "tomorrow" are relative to when it generated the advice, not to when it is read.
   const forecastDay = warsawParts(generatedAt).dayKey;
   const provider = PROVIDER_LABELS[row.provider];
-  const status = recommendationStatus(generatedAt, now);
-  const isStale = isStaleRecommendation(generatedAt, now);
+  const status = historical ? historicalStatus(generatedAt) : recommendationStatus(generatedAt, now);
+  const isStale = historical ? false : isStaleRecommendation(generatedAt, now);
   const findings = findingsFrom(row.facts, isStale);
 
   return {
@@ -175,7 +189,7 @@ export function toRecommendationView(row: RecommendationRow | null, now: Date): 
     text: row.text.trim(),
     generatedAtLabel: formatWarsawDateTime(generatedAt),
     isStale,
-    isCurrent: !isStale,
+    isCurrent: !historical && !isStale,
     isFromEarlierDay: isFromEarlierDay(generatedAt, now),
     forecast: {
       todayLabel: kwhLabel(forecast.today_kwh),

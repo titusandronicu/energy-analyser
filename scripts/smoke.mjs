@@ -57,9 +57,25 @@ const freshPush = () =>
     bill_forecast: { ...example.bill_forecast, generated_at: new Date().toISOString() },
   });
 
+// The history page opens on the current month or, while it has fewer than 7 complete days, the previous one; the
+// current month's label ("wrzesień 2026") is on the page either way, as the heading or the "next month" link.
+const currentMonthLabel = new Intl.DateTimeFormat("pl-PL", {
+  timeZone: "Europe/Warsaw",
+  month: "long",
+  year: "numeric",
+}).format(new Date());
+
+// The smoke matcher compares locations by prefix, so an invalid period's redirect checks the exact location itself:
+// "/dashboard/history?month=bad" would also start with "/dashboard/history" (a redirect loop). A mismatch reports 399.
+async function historyInvalidPeriod() {
+  const result = await request("/dashboard/history?month=bad");
+  return result.location === "/dashboard/history" ? result : { ...result, status: 399 };
+}
+
 const steps = [
   ["home redirects anonymous user to sign-in", () => request("/"), { status: 302, location: "/auth/signin" }],
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
+  ["history redirects anonymous user", () => request("/dashboard/history"), { status: 302, location: "/auth/signin" }],
   ["password sign-up is gone", () => request("/auth/signup"), { status: 404 }],
   [
     "sign-in page has a main landmark and a top-level heading",
@@ -128,6 +144,12 @@ const steps = [
     () => request("/dashboard", { readBody: true }),
     { status: 200, contains: ["<main", "<h1"] },
   ],
+  [
+    "history page has a main landmark, a top-level heading and the current month",
+    () => request("/dashboard/history", { readBody: true }),
+    { status: 200, contains: ["<main", "<h1", currentMonthLabel] },
+  ],
+  ["history redirects an invalid period to the default month", historyInvalidPeriod, { status: 302 }],
   ["used sign-in link is rejected", () => request(signinLink), { status: 302, location: "/auth/signin?error=" }],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],

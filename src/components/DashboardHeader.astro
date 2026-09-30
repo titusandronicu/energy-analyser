@@ -1,22 +1,51 @@
 ---
 import { ChartLine, LogOut } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
+import { HISTORY_PATH } from "@/lib/calendar/nav";
 import { cn } from "@/lib/utils";
 
 interface Props {
   email: string | undefined;
+  // The page the navigation marks with aria-current.
+  current: "dashboard" | "history";
 }
 
-const { email } = Astro.props;
+const { email, current } = Astro.props;
+
+const LINKS = [
+  { key: "dashboard", href: "/dashboard", word: "Pulpit" },
+  { key: "history", href: HISTORY_PATH, word: "Historia" },
+] as const;
 ---
 
-<header class="glass-surface flex min-h-16 items-center justify-between gap-3 rounded-2xl px-3.5 py-2 sm:min-h-[72px] sm:px-5">
+<header class="glass-surface flex min-h-16 flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl px-3.5 py-2 sm:min-h-[72px] sm:flex-nowrap sm:px-5">
   <div class="flex min-w-0 items-center gap-2.5 sm:gap-3.5">
     <div class="bg-muted border-border-strong flex size-9 shrink-0 items-center justify-center rounded-[10px] border sm:size-10 sm:rounded-xl">
       <ChartLine aria-hidden="true" className="text-primary size-5 sm:size-[22px]" />
     </div>
     <h1 class="text-card-foreground text-[17px] font-semibold sm:text-xl">Energy Analyser</h1>
   </div>
+  {/* On a phone the navigation takes its own row under the brand, so nothing scrolls sideways at 390 px. */}
+  <nav aria-label="Główna" class="max-sm:order-last max-sm:w-full sm:mr-auto sm:ml-4">
+    <ul class="flex items-center gap-1">
+      {LINKS.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            aria-current={link.key === current ? "page" : undefined}
+            class:list={cn(
+              "inline-flex min-h-9 items-center rounded-xl px-3 text-sm font-medium sm:min-h-11",
+              link.key === current
+                ? "bg-muted text-card-foreground border-border-strong border"
+                : "text-muted-foreground hover:text-card-foreground border border-transparent",
+            )}
+          >
+            {link.word}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
   <div class="flex items-center gap-4">
     <span class="text-muted-foreground hidden text-sm sm:inline">{email}</span>
     <form method="POST" action="/api/auth/signout">

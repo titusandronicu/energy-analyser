@@ -1,0 +1,78 @@
+---
+import { Sigma } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import Panel from "@/components/ui/Panel.astro";
+import { LOAD_FAILED, type Status } from "@/lib/format/status";
+import { completeDaysText, type PeriodTotals } from "@/lib/services/calendar-view";
+
+interface Props {
+  title: string;
+  // null: the daily rows failed to load.
+  totals: PeriodTotals | null;
+  // The view's own sentences (unfinished period, history start), shown when set.
+  notes: (string | null)[];
+  testId?: string;
+}
+
+// A month's or a quarter's totals over its complete days. The badge rates nothing, so it keeps the neutral tone and
+// says how many of the period's days the sums rest on; below the minimum it says "Za mało danych" with the reason.
+const { title, totals, notes, testId } = Astro.props;
+const NEUTRAL: Status = { tone: "insufficient", label: "" };
+const shownNotes = notes.filter((note): note is string => note !== null);
+const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
+const figures =
+  totals?.kind === "totals"
+    ? [
+        { term: "Produkcja z paneli", value: totals.totals.pvLabel, dot: "bg-flow-pv" },
+        { term: "Zużycie domu", value: totals.totals.loadLabel, dot: "bg-flow-home" },
+        { term: "Prąd kupiony z sieci", value: totals.totals.importLabel, dot: "bg-flow-grid" },
+      ]
+    : [];
+---
+
+<Panel>
+  <CardHeading class="mb-2" title={title} icon={Sigma} iconClass="text-primary" />
+  <div class="mb-4">
+    {totals === null ? (
+      <StatusBadge status={LOAD_FAILED} testId={testId} />
+    ) : totals.kind === "totals" ? (
+      <StatusBadge status={NEUTRAL} text={completeDaysText(totals.completeDays, totals.calendarDays)} testId={testId} />
+    ) : (
+      <StatusBadge status={NEUTRAL} testId={testId} />
+    )}
+  </div>
+
+  {totals === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+
+  {totals?.kind === "insufficient" && (
+    <p class="text-muted-foreground text-sm">
+      {sentence(totals.reason)} {completeDaysText(totals.completeDays, totals.calendarDays)}.
+    </p>
+  )}
+
+  {totals?.kind === "totals" && (
+    <div class="space-y-3">
+      <dl class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {figures.map(({ term, value, dot }) => (
+          <div class="bg-inset rounded-xl px-4 py-3">
+            <dt class="text-muted-foreground inline-flex items-center gap-1.5 text-[13px]">
+              <span aria-hidden="true" class:list={["size-2.5 rounded-full", dot]} />
+              {term}
+            </dt>
+            <dd class="text-xl font-bold tabular-nums">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p class="text-muted-foreground text-xs">Suma z {totals.periodLabel}, tylko z dni z pełnymi danymi.</p>
+    </div>
+  )}
+
+  {shownNotes.length > 0 && (
+    <ul class="text-muted-foreground mt-3 space-y-1 text-sm">
+      {shownNotes.map((note) => (
+        <li>{sentence(note)}</li>
+      ))}
+    </ul>
+  )}
+</Panel>

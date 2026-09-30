@@ -302,6 +302,58 @@ describe("findings", () => {
     });
   });
 
+  describe("historical view", () => {
+    const mixed = [
+      { fact: "ok", severity: "ok" },
+      { fact: "warn", severity: "warn" },
+    ];
+    // Generated 14:00 Warsaw on 27 September, read three days later.
+    const past = row({ generated_at: "2026-09-27T12:00:00Z", facts: { local_findings: mixed } });
+    const later = at("2026-09-30T10:00:00Z");
+
+    it("gives a neutral status naming the generation time, never stale or current", () => {
+      const view = toRecommendationView(past, later, { historical: true });
+      if (view.kind !== "recommendation") throw new Error("expected a recommendation");
+      expect(view.status).toEqual({ tone: "insufficient", label: "z 27 września, 14:00" });
+      expect(view.isStale).toBe(false);
+      expect(view.isCurrent).toBe(false);
+    });
+
+    it("keeps the findings' real tones", () => {
+      const view = toRecommendationView(past, later, { historical: true });
+      if (view.kind !== "recommendation") throw new Error("expected a recommendation");
+      expect(view.findings.map((f) => [f.fact, f.tone])).toEqual([
+        ["warn", "watch"],
+        ["ok", "good"],
+      ]);
+    });
+
+    it("keeps the forecast relabelling for an earlier day", () => {
+      const view = toRecommendationView(past, later, { historical: true });
+      if (view.kind !== "recommendation") throw new Error("expected a recommendation");
+      expect(view.isFromEarlierDay).toBe(true);
+      expect(view.forecast).toMatchObject({ todayDayLabel: "27 września", tomorrowDayLabel: "28 września" });
+    });
+
+    it("is not current even for advice generated minutes ago", () => {
+      const view = toRecommendationView(row(), at("2026-09-23T10:05:00Z"), { historical: true });
+      expect(view.kind === "recommendation" && [view.isStale, view.isCurrent, view.status.tone]).toEqual([
+        false,
+        false,
+        "insufficient",
+      ]);
+    });
+
+    it("leaves the default view unchanged", () => {
+      expect(toRecommendationView(past, later, {})).toEqual(toRecommendationView(past, later));
+      const view = toRecommendationView(past, later);
+      if (view.kind !== "recommendation") throw new Error("expected a recommendation");
+      expect(view.status).toEqual({ tone: "problem", label: "z 27 września — dotyczy innego dnia" });
+      expect(view.isStale).toBe(true);
+      expect(view.findings.map((f) => f.tone)).toEqual(["insufficient", "insufficient"]);
+    });
+  });
+
   it("orders warn, then info and unknown in lab order, then ok", () => {
     const view = withFindings([
       { fact: "ok1", severity: "ok" },

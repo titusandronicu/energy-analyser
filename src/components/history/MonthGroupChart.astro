@@ -1,0 +1,83 @@
+---
+// Server-rendered grouped bars for a quarter (history calendar): per month, PV, house use and grid import side by side
+// on one zero-baseline scale. No script and no library. A month without enough complete days is an empty slot, never
+// zero bars. The chart sits on its own opaque bg-inset surface, as the flow colours are only checked against bg-card
+// and bg-inset.
+import { cn } from "@/lib/utils";
+import { barGeometry, describeMonthGroups, MONTH_GROUP_SUBJECTS, monthGroupSeries, type MonthGroup } from "@/lib/bars";
+import { oneDecimal } from "@/lib/format/values";
+
+interface Props {
+  months: readonly MonthGroup[];
+  // What the chart says when fewer than three months hold a value, e.g. "za mało miesięcy z danymi" in a quarter.
+  emptyText?: string;
+  class?: string;
+}
+
+const { months, emptyText = "za mało dni", class: className } = Astro.props;
+
+// Full class names, in the series order of monthGroupSeries: PV, house use, grid import.
+const FILL_CLASS = ["fill-flow-pv", "fill-flow-home", "fill-flow-grid"] as const;
+const SWATCH_CLASS = ["bg-flow-pv", "bg-flow-home", "bg-flow-grid"] as const;
+
+// One 100-unit slot per month; the SVG stretches to the card width at a fixed height, so label text stays HTML.
+const SLOT = 100;
+const HEIGHT = 100;
+const width = Math.max(1, months.length) * SLOT;
+const geometry = barGeometry(monthGroupSeries(months), { width, height: HEIGHT, gap: 40 });
+const label = describeMonthGroups(months);
+---
+
+<div class:list={cn("bg-inset rounded-md p-3", className)}>
+  {geometry === null || label === null ? (
+    <p class="text-muted-foreground text-xs" data-testid="bars-empty">
+      {emptyText}
+    </p>
+  ) : (
+    <div class="flex flex-col gap-2">
+      <ul class="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        {MONTH_GROUP_SUBJECTS.map((word, index) => (
+          <li class="inline-flex items-center gap-1.5">
+            <span class:list={cn("inline-block size-2.5 rounded-sm", SWATCH_CLASS[index])} aria-hidden="true" />
+            {word}
+          </li>
+        ))}
+        <li class="ml-auto tabular-nums">skala 0–{oneDecimal.format(geometry.max)} kWh</li>
+      </ul>
+      <svg
+        viewBox={`0 0 ${String(width)} ${String(HEIGHT)}`}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={label}
+        class="block h-32 w-full"
+      >
+        <line
+          x1="0"
+          y1={HEIGHT}
+          x2={width}
+          y2={HEIGHT}
+          class="stroke-border"
+          stroke-width="1"
+          vector-effect="non-scaling-stroke"
+        />
+        {geometry.bars.map((bar) => (
+          <rect x={bar.x} y={bar.y} width={bar.w} height={bar.h} rx="1" class:list={FILL_CLASS[bar.seriesIndex]} />
+        ))}
+      </svg>
+      <div
+        class="text-muted-foreground grid text-center text-[11px]"
+        style={`grid-template-columns: repeat(${String(months.length)}, minmax(0, 1fr))`}
+        aria-hidden="true"
+      >
+        {months.map((month) => (
+          <span class="flex flex-col">
+            <span class="text-foreground">{month.label}</span>
+            <span class="tabular-nums">
+              {month.completeDays} z {month.calendarDays} dni
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
+  )}
+</div>

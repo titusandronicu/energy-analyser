@@ -37,30 +37,32 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 
 ## At a glance
 
-| ID   | Change ID                 | Outcome (user can …)                                                                        | Prerequisites | PRD refs                              | Status   |
-| ---- | ------------------------- | ------------------------------------------------------------------------------------------- | ------------- | ------------------------------------- | -------- |
-| F-01 | push-ingestion-endpoint   | (foundation) the home lab can push an authenticated, versioned payload                      | —             | NFR (secrets, raw data)               | done     |
-| F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push                           | F-01          | FR-003, FR-015                        | done     |
-| F-03 | history-backfill          | (foundation) the ten lab days before the first push are in the app                          | F-02          | FR-024                                | done     |
-| F-04 | lab-period-summaries      | (foundation) the lab writes plain-language texts for today, days and months                 | F-02          | FR-023, FR-030                        | ready    |
-| F-05 | solar-forecast-source     | (foundation) Home Assistant has a solar forecast again and the lab pushes it                | F-02          | FR-006, FR-015, FR-020                | done     |
-| S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session                          | —             | FR-001                                | done     |
-| S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop                            | F-01, S-01    | US-01, FR-002, FR-004                 | done     |
-| S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence                        | F-01, S-01    | US-01, FR-005, FR-006                 | done     |
-| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline                       | F-02, S-01    | US-01, FR-003                         | done     |
-| S-14 | data-period-transparency  | read every card without energy knowledge: plain words, colours, its data period, no guesses | S-03, S-04    | US-01, FR-018, FR-019, FR-029         | done     |
-| S-07 | bill-forecast             | see the projected cost of the current month with a range                                    | F-01, S-01    | US-03, FR-011                         | done     |
-| S-15 | history-calendar          | browse days and months: production, forecast vs actual, recommendations                     | S-14          | US-05, FR-021                         | proposed |
-| S-17 | period-ratings            | see a good / neutral / bad rating for each completed day and month                          | S-15          | US-05, FR-022                         | proposed |
-| S-20 | consumption-trends        | see a remark when consumption rises or falls noticeably over weeks and months               | S-14, S-15    | US-05, FR-031                         | proposed |
-| S-19 | day-notes                 | add, view, edit and delete notes on calendar days                                           | S-15          | US-06, FR-025, FR-026, FR-027, FR-028 | proposed |
-| S-18 | period-summaries          | read plain-language explanations of today and summaries of past days and months             | F-04, S-15    | US-01, US-05, FR-023, FR-030          | proposed |
-| S-11 | forecast-accuracy         | see how accurate the PV forecast has been and how certain today's forecast is               | F-05, S-14    | US-01, FR-015, FR-020, FR-006         | proposed |
-| S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff                         | F-01, S-01    | US-03, FR-012                         | blocked  |
-| S-09 | consumption-plan-actions  | see the lab's consumption-plan actions next to today's recommendation                       | S-03          | US-07, FR-013                         | proposed |
-| S-10 | usage-profile             | see how consumption spreads across the day, week and unusual hours                          | F-01, S-01    | US-04, FR-014                         | proposed |
-| S-12 | inverter-schedule-view    | see the inverter's current schedule next to the recommendation                              | S-03          | US-07, FR-016                         | proposed |
-| S-13 | pipeline-health           | see why advice or live data is missing or degraded                                          | S-02, S-03    | US-07, FR-017, FR-004                 | proposed |
+| ID   | Change ID                 | Outcome (user can …)                                                                        | Prerequisites | PRD refs                              | Status      |
+| ---- | ------------------------- | ------------------------------------------------------------------------------------------- | ------------- | ------------------------------------- | ----------- |
+| F-01 | push-ingestion-endpoint   | (foundation) the home lab can push an authenticated, versioned payload                      | —             | NFR (secrets, raw data)               | done        |
+| F-02 | daily-history-push        | (foundation) the home lab pushes per-day energy totals every push                           | F-01          | FR-003, FR-015                        | done        |
+| F-03 | history-backfill          | (foundation) the ten lab days before the first push are in the app                          | F-02          | FR-024                                | done        |
+| F-04 | lab-period-summaries      | (foundation) the lab writes plain-language texts for today, days and months                 | F-02          | FR-023, FR-030                        | ready       |
+| F-05 | solar-forecast-source     | (foundation) Home Assistant has a solar forecast again and the lab pushes it                | F-02          | FR-006, FR-015, FR-020                | done        |
+| F-06 | history-gap-fill          | (foundation) the missing and empty days are re-sent from Home Assistant's hourly statistics | F-03          | FR-021, FR-024                        | proposed    |
+| S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session                          | —             | FR-001                                | done        |
+| S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop                            | F-01, S-01    | US-01, FR-002, FR-004                 | done        |
+| S-03 | todays-recommendation     | see today's narrated battery recommendation with forecast confidence                        | F-01, S-01    | US-01, FR-005, FR-006                 | done        |
+| S-04 | seasonal-usage-insight    | see whether recent usage is normal against a season-adjusted baseline                       | F-02, S-01    | US-01, FR-003                         | done        |
+| S-14 | data-period-transparency  | read every card without energy knowledge: plain words, colours, its data period, no guesses | S-03, S-04    | US-01, FR-018, FR-019, FR-029         | done        |
+| S-07 | bill-forecast             | see the projected cost of the current month with a range                                    | F-01, S-01    | US-03, FR-011                         | done        |
+| S-15 | history-calendar          | browse days and months: production, forecast vs actual, recommendations                     | S-14          | US-05, FR-021                         | in-progress |
+| S-16 | calendar-year-view        | open the calendar's year view with the current year's totals to date                        | S-15          | US-05, FR-021                         | proposed    |
+| S-17 | period-ratings            | see a good / neutral / bad rating for each completed day and month                          | S-15          | US-05, FR-022                         | proposed    |
+| S-20 | consumption-trends        | see a remark when consumption rises or falls noticeably over weeks and months               | S-14, S-15    | US-05, FR-031                         | proposed    |
+| S-19 | day-notes                 | add, view, edit and delete notes on calendar days                                           | S-15          | US-06, FR-025, FR-026, FR-027, FR-028 | proposed    |
+| S-18 | period-summaries          | read plain-language explanations of today and summaries of past days and months             | F-04, S-15    | US-01, US-05, FR-023, FR-030          | proposed    |
+| S-11 | forecast-accuracy         | see how accurate the PV forecast has been and how certain today's forecast is               | F-05, S-14    | US-01, FR-015, FR-020, FR-006         | proposed    |
+| S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff                         | F-01, S-01    | US-03, FR-012                         | blocked     |
+| S-09 | consumption-plan-actions  | see the lab's consumption-plan actions next to today's recommendation                       | S-03          | US-07, FR-013                         | proposed    |
+| S-10 | usage-profile             | see how consumption spreads across the day, week and unusual hours                          | F-01, S-01    | US-04, FR-014                         | proposed    |
+| S-12 | inverter-schedule-view    | see the inverter's current schedule next to the recommendation                              | S-03          | US-07, FR-016                         | proposed    |
+| S-13 | pipeline-health           | see why advice or live data is missing or degraded                                          | S-02, S-03    | US-07, FR-017, FR-004                 | proposed    |
 
 ## Streams
 
@@ -154,6 +156,20 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Risk:** Home Assistant has had no solar forecast since its host move (~2026-07-21): production has 0 of 53 days with a forecast. It is a homelab-2 and Home Assistant configuration change; certainty needs a week or two of forecasts after it lands. Follow-up found in review: Forecast.Solar comparison values were kept only in the live snapshot, so homelab-2 #28 adds them to lab history.
 - **Status:** done
 
+### F-06: History gap fill
+
+- **Outcome:** (foundation) the lab reads Home Assistant's hourly statistics on the UGREEN (kept indefinitely since 2026-07-20) and re-sends the days the app is missing or holds with empty totals (07-31, 08-10, 09-14–18, 09-22–24; 07-20, 08-31, 09-13, 09-19, 09-21) with the existing `--from/--to` range push, so the calendar's gaps close where the source has the data.
+- **Change ID:** history-gap-fill
+- **PRD refs:** FR-021, FR-024
+- **Unlocks:** fuller month and quarter totals in S-15 and more complete days for S-17 and S-20
+- **Prerequisites:** F-03
+- **Parallel with:** S-15, S-17
+- **Blockers:** —
+- **Unknowns:**
+  - Are the app's empty days (08-31, 09-13, 09-21) complete in Home Assistant? 09-19 and 09-20 have only 18 and 14 hourly rows there. — Owner: user. Block: no.
+- **Risk:** homelab-2 only; no contract change, the push stays idempotent and incomplete days stay empty. A day's total is the counter at the last hour of the Warsaw day (or the `sum` delta), not a daily max, which can pick up the previous day's value just after midnight. The recorder has no backup yet (`context/changes/history-calendar/research.md`, follow-up (a) and (e)). Proposed by `history-calendar` (2026-09-30), which leaves the gaps visible rather than filling them.
+- **Status:** proposed
+
 ## Slices
 
 ### S-01: Access-key sign-in
@@ -219,7 +235,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ### S-15: History calendar
 
-- **Outcome:** user can move between days, months, quarters, and years in a calendar and see each period's PV production, consumption, grid import/export, forecast against actual, and the recommendations from that period.
+- **Outcome:** user can move between days, months and quarters in a calendar and see each period's PV production, consumption, grid import, forecast against actual, and the recommendations from that period. The year view is S-16; grid export and PGE figures are left out (plan 2026-09-30: the inverter's export counter under-reads, and PGE figures wait on a privacy decision, see Parked).
 - **Change ID:** history-calendar
 - **PRD refs:** US-05, FR-021
 - **Prerequisites:** S-14
@@ -227,7 +243,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** The main new surface; it must stay usable on a phone and reuse S-14's period and minimum-data rule rather than invent its own. Charts (owner's decision 2026-09-30, `lab-feature-port`): the day and month charts extend the hand-rolled server-rendered SVG of the sparklines, with no chart library; the Home Assistant 30-day PV-vs-consumption and import-vs-export charts (`energy-glass.yaml:624-737` in homelab-2) are the visual reference.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-16: Calendar year view
 
@@ -432,6 +448,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Explained PGE hourly anomaly list** — Why parked: owner's decision 2026-09-30 (`lab-feature-port`, candidate 12): S-10 ships the FR-014 count only, after M-1 for the rest. The lab's list (`pge_anomalies.py:103-139`: hour, kWh against typical, Polish explanation, severity) names single timestamped hours, so reviving it also means revisiting S-10's aggregates-only rule.
 - **One-sentence summary of the current flow** — Why parked: owner's decision 2026-09-30 (`lab-feature-port`, candidate 2): no new scope in M-1. The live card already rates each node and shows "Bilans systemu"; the Home Assistant narrative card (`energy-glass.yaml:224-314`) is the reference.
 - **Battery-plan proposal with confirm/skip** — Why parked: owner's decision 2026-09-30 (`lab-feature-port`, candidate 23): a confirm button reads as control even when advisory, so it stays next to the device-control guardrail above.
+- **PGE monthly import/export in the history calendar** — Why parked: `history-calendar` plan (2026-09-30). For closed months PGE's hourly-balanced figures are the only trustworthy grid import and export (the inverter over-reports import from 4 August 2026 and reads 0 export from about mid-August), but showing PGE aggregates in the app needs the owner's privacy decision first; the August CSV is also not in the lab yet (`context/changes/history-calendar/research.md`, follow-up (b)).
 - **Visible local micro-analysis feed** — Why parked: owner's decision 2026-09-30 (`lab-feature-port`, candidate 16): the local model's observations stay input to the stronger model's explanations (FR-030) and are not shown raw to the owner.
 
 ## Milestone History

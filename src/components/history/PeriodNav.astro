@@ -1,0 +1,59 @@
+---
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import Panel from "@/components/ui/Panel.astro";
+import type { PeriodNavView } from "@/lib/calendar/nav";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  nav: PeriodNavView;
+}
+
+// The history page's period bar: previous and next period (each link names its target), the period itself as the
+// page's h2, and the switch between day, month and quarter. Links only; no script. Where there is no earlier or later
+// period (before 16 July 2026, after today) an empty slot of the same size keeps the label centred.
+const { nav } = Astro.props;
+const arrow =
+  "border-border-strong text-card-foreground hover:bg-muted inline-flex size-11 shrink-0 items-center justify-center rounded-xl border";
+---
+
+<Panel class="space-y-4 p-4 sm:p-6">
+  <div class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
+    {nav.prev === null ? (
+      <span class="size-11" aria-hidden="true" />
+    ) : (
+      <a href={nav.prev.href} aria-label={nav.prev.label} class:list={arrow}>
+        <ChevronLeft aria-hidden="true" className="size-5" />
+      </a>
+    )}
+    <h2 class="text-card-foreground text-center text-lg font-semibold [overflow-wrap:anywhere] sm:text-[22px]">
+      {nav.label}
+    </h2>
+    {nav.next === null ? (
+      <span class="size-11" aria-hidden="true" />
+    ) : (
+      <a href={nav.next.href} aria-label={nav.next.label} class:list={arrow}>
+        <ChevronRight aria-hidden="true" className="size-5" />
+      </a>
+    )}
+  </div>
+  <nav aria-label="Rodzaj okresu">
+    <ul class="bg-inset mx-auto grid max-w-sm grid-cols-3 gap-1 rounded-xl p-1">
+      {nav.kinds.map((item) => (
+        <li>
+          <a
+            href={item.href}
+            aria-current={item.current ? "page" : undefined}
+            class:list={cn(
+              "flex min-h-9 items-center justify-center rounded-lg px-2 text-sm font-medium",
+              item.current
+                ? "bg-muted text-card-foreground border-border-strong border"
+                : "text-muted-foreground hover:text-card-foreground border border-transparent",
+            )}
+          >
+            {item.word}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+</Panel>

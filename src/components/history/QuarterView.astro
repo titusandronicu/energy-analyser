@@ -1,0 +1,106 @@
+---
+import { CalendarRange, ChartColumn } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import MonthGroupChart from "@/components/history/MonthGroupChart.astro";
+import TotalsPanel from "@/components/history/TotalsPanel.astro";
+import Panel from "@/components/ui/Panel.astro";
+import { periodHref } from "@/lib/calendar/nav";
+import { LOAD_FAILED } from "@/lib/format/status";
+import { completeDaysText, quarterChartMonths, type QuarterView } from "@/lib/services/calendar-view";
+
+interface Props {
+  // null: the quarter's daily rows failed to load.
+  view: QuarterView | null;
+  today: string;
+}
+
+// The quarter view: totals over its complete days, one row per month (each links to its month when it can be opened)
+// and the months side by side in a grouped bar chart. A month before 16 July 2026 or after today is plain text.
+const { view, today } = Astro.props;
+const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
+const months = (view?.months ?? []).map((month) => ({
+  month,
+  href: month.kind === "before-history" ? null : periodHref({ kind: "month", month: month.month }, today),
+}));
+---
+
+<TotalsPanel
+  title="Suma za kwartał"
+  totals={view?.totals ?? null}
+  notes={[view?.unfinishedNote ?? null, view?.startNote ?? null]}
+  testId="history-quarter-status"
+/>
+
+<Panel>
+  <CardHeading class="mb-4" title="Miesiące kwartału" icon={CalendarRange} iconClass="text-primary" />
+  {view === null ? (
+    <div class="space-y-2">
+      <StatusBadge status={LOAD_FAILED} />
+      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+    </div>
+  ) : (
+    <ul class="divide-hairline divide-y" data-testid="history-quarter-months">
+      {months.map(({ month, href }) => (
+        <li class="space-y-2 py-4 first:pt-0 last:pb-0">
+          <div class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+            <h3 class="text-card-foreground text-base font-semibold">
+              {href === null ? (
+                month.label
+              ) : (
+                <a href={href} class="hover:text-primary inline-flex min-h-6 items-center underline underline-offset-4">
+                  {month.label}
+                </a>
+              )}
+            </h3>
+            {month.kind === "month" && (
+              <span class="text-muted-foreground text-xs tabular-nums">
+                {completeDaysText(month.totals.completeDays, month.totals.calendarDays)}
+              </span>
+            )}
+          </div>
+          {month.kind === "before-history" ? (
+            <p class="text-muted-foreground text-sm">{sentence(month.reason)}</p>
+          ) : month.totals.kind === "insufficient" ? (
+            <p class="text-muted-foreground text-sm">{sentence(month.totals.reason)}</p>
+          ) : (
+            <dl class="grid grid-cols-3 gap-2 text-sm">
+              <div>
+                <dt class="text-muted-foreground text-xs">Z paneli</dt>
+                <dd class="font-semibold tabular-nums">{month.totals.totals.pvLabel}</dd>
+              </div>
+              <div>
+                <dt class="text-muted-foreground text-xs">Zużycie domu</dt>
+                <dd class="font-semibold tabular-nums">{month.totals.totals.loadLabel}</dd>
+              </div>
+              <div>
+                <dt class="text-muted-foreground text-xs">Z sieci</dt>
+                <dd class="font-semibold tabular-nums">{month.totals.totals.importLabel}</dd>
+              </div>
+            </dl>
+          )}
+          {month.kind === "month" && month.totals.kind === "totals" && (
+            <p class="text-muted-foreground text-xs">Suma z {month.totals.periodLabel}.</p>
+          )}
+        </li>
+      ))}
+    </ul>
+  )}
+</Panel>
+
+<Panel>
+  <CardHeading class="mb-4" title="Miesiące obok siebie" icon={ChartColumn} iconClass="text-primary" />
+  {view === null ? (
+    <div class="space-y-2">
+      <StatusBadge status={LOAD_FAILED} />
+      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+    </div>
+  ) : (
+    <div class="space-y-2">
+      <MonthGroupChart months={quarterChartMonths(view)} emptyText="za mało miesięcy z danymi" />
+      <p class="text-muted-foreground text-xs">
+        Miesiąc z mniej niż 7 pełnymi dniami zostaje pusty. Prąd kupiony z sieci jest od 4 sierpnia zawyżony.
+      </p>
+    </div>
+  )}
+</Panel>
