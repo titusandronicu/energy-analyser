@@ -1,11 +1,13 @@
 ---
 import BillForecastCard from "@/components/BillForecastCard.astro";
 import DashboardHeader from "@/components/DashboardHeader.astro";
+import HourlyUsageCard from "@/components/HourlyUsageCard.astro";
 import LiveStateCard from "@/components/LiveStateCard.astro";
 import RecommendationCard from "@/components/RecommendationCard.astro";
 import SourceLegend from "@/components/SourceLegend.astro";
 import UsageInsightCard from "@/components/UsageInsightCard.astro";
 import type { BillForecastView } from "@/lib/services/bill-forecast";
+import type { HourlyUsageView } from "@/lib/services/hourly-usage";
 import type { LiveStateView } from "@/lib/services/live-state";
 import type { RecommendationView } from "@/lib/services/recommendation";
 import type { UsageInsightView } from "@/lib/services/usage-insight";
@@ -15,12 +17,13 @@ interface Props {
   billView: BillForecastView | null;
   usageView: UsageInsightView | null;
   recommendationView: RecommendationView | null;
+  hourlyView: HourlyUsageView | null;
   email: string | undefined;
 }
 
-// The dashboard's page body. The cards sit in the page's main landmark; the header and the legend footer stay
-// outside it so they keep their banner and contentinfo roles.
-const { liveView, billView, usageView, recommendationView, email } = Astro.props;
+// The dashboard's page body. The cards sit in the page's main landmark, the full-width hourly card below the grid;
+// the header and the legend footer stay outside it so they keep their banner and contentinfo roles.
+const { liveView, billView, usageView, recommendationView, hourlyView, email } = Astro.props;
 ---
 
 <div class="bg-aurora min-h-screen p-4 sm:p-8">
@@ -38,6 +41,7 @@ const { liveView, billView, usageView, recommendationView, email } = Astro.props
           <UsageInsightCard view={usageView} />
         </div>
       </div>
+      <HourlyUsageCard view={hourlyView} />
     </main>
 
     <SourceLegend />

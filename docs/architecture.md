@@ -22,7 +22,7 @@ flowchart LR
       Brief --> Adv["stronger LLM<br/>narration ~hourly"]
       Adv --> Push[push-energy-analyser.py]
       Brief --> Push
-      Hist --> Push
+      Hist -- "daily_history,<br/>hourly_history (last 48 h)" --> Push
     end
     HA --> Snap
     HA --> Micro
@@ -36,6 +36,7 @@ flowchart LR
 
 - **Push, never pull.** The home network is LAN-only. The lab sends public-safe data outbound; the app never connects into the home.
 - **The lab computes, the app presents.** Telemetry collection, PGE bill math and LLM narration stay in the lab. The app adds access control, storage, its own season-aware rules and the user interface.
+- **Stored by the push.** `public.ingest_push` keeps each raw push for 14 days and upserts what it carries: `daily_energy` from `daily_history`, `hourly_energy` from `hourly_history` (per clock hour, kept 35 days), and `recommendations`. The newer capture wins for days and hours.
 - **Advisory only.** Nothing in the app or the push path writes to Home Assistant or the inverter.
 
 ## Inside the app
@@ -46,14 +47,14 @@ flowchart LR
 | Middleware | Resolves the signed-in user, protects pages, checks the `Origin` header on mutating API calls (except bearer-token ingest)            | `src/middleware.ts`                                     |
 | Services   | Pure, unit-tested functions that turn rows into view models (staleness, baselines, labels) plus thin Supabase loaders                 | `src/lib/services/`                                     |
 | Ingest     | Validates the lab's payload against a strict versioned contract and stores it through one database function                           | `src/pages/api/ingest.ts`, `src/lib/ingest/contract.ts` |
-| Database   | Tables for raw pushes (kept 14 days), per-day energy totals, recommendations; owner-only reads                                        | `supabase/migrations/`                                  |
+| Database   | Tables for raw pushes (14 days), daily and hourly (`hourly_energy`, 35 days) energy totals, recommendations; owner-only reads         | `supabase/migrations/`                                  |
 
 ## Security model
 
 - **No service-role key.** The app only has the public anon key. Writes from the lab go through `public.ingest_push`, a `SECURITY DEFINER` function that checks the bearer token against SHA-256 hashes; clients have no table privileges at all.
 - **Owner-only reads.** Every readable table or view needs both an explicit grant and a row-level-security policy that checks `public.app_owners`. Anyone else, signed in or not, reads nothing.
 - **No sign-up in production.** The owner signs in with an emailed magic link or a password; accounts are not created from the app.
-- **Nothing private leaves the lab.** Raw bills, customer/meter IDs, hourly readings, device names, addresses and tokens stay in the home lab; only aggregates, the facts bundle and narrated text are pushed.
+- **Nothing private leaves the lab.** Raw bills, customer/meter IDs, 5-minute and instantaneous history readings, device names, addresses and tokens stay in the home lab; only aggregates (daily totals and per-clock-hour totals), the facts bundle and narrated text are pushed.
 
 ## The two LLMs
 

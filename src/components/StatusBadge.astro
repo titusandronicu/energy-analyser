@@ -7,9 +7,12 @@ interface Props {
   status: Status;
   testId?: string;
   dot?: boolean;
+  // Replaces the "<word> · <detail>" text, for a card that rates nothing: its badge keeps the tone's colour and
+  // says in its own words what the figures rest on ("Pełne dane z 30 dni").
+  text?: string;
 }
 
-const { status, testId, dot = false } = Astro.props;
+const { status, testId, dot = false, text } = Astro.props;
 ---
 
 <span
@@ -22,5 +25,5 @@ const { status, testId, dot = false } = Astro.props;
   data-testid={testId}
 >
   {dot && <span aria-hidden="true" class="size-2 rounded-full bg-current" />}
-  {statusText(status)}
+  {text ?? statusText(status)}
 </span>

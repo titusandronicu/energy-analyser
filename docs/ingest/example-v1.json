@@ -67,6 +67,36 @@
       "pv_forecast_kwh": 10.4
     }
   ],
+  "hourly_history": [
+    {
+      "hour_start": "2026-09-21T11:00:00+02:00",
+      "load_kwh": 0.62,
+      "grid_net_kwh": -1.18,
+      "pv_kwh": 2.4,
+      "samples": 12
+    },
+    {
+      "hour_start": "2026-09-21T12:00:00+02:00",
+      "load_kwh": 0.71,
+      "grid_net_kwh": -1.94,
+      "pv_kwh": 3.05,
+      "samples": 12
+    },
+    {
+      "hour_start": "2026-09-21T22:00:00+02:00",
+      "load_kwh": 0.94,
+      "grid_net_kwh": 0.31,
+      "pv_kwh": 0,
+      "samples": 11
+    },
+    {
+      "hour_start": "2026-09-21T23:00:00+02:00",
+      "load_kwh": 0.48,
+      "grid_net_kwh": 0.42,
+      "pv_kwh": 0,
+      "samples": 12
+    }
+  ],
   "bill_forecast": {
     "status": "ok",
     "month": "2026-09",

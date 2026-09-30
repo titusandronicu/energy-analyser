@@ -10,6 +10,9 @@ export const MAX_CAPTURE_AGE_MS = 14 * 24 * 60 * 60 * 1000;
 
 const reading = z.number().nullable();
 const energyKwh = z.number().nonnegative().nullable();
+// Signed counterpart of `energyKwh` for net grid energy: import positive, export negative. Finite (zod rejects
+// Infinity and NaN) and nullable like `energyKwh`, but not bounded at 0.
+const signedEnergyKwh = z.number().nullable();
 // Non-null counterpart of `energyKwh`, for the bill forecast's kWh and PLN figures. Hoisted so the
 // deliberate bare `z.number()` inside `settlement` reads as the exception it is.
 const nonNegative = z.number().nonnegative();
@@ -60,6 +63,21 @@ const dailyEnergy = z.strictObject({
   grid_import_kwh: energyKwh,
   grid_export_kwh: energyKwh,
   pv_forecast_kwh: energyKwh.optional(),
+});
+
+// One clock hour's totals from the lab's 5-minute history. `hour_start` is the instant the hour begins, on a whole
+// hour; the app keys hours by that instant and labels them in Europe/Warsaw. `grid_net_kwh` is the hour's net
+// import (import positive, export negative), the quantity PGE balances hourly. `samples` is how many 5-minute
+// readings the hour rests on (12 for a full hour); the app decides from it whether the hour is complete.
+const HOUR_MS = 60 * 60 * 1000;
+const hourlyEnergy = z.strictObject({
+  hour_start: z.iso
+    .datetime({ offset: true })
+    .refine((value) => Date.parse(value) % HOUR_MS === 0, { message: "hour_start must be on a whole hour" }),
+  load_kwh: energyKwh,
+  grid_net_kwh: signedEnergyKwh,
+  pv_kwh: energyKwh,
+  samples: z.number().int().min(0).max(12),
 });
 
 // The month part is validated like `z.iso.date()` does it, so "2026-13" is a rejection rather than
@@ -173,6 +191,15 @@ export const ingestPayloadV1 = z.strictObject({
     })
     .optional(),
   bill_forecast: billForecast.optional(),
+  // At most 900 hours: 35 days plus daylight-saving slack, for the lab's one-off backfill. A regular push sends
+  // the last 48 complete hours.
+  hourly_history: z
+    .array(hourlyEnergy)
+    .max(900)
+    .refine((hours) => new Set(hours.map((h) => Date.parse(h.hour_start))).size === hours.length, {
+      message: "hourly_history hour_start values must be unique",
+    })
+    .optional(),
 });
 
 export type IngestPayloadV1 = z.infer<typeof ingestPayloadV1>;

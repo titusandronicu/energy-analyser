@@ -22,9 +22,11 @@ function withChanges(mutate: (payload: IngestPayloadV1) => void) {
 }
 
 function sections(payload: IngestPayloadV1) {
-  const { recommendation, daily_history, bill_forecast } = payload;
-  if (!recommendation || !daily_history || !bill_forecast) throw new Error("example must include every section");
-  return { recommendation, days: daily_history, billForecast: bill_forecast };
+  const { recommendation, daily_history, bill_forecast, hourly_history } = payload;
+  if (!recommendation || !daily_history || !bill_forecast || !hourly_history) {
+    throw new Error("example must include every section");
+  }
+  return { recommendation, days: daily_history, billForecast: bill_forecast, hours: hourly_history };
 }
 
 // The example carries the `ok` body; the `no_data` branch is built explicitly where it is needed.
@@ -65,6 +67,7 @@ describe("ingest contract v1", () => {
       delete p.recommendation;
       delete p.daily_history;
       delete p.bill_forecast;
+      delete p.hourly_history;
     });
     expect(validateIngestPayload(payload, now).success).toBe(true);
   });
@@ -246,5 +249,95 @@ describe("ingest contract v1", () => {
   it("accepts a payload without a bill forecast", () => {
     const payload = withChanges((p) => delete p.bill_forecast);
     expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it("accepts the hourly history in the committed example", () => {
+    expect(sections(validExample).hours.length).toBeGreaterThan(0);
+    expect(validateIngestPayload(example, now).success).toBe(true);
+  });
+
+  it("accepts a payload without hourly history", () => {
+    const payload = withChanges((p) => delete p.hourly_history);
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it("accepts a negative net grid energy (an exporting hour) and an unknown (null) one", () => {
+    expect(
+      validateIngestPayload(
+        withChanges((p) => (sections(p).hours[0].grid_net_kwh = -2.4)),
+        now,
+      ).success,
+    ).toBe(true);
+    expect(
+      validateIngestPayload(
+        withChanges((p) => (sections(p).hours[0].grid_net_kwh = null)),
+        now,
+      ).success,
+    ).toBe(true);
+  });
+
+  it("rejects negative house use in an hour", () => {
+    expect(firstIssuePath(withChanges((p) => (sections(p).hours[0].load_kwh = -0.1)))).toBe(
+      "hourly_history.0.load_kwh",
+    );
+  });
+
+  it("rejects a repeated hour in hourly history", () => {
+    const payload = withChanges((p) => {
+      const { hours } = sections(p);
+      hours[1] = { ...hours[1], hour_start: hours[0].hour_start };
+    });
+    expect(firstIssuePath(payload)).toBe("hourly_history");
+  });
+
+  it("rejects the same hour written with a different offset", () => {
+    const payload = withChanges((p) => {
+      const { hours } = sections(p);
+      hours[0] = { ...hours[0], hour_start: "2026-09-23T08:00:00+02:00" };
+      hours[1] = { ...hours[1], hour_start: "2026-09-23T06:00:00Z" };
+    });
+    expect(firstIssuePath(payload)).toBe("hourly_history");
+  });
+
+  it("rejects an hour that does not start on a whole hour", () => {
+    expect(firstIssuePath(withChanges((p) => (sections(p).hours[0].hour_start = "2026-09-23T08:30:00+02:00")))).toBe(
+      "hourly_history.0.hour_start",
+    );
+  });
+
+  it("rejects an hour start without an offset", () => {
+    expect(firstIssuePath(withChanges((p) => (sections(p).hours[0].hour_start = "2026-09-23T08:00:00")))).toBe(
+      "hourly_history.0.hour_start",
+    );
+  });
+
+  it.each([13, -1, 10.5])("rejects %s samples in an hour", (samples) => {
+    expect(firstIssuePath(withChanges((p) => (sections(p).hours[0].samples = samples)))).toBe(
+      "hourly_history.0.samples",
+    );
+  });
+
+  it("accepts 900 hours and rejects 901", () => {
+    const hoursFrom = (count: number) =>
+      Array.from({ length: count }, (_, i) => ({
+        hour_start: new Date(Date.parse("2026-08-20T00:00:00Z") + i * 60 * 60 * 1000).toISOString(),
+        load_kwh: 0.5,
+        grid_net_kwh: 0.2,
+        pv_kwh: 0,
+        samples: 12,
+      }));
+    expect(
+      validateIngestPayload(
+        withChanges((p) => (p.hourly_history = hoursFrom(900))),
+        now,
+      ).success,
+    ).toBe(true);
+    expect(firstIssuePath(withChanges((p) => (p.hourly_history = hoursFrom(901))))).toBe("hourly_history");
+  });
+
+  it("rejects an unknown key inside an hour", () => {
+    expect(firstIssuePath(withChanges((p) => Object.assign(sections(p).hours[0], { phase_l1_w: 1 })))).toBe(
+      "hourly_history.0",
+    );
   });
 });
