@@ -697,6 +697,61 @@
           "additionalProperties": false
         }
       ]
+    },
+    "hourly_history": {
+      "maxItems": 900,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "hour_start": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "load_kwh": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "grid_net_kwh": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "pv_kwh": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "samples": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 12
+          }
+        },
+        "required": [
+          "hour_start",
+          "load_kwh",
+          "grid_net_kwh",
+          "pv_kwh",
+          "samples"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [

@@ -1,18 +1,20 @@
 // Pushes a fixture built from docs/ingest/example-v1.json (with captured_at set to now) to a running app,
 // to verify an environment before the home lab is wired. The token is read from the environment only.
 // By default only the live `state` section is sent: the example's recommendation, daily history and bill
-// forecast are made up and would be kept (recommendations permanently), so use --full only against local
-// databases.
+// forecast and hourly history are made up and would be kept (recommendations permanently), so use --full only
+// against local databases.
 // --file <path> sends a whole body from another file instead (the variants in scripts/fixtures/), which is
 // local-only for the same reason.
 // --allow-remote lifts the guard that refuses a whole body (--file or --full) for a BASE_URL that is not
 // localhost, 127.0.0.1, [::1] or *.localhost. It exists for a deliberate staging push: a whole body writes
-// made-up recommendations and daily rows. The default state-only push to a remote server is always allowed. --keep-generated-at leaves the body's own bill_forecast.generated_at
+// made-up recommendations, daily rows and hours. The default state-only push to a remote server is always allowed. --keep-generated-at leaves the body's own bill_forecast.generated_at
 // alone, for the variants that are about a stale forecast.
 // --captured-at <iso> sets captured_at instead of now (the contract accepts at most 5 minutes in the future and
 // up to 14 days back). --shift-days moves every daily_history day by the same number of days so the newest day
 // becomes the Europe/Warsaw calendar day of the capture time actually sent (--captured-at when given, else now;
-// the machine's zone is not used); together with --captured-at that is how the
+// the machine's zone is not used), and moves every hourly_history hour_start by the same number of 24-hour days
+// (the example's hours sit on the day before its newest daily_history day, so they stay in the past); together
+// with --captured-at that is how the
 // scenarios in scripts/fixtures/live-flow/ are pushed at any time of day. Stale is `normal` pushed with
 // --captured-at set 40 minutes back.
 //
@@ -92,6 +94,7 @@ const {
   recommendation: _recommendation,
   daily_history: _dailyHistory,
   bill_forecast: _billForecast,
+  hourly_history: _hourlyHistory,
   ...stateOnly
 } = fixture;
 const full = filePath !== null || process.argv.includes("--full");
@@ -103,7 +106,7 @@ if (generatedAtOverride !== null && !body.recommendation) {
   process.exit(1);
 }
 
-// A whole body writes made-up recommendations (never pruned) and daily rows, so it is local-only unless the
+// A whole body writes made-up recommendations (never pruned), daily rows and hours, so it is local-only unless the
 // caller says a remote push is deliberate.
 function isLocalHost(hostname) {
   return ["localhost", "127.0.0.1", "[::1]"].includes(hostname) || hostname.endsWith(".localhost");
@@ -117,7 +120,7 @@ try {
 }
 if (full && !isLocalHost(baseHost) && !process.argv.includes("--allow-remote")) {
   console.error(
-    `refusing to send a whole body (--file or --full) to ${baseHost}: it writes made-up recommendations and daily rows. Pass --allow-remote for a deliberate staging push.\n${usage}`,
+    `refusing to send a whole body (--file or --full) to ${baseHost}: it writes made-up recommendations, daily rows and hours. Pass --allow-remote for a deliberate staging push.\n${usage}`,
   );
   process.exit(1);
 }
@@ -137,6 +140,7 @@ const dayKey = (number) => new Date(number * DAY_MS).toISOString().slice(0, 10);
 const warsawDay = (instant) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Warsaw" }).format(instant);
 
 let dailyHistory = body.daily_history;
+let hourlyHistory = body.hourly_history;
 if (process.argv.includes("--shift-days")) {
   if (!dailyHistory?.length) {
     console.error(`--shift-days needs a body with daily_history\n${usage}`);
@@ -146,12 +150,22 @@ if (process.argv.includes("--shift-days")) {
   const shift = dayNumber(targetDay) - Math.max(...dailyHistory.map((entry) => dayNumber(entry.day)));
   dailyHistory = dailyHistory.map((entry) => ({ ...entry, day: dayKey(dayNumber(entry.day) + shift) }));
   console.log(`daily_history shifted by ${String(shift)} day(s): newest day is now ${targetDay}`);
+  // Whole 24-hour steps on the instant: across a daylight-saving change the Warsaw clock hour moves by one, which
+  // a fixture can live with.
+  if (hourlyHistory?.length) {
+    hourlyHistory = hourlyHistory.map((entry) => ({
+      ...entry,
+      hour_start: new Date(Date.parse(entry.hour_start) + shift * DAY_MS).toISOString(),
+    }));
+    console.log(`hourly_history shifted by ${String(shift)} day(s)`);
+  }
 }
 
 const payload = {
   ...body,
   captured_at: capturedAt,
   ...(dailyHistory === undefined ? {} : { daily_history: dailyHistory }),
+  ...(hourlyHistory === undefined ? {} : { hourly_history: hourlyHistory }),
   ...(rewriteGeneratedAt ? { bill_forecast: { ...body.bill_forecast, generated_at: capturedAt } } : {}),
   ...(generatedAtOverride === null
     ? {}
