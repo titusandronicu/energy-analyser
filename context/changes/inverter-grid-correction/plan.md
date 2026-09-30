@@ -305,5 +305,5 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Manual
 
-- [ ] 3.4 In production, `/dashboard/history?day=2026-08-10` reads "Poza oceną" with the sensor basis, and `?month=2026-08` rates from 18 August on
+- [x] 3.4 In production, `/dashboard/history?day=2026-08-10` reads "Poza oceną" with the sensor basis, and `?month=2026-08` rates from 18 August on — 3bef11e
 - [x] 3.5 The owner confirms the `docs/decisions.md` entry and roadmap question 5 state the decision — 482c54c
