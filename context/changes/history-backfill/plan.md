@@ -172,12 +172,12 @@ External prerequisites (lessons: name every prerequisite outside the repo): the 
 
 #### Automated
 
-- [x] 1.1 Lab tests pass, including the new range and CLI cases: `python3 -m unittest infra/compose/energy-app/scripts/test_push_energy_analyser.py` (in homelab-2) — e086179
-- [x] 1.2 The script still compiles and shows the new options: `python3 infra/compose/energy-app/scripts/push-energy-analyser.py --help | grep -c -- '--from\|--to'` prints 2 or more (in homelab-2) — e086179
+- [x] 1.1 Lab tests pass, including the new range and CLI cases: `python3 -m unittest infra/compose/energy-app/scripts/test_push_energy_analyser.py` (in homelab-2) — 8f23a37
+- [x] 1.2 The script still compiles and shows the new options: `python3 infra/compose/energy-app/scripts/push-energy-analyser.py --help | grep -c -- '--from\|--to'` prints 2 or more (in homelab-2) — 8f23a37
 
 #### Manual
 
-- [x] 1.3 A local dry run against a copy of the production history file with `--from 2026-07-16 --to 2026-07-25` lists the ten days, 2026-07-20 with null totals and the others with plausible totals — e086179
+- [x] 1.3 A local dry run against a copy of the production history file with `--from 2026-07-16 --to 2026-07-25` lists the ten days, 2026-07-20 with null totals and the others with plausible totals — 8f23a37
 
 ### Phase 2: Backfill run and production check
 

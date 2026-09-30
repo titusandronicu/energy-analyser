@@ -1,7 +1,7 @@
 ---
 change_id: history-backfill
 title: Send the lab days recorded before the first push once
-status: implemented
+status: impl_reviewed
 created: 2026-09-30
 updated: 2026-09-30
 archived_at: null
