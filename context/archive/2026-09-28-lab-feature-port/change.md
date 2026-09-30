@@ -1,10 +1,10 @@
 ---
 change_id: lab-feature-port
 title: What to port from the lab's old analyser page and Home Assistant dashboards
-status: preparing
+status: archived
 created: 2026-09-28
 updated: 2026-09-30
-archived_at: null
+archived_at: 2026-09-30T07:01:52Z
 ---
 
 ## Notes
