@@ -399,9 +399,9 @@ None. There is no schema or contract change, and rollback is reverting the PR. E
 
 #### Automated
 
-- [x] 2.1 Unit tests pass for bar geometry and labels: `npm test`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Type checks pass: `npx astro check`
+- [x] 2.1 Unit tests pass for bar geometry and labels: `npm test` — 11cc71c
+- [x] 2.2 Linting passes: `npm run lint` — 11cc71c
+- [x] 2.3 Type checks pass: `npx astro check` — 11cc71c
 
 #### Manual
 
@@ -411,12 +411,12 @@ None. There is no schema or contract change, and rollback is reverting the PR. E
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm test`
-- [ ] 3.2 Linting passes: `npm run lint`
-- [ ] 3.3 Type checks pass: `npx astro check`
-- [ ] 3.4 Production build succeeds: `npm run build`
-- [ ] 3.5 Local smoke passes, including the three new history steps: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`
-- [ ] 3.6 The docs record the calendar: `git grep -n "Historia" -- docs/logic.md docs/decisions.md` prints at least two lines
+- [x] 3.1 Unit tests pass: `npm test`
+- [x] 3.2 Linting passes: `npm run lint`
+- [x] 3.3 Type checks pass: `npx astro check`
+- [x] 3.4 Production build succeeds: `npm run build`
+- [x] 3.5 Local smoke passes, including the three new history steps: `BASE_URL=http://localhost:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`
+- [x] 3.6 The docs record the calendar: `git grep -n "Historia" -- docs/logic.md docs/decisions.md` prints at least two lines
 
 #### Manual
 

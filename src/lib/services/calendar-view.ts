@@ -9,6 +9,7 @@ import {
   type CalendarPeriod,
   type Quarter,
 } from "@/lib/calendar/period";
+import type { MonthGroup } from "@/lib/bars";
 import { formatPeriod } from "@/lib/format/period";
 import { kwhLabel } from "@/lib/format/values";
 import { formatDayMonth, formatMonth, warsawHour, warsawParts } from "@/lib/format/warsaw-time";
@@ -31,6 +32,9 @@ export const MARKERS_INCOMPLETE = "znaczniki rekomendacji mogą być niepełne";
 export const BEFORE_MORNING = "wygenerowana przed 6:00";
 export const NO_RECOMMENDATION = "brak rekomendacji z tego dnia";
 export const BEFORE_HISTORY = "brak danych";
+// The month or quarter that holds HISTORY_START says its earlier days were never collected, since its day count
+// still covers the whole calendar period.
+export const HISTORY_START_NOTE = `Dane od ${formatDayMonth(HISTORY_START)} ${HISTORY_START.slice(0, 4)} — wcześniejszych dni aplikacja nie ma`;
 
 // complete: before today with PV, house use and grid import all present; empty: a row with a total missing;
 // missing: no row. Today and later days are never complete, whatever their row holds.
@@ -40,6 +44,39 @@ export interface DayCell {
   day: string;
   status: DayStatus;
   hasRecommendation: boolean;
+}
+
+// The word each day status reads as in the month grid and its legend.
+export const DAY_STATUS_WORD: Record<DayStatus, string> = {
+  complete: "dane pełne",
+  empty: "dane niepełne",
+  missing: "brak danych",
+  today: "dziś, dzień jeszcze trwa",
+  future: "jeszcze nie nadszedł",
+};
+export const BEFORE_HISTORY_WORD = "przed początkiem historii";
+export const HAS_RECOMMENDATION_WORD = "jest rekomendacja";
+
+// The word for a grid day; a day before HISTORY_START is not "missing" data but outside the history.
+export function dayCellWord(cell: DayCell): string {
+  return cell.day < HISTORY_START ? BEFORE_HISTORY_WORD : DAY_STATUS_WORD[cell.status];
+}
+
+// The grid day's accessible name: "14 września, dane pełne, jest rekomendacja".
+export function dayCellName(cell: DayCell): string {
+  const parts = [formatDayMonth(cell.day), dayCellWord(cell)];
+  if (cell.hasRecommendation) parts.push(HAS_RECOMMENDATION_WORD);
+  return parts.join(", ");
+}
+
+// The badge text of a total: "Pełne dane: 18 z 30 dni".
+export function completeDaysText(completeDays: number, calendarDays: number): string {
+  return `Pełne dane: ${String(completeDays)} z ${String(calendarDays)} dni`;
+}
+
+// How far the forecast comparison is from its minimum: "3 z 7 potrzebnych dni z prognozą".
+export function forecastDaysText(days: number, needed: number): string {
+  return `${String(days)} z ${String(needed)} potrzebnych dni z prognozą`;
 }
 
 export interface EnergyTotals {
@@ -98,6 +135,8 @@ export interface MonthView extends ReservedSlots {
   label: string;
   totals: PeriodTotals;
   unfinishedNote: string | null;
+  // HISTORY_START_NOTE for the month that holds HISTORY_START, else null.
+  startNote: string | null;
   // Monday-first weeks; null pads the days before the 1st and after the last day.
   grid: (DayCell | null)[][];
   // One slot per calendar day of the month; today and later days are gaps.
@@ -120,6 +159,8 @@ export interface QuarterView extends ReservedSlots {
   // Over the complete days of all three months.
   totals: PeriodTotals;
   unfinishedNote: string | null;
+  // HISTORY_START_NOTE for the quarter that holds HISTORY_START, else null.
+  startNote: string | null;
 }
 
 export type DayTotals =
@@ -273,6 +314,11 @@ function unfinishedNote(totals: PeriodTotals, what: string): string | null {
   return totals.unfinished ? `${what} jeszcze trwa — liczą się tylko pełne dni, bez szacowania całości` : null;
 }
 
+function startNote(p: CalendarPeriod): string | null {
+  const { first, last } = periodBounds(p);
+  return first < HISTORY_START && HISTORY_START <= last ? HISTORY_START_NOTE : null;
+}
+
 export function buildMonthView(
   month: string,
   rows: readonly DailyEnergyRow[],
@@ -295,6 +341,7 @@ export function buildMonthView(
     label: periodLabel(period),
     totals,
     unfinishedNote: unfinishedNote(totals, "Miesiąc"),
+    startNote: startNote(period),
     grid: monthGrid(month).map((week) =>
       week.map((day) =>
         day === null
@@ -340,8 +387,31 @@ export function buildQuarterView(
     months,
     totals,
     unfinishedNote: unfinishedNote(totals, "Kwartał"),
+    startNote: startNote(period),
     ...RESERVED,
   };
+}
+
+// The quarter's months for the grouped chart: a month without totals (before the history or under the minimum) is a
+// gap, never zero bars.
+export function quarterChartMonths(view: QuarterView): MonthGroup[] {
+  return view.months.map((month) => {
+    const calendarDays = periodDays({ kind: "month", month: month.month }).length;
+    if (month.kind === "before-history") {
+      return { label: month.label, pv: null, load: null, import: null, completeDays: 0, calendarDays };
+    }
+    const { totals } = month;
+    return totals.kind === "totals"
+      ? {
+          label: month.label,
+          pv: totals.totals.pvKwh,
+          load: totals.totals.loadKwh,
+          import: totals.totals.importKwh,
+          completeDays: totals.completeDays,
+          calendarDays,
+        }
+      : { label: month.label, pv: null, load: null, import: null, completeDays: totals.completeDays, calendarDays };
+  });
 }
 
 function dayTotals(day: string, row: DailyEnergyRow | undefined, today: string): DayTotals {

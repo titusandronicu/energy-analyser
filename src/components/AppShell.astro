@@ -1,0 +1,26 @@
+---
+import DashboardHeader from "@/components/DashboardHeader.astro";
+
+interface Props {
+  email: string | undefined;
+  // The page the header's navigation marks as current.
+  current: "dashboard" | "history";
+}
+
+// The signed-in pages' layout: the aurora background, the header with the brand h1 and the navigation, the page's one
+// main landmark around the default slot, and an optional legend footer. The header and the footer stay outside main so
+// they keep their banner and contentinfo roles.
+const { email, current } = Astro.props;
+---
+
+<div class="bg-aurora min-h-screen p-4 sm:p-8">
+  <div class="mx-auto max-w-[1120px] space-y-6">
+    <DashboardHeader email={email} current={current} />
+
+    <main class="space-y-6">
+      <slot />
+    </main>
+
+    <slot name="legend" />
+  </div>
+</div>

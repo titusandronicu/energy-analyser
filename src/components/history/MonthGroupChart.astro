@@ -9,10 +9,12 @@ import { oneDecimal } from "@/lib/format/values";
 
 interface Props {
   months: readonly MonthGroup[];
+  // What the chart says when fewer than three months hold a value, e.g. "za mało miesięcy z danymi" in a quarter.
+  emptyText?: string;
   class?: string;
 }
 
-const { months, class: className } = Astro.props;
+const { months, emptyText = "za mało dni", class: className } = Astro.props;
 
 // Full class names, in the series order of monthGroupSeries: PV, house use, grid import.
 const FILL_CLASS = ["fill-flow-pv", "fill-flow-home", "fill-flow-grid"] as const;
@@ -29,7 +31,7 @@ const label = describeMonthGroups(months);
 <div class:list={cn("bg-inset rounded-md p-3", className)}>
   {geometry === null || label === null ? (
     <p class="text-muted-foreground text-xs" data-testid="bars-empty">
-      za mało dni
+      {emptyText}
     </p>
   ) : (
     <div class="flex flex-col gap-2">

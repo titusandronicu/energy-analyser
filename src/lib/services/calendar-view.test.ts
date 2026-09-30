@@ -7,14 +7,20 @@ import {
   buildDayView,
   buildMonthView,
   buildQuarterView,
+  completeDaysText,
+  dayCellName,
+  dayCellWord,
   FORECAST_NOT_COLLECTED,
   FORECAST_TOO_FEW,
+  forecastDaysText,
+  HISTORY_START_NOTE,
   INCOMPLETE_DAY,
   isCompleteDay,
   MARKERS_INCOMPLETE,
   NO_DAY_DATA,
   NO_FORECAST,
   NO_RECOMMENDATION,
+  quarterChartMonths,
   type DayCell,
   type MonthView,
 } from "./calendar-view";
@@ -371,5 +377,58 @@ describe("buildDayView", () => {
     // 22:30 UTC on the 27th is 00:30 on the 28th in Warsaw.
     const view = buildDayView("2026-09-27", row("2026-09-27"), [rec("2026-09-27T22:30:00Z")], todayKey, now);
     expect(view.advice).toEqual({ kind: "none", reason: NO_RECOMMENDATION });
+  });
+});
+
+describe("history start and display helpers", () => {
+  it("notes the history start in July 2026 and its quarter only", () => {
+    expect(buildMonthView("2026-07", [], noTimes, "2026-09-30").startNote).toBe(HISTORY_START_NOTE);
+    expect(HISTORY_START_NOTE).toBe("Dane od 16 lipca 2026 — wcześniejszych dni aplikacja nie ma");
+    expect(buildMonthView("2026-08", [], noTimes, "2026-09-30").startNote).toBeNull();
+    expect(buildQuarterView(2026, 3, [], "2026-09-30").startNote).toBe(HISTORY_START_NOTE);
+    expect(buildQuarterView(2026, 4, [], "2026-10-10").startNote).toBeNull();
+  });
+
+  it("names grid days with their status, the history start and a recommendation", () => {
+    const view = buildMonthView(
+      "2026-07",
+      rows("2026-07-16", 3),
+      { times: ["2026-07-17T08:00:00Z"], truncated: false },
+      "2026-07-20",
+    );
+    const byDay = new Map(cells(view).map((cell) => [cell.day, cell]));
+    const name = (day: string) => {
+      const cell = byDay.get(day);
+      if (cell === undefined) throw new Error(day);
+      return dayCellName(cell);
+    };
+    expect(name("2026-07-15")).toBe("15 lipca, przed początkiem historii");
+    expect(name("2026-07-17")).toBe("17 lipca, dane pełne, jest rekomendacja");
+    expect(name("2026-07-19")).toBe("19 lipca, brak danych");
+    expect(name("2026-07-20")).toBe("20 lipca, dziś, dzień jeszcze trwa");
+    expect(name("2026-07-21")).toBe("21 lipca, jeszcze nie nadszedł");
+    const empty = buildMonthView("2026-09", september, noTimes, "2026-09-30");
+    const cell = cells(empty).find((c) => c.day === "2026-09-13");
+    expect(cell && dayCellWord(cell)).toBe("dane niepełne");
+  });
+
+  it("words the day counts", () => {
+    expect(completeDaysText(18, 30)).toBe("Pełne dane: 18 z 30 dni");
+    expect(forecastDaysText(3, 7)).toBe("3 z 7 potrzebnych dni z prognozą");
+  });
+
+  it("maps quarter months to chart groups with gaps for months without totals", () => {
+    const view = buildQuarterView(2026, 3, [...rows("2026-07-26", 6), ...rows("2026-08-01", 31)], today());
+    expect(quarterChartMonths(view)).toEqual([
+      { label: "lipiec 2026", pv: null, load: null, import: null, completeDays: 6, calendarDays: 31 },
+      { label: "sierpień 2026", pv: 310, load: 620, import: 155, completeDays: 31, calendarDays: 31 },
+      { label: "wrzesień 2026", pv: null, load: null, import: null, completeDays: 0, calendarDays: 30 },
+    ]);
+    const before = buildQuarterView(2026, 2, [], today());
+    expect(quarterChartMonths(before).map((m) => [m.pv, m.completeDays, m.calendarDays])).toEqual([
+      [null, 0, 30],
+      [null, 0, 31],
+      [null, 0, 30],
+    ]);
   });
 });

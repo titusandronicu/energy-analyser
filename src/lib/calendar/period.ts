@@ -70,7 +70,7 @@ export function periodInstants(p: CalendarPeriod): { fromMs: number; toMs: numbe
 }
 
 // A period can be opened when it overlaps [HISTORY_START, today].
-function isOpenable(p: CalendarPeriod, today: string): boolean {
+export function isOpenable(p: CalendarPeriod, today: string): boolean {
   const { first, last } = periodBounds(p);
   return last >= HISTORY_START && first <= today;
 }
