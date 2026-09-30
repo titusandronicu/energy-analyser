@@ -273,10 +273,10 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, covering `crossesSensorChange` boundaries, the pinned calendar and sensor texts, the rating window 08-03 – 08-17 as "Poza oceną", the sensor basis before import-above-use, and August rated from 18 August on: `npm test` — 1644469
-- [x] 1.2 Linting passes: `npm run lint` — 1644469
-- [x] 1.3 Type checks pass: `npx astro check` — 1644469
-- [x] 1.4 No "overstated from 4 August" copy remains: `git grep -n "GRID_IMPORT_OVERSTATED\|zawyżony od" -- src ':!*.test.ts'` prints nothing — 1644469
+- [x] 1.1 Unit tests pass, covering `crossesSensorChange` boundaries, the pinned calendar and sensor texts, the rating window 08-03 – 08-17 as "Poza oceną", the sensor basis before import-above-use, and August rated from 18 August on: `npm test` — 482c54c
+- [x] 1.2 Linting passes: `npm run lint` — 482c54c
+- [x] 1.3 Type checks pass: `npx astro check` — 482c54c
+- [x] 1.4 No "overstated from 4 August" copy remains: `git grep -n "GRID_IMPORT_OVERSTATED\|zawyżony od" -- src ':!*.test.ts'` prints nothing — 482c54c
 
 #### Manual
 
@@ -286,11 +286,11 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Automated
 
-- [x] 2.1 Unit tests pass, covering the usage baseline's `crossesSensorChange` on fallback and seasonal baselines: `npm test` — bc9790a
-- [x] 2.2 Linting passes: `npm run lint` — bc9790a
-- [x] 2.3 Type checks pass: `npx astro check` — bc9790a
-- [x] 2.4 Production build succeeds: `npm run build` — bc9790a
-- [x] 2.5 The unstable night figure is gone: `git grep -n "10–20" -- src` prints nothing — bc9790a
+- [x] 2.1 Unit tests pass, covering the usage baseline's `crossesSensorChange` on fallback and seasonal baselines: `npm test` — 482c54c
+- [x] 2.2 Linting passes: `npm run lint` — 482c54c
+- [x] 2.3 Type checks pass: `npx astro check` — 482c54c
+- [x] 2.4 Production build succeeds: `npm run build` — 482c54c
+- [x] 2.5 The unstable night figure is gone: `git grep -n "10–20" -- src` prints nothing — 482c54c
 
 #### Manual
 
@@ -300,9 +300,9 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Automated
 
-- [x] 3.1 Formatting passes: `npx prettier --check docs context/foundation/roadmap.md context/changes/inverter-grid-correction` — b20f6eb
-- [x] 3.2 The old claims are gone: `git grep -n -i "largely cancel\|grid import is overstated\|close to PGE at night\|10–20" -- docs context/foundation` prints nothing (the new decisions entry quotes none of these) — b20f6eb
-- [x] 3.3 The new rule is recorded: `git grep -n "grid-sensor.ts" -- docs/logic.md` prints at least one line — b20f6eb
+- [x] 3.1 Formatting passes: `npx prettier --check docs context/foundation/roadmap.md context/changes/inverter-grid-correction` — 482c54c
+- [x] 3.2 The old claims are gone: `git grep -n -i "largely cancel\|grid import is overstated\|close to PGE at night\|10–20" -- docs context/foundation` prints nothing (the new decisions entry quotes none of these) — 482c54c
+- [x] 3.3 The new rule is recorded: `git grep -n "grid-sensor.ts" -- docs/logic.md` prints at least one line — 482c54c
 
 #### Manual
 

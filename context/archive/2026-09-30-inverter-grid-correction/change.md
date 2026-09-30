@@ -1,10 +1,10 @@
 ---
 change_id: inverter-grid-correction
 title: Handle the inverter's wrong grid reading across the whole history
-status: impl_reviewed
+status: archived
 created: 2026-09-30
 updated: 2026-09-30
-archived_at: null
+archived_at: 2026-09-30T17:58:33Z
 ---
 
 ## Notes
