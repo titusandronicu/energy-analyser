@@ -1,10 +1,10 @@
 ---
 change_id: history-calendar
 title: Browse past days and months in a history calendar
-status: impl_reviewed
+status: archived
 created: 2026-09-30
 updated: 2026-09-30
-archived_at: null
+archived_at: 2026-09-30T12:25:11Z
 ---
 
 ## Notes
