@@ -70,7 +70,7 @@ Narration runs in the lab (`scripts/run-energy-advisory.py`), never in this app.
 - Supabase "Magic link" and "Confirm signup" email templates set to `supabase/templates/magic-link.html`.
 - Ingest token hash row in `public.ingest_tokens` (`scripts/create-ingest-token.mjs`).
 - Each migration applied in production with its deploy. In particular `20260929101548_owner_read_daily_energy_captured_at.sql` (owners may read `daily_energy.captured_at`): if it is missing, the consumption chip on the live card reads "Bez oceny · brak czasu historii" and the server log shows "permission denied for table daily_energy".
-- `20260930094000_hourly_energy.sql` (the `hourly_energy` table and the `ingest_push` that fills it) applied **before** the lab sends `hourly_history`: the contract rejects unknown keys, so a lab push with the section against an older app is refused whole (422), `state` included. Then, once, the 35-day backfill from the lab: `push-energy-analyser.py --hourly-hours 840` (homelab-2 `runbooks/energy-analyser-push.md`).
+- `20260930081229_hourly_energy.sql` (the `hourly_energy` table and the `ingest_push` that fills it) applied **before** the lab sends `hourly_history`: the contract rejects unknown keys, so a lab push with the section against an older app is refused whole (422), `state` included. Then, once, the 35-day backfill from the lab: `push-energy-analyser.py --hourly-hours 840` (homelab-2 `runbooks/energy-analyser-push.md`).
 
 ## Prerequisites by roadmap item
 

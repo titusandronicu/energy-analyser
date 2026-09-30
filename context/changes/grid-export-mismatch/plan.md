@@ -467,9 +467,9 @@ One additive migration (new table, redefined `ingest_push`, grants). Rollback: t
 
 #### Automated
 
-- [x] 4.1 Lab tests pass: `python3 -m unittest infra/compose/energy-app/scripts/test_push_energy_analyser.py` (in homelab-2)
-- [x] 4.2 App checks still pass: `npm test`, `npm run lint`
-- [x] 4.3 The roadmap and prerequisites carry the change: `git grep -n "hourly_history" -- docs/prerequisites.md context/foundation/roadmap.md` prints at least two lines
+- [x] 4.1 Lab tests pass: `python3 -m unittest infra/compose/energy-app/scripts/test_push_energy_analyser.py` (in homelab-2) — b946339
+- [x] 4.2 App checks still pass: `npm test`, `npm run lint` — 5410ef4
+- [x] 4.3 The roadmap and prerequisites carry the change: `git grep -n "hourly_history" -- docs/prerequisites.md context/foundation/roadmap.md` prints at least two lines — 5410ef4
 - [ ] 4.4 After the draft PR is opened the CI `ci` and `smoke` jobs are green
 
 #### Manual
