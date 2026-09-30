@@ -178,7 +178,7 @@ There are no data migrations. Rollback is restoring the `.bak` copy of the scrip
 #### Automated
 
 - [x] 2.1 Runbook lists the script: grep prints at least one line — 214bc80
-- [ ] 2.2 App docs formatted: `npx prettier --check docs`
+- [x] 2.2 App docs formatted: `npx prettier --check docs` — 49f4c53
 
 #### Manual
 
