@@ -183,4 +183,4 @@ There are no data migrations. Rollback is restoring the `.bak` copy of the scrip
 #### Manual
 
 - [x] 2.3 With the owner's OK, the script is deployed to docker-core and the next briefing shows the new findings — 6d23a94
-- [ ] 2.4 The dashboard's "Najważniejsze ustalenia" show the new findings after the next LLM refresh
+- [x] 2.4 The dashboard's "Najważniejsze ustalenia" show the new findings after the next LLM refresh — 6d23a94
