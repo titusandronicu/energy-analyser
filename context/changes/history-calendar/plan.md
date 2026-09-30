@@ -387,9 +387,9 @@ None. There is no schema or contract change, and rollback is reverting the PR. E
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, covering period parsing and the default month, month grid, complete-day totals, the 7-day minimum, today/future and today as a gap, forecast days, morning recommendation and its historical view, the instant range on a DST day, truncated markers, and Q3 2026: `npm test`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Type checks pass: `npx astro check`
+- [x] 1.1 Unit tests pass, covering period parsing and the default month, month grid, complete-day totals, the 7-day minimum, today/future and today as a gap, forecast days, morning recommendation and its historical view, the instant range on a DST day, truncated markers, and Q3 2026: `npm test` — 5e00c2e
+- [x] 1.2 Linting passes: `npm run lint` — 5e00c2e
+- [x] 1.3 Type checks pass: `npx astro check` — 5e00c2e
 
 #### Manual
 
@@ -399,9 +399,9 @@ None. There is no schema or contract change, and rollback is reverting the PR. E
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass for bar geometry and labels: `npm test`
-- [ ] 2.2 Linting passes: `npm run lint`
-- [ ] 2.3 Type checks pass: `npx astro check`
+- [x] 2.1 Unit tests pass for bar geometry and labels: `npm test`
+- [x] 2.2 Linting passes: `npm run lint`
+- [x] 2.3 Type checks pass: `npx astro check`
 
 #### Manual
 
