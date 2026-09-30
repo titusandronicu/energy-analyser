@@ -28,7 +28,7 @@ From `context/changes/inverter-grid-correction/research.md`:
 
 - **One caveat everywhere:** "grid import and house use come from a faulty inverter sensor, for the whole history". It appears in the calendar captions and "Co to znaczy?", on the live card, on the usage card and on the hourly card. Each copy is taken from one module, `src/lib/services/grid-sensor.ts`.
 - **4 August 2026 appears only as "sensor direction changed".**
-- **Ratings:** a day from 2026-08-04 to 2026-08-17 reads "Poza oceną", with a neutral basis that names the sensor change. No rating norm mixes days from both sides of the change. A month is rated from its rated days, as today, so August rests on 18–30 August.
+- **Ratings:** a day from 2026-08-03 (the mixed change day) to 2026-08-17 reads "Poza oceną", with a neutral basis that names the sensor change. No rating norm mixes days from both sides of the change. A month is rated from its rated days, as today, so August rests on 18–30 August.
 - **The usage card** adds one sentence when its baseline spans the sensor change.
 - **Docs and roadmap match all of this.** No sentence in `docs/` or the roadmap says the import is "overstated from 4 August" or that the error "largely cancels".
 
@@ -38,7 +38,6 @@ From `context/changes/inverter-grid-correction/research.md`:
 - **Option C, PGE figures for closed days, is not in this plan.** It becomes a separate later change: a lab aggregation and push, a contract and migration, and the parked privacy decision (`context/foundation/roadmap.md:451`). After the installer's fix, the history before it is kept with this caveat, and replacing it with PGE data is that change's job.
 - **No lab, contract, migration, Supabase or homelab changes.** No PGE data leaves the lab.
 - **The CT and the zero-export regulation are not addressed in software.** That is the installer's job (option D, outside the app).
-- **The bill forecast card gets no new caveat.** The lab computes its imported energy, and the range already carries the uncertainty. Flagged for plan review, since it is a surface the owner did not list.
 - **The live home verdict's load norm (`dailyLoadNorm`) is unchanged.** Its 30-day window can no longer span the change, because the compared day is always yesterday or later.
 - **No change to the export explanation beyond naming the same sensor.** Export stays out of the calendar.
 
@@ -48,7 +47,7 @@ Put the date, the caveat texts and a small pure helper in one leaf module. Rewri
 
 ## Critical Implementation Details
 
-- **The window rule.** A day `D` is inside the sensor-change window when `SENSOR_DIRECTION_CHANGED_ON ≤ D ≤ addDays(SENSOR_DIRECTION_CHANGED_ON, RATING_WINDOW_DAYS − 1)`, which is 2026-08-04 to 2026-08-17.
+- **The window rule.** A day `D` is inside the sensor-change window when `SENSOR_CHANGE_DAY ≤ D ≤ addDays(SENSOR_DIRECTION_CHANGED_ON, RATING_WINDOW_DAYS − 1)`, which is 2026-08-03 to 2026-08-17. `SENSOR_CHANGE_DAY = "2026-08-03"` is the mixed day: the direction changed at about 16:00 that day (plan review F3), so its own value mixes both sides. It enters only the norms of 08-04 to 08-17, which are unrated anyway.
   - That is exactly the set of days whose own value and the window `[D − 14, D − 1]` do not all lie on one side of the change.
   - The helper is `crossesSensorChange(first, last)`, true when `first < CHANGED_ON ≤ last`. `rateDayIn` calls it with `(addDays(D, −RATING_WINDOW_DAYS), D)`.
 - **The order of checks in `rateDayIn`.** Today, future, no row and incomplete are checked first, then no use. The sensor-change check comes **before** the import-above-use check, so a day inside the window always names the sensor rather than "błąd licznika". Its result is `{ kind: "inconsistent", tone: "insufficient", word: INCONSISTENT_WORD, basis: SENSOR_CHANGE_RATING_BASIS }`.
@@ -68,7 +67,7 @@ Create the caveat module. Move the calendar's notes onto it. Add the rule for th
 
 **Changes**:
 
-- `SENSOR_DIRECTION_CHANGED_ON = "2026-08-04"`.
+- `SENSOR_DIRECTION_CHANGED_ON = "2026-08-04"` (the first whole day after the change) and `SENSOR_CHANGE_DAY = "2026-08-03"` (the mixed day, plan review F3).
 - `crossesSensorChange(first: string, last: string): boolean`.
 - Texts, each built from the constants (`formatDayMonth`, `HISTORY_START`). The Polish below is the target wording; plan review may polish it.
   - `SENSOR_CAVEAT`, one line for cards: "Prąd kupiony z sieci i zużycie domu pochodzą z czujnika prądu falownika, który od początku historii mierzy źle, więc te liczby są niepewne do czasu sprawdzenia czujnika przez instalatora."
@@ -86,7 +85,7 @@ Create the caveat module. Move the calendar's notes onto it. Add the rule for th
 - Remove `GRID_IMPORT_OVERSTATED_FROM`, `GRID_IMPORT_OVERSTATED`, `GRID_IMPORT_TERM` and `GRID_IMPORT_EXPLANATION`.
 - `MONTH_CHART_NOTE`: "Dni bez danych zostają puste, a dzisiejszy dzień nie jest rysowany, bo jeszcze trwa. Prąd kupiony z sieci i zużycie domu są przez całą historię niepewne (zobacz „Co to znaczy?”)."
 - `QUARTER_CHART_NOTE`: the same second sentence, without the pointer.
-- `RATING_EXPLANATION`: replace the sentence "Zawyżony od 4 sierpnia … mało się zmienia." with: "4 sierpnia 2026 zmienił się kierunek czujnika prądu falownika, więc dni od 4 do 17 sierpnia, których norma sięgałaby sprzed tej zmiany, są „Poza oceną”, a norma nigdy nie łączy dni sprzed i po zmianie." Compute "17 sierpnia" from the constants.
+- `RATING_EXPLANATION`: replace the sentence "Zawyżony od 4 sierpnia … mało się zmienia." with: "4 sierpnia 2026 zmienił się kierunek czujnika prądu falownika, więc dni od 3 do 17 sierpnia (3 sierpnia sam łączy obie strony), których norma sięgałaby sprzed tej zmiany, są „Poza oceną”, a norma nigdy nie łączy dni sprzed i po zmianie." Compute "17 sierpnia" from the constants.
 - `HistoryNotes.astro`: `{ term: SENSOR_TERM, explanation: SENSOR_EXPLANATION }` replaces the grid-import note.
 - The export note becomes: "Ten sam czujnik falownika pokazuje za mało prądu oddanego do sieci, a od połowy sierpnia prawie zero, choć PGE zapisało prawdziwy zwrot. Dlatego kalendarz go nie pokazuje."
 - Update the pinned-copy test to the new texts. Assert that no exported constant contains "zawyżony od".
@@ -97,14 +96,14 @@ Create the caveat module. Move the calendar's notes onto it. Add the rule for th
 
 **Changes**:
 
-- In `rateDayIn`, after the no-use check and before the import-above-use check: `if (crossesSensorChange(addDays(day, -RATING_WINDOW_DAYS), day)) return { kind: "inconsistent", …, basis: SENSOR_CHANGE_RATING_BASIS }`.
+- In `rateDayIn`, after the no-use check and before the import-above-use check: `if (day === SENSOR_CHANGE_DAY || crossesSensorChange(addDays(day, -RATING_WINDOW_DAYS), day)) return { kind: "inconsistent", …, basis: SENSOR_CHANGE_RATING_BASIS }`.
 - Update the comment on the `inconsistent` variant: import above use, **or** a day in the sensor-change window.
 - Tests, synthetic rows only:
   - 08-04 and 08-17 read "Poza oceną" with the sensor basis, even when a full norm exists.
-  - 08-03 and 08-18 are rated normally, and 08-18's norm days are all ≥ 08-04.
+  - 08-03 (the mixed day) reads "Poza oceną" with the sensor basis; 08-02 and 08-18 are rated normally, and 08-18's norm days are all ≥ 08-04.
   - A window-day that also has import above use gets the sensor basis.
   - An August built from steady days is rated from 18–31 August only, and its `periodLabel` says so.
-  - Rewrite the existing case "leaves the inconsistent early days out of the norm". It currently expects 08-04 to read "Za mało danych: 3 z 7" (`period-rating.test.ts:181-188`); it now expects the sensor "Poza oceną". Keep that test's other assertion (08-03 inconsistent).
+  - Rewrite the existing case "leaves the inconsistent early days out of the norm". It currently expects 08-04 to read "Za mało danych: 3 z 7" (`period-rating.test.ts:181-188`); it now expects the sensor "Poza oceną". Its other assertion (08-03 inconsistent) now expects the sensor basis too.
 
 ### Success Criteria:
 
@@ -113,11 +112,11 @@ Create the caveat module. Move the calendar's notes onto it. Add the rule for th
 - Unit tests pass: `npm test`
 - Linting passes: `npm run lint`
 - Type checks pass: `npx astro check`
-- No "overstated" copy remains in `src`: `git grep -n "GRID_IMPORT_OVERSTATED\|zawyżony od" -- src` prints nothing
+- No "overstated" copy remains in `src`: `git grep -n "GRID_IMPORT_OVERSTATED\|zawyżony od" -- src ':!*.test.ts'` prints nothing
 
 #### Manual Verification:
 
-- With synthetic rows, `rateMonth("2026-08", …)` reports its rated days as 18–31 August. `rateDay` for 08-10 gives the sensor "Poza oceną" basis, read aloud once for tone.
+- With synthetic rows, `rateMonth("2026-08", …)` reports its rated days as 18–30 August when 08-31 has no totals (as in production), 18–31 with a full synthetic August. `rateDay` for 08-10 gives the sensor "Poza oceną" basis, read aloud once for tone.
 
 ---
 
@@ -155,7 +154,13 @@ Show the same caveat on the live, usage and hourly cards. Add the baseline note 
 
 **Changes**: replace the caveat at `:152-156` with `{SENSOR_CAVEAT}` followed by the ranking sentence, keeping the testid `hourly-caveat`. The ranking sentence reads: "Godziny i dni są uszeregowane według zużycia domu, a godziny, w których pobór z sieci wyraźnie przewyższa zużycie domu, nie trafiają na listę najniższych." It drops the "10–20% at night" figure.
 
-#### 4. Glossary
+#### 4. Bill forecast card
+
+**File**: `src/components/BillForecastCard.astro`
+
+**Changes**: add `<p class="text-muted-foreground text-xs" data-testid="bill-sensor-caveat">{SENSOR_CAVEAT}</p>` under the forecast. Its PLN estimate is built from the inverter's month import (`docs/logic.md:196`), so it carries the same caveat (plan review F2).
+
+#### 5. Glossary
 
 **File**: `src/lib/format/glossary.ts` (and its test, if one pins the text)
 
@@ -176,7 +181,7 @@ Show the same caveat on the live, usage and hourly cards. Add the baseline note 
 
 #### Manual Verification:
 
-- The dashboard at 390 px and 1440 px shows the caveat once on each of the live, usage and hourly cards. It does not wrap badly and pushes no card out of its grid.
+- The dashboard at 390 px and 1440 px shows the caveat once on each of the live, usage, hourly and bill forecast cards. It does not wrap badly and pushes no card out of its grid.
 
 ---
 
@@ -192,7 +197,7 @@ Make the written record match the new understanding and the decision.
 
 - `:99`, `:109` (Godziny zużycia): replace the 11.8% / "from 4 August" caveat with the whole-history statement. Say that house use is derived from the same sensor, and keep the 11.8% as a historical measurement of 26–31 August only.
 - `:159`, `:163` (Historia): the note now covers the whole history. 4 August is "sensor direction changed".
-- `:170-176` (Ocena): replace the "largely cancels out" point with the rule for the sensor-change window: 08-04 to 08-17 are "Poza oceną", and norms never mix sides.
+- `:170-176` (Ocena): replace the "largely cancels out" point with the rule for the sensor-change window: 08-03 to 08-17 are "Poza oceną", and norms never mix sides.
 - `:186` (Daily totals): add that the early imbalance fits the same sensor fault.
 - A short new subsection, "Grid sensor caveat", under "Status colours and data periods". It gives the fitted relations (aggregates only), the date of the direction change, where the caveat is shown, and `src/lib/services/grid-sensor.ts`.
 - Add a row to the "Where each rule runs" table.
@@ -214,7 +219,7 @@ Make the written record match the new understanding and the decision.
 #### Automated Verification:
 
 - Formatting passes: `npx prettier --check docs context/foundation/roadmap.md context/changes/inverter-grid-correction`
-- The old claims are gone: `git grep -n "largely cancel\|overstated since 4 August\|over-reports import from 4 August" -- docs context/foundation` prints nothing
+- The old claims are gone: `git grep -n -i "largely cancel\|grid import is overstated\|close to PGE at night\|10–20" -- docs context/foundation` prints nothing (the new decisions entry quotes none of these)
 - The new rule is recorded: `git grep -n "grid-sensor.ts" -- docs/logic.md` prints at least one line
 
 #### Manual Verification:
@@ -267,14 +272,14 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Automated
 
-- [ ] 1.1 Unit tests pass, covering `crossesSensorChange` boundaries, the pinned calendar and sensor texts, the rating window 08-04 – 08-17 as "Poza oceną", the sensor basis before import-above-use, and August rated from 18 August on: `npm test`
+- [ ] 1.1 Unit tests pass, covering `crossesSensorChange` boundaries, the pinned calendar and sensor texts, the rating window 08-03 – 08-17 as "Poza oceną", the sensor basis before import-above-use, and August rated from 18 August on: `npm test`
 - [ ] 1.2 Linting passes: `npm run lint`
 - [ ] 1.3 Type checks pass: `npx astro check`
-- [ ] 1.4 No "overstated from 4 August" copy remains: `git grep -n "GRID_IMPORT_OVERSTATED\|zawyżony od" -- src` prints nothing
+- [ ] 1.4 No "overstated from 4 August" copy remains: `git grep -n "GRID_IMPORT_OVERSTATED\|zawyżony od" -- src ':!*.test.ts'` prints nothing
 
 #### Manual
 
-- [ ] 1.5 With synthetic rows, the August month rating names 18–31 August and 08-10 reads the sensor basis, which reads neutrally
+- [ ] 1.5 With synthetic rows, the August month rating names 18–30 August (08-31 without totals) and 08-10 reads the sensor basis, which reads neutrally
 
 ### Phase 2: Dashboard cards and glossary
 
@@ -288,14 +293,14 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Manual
 
-- [ ] 2.6 The dashboard at 390 px and 1440 px shows the caveat once on each of the live, usage and hourly cards, without layout breakage
+- [ ] 2.6 The dashboard at 390 px and 1440 px shows the caveat once on each of the live, usage, hourly and bill forecast cards, without layout breakage
 
 ### Phase 3: Docs and roadmap
 
 #### Automated
 
 - [ ] 3.1 Formatting passes: `npx prettier --check docs context/foundation/roadmap.md context/changes/inverter-grid-correction`
-- [ ] 3.2 The old claims are gone: `git grep -n "largely cancel\|overstated since 4 August\|over-reports import from 4 August" -- docs context/foundation` prints nothing
+- [ ] 3.2 The old claims are gone: `git grep -n -i "largely cancel\|grid import is overstated\|close to PGE at night\|10–20" -- docs context/foundation` prints nothing (the new decisions entry quotes none of these)
 - [ ] 3.3 The new rule is recorded: `git grep -n "grid-sensor.ts" -- docs/logic.md` prints at least one line
 
 #### Manual

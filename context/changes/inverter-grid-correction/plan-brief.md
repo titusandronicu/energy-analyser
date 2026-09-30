@@ -16,9 +16,9 @@ The inverter's grid sensor has measured wrongly since the history began on 16 Ju
 
 ## Desired End State
 
-- **One caveat on every surface that shows the figures:** grid import and house use come from a faulty inverter sensor, for the whole history. The surfaces are the calendar, the live card, the usage card and the hourly card.
+- **One caveat on every surface that shows the figures:** grid import and house use come from a faulty inverter sensor, for the whole history. The surfaces are the calendar, the live card, the usage card, the hourly card and the bill forecast card.
 - **4 August appears only as the day the sensor's direction changed.**
-- **Ratings:** days 4–17 August read "Poza oceną" with a neutral basis naming the change, no norm mixes days from both sides, and August is rated from 18 August on.
+- **Ratings:** days 3–17 August read (3 August is the mixed change day) "Poza oceną" with a neutral basis naming the change, no norm mixes days from both sides, and August is rated from 18 August on.
 - **The docs and the roadmap say the same.**
 
 ## Key Decisions Made
@@ -29,7 +29,7 @@ The inverter's grid sensor has measured wrongly since the history began on 16 Ju
 | Fitted correction   | Option B rejected                                                                       | Unverified hourly formula, needs a lab re-push, shows unmeasured numbers                       | Owner, 2026-09-30        |
 | PGE figures         | Option C is a separate later change                                                     | Cross-repo and needs the parked privacy decision                                               | Owner, 2026-09-30        |
 | House use           | Treated as unreliable too                                                               | The inverter's power balance closes on every sample, so load is derived from the faulty sensor | Owner (earlier analysis) |
-| Ratings at the flip | 2026-08-04 – 08-17 "Poza oceną" with a sensor basis; norms never mix sides              | Across the flip the bias changes sign, so a 14-day norm does not cancel it                     | Owner, 2026-09-30        |
+| Ratings at the flip | 2026-08-03 – 08-17 "Poza oceną" with a sensor basis; norms never mix sides              | Across the flip the bias changes sign, so a 14-day norm does not cancel it                     | Owner, 2026-09-30        |
 | Usage baseline      | A note when the baseline spans 4 August, not suppression                                | Simpler: no new badge or verdict state                                                         | Plan                     |
 | Hourly text         | Drop "10–20% at night"; use the shared caveat                                           | The percentage depends on load, so it is not stable                                            | Plan                     |
 | After the fix       | Old history is kept with the caveat                                                     | Replacing it with PGE is option C's job                                                        | Owner, 2026-09-30        |
@@ -37,13 +37,12 @@ The inverter's grid sensor has measured wrongly since the history began on 16 Ju
 
 ## Scope
 
-**In scope:** the caveat module and helper, the calendar captions and "Co to znaczy?", the rule for the sensor-change window in ratings, the live, usage and hourly card caveats, the usage baseline note, the glossary's night-draw wording, `docs/logic.md`, `docs/decisions.md` and the roadmap.
+**In scope:** the caveat module and helper, the calendar captions and "Co to znaczy?", the rule for the sensor-change window in ratings, the live, usage, hourly and bill forecast card caveats, the usage baseline note, the glossary's night-draw wording, `docs/logic.md`, `docs/decisions.md` and the roadmap.
 
 **Out of scope:**
 
 - Any numeric correction (option B) and PGE figures (option C).
 - Lab, contract, migration or Supabase changes.
-- The bill forecast card, flagged for plan review.
 - The live home verdict's norm.
 - The CT and zero-export behaviour, which are the installer's job.
 
@@ -55,7 +54,7 @@ A new pure leaf module holds `SENSOR_DIRECTION_CHANGED_ON`, `crossesSensorChange
 
 | Phase                                    | What it delivers                                                                              | Key risk                                                                         |
 | ---------------------------------------- | --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| 1. Shared caveat, calendar copy, ratings | `grid-sensor.ts`, new calendar notes, the 08-04 – 08-17 "Poza oceną" rule, pinned-copy tests  | An existing rating test expects 08-04 as "Za mało danych"; it changes on purpose |
+| 1. Shared caveat, calendar copy, ratings | `grid-sensor.ts`, new calendar notes, the 08-03 – 08-17 "Poza oceną" rule, pinned-copy tests  | An existing rating test expects 08-04 as "Za mało danych"; it changes on purpose |
 | 2. Dashboard cards and glossary          | Caveat on the live, usage and hourly cards; usage baseline note; night-draw glossary          | Card layout at 390 px with one more line                                         |
 | 3. Docs and roadmap                      | `docs/logic.md`, `docs/decisions.md`, roadmap questions 5 and 7 and the parked item corrected | Missing a stale "from 4 August" sentence (a grep gate covers it)                 |
 
@@ -71,5 +70,5 @@ A new pure leaf module holds `SENSOR_DIRECTION_CHANGED_ON`, `crossesSensorChange
 ## Success Criteria (Summary)
 
 - No surface says import is "overstated from 4 August", and every surface showing grid import or house use carries the whole-history caveat.
-- Days 4–17 August 2026 are not rated, and August's month rating rests on 18 August onwards.
+- Days 3–17 August 2026 are not rated, and August's month rating rests on 18 August onwards.
 - The docs and the roadmap record the decision and drop the "largely cancels" claim.
