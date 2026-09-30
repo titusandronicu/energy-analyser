@@ -279,7 +279,7 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Manual
 
-- [ ] 1.5 With synthetic rows, the August month rating names 18–30 August (08-31 without totals) and 08-10 reads the sensor basis, which reads neutrally
+- [x] 1.5 With synthetic rows, the August month rating names 18–30 August (08-31 without totals) and 08-10 reads the sensor basis, which reads neutrally — 482c54c
 
 ### Phase 2: Dashboard cards and glossary
 
@@ -293,7 +293,7 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 
 #### Manual
 
-- [ ] 2.6 The dashboard at 390 px and 1440 px shows the caveat once on each of the live, usage, hourly and bill forecast cards, without layout breakage
+- [x] 2.6 The dashboard at 390 px and 1440 px shows the caveat once on each of the live, usage, hourly and bill forecast cards, without layout breakage — 482c54c
 
 ### Phase 3: Docs and roadmap
 
@@ -306,4 +306,4 @@ None. There is no schema, contract or lab change, and rollback is reverting the 
 #### Manual
 
 - [ ] 3.4 In production, `/dashboard/history?day=2026-08-10` reads "Poza oceną" with the sensor basis, and `?month=2026-08` rates from 18 August on
-- [ ] 3.5 The owner confirms the `docs/decisions.md` entry and roadmap question 5 state the decision
+- [x] 3.5 The owner confirms the `docs/decisions.md` entry and roadmap question 5 state the decision — 482c54c

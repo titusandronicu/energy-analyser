@@ -6,7 +6,12 @@ import type { StatusTone } from "@/lib/format/status";
 import { kwhLabel, oneDecimal } from "@/lib/format/values";
 import { addDays } from "@/lib/format/warsaw-time";
 import { isCompleteDay, kwh } from "@/lib/services/complete-day";
-import { crossesSensorChange, SENSOR_CHANGE_DAY, SENSOR_CHANGE_RATING_BASIS } from "@/lib/services/grid-sensor";
+import {
+  crossesSensorChange,
+  SENSOR_CHANGE_DAY,
+  SENSOR_CHANGE_RATING_BASIS,
+  SENSOR_DIRECTION_CHANGED_ON,
+} from "@/lib/services/grid-sensor";
 import { MIN_RANKED_DAYS } from "@/lib/services/hourly-usage";
 import { median } from "@/lib/services/usage-insight";
 
@@ -234,7 +239,11 @@ export function rateMonth(month: string, rows: readonly DailyEnergyRow[], today:
   if (month >= today.slice(0, 7)) return notRated(MONTH_RUNNING);
   const map = byDay(rows);
   const rated: { day: string; delta: number }[] = [];
+  // The month holding the sensor's direction change is rated from its post-change days only, so its rating never
+  // mixes days from both sides of the change (owner's decision, inverter-grid-correction check 3.4).
+  const firstDay = SENSOR_CHANGE_DAY.startsWith(month) ? SENSOR_DIRECTION_CHANGED_ON : "";
   for (const day of periodDays({ kind: "month", month })) {
+    if (day < firstDay) continue;
     const rating = rateDayIn(day, map, today);
     if (rating.kind === "rated") rated.push({ day, delta: rating.delta });
   }

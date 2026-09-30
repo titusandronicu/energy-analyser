@@ -308,15 +308,16 @@ describe("the sensor-change window", () => {
     expect(rateDay("2026-08-10", rows, TODAY)).toEqual(SENSOR_RATING);
   });
 
-  it("rates August from 18 August only when its first days lack a pre-change norm", () => {
+  it("rates August from 18 August only, whatever the pre-change norm", () => {
     // As in production, the history before the change is short: from 07-27, 08-01 and 08-02 have under 7 norm days.
     const short = history.filter((r) => r.day >= "2026-07-27");
     expect(rated(rateMonth("2026-08", short, TODAY)).periodLabel).toBe("14 dni: 18–31 sierpnia");
     // Without totals on 08-31 (as in production), the rated days are 18–30 August.
     const withoutLast = short.map((r) => (r.day === "2026-08-31" ? row("2026-08-31", null, null, null) : r));
     expect(rated(rateMonth("2026-08", withoutLast, TODAY)).periodLabel).toBe("13 dni: 18–30 sierpnia");
-    // With a full pre-change norm, 08-01 and 08-02 are rated too: their value and norm both lie before the change.
-    expect(rated(rateMonth("2026-08", history, TODAY)).days).toBe(16);
+    // Even with a full pre-change norm for 08-01 and 08-02, the month rests on its post-change days only.
+    expect(rateDay("2026-08-01", history, TODAY).kind).toBe("rated");
+    expect(rated(rateMonth("2026-08", history, TODAY)).periodLabel).toBe("14 dni: 18–31 sierpnia");
   });
 });
 
