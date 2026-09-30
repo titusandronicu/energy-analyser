@@ -5,6 +5,7 @@ import CardHeading from "@/components/CardHeading.astro";
 import RecommendationFindings from "@/components/RecommendationFindings.astro";
 import RecommendationForecast from "@/components/RecommendationForecast.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
+import RatingPanel from "@/components/history/RatingPanel.astro";
 import { VerdictChip } from "@/components/live/VerdictChip";
 import Panel from "@/components/ui/Panel.astro";
 import { parseAdviceMarkdown, splitAdviceLead } from "@/lib/format/advice-markdown";
@@ -19,7 +20,7 @@ interface Props {
   adviceFailed: boolean;
 }
 
-// The day view: the day's totals, its forecast against actual, and the advice it was given. The advice is a record of
+// The day view: the day's totals, its rating, its forecast against actual, and the advice it was given. The advice is a record of
 // that day, not judged against today, so this is its own section rather than the dashboard's "Rekomendacja na dziś"
 // card: a neutral badge with the generation time, no stale warning, no motion, and native <details> only.
 const { view, rowFailed, adviceFailed } = Astro.props;
@@ -90,6 +91,8 @@ const figures =
     </div>
   )}
 </Panel>
+
+<RatingPanel title="Ocena dnia" rating={rowFailed ? null : view.rating} testId="history-day-rating" />
 
 <Panel>
   <CardHeading class="mb-2" title="Prognoza a rzeczywistość" icon={Sun} iconClass="text-flow-pv" />

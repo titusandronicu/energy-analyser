@@ -3,6 +3,7 @@ import { CalendarDays, ChartColumn, Sun } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import DailyBarsChart from "@/components/history/DailyBarsChart.astro";
+import RatingPanel from "@/components/history/RatingPanel.astro";
 import TotalsPanel from "@/components/history/TotalsPanel.astro";
 import Panel from "@/components/ui/Panel.astro";
 import { periodHref } from "@/lib/calendar/nav";
@@ -31,7 +32,7 @@ interface Props {
   today: string;
 }
 
-// The month view: totals over complete days, a tappable Monday-first grid of days, the daily charts and forecast
+// The month view: totals over complete days with the month's rating beside them, a tappable Monday-first grid of days, the daily charts and forecast
 // against actual. Every figure and word comes from the view model; days that cannot be opened (before 16 July 2026,
 // after today) are plain text, never links.
 const { view, markersFailed, today } = Astro.props;
@@ -72,6 +73,8 @@ const dayKeys = days.map((cell) => cell.day);
   notes={[view?.unfinishedNote ?? null, view?.startNote ?? null]}
   testId="history-month-status"
 />
+
+<RatingPanel title="Ocena miesiąca" rating={view?.rating ?? null} testId="history-month-rating" />
 
 <Panel>
   <CardHeading class="mb-4" title="Dni miesiąca" icon={CalendarDays} iconClass="text-primary" />

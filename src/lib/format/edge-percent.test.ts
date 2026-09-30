@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { edgePercentLabel } from "./edge-percent";
+import { edgePercentLabel, edgePointsLabel } from "./edge-percent";
 
 describe("edgePercentLabel", () => {
   it.each([
@@ -13,5 +13,23 @@ describe("edgePercentLabel", () => {
     [-15.4, 15, false, "−15,4%"],
   ])("labels %d against an edge of %d (milder %s) as %s", (raw, edge, milder, expected) => {
     expect(edgePercentLabel(raw, edge, milder)).toBe(expected);
+  });
+});
+
+describe("edgePointsLabel", () => {
+  it.each([
+    [10.0, 10, true, "10,0 punktu"],
+    [-10.0, 10, true, "10,0 punktu"],
+    [10.1, 10, false, "10,1 punktu"],
+    [-10.1, 10, false, "10,1 punktu"],
+    // Past the edge but rounding to it: one tenth beyond it.
+    [10.02, 10, false, "10,1 punktu"],
+    // Short of the edge but rounding to it: the edge.
+    [9.98, 10, true, "10,0 punktu"],
+    [-27.387, 10, false, "27,4 punktu"],
+    [3.532, 10, true, "3,5 punktu"],
+    [0, 10, true, "0,0 punktu"],
+  ])("labels %d against an edge of %d (milder %s) as %s", (raw, edge, milder, expected) => {
+    expect(edgePointsLabel(raw, edge, milder)).toBe(expected);
   });
 });

@@ -20,14 +20,15 @@ import {
   buildQuarterView,
   defaultPeriodFromRows,
   defaultPeriodRange,
+  ratedPeriodRange,
   type DayView as DayViewModel,
   type MonthView as MonthViewModel,
   type QuarterView as QuarterViewModel,
 } from "@/lib/services/calendar-view";
 import type { DailyEnergyRow } from "@/types";
 
-// The history calendar (S-15): the period comes from the URL (?day=, ?month=, ?quarter=), only its rows are loaded,
-// and each section fails on its own. Past periods don't change every few minutes, so unlike the dashboard this page
+// The history calendar (S-15): the period comes from the URL (?day=, ?month=, ?quarter=), only its rows are loaded
+// (for a day or a month also the 14 days before it, which its rating's norm needs), and each section fails on its own. Past periods don't change every few minutes, so unlike the dashboard this page
 // has no reload script.
 const { user } = Astro.locals;
 
@@ -58,8 +59,9 @@ type PageData =
 
 // Loads only the chosen period's rows, each section on its own.
 async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
-  // No period in the URL: defaultPeriodFromRows picks the month. Its rows are loaded with the previous month's, so
-  // the chosen month needs no second read; if they fail, the current month is shown with its load error.
+  // No period in the URL: defaultPeriodFromRows picks the month. Its rows are loaded with the previous month's and the
+  // norm days before it, so the chosen month needs no second read; if they fail, the current month is shown with its
+  // load error.
   let period: CalendarPeriod;
   let preloaded: DailyEnergyRow[] | null | undefined;
   if (parsed === "default") {
@@ -77,7 +79,8 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
     const month = period.month;
     // The recommendation times are only read once the daily rows loaded: without them the month shows its load error
     // and has no grid to mark.
-    const rows = preloaded === undefined ? await dailyRange(first, last) : preloaded;
+    const range = ratedPeriodRange(period);
+    const rows = preloaded === undefined ? await dailyRange(range.first, range.last) : preloaded;
     if (rows === null) return { kind: "month", period, view: null, markersFailed: false };
     const times = await orLoadError(async () => {
       const supabase = getClient();
@@ -91,16 +94,15 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
 
   if (period.kind === "day") {
     const day = period.day;
+    const range = ratedPeriodRange(period);
     const [rows, recs] = await Promise.all([
-      dailyRange(day, day),
+      dailyRange(range.first, range.last),
       orLoadError(async () => {
         const supabase = getClient();
         return supabase ? await loadRecommendationsForDay(supabase, fromMs, toMs) : [];
       }),
     ]);
-    const view = await orLoadError(async () =>
-      Promise.resolve(buildDayView(day, rows?.find((row) => row.day === day) ?? null, recs ?? [], today, now)),
-    );
+    const view = await orLoadError(async () => Promise.resolve(buildDayView(day, rows ?? [], recs ?? [], today, now)));
     return { kind: "day", period, view, rowFailed: rows === null, adviceFailed: recs === null };
   }
 
