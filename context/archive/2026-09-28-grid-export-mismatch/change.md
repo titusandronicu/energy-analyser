@@ -1,10 +1,10 @@
 ---
 change_id: grid-export-mismatch
 title: Why PGE records grid export the inverter never sees
-status: impl_reviewed
+status: archived
 created: 2026-09-28
 updated: 2026-09-30
-archived_at: null
+archived_at: 2026-09-30T09:18:37Z
 ---
 
 ## Notes
