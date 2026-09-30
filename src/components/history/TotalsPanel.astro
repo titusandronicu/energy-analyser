@@ -3,8 +3,8 @@ import { Sigma } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import Panel from "@/components/ui/Panel.astro";
-import { LOAD_FAILED, type Status } from "@/lib/format/status";
-import { completeDaysText, type PeriodTotals } from "@/lib/services/calendar-view";
+import { LOAD_FAILED } from "@/lib/format/status";
+import { completeDaysText, NEUTRAL, sentence, type PeriodTotals } from "@/lib/services/calendar-view";
 
 interface Props {
   title: string;
@@ -18,9 +18,7 @@ interface Props {
 // A month's or a quarter's totals over its complete days. The badge rates nothing, so it keeps the neutral tone and
 // says how many of the period's days the sums rest on; below the minimum it says "Za mało danych" with the reason.
 const { title, totals, notes, testId } = Astro.props;
-const NEUTRAL: Status = { tone: "insufficient", label: "" };
 const shownNotes = notes.filter((note): note is string => note !== null);
-const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 const figures =
   totals?.kind === "totals"
     ? [

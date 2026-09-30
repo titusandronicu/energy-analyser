@@ -1,5 +1,7 @@
 import type { DailyEnergyRow, RecommendationRow } from "@/types";
 import {
+  addMonths,
+  defaultMonth,
   HISTORY_START,
   monthGrid,
   periodBounds,
@@ -11,6 +13,7 @@ import {
 } from "@/lib/calendar/period";
 import type { MonthGroup } from "@/lib/bars";
 import { formatPeriod } from "@/lib/format/period";
+import type { Status } from "@/lib/format/status";
 import { kwhLabel } from "@/lib/format/values";
 import { formatDayMonth, formatMonth, warsawHour, warsawParts } from "@/lib/format/warsaw-time";
 import { dailySeries, type DailySeries } from "@/lib/services/daily-series";
@@ -35,6 +38,40 @@ export const BEFORE_HISTORY = "brak danych";
 // The month or quarter that holds HISTORY_START says its earlier days were never collected, since its day count
 // still covers the whole calendar period.
 export const HISTORY_START_NOTE = `Dane od ${formatDayMonth(HISTORY_START)} ${HISTORY_START.slice(0, 4)} — wcześniejszych dni aplikacja nie ma`;
+
+// The first Warsaw day the inverter over-reports grid import (most likely a current-sensor fault, docs/logic.md).
+export const GRID_IMPORT_OVERSTATED_FROM = "2026-08-04";
+
+// "4 sierpnia 2026".
+function dayMonthYear(day: string): string {
+  return `${formatDayMonth(day)} ${day.slice(0, 4)}`;
+}
+
+const GRID_IMPORT_OVERSTATED = `Prąd kupiony z sieci jest od ${formatDayMonth(GRID_IMPORT_OVERSTATED_FROM)} zawyżony`;
+
+// The caption under the month's daily charts.
+export const MONTH_CHART_NOTE = `Dni bez danych zostają puste, a dzisiejszy dzień nie jest rysowany, bo jeszcze trwa. ${GRID_IMPORT_OVERSTATED} (zobacz „Co to znaczy?”).`;
+// The caption under the quarter's grouped chart.
+export const QUARTER_CHART_NOTE = `Miesiąc z mniej niż ${String(MIN_RANKED_DAYS)} pełnymi dniami zostaje pusty. ${GRID_IMPORT_OVERSTATED}.`;
+
+// The "Co to znaczy?" entries that state a rule's value.
+export const TOO_FEW_EXPLANATION = `Gdy okres ma mniej niż ${String(MIN_RANKED_DAYS)} pełnych dni, sumy nie są pokazywane, bo mówiłyby więcej, niż wiadomo. Niedokończony miesiąc albo kwartał pokazuje to, co już jest, bez przeliczania na całość.`;
+export const GRID_IMPORT_TERM = `Prąd kupiony z sieci od ${formatDayMonth(GRID_IMPORT_OVERSTATED_FROM)}`;
+export const GRID_IMPORT_EXPLANATION = `Od ${dayMonthYear(GRID_IMPORT_OVERSTATED_FROM)} falownik pokazuje więcej prądu kupionego z sieci, niż naprawdę było, zwłaszcza w dzień. Najpewniej to sprawa czujnika prądu, do sprawdzenia na miejscu. Do tego czasu te liczby są zawyżone.`;
+export const FORECAST_EXPLANATION = `Porównanie prognozy produkcji z tym, co panele naprawdę dały. Prognozy zapisujemy od ${dayMonthYear(FORECAST_HISTORY_START)}, więc wcześniejsze dni nie mają porównania.`;
+
+// The views' badges rate nothing, so they keep the neutral tone.
+export const NEUTRAL: Status = { tone: "insufficient", label: "" };
+
+// "brak danych" → "Brak danych", for badges and short labels.
+export function capitalize(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}
+
+// "brak danych" → "Brak danych.", for a view-model phrase shown as a sentence.
+export function sentence(text: string): string {
+  return `${capitalize(text)}.`;
+}
 
 // complete: before today with PV, house use and grid import all present; empty: a row with a total missing;
 // missing: no row. Today and later days are never complete, whatever their row holds.
@@ -222,6 +259,20 @@ function kwh(value: unknown): number | null {
 export function isCompleteDay(row: DailyEnergyRow | undefined, today: string): boolean {
   if (row === undefined || row.day >= today) return false;
   return kwh(row.pv_kwh) !== null && kwh(row.load_kwh) !== null && kwh(row.grid_import_kwh) !== null;
+}
+
+// The month the calendar opens on without a period in the URL, from the rows of the current and the previous month
+// (read together, so the chosen month needs no second read): defaultMonth over the current month's complete days.
+export function defaultPeriodFromRows(rows: readonly DailyEnergyRow[], today: string): CalendarPeriod {
+  const current = today.slice(0, 7);
+  const complete = rows.filter((row) => row.day.startsWith(current) && isCompleteDay(row, today)).length;
+  return { kind: "month", month: defaultMonth(today, complete) };
+}
+
+// The days defaultPeriodFromRows needs: the first of the previous month to the last of the current one.
+export function defaultPeriodRange(today: string): { first: string; last: string } {
+  const current = today.slice(0, 7);
+  return { first: `${addMonths(current, -1)}-01`, last: periodBounds({ kind: "month", month: current }).last };
 }
 
 function byDay(rows: readonly DailyEnergyRow[]): Map<string, DailyEnergyRow> {

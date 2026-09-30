@@ -7,29 +7,12 @@ import { loadDailyRowCapturedAt, loadLiveState, toLiveStateView, type LiveStateV
 import { loadHourlyEnergy, toHourlyUsageView, type HourlyUsageView } from "@/lib/services/hourly-usage";
 import { loadLatestRecommendation, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 import { loadDailyEnergy, toUsageInsightView, type UsageInsightView } from "@/lib/services/usage-insight";
-import { createClient } from "@/lib/supabase";
+import { orLoadError, pageClient } from "@/lib/page-load";
 
 const { user } = Astro.locals;
 
-// Each card loads on its own: a failure shows that card's load error (null) and leaves the others intact.
-async function orLoadError<T>(load: () => Promise<T>): Promise<T | null> {
-  try {
-    return await load();
-  } catch (error) {
-    // eslint-disable-next-line no-console -- server-side detail; the page shows a generic load error
-    console.error(error);
-    return null;
-  }
-}
-
-// One Supabase client for the page, so an expired session is refreshed once instead of by each card in parallel.
-// It is created on the first loader's call, so a configuration error still shows as each card's load error, and
-// without a configuration (null) each card shows its empty state.
-let client: ReturnType<typeof createClient> | undefined;
-function getClient() {
-  if (client === undefined) client = createClient(Astro.request.headers, Astro.cookies);
-  return client;
-}
+// Each card loads on its own (orLoadError) through one lazily created Supabase client for the page.
+const getClient = pageClient(Astro.request.headers, Astro.cookies);
 
 const now = new Date();
 // The daily rows feed both the usage card and the live verdicts, so they load once; a failure (null) shows the usage

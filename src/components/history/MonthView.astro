@@ -6,12 +6,17 @@ import DailyBarsChart from "@/components/history/DailyBarsChart.astro";
 import TotalsPanel from "@/components/history/TotalsPanel.astro";
 import Panel from "@/components/ui/Panel.astro";
 import { periodHref } from "@/lib/calendar/nav";
-import { LOAD_FAILED, type Status } from "@/lib/format/status";
+import { HISTORY_START } from "@/lib/calendar/period";
+import { LOAD_FAILED } from "@/lib/format/status";
 import {
+  BEFORE_HISTORY_WORD,
   DAY_STATUS_WORD,
   dayCellName,
   forecastDaysText,
   HAS_RECOMMENDATION_WORD,
+  MONTH_CHART_NOTE,
+  NEUTRAL,
+  sentence,
   type DayCell,
   type DayStatus,
   type MonthView,
@@ -30,8 +35,6 @@ interface Props {
 // against actual. Every figure and word comes from the view model; days that cannot be opened (before 16 July 2026,
 // after today) are plain text, never links.
 const { view, markersFailed, today } = Astro.props;
-const NEUTRAL: Status = { tone: "insufficient", label: "" };
-const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 const WEEKDAYS = [
   ["Pn", "poniedziałek"],
   ["Wt", "wtorek"],
@@ -49,13 +52,17 @@ const CELL_CLASS: Record<DayStatus, string> = {
   today: "border-primary text-card-foreground border-2",
   future: "border-transparent text-muted-foreground",
 };
+// A day before HISTORY_START is outside the history, not a day yet to come: a muted fill instead of the future's blank.
+const BEFORE_HISTORY_CLASS = "bg-muted border-transparent text-muted-foreground";
 const LEGEND: DayStatus[] = ["complete", "empty", "missing", "today"];
-const cellClass = (cell: DayCell) =>
-  cn(
-    "relative flex h-11 w-full flex-col items-center justify-center rounded-lg border text-sm tabular-nums",
-    CELL_CLASS[cell.status],
-  );
+const CELL_BASE =
+  "relative flex h-11 w-full flex-col items-center justify-center rounded-lg border text-sm tabular-nums";
+const cellClass = (cell: DayCell) => cn(CELL_BASE, CELL_CLASS[cell.status]);
+// A day that cannot be opened: before the history, or after today.
+const closedClass = (cell: DayCell) =>
+  cn(CELL_BASE, cell.day < HISTORY_START ? BEFORE_HISTORY_CLASS : CELL_CLASS.future);
 const days = view === null ? [] : view.grid.flat().filter((cell): cell is DayCell => cell !== null);
+const hasBeforeHistory = days.some((cell) => cell.day < HISTORY_START);
 const dayKeys = days.map((cell) => cell.day);
 ---
 
@@ -107,7 +114,7 @@ const dayKeys = days.map((cell) => cell.day);
                 return (
                   <td>
                     {href === null ? (
-                      <span class:list={cellClass({ ...cell, status: "future" })}>{content}</span>
+                      <span class:list={closedClass(cell)}>{content}</span>
                     ) : (
                       <a href={href} class:list={cn(cellClass(cell), "hover:border-primary")}>
                         {content}
@@ -128,6 +135,12 @@ const dayKeys = days.map((cell) => cell.day);
             {DAY_STATUS_WORD[status]}
           </li>
         ))}
+        {hasBeforeHistory && (
+          <li class="inline-flex items-center gap-1.5">
+            <span aria-hidden="true" class:list={cn("inline-block size-3.5 rounded border", BEFORE_HISTORY_CLASS)} />
+            {BEFORE_HISTORY_WORD}
+          </li>
+        )}
         <li class="inline-flex items-center gap-1.5">
           <span aria-hidden="true" class="bg-primary inline-block size-1.5 rounded-full" />
           {HAS_RECOMMENDATION_WORD}
@@ -180,10 +193,7 @@ const dayKeys = days.map((cell) => cell.day);
           barTone="grid"
         />
       </section>
-      <p class="text-muted-foreground text-xs">
-        Dni bez danych zostają puste, a dzisiejszy dzień nie jest rysowany, bo jeszcze trwa. Prąd kupiony z sieci jest
-        od 4 sierpnia zawyżony (zobacz „Co to znaczy?”).
-      </p>
+      <p class="text-muted-foreground text-xs">{MONTH_CHART_NOTE}</p>
     </div>
   )}
 </Panel>

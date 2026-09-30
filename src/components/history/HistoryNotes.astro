@@ -1,5 +1,11 @@
 ---
 import { GLOSSARY, type GlossaryTerm } from "@/lib/format/glossary";
+import {
+  FORECAST_EXPLANATION,
+  GRID_IMPORT_EXPLANATION,
+  GRID_IMPORT_TERM,
+  TOO_FEW_EXPLANATION,
+} from "@/lib/services/calendar-view";
 
 // The history page's "Co to znaczy?": the terms its figures use, and why some figures are missing or shown with a
 // caveat. A native <details>, so it works without a script; py-1 keeps the summary's tap target at least 24 px tall.
@@ -15,26 +21,14 @@ const NOTES = [
     explanation:
       "Dni, z których aplikacja nie dostała danych albo dostała niepełne, zostają puste: na wykresie nie mają słupka, w sumach się nie liczą. Nie wpisujemy za nie zera ani szacunku.",
   },
-  {
-    term: "Za mało danych",
-    explanation:
-      "Gdy okres ma mniej niż 7 pełnych dni, sumy nie są pokazywane, bo mówiłyby więcej, niż wiadomo. Niedokończony miesiąc albo kwartał pokazuje to, co już jest, bez przeliczania na całość.",
-  },
-  {
-    term: "Prąd kupiony z sieci od 4 sierpnia",
-    explanation:
-      "Od 4 sierpnia 2026 falownik pokazuje więcej prądu kupionego z sieci, niż naprawdę było, zwłaszcza w dzień. Najpewniej to sprawa czujnika prądu, do sprawdzenia na miejscu. Do tego czasu te liczby są zawyżone.",
-  },
+  { term: "Za mało danych", explanation: TOO_FEW_EXPLANATION },
+  { term: GRID_IMPORT_TERM, explanation: GRID_IMPORT_EXPLANATION },
   {
     term: "Dlaczego nie ma prądu sprzedanego do sieci",
     explanation:
       "Licznik falownika pokazuje za mało prądu oddanego do sieci, a od połowy sierpnia pokazuje zero, choć PGE zapisało prawdziwy zwrot. Dlatego kalendarz go nie pokazuje.",
   },
-  {
-    term: "Prognoza a rzeczywistość",
-    explanation:
-      "Porównanie prognozy produkcji z tym, co panele naprawdę dały. Prognozy zapisujemy od 27 września 2026, więc wcześniejsze dni nie mają porównania.",
-  },
+  { term: "Prognoza a rzeczywistość", explanation: FORECAST_EXPLANATION },
 ];
 ---
 

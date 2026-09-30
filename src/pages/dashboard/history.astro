@@ -9,28 +9,21 @@ import QuarterView from "@/components/history/QuarterView.astro";
 import Panel from "@/components/ui/Panel.astro";
 import Layout from "@/layouts/Layout.astro";
 import { HISTORY_PATH, periodNav } from "@/lib/calendar/nav";
-import {
-  addMonths,
-  defaultMonth,
-  parsePeriod,
-  periodBounds,
-  periodInstants,
-  periodLabel,
-  type CalendarPeriod,
-} from "@/lib/calendar/period";
+import { parsePeriod, periodBounds, periodInstants, periodLabel, type CalendarPeriod } from "@/lib/calendar/period";
 import { LOAD_FAILED } from "@/lib/format/status";
 import { warsawParts } from "@/lib/format/warsaw-time";
+import { orLoadError, pageClient } from "@/lib/page-load";
 import { loadDailyRange, loadRecommendationsForDay, loadRecommendationTimes } from "@/lib/services/calendar-data";
 import {
   buildDayView,
   buildMonthView,
   buildQuarterView,
-  isCompleteDay,
+  defaultPeriodFromRows,
+  defaultPeriodRange,
   type DayView as DayViewModel,
   type MonthView as MonthViewModel,
   type QuarterView as QuarterViewModel,
 } from "@/lib/services/calendar-view";
-import { createClient } from "@/lib/supabase";
 import type { DailyEnergyRow } from "@/types";
 
 // The history calendar (S-15): the period comes from the URL (?day=, ?month=, ?quarter=), only its rows are loaded,
@@ -38,24 +31,9 @@ import type { DailyEnergyRow } from "@/types";
 // has no reload script.
 const { user } = Astro.locals;
 
-// A section whose data failed to load shows its load error (null); the page never throws a 500 for a data problem.
-async function orLoadError<T>(load: () => Promise<T>): Promise<T | null> {
-  try {
-    return await load();
-  } catch (error) {
-    // eslint-disable-next-line no-console -- server-side detail; the page shows a generic load error
-    console.error(error);
-    return null;
-  }
-}
-
-// One Supabase client for the page, created on the first loader's call, as on the dashboard. Without a configuration
-// (null) the sections show their empty states.
-let client: ReturnType<typeof createClient> | undefined;
-function getClient() {
-  if (client === undefined) client = createClient(Astro.request.headers, Astro.cookies);
-  return client;
-}
+// Each section loads on its own (orLoadError) through one lazily created Supabase client for the page, as on the
+// dashboard.
+const getClient = pageClient(Astro.request.headers, Astro.cookies);
 
 function dailyRange(from: string, to: string): Promise<DailyEnergyRow[] | null> {
   return orLoadError(async () => {
@@ -80,19 +58,14 @@ type PageData =
 
 // Loads only the chosen period's rows, each section on its own.
 async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
-  // No period in the URL: the current month once it has 7 complete days, else the previous one. Its rows are loaded
-  // with the previous month's, so the chosen month needs no second read; if they fail, the current month is shown
-  // with its load error.
+  // No period in the URL: defaultPeriodFromRows picks the month. Its rows are loaded with the previous month's, so
+  // the chosen month needs no second read; if they fail, the current month is shown with its load error.
   let period: CalendarPeriod;
   let preloaded: DailyEnergyRow[] | null | undefined;
   if (parsed === "default") {
-    const current = today.slice(0, 7);
-    preloaded = await dailyRange(`${addMonths(current, -1)}-01`, periodBounds({ kind: "month", month: current }).last);
-    const complete =
-      preloaded === null
-        ? null
-        : preloaded.filter((row) => row.day.startsWith(current) && isCompleteDay(row, today)).length;
-    period = { kind: "month", month: complete === null ? current : defaultMonth(today, complete) };
+    const range = defaultPeriodRange(today);
+    preloaded = await dailyRange(range.first, range.last);
+    period = preloaded === null ? { kind: "month", month: today.slice(0, 7) } : defaultPeriodFromRows(preloaded, today);
   } else {
     period = parsed;
   }
@@ -102,19 +75,17 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
 
   if (period.kind === "month") {
     const month = period.month;
-    const [rows, times] = await Promise.all([
-      preloaded === undefined ? dailyRange(first, last) : Promise.resolve(preloaded),
-      orLoadError(async () => {
-        const supabase = getClient();
-        return supabase ? await loadRecommendationTimes(supabase, fromMs, toMs) : { times: [], truncated: false };
-      }),
-    ]);
-    const view =
-      rows === null
-        ? null
-        : await orLoadError(async () =>
-            Promise.resolve(buildMonthView(month, rows, times ?? { times: [], truncated: false }, today)),
-          );
+    // The recommendation times are only read once the daily rows loaded: without them the month shows its load error
+    // and has no grid to mark.
+    const rows = preloaded === undefined ? await dailyRange(first, last) : preloaded;
+    if (rows === null) return { kind: "month", period, view: null, markersFailed: false };
+    const times = await orLoadError(async () => {
+      const supabase = getClient();
+      return supabase ? await loadRecommendationTimes(supabase, fromMs, toMs) : { times: [], truncated: false };
+    });
+    const view = await orLoadError(async () =>
+      Promise.resolve(buildMonthView(month, rows, times ?? { times: [], truncated: false }, today)),
+    );
     return { kind: "month", period, view, markersFailed: times === null };
   }
 
