@@ -384,7 +384,7 @@ Built differently from the plan, or added after `reviews/impl-review.md`:
   - F3: a range run saves the state after each narration and stops after 3 provider errors in a row.
   - F4: regular retries cover only the periods in the push window, newest first.
   - F5: the homelab-2 runbook names the recorded migration version, `20261001094118`.
-  - F6: `20261001150000_period_summaries_keep_narration.sql` makes `ingest_push` skip a newer entry without a narration when the stored row has one; the smoke test checks it.
+  - F6: `20261001113911_period_summaries_keep_narration.sql` makes `ingest_push` skip a newer entry without a narration when the stored row has one; the smoke test checks it.
   - F7: `docs/prerequisites.md` and `docs/logic.md` describe the summary rules as built.
   - F8: a text is used only with `finish_reason` `"stop"`, and its length is counted in UTF-16 units, as the app's contract counts it.
 

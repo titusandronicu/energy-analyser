@@ -166,7 +166,7 @@ Not re-run, because they need the local Supabase stack on the UGREEN: `supabase 
 All 8 fixed on branch `fix/period-summaries-review` in both repos (2026-10-01):
 
 - **homelab-2:** F1–F5 and F8. 183 unit tests and 139 solar-analyser tests pass, with a break check for each fix.
-- **energy-analyser:** F6 (migration `20261001150000_period_summaries_keep_narration.sql`, plus a smoke step) and F7 (docs and the plan's deviations note). 952 tests pass.
+- **energy-analyser:** F6 (migration `20261001113911_period_summaries_keep_narration.sql`, plus a smoke step) and F7 (docs and the plan's deviations note). 952 tests pass.
 
 The stricter numbers check (F2) was run on 6 stored production texts. 5 pass; the July month text is rejected for "cztery" (a number written as a word), as intended. Stored texts are not re-checked.
 
