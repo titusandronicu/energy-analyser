@@ -396,3 +396,37 @@ describe("rateMonth", () => {
     expect(rating.word).toBe("Przeciętny miesiąc");
   });
 });
+
+// Gaps found by mutation testing.
+describe("rateDay norm days and the size of a small gap", () => {
+  // June's second half at 50%, so a July day at 54.5% sits 4.5 points above its norm.
+  const base = steadyDays("2026-06-17", 14, 50);
+
+  it("words a gap of 4.5 points as above the norm, not as no gap", () => {
+    const rating = rated(rateDay("2026-07-01", [...base, ...steadyDays("2026-07-01", 1, 54.5)], TODAY));
+    expect(rating.band).toBe("neutral");
+    expect(rating.basis).toContain("4,5 punktu powyżej normy");
+    expect(rating.basis).not.toContain("tyle, ile norma");
+  });
+
+  it("says tyle, ile norma only when the gap rounds to zero", () => {
+    const rating = rated(rateDay("2026-07-01", [...base, ...steadyDays("2026-07-01", 1, 50)], TODAY));
+    expect(rating.basis).toContain("tyle, ile norma");
+  });
+
+  it("leaves a day without PV out of its norm even when its self-sufficiency is known", () => {
+    // Seven of the fourteen norm days have no PV total: the norm then has 7 days, not 14.
+    const withGaps = base.map((r, i) => (i < 7 ? { ...r, pv_kwh: null } : r));
+    const rating = rated(rateDay("2026-07-01", [...withGaps, ...steadyDays("2026-07-01", 1, 50)], TODAY));
+    expect(rating.days).toBe(7);
+    expect(rating.periodLabel).toBe("7 dni: 24–30 czerwca");
+  });
+
+  it("needs 7 norm days with PV, so 6 of them give too little data", () => {
+    const withGaps = base.map((r, i) => (i < 8 ? { ...r, pv_kwh: null } : r));
+    expect(rateDay("2026-07-01", [...withGaps, ...steadyDays("2026-07-01", 1, 50)], TODAY)).toMatchObject({
+      kind: "insufficient",
+      days: 6,
+    });
+  });
+});

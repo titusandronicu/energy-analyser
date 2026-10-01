@@ -663,3 +663,133 @@ describe("toBillForecastView", () => {
     expect(view.creditLeftLabel).toBeNull();
   });
 });
+
+// Gaps found by mutation testing: pushed jsonb is untrusted, so each guard below is pinned from both sides.
+describe("toBillForecastView input guards", () => {
+  // `String(["2026-09"])` is "2026-09", so a value that merely stringifies to a key must still be refused.
+  it("treats a month key that is not a string as unreadable, not as the current month", () => {
+    const view = forecast(okRow({ month: ["2026-09"] }));
+    expect(view.monthLabel).toBe("—");
+    expect(view.isOtherMonth).toBe(false);
+    // The day share falls back to the Warsaw month now (September, 30 days), not to the array.
+    expect(view.days).toEqual({ used: 15, inMonth: 30, label: "15 z 30", share: 0.5 });
+  });
+
+  it.each([
+    ["a prefix", "x2026-09"],
+    ["a suffix", "2026-09-23"],
+    ["month 13", "2026-13"],
+  ])("shows no month label for a month key with %s", (_name, month) => {
+    expect(forecast(okRow({ month })).monthLabel).toBe("—");
+  });
+
+  it("counts the days of the body's own month, not of the current one", () => {
+    // August has 31 days; "now" is in September.
+    const view = forecast(okRow({ month: "2026-08" }));
+    expect(view.isOtherMonth).toBe(true);
+    expect(view.days).toEqual({ used: 15, inMonth: 31, label: "15 z 31", share: 15 / 31 });
+  });
+
+  it.each([
+    ["a prefix", "x2026-09-23"],
+    ["a suffix", "2026-09-23T10:00"],
+    ["a value that is not a string", ["2026-09-23"]],
+  ])("shows no verification date for %s", (_name, verifiedOn) => {
+    const view = forecast(okRow({ pricing: { ...pricing, rates_verified_on: verifiedOn } }));
+    expect(view.basis.ratesVerifiedOnLabel).toBe("—");
+  });
+
+  it.each([
+    ["a prefix", "x01.08.2026 - 31.08.2026"],
+    ["a suffix", "01.08.2026 - 31.08.2026x"],
+    ["a first month of 13", "01.13.2026 - 31.08.2026"],
+  ])("does not read a settled period with %s", (_name, period) => {
+    const view = forecast(okRow({ settlement: { ...settlement, reference_period: period } }));
+    expect(view.basis.referenceMonthLabel).toBe("—");
+  });
+
+  it("refuses a generated_at that is not a string even when it stringifies to a date", () => {
+    expect(refusal(okRow({ generated_at: ["2026-09-23T11:55:00+02:00"] })).status).toEqual({
+      tone: "problem",
+      label: "nieznany czas wyliczenia",
+    });
+  });
+
+  it("does not look up a no_data reason that is not a string", () => {
+    const view = refusal(rowOf({ ...noData, reason: ["rates_unavailable"] }));
+    expect(view.status).toEqual({ tone: "insufficient", label: "" });
+    expect(view.reason).toContain("Nie znamy w tej chwili kwoty za ten miesiąc");
+  });
+
+  it("falls back to a blank neutral badge for a confidence it does not know", () => {
+    expect(forecast(okRow({ confidence: "certain" })).confidence).toEqual({ tone: "insufficient", label: "" });
+    expect(forecast(okRow({ confidence: ["high"] })).confidence).toEqual({ tone: "insufficient", label: "" });
+  });
+
+  it("says 1 dzień, not 1 dni, for a single observed day", () => {
+    const view = refusal(okRow({ observed_days: observedDays(1), completed_days_used: 1 }));
+    expect(view.reason).toContain("jest 1 dzień z 7 potrzebnych");
+  });
+});
+
+describe("toBillForecastView range and plausibility edges", () => {
+  it.each([
+    ["without a low end", { high: 360.4 }],
+    ["without a high end", { low: 155.08 }],
+  ])("refuses a range %s", (_name, range) => {
+    expect(refusal(okRow({ range_gross_pln: range })).status).toEqual({
+      tone: "problem",
+      label: "kwoty nie da się odczytać",
+    });
+  });
+
+  it("keeps a range whose ends are equal to the central figure", () => {
+    const view = forecast(okRow({ projected_bill_gross_pln: 200, range_gross_pln: { low: 200, high: 200 } }));
+    expect(view.rangeLabel).toBe("od 200 zł do 200 zł");
+  });
+
+  it("says the lower end is above the upper one for a reversed range", () => {
+    const view = refusal(okRow({ range_gross_pln: { low: 360.4, high: 155.08 } }));
+    expect(view.reason).toContain("dolna kwota wyszła wyżej niż górna");
+  });
+
+  it("keeps a figure of exactly the plausibility ceiling and blanks one grosz above it", () => {
+    const at = { projected_bill_gross_pln: 257.73, range_gross_pln: { low: 155.08, high: 7000 } };
+    expect(forecast(okRow(at)).rangeLabel).toBe("od 155 zł do 7000 zł");
+    expect(refusal(okRow({ ...at, range_gross_pln: { low: 155.08, high: 7000.01 } })).status.label).toBe(
+      "nierealna kwota",
+    );
+  });
+});
+
+describe("toBillForecastView closed-month check and delta rounding", () => {
+  it("passes the check's own ok flag through, in both directions", () => {
+    const check = (flag: boolean) => ({ ...ok.closed_month_check, ok: flag });
+    expect(forecast(okRow({ closed_month_check: check(true) })).closedMonthCheck?.ok).toBe(true);
+    expect(forecast(okRow({ closed_month_check: check(false) })).closedMonthCheck?.ok).toBe(false);
+  });
+
+  it.each([
+    [3, "+3,0%"],
+    [0, "0,0%"],
+    [-2.7, "−2,7%"],
+  ])("writes a closed-month difference of %d as %s", (diff, label) => {
+    const view = forecast(okRow({ closed_month_check: { ...ok.closed_month_check, diff_pct: diff } }));
+    expect(view.closedMonthCheck?.diffLabel).toBe(label);
+  });
+
+  // Half a percent sits on the rounding line; it rounds away from zero on both sides.
+  it.each([
+    [201, 200, "+1 zł (+1%) względem ostatniego rachunku za sierpień 2026", "up"],
+    [199, 200, "−1 zł (−1%) względem ostatniego rachunku za sierpień 2026", "down"],
+  ])("rounds half a percent away from zero (%d against %d)", (projected, invoice, text, direction) => {
+    const view = forecast(
+      okRow({
+        projected_bill_gross_pln: projected,
+        range_gross_pln: { low: 100, high: 300 },
+        closed_month_check: { ...ok.closed_month_check, invoice_gross_pln: invoice },
+      }),
+    );
+    expect(view.delta).toMatchObject({ text, direction });
+  });
+});
