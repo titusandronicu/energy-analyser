@@ -294,23 +294,23 @@ None. No schema, contract or data change. The two behaviour changes are display-
 
 #### Automated
 
-- [x] 3.1 Unit tests pass, including the new boundary cases
-- [x] 3.2 Linting passes
-- [x] 3.3 Type check passes
-- [x] 3.4 Production build succeeds
-- [x] 3.5 Deliberate break: changing the periodTotals 7-day comparison from < to <= turns the new 6-versus-7 test red
+- [x] 3.1 Unit tests pass, including the new boundary cases — 2bfb89c
+- [x] 3.2 Linting passes — 2bfb89c
+- [x] 3.3 Type check passes — 2bfb89c
+- [x] 3.4 Production build succeeds — 2bfb89c
+- [x] 3.5 Deliberate break: changing the periodTotals 7-day comparison from < to <= turns the new 6-versus-7 test red — 2bfb89c
 
 ### Phase 4: Docs, cookbook and plan backport
 
 #### Automated
 
-- [ ] 4.1 Unit tests pass
-- [ ] 4.2 Linting passes
-- [ ] 4.3 Type check passes
-- [ ] 4.4 Production build succeeds
-- [ ] 4.5 The docs state the new rules
+- [x] 4.1 Unit tests pass
+- [x] 4.2 Linting passes
+- [x] 4.3 Type check passes
+- [x] 4.4 Production build succeeds
+- [x] 4.5 The docs state the new rules
 
 #### Manual
 
-- [ ] 4.6 The owner reads test-plan.md §6.1 and §6.5 and confirms the patterns are usable for the next rollout phase
-- [ ] 4.7 The pull request description lists the example-v1.json scrub as a follow-up and the owner agrees
+- [x] 4.6 The owner reads test-plan.md §6.1 and §6.5 and confirms the patterns are usable for the next rollout phase
+- [x] 4.7 The pull request description lists the example-v1.json scrub as a follow-up and the owner agrees
