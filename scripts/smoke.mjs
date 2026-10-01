@@ -83,14 +83,14 @@ const freshSummaries = () => {
     }));
   return [...fromExample, ...own];
 };
-const freshPush = () =>
-  ingest({
-    ...example,
-    captured_at: new Date(Date.now() - 60_000).toISOString(),
-    recommendation: { ...example.recommendation, generated_at: new Date().toISOString(), text: freshMarker },
-    bill_forecast: { ...example.bill_forecast, generated_at: new Date().toISOString() },
-    period_summaries: freshSummaries(),
-  });
+const freshBody = () => ({
+  ...example,
+  captured_at: new Date(Date.now() - 60_000).toISOString(),
+  recommendation: { ...example.recommendation, generated_at: new Date().toISOString(), text: freshMarker },
+  bill_forecast: { ...example.bill_forecast, generated_at: new Date().toISOString() },
+  period_summaries: freshSummaries(),
+});
+const freshPush = () => ingest(freshBody());
 
 // The history page opens on the current month or, while it has fewer than 7 complete days, the previous one; the
 // current month's label ("wrzesień 2026") is on the page either way, as the heading or the "next month" link.
@@ -116,6 +116,53 @@ const summaryMonth = new Date(Date.parse(`${warsawToday.slice(0, 7)}-01T00:00:00
 const pendingExample = example.period_summaries.find(
   (entry) => entry.kind === "day" && entry.narration === null && entry.period !== summaryDay,
 );
+// The hourly card (Godziny zużycia): one complete Warsaw day, 4 days back, so it stays inside the card's 35-day window
+// and is a day the card has ended. Every clock hour of the day is pushed (24, or 23 / 25 on a daylight-saving change),
+// found with Europe/Warsaw rules: the day's midnight is the UTC midnight minus the Warsaw offset (+1 h or +2 h), and the
+// hours run in whole-hour steps until the Warsaw date changes. All figures are invented: the clock hour 20 uses 9.5 kWh
+// and every other hour 0.4 to 0.8 kWh, so 20:00 is the day's heaviest hour whatever else the window holds (the card
+// ranks hours by house use, highest first, and prints an hour as "HH:00–(HH+1):00"). The same day's keys every run, so a
+// rerun overwrites the same values.
+const HOUR_MS = 60 * 60 * 1000;
+const HEAVIEST_CLOCK_HOUR = 20;
+const HEAVIEST_HOUR_LABEL = "20:00–21:00";
+const hourlyDay = new Date(Date.parse(`${warsawToday}T00:00:00Z`) - 4 * 24 * HOUR_MS).toISOString().slice(0, 10);
+const warsawClock = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Warsaw",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  hourCycle: "h23",
+});
+const warsawHourAt = (ms) => {
+  const parts = Object.fromEntries(warsawClock.formatToParts(new Date(ms)).map((part) => [part.type, part.value]));
+  return { dayKey: `${parts.year}-${parts.month}-${parts.day}`, hour: Number(parts.hour) };
+};
+const warsawDayHours = (dayKey) => {
+  const utcMidnight = Date.parse(`${dayKey}T00:00:00Z`);
+  const midnight = [1, 2]
+    .map((offsetHours) => utcMidnight - offsetHours * HOUR_MS)
+    .find((ms) => warsawHourAt(ms).dayKey === dayKey && warsawHourAt(ms).hour === 0);
+  const hours = [];
+  for (let ms = midnight; warsawHourAt(ms).dayKey === dayKey; ms += HOUR_MS) {
+    hours.push({ startMs: ms, hour: warsawHourAt(ms).hour });
+  }
+  return hours;
+};
+const hourlyDayHistory = () =>
+  warsawDayHours(hourlyDay).map(({ startMs, hour }) => ({
+    hour_start: new Date(startMs).toISOString(),
+    load_kwh: hour === HEAVIEST_CLOCK_HOUR ? 9.5 : [0.4, 0.5, 0.6, 0.7, 0.8][hour % 5],
+    grid_net_kwh: 0.3,
+    pv_kwh: 0.1,
+    samples: 12,
+  }));
+// The fresh push with its hourly history replaced by the complete day. Its captured_at is the real now: later than the
+// fresh push's (a minute back) and the script-start push's, and earlier than the pushes the later steps make, so it is
+// distinct from all of them (an equal captured_at with different content would be a 409). The state is the fresh push's.
+const hourlyPush = () =>
+  ingest({ ...freshBody(), captured_at: new Date().toISOString(), hourly_history: hourlyDayHistory() });
 const noteStamp = Date.now();
 const noteText = `Smoke notatka ${noteStamp} <b>pogrubiona</b>`;
 // Astro escapes the text, so the page holds it as literal characters, never as markup.
@@ -222,6 +269,19 @@ const steps = [
     "dashboard has a main landmark and a top-level heading",
     () => request("/dashboard", { readBody: true }),
     { status: 200, contains: ["<main", "<h1"] },
+  ],
+  ["hourly history of one complete day is pushed", hourlyPush, { status: 201 }],
+  [
+    // The pushed day makes the hourly card rank hours: the status badge is there, the empty-state reason (rendered only
+    // for an empty view) is not, and the heaviest hour is the first entry of the "Najwyższe" list inside the hours block.
+    "dashboard shows the hourly card with the heaviest hour of the pushed day",
+    () => request("/dashboard", { readBody: true }),
+    {
+      status: 200,
+      contains: ['data-testid="hourly-status"', 'data-testid="hourly-hours"'],
+      notContains: 'data-testid="hourly-empty-reason"',
+      matches: new RegExp(`data-testid="hourly-hours"[\\s\\S]*?Najwyższe[\\s\\S]{0,500}?${HEAVIEST_HOUR_LABEL}`),
+    },
   ],
   [
     "history page has a main landmark, a top-level heading and the current month",

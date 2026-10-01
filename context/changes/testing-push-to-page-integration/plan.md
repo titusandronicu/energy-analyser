@@ -322,12 +322,12 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Automated
 
-- [x] 1.1 Linting passes: `npm run lint`
-- [x] 1.2 Type checking passes: `npx astro check`
-- [x] 1.3 Unit tests still pass with the same 34 files and 1201 tests and collect no integration file: `npm test`
-- [x] 1.4 Production build passes: `npm run build`
-- [x] 1.5 The seed test passes against a reachable local stack (needs the UGREEN relay or CI): `npm run test:integration`
-- [x] 1.6 The harness refuses a non-local URL: `SUPABASE_URL=https://example.supabase.co SUPABASE_ANON_KEY=x npm run test:integration` exits non-zero with the refusal message
+- [x] 1.1 Linting passes: `npm run lint` — 3c6090f
+- [x] 1.2 Type checking passes: `npx astro check` — 3c6090f
+- [x] 1.3 Unit tests still pass with the same 34 files and 1201 tests and collect no integration file: `npm test` — 3c6090f
+- [x] 1.4 Production build passes: `npm run build` — 3c6090f
+- [x] 1.5 The seed test passes against a reachable local stack (needs the UGREEN relay or CI): `npm run test:integration` — 3c6090f
+- [x] 1.6 The harness refuses a non-local URL: `SUPABASE_URL=https://example.supabase.co SUPABASE_ANON_KEY=x npm run test:integration` exits non-zero with the refusal message — 3c6090f
 
 #### Manual
 
@@ -338,11 +338,11 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Automated
 
-- [ ] 2.1 Linting passes: `npm run lint`
-- [ ] 2.2 Type checking passes: `npx astro check`
-- [ ] 2.3 Unit tests still pass with the same 1201 tests: `npm test`
-- [ ] 2.4 The push-to-page tests pass against a reachable local stack: `npm run test:integration`
-- [ ] 2.5 Deliberate break: comment out the `hourly_history` section in the hourly row's body builder and the hourly test fails, then restore it
+- [x] 2.1 Linting passes: `npm run lint`
+- [x] 2.2 Type checking passes: `npx astro check`
+- [x] 2.3 Unit tests still pass with the same 1201 tests: `npm test`
+- [x] 2.4 The push-to-page tests pass against a reachable local stack: `npm run test:integration`
+- [x] 2.5 Deliberate break: comment out the `hourly_history` section in the hourly row's body builder and the hourly test fails, then restore it
 
 #### Manual
 
