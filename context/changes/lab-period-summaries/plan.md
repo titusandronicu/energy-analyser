@@ -371,6 +371,23 @@ Send the summaries with each push, run the July–September backfill once, and d
   - `context/archive/2026-09-30-history-backfill/` (range push)
 - Grid sensor: `context/archive/2026-09-30-inverter-grid-correction/`
 
+### Deviations recorded at impl review (2026-10-01)
+
+Built differently from the plan, or added after `reviews/impl-review.md`:
+
+- **No size cap on the state file.** The 80-entry cap, the per-entry limits and the drop order bound the push instead.
+- **The refresh step runs only when `.env.llm` exists.** It sits in the same guard as the hourly advisory, so without the file both are skipped and the push sends the last written state.
+- **`IDENTIFIER_PATTERN` is tightened.** A full stop that ends a sentence no longer hides an 18-digit run (only a decimal fraction's digits still don't count). The pattern is shared, so the `bill_forecast` check changes too.
+- **Review fixes:**
+  - F1: a range push stamps `captured_at` with the push time and refuses a snapshot older than 15 minutes, so it no longer collides with the timer's push (409).
+  - F2: the numbers check ties numbers to units (`%` only to `*_pct` facts, `kWh` only to `*_kwh` facts, bare numbers equal to integer facts exactly) and refuses Polish number and comparison words.
+  - F3: a range run saves the state after each narration and stops after 3 provider errors in a row.
+  - F4: regular retries cover only the periods in the push window, newest first.
+  - F5: the homelab-2 runbook names the recorded migration version, `20261001094118`.
+  - F6: `20261001150000_period_summaries_keep_narration.sql` makes `ingest_push` skip a newer entry without a narration when the stored row has one; the smoke test checks it.
+  - F7: `docs/prerequisites.md` and `docs/logic.md` describe the summary rules as built.
+  - F8: a text is used only with `finish_reason` `"stop"`, and its length is counted in UTF-16 units, as the app's contract counts it.
+
 ## Progress
 
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles. See `references/progress-format.md`.

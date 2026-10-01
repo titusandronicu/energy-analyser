@@ -453,6 +453,37 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       { status: 403 },
     ],
     [
+      // A newer facts-only entry (narration null, as when the cloud model failed or the lab lost its state file) for
+      // the narrated today row: built_at is later than the fresh one, so only the narration rule keeps the text.
+      "ingest stores a newer facts-only entry for a narrated period",
+      () => {
+        const now = new Date().toISOString();
+        const today = example.period_summaries.find((entry) => entry.kind === "today");
+        return ingest({
+          ...example,
+          captured_at: now,
+          period_summaries: [{ ...today, built_at: now, narration: null }],
+        });
+      },
+      { status: 201 },
+    ],
+    [
+      // A newer entry without a narration never clears a stored narration: the today text must still be this run's
+      // fresh one. A missing row reports 299, a cleared or replaced text 298.
+      "signed-in owner still reads the narration after a newer facts-only entry",
+      async () => {
+        const result = await ownerRead("period_summaries?select=kind,period,narration_text", { readBody: true });
+        if (result.status !== 200 || !Array.isArray(result.rows)) return result;
+        const todayPeriod = example.period_summaries.find((entry) => entry.kind === "today").period;
+        const today = result.rows.find((row) => row.kind === "today" && row.period === todayPeriod);
+        if (today === undefined) return { status: 299, location: "today summary row missing" };
+        return today.narration_text === freshSummaryMarker
+          ? result
+          : { status: 298, location: "today narration cleared by a newer facts-only entry" };
+      },
+      { status: 200 },
+    ],
+    [
       "password sign-in opens a session",
       () => request("/api/auth/signin", { method: "POST", form: { email: passwordEmail, password: passwordValue } }),
       { status: 302, location: "/dashboard" },
