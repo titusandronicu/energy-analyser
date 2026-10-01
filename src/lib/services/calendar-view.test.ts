@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DailyEnergyRow, RecommendationRow } from "@/types";
+import type { DailyEnergyRow, PeriodSummaryRow, RecommendationRow } from "@/types";
 import { addDays } from "@/lib/format/warsaw-time";
 import {
   BEFORE_HISTORY,
@@ -531,6 +531,120 @@ describe("ratings in the views", () => {
 
   it("never rates the quarter", () => {
     expect(buildQuarterView(2026, 3, [...norm, ...rows("2026-09-01", 30)], "2026-10-05").rating).toBeNull();
+  });
+});
+
+function summaryRow(
+  kind: "day" | "month",
+  period: string,
+  overrides: Partial<PeriodSummaryRow> = {},
+): PeriodSummaryRow {
+  return {
+    kind,
+    period,
+    facts: { secret_figure: 4242 },
+    narration_text: "  Synthetyczny opis okresu.  ",
+    narration_generated_at: "2026-10-02T08:30:00Z",
+    narration_provider: "openrouter",
+    narration_model: "synthetic-model",
+    built_at: "2026-10-02T08:00:00Z",
+    ...overrides,
+  };
+}
+
+describe("summaries in the views", () => {
+  // 12:00 Warsaw on 5 October 2026 (CEST, UTC+2).
+  const now = new Date("2026-10-05T10:00:00Z");
+  const todayKey = "2026-10-05";
+  const narrated = {
+    kind: "narrated",
+    text: "Synthetyczny opis okresu.",
+    // 08:30 UTC is 10:30 Warsaw.
+    generatedAtLabel: "2 października 2026, 10:30",
+  };
+
+  it("fills the day's summary on a completed day", () => {
+    const view = buildDayView("2026-10-02", [], [], todayKey, now, null, summaryRow("day", "2026-10-02"));
+    expect(view.summary).toEqual({ ...narrated, periodLabel: "2 października 2026, piątek" });
+  });
+
+  it("fills the month's summary on a completed month", () => {
+    const view = buildMonthView("2026-09", [], noTimes, todayKey, new Set(), summaryRow("month", "2026-09"));
+    expect(view.summary).toEqual({ ...narrated, periodLabel: "wrzesień 2026" });
+  });
+
+  it("says a period is pending when its narration is null or blank", () => {
+    const day = buildDayView(
+      "2026-10-02",
+      [],
+      [],
+      todayKey,
+      now,
+      null,
+      summaryRow("day", "2026-10-02", { narration_text: null }),
+    );
+    expect(day.summary).toEqual({ kind: "pending", periodLabel: "2 października 2026, piątek" });
+    const month = buildMonthView(
+      "2026-09",
+      [],
+      noTimes,
+      todayKey,
+      new Set(),
+      summaryRow("month", "2026-09", { narration_text: "  " }),
+    );
+    expect(month.summary).toEqual({ kind: "pending", periodLabel: "wrzesień 2026" });
+  });
+
+  it("has no summary without a row", () => {
+    expect(buildDayView("2026-10-02", [], [], todayKey, now).summary).toBeNull();
+    expect(buildMonthView("2026-09", [], noTimes, todayKey).summary).toBeNull();
+  });
+
+  it("forces null on today and a future day, whatever row is passed", () => {
+    for (const day of [todayKey, "2026-10-06", "2026-11-01"]) {
+      expect(buildDayView(day, [], [], todayKey, now, null, summaryRow("day", day)).summary).toBeNull();
+    }
+  });
+
+  it("forces null on the current month and a later one, whatever row is passed", () => {
+    for (const month of ["2026-10", "2026-11"]) {
+      expect(buildMonthView(month, [], noTimes, todayKey, new Set(), summaryRow("month", month)).summary).toBeNull();
+    }
+  });
+
+  it("counts yesterday and the month just ended as completed when today is the 1st", () => {
+    const firstOfMonth = new Date("2026-11-01T10:00:00Z");
+    const day = buildDayView("2026-10-31", [], [], "2026-11-01", firstOfMonth, null, summaryRow("day", "2026-10-31"));
+    expect(day.summary).toMatchObject({ kind: "narrated", periodLabel: "31 października 2026, sobota" });
+    const month = buildMonthView("2026-10", [], noTimes, "2026-11-01", new Set(), summaryRow("month", "2026-10"));
+    expect(month.summary).toMatchObject({ kind: "narrated", periodLabel: "październik 2026" });
+    // Today itself and the month that just began still have none.
+    expect(
+      buildDayView("2026-11-01", [], [], "2026-11-01", firstOfMonth, null, summaryRow("day", "2026-11-01")).summary,
+    ).toBeNull();
+    expect(
+      buildMonthView("2026-11", [], noTimes, "2026-11-01", new Set(), summaryRow("month", "2026-11")).summary,
+    ).toBeNull();
+  });
+
+  it("completes December and its last day across the year boundary", () => {
+    const newYear = new Date("2027-01-01T10:00:00Z");
+    const day = buildDayView("2026-12-31", [], [], "2027-01-01", newYear, null, summaryRow("day", "2026-12-31"));
+    expect(day.summary).toMatchObject({ kind: "narrated", periodLabel: "31 grudnia 2026, czwartek" });
+    const month = buildMonthView("2026-12", [], noTimes, "2027-01-01", new Set(), summaryRow("month", "2026-12"));
+    expect(month.summary).toMatchObject({ kind: "narrated", periodLabel: "grudzień 2026" });
+    expect(
+      buildMonthView("2027-01", [], noTimes, "2027-01-01", new Set(), summaryRow("month", "2027-01")).summary,
+    ).toBeNull();
+  });
+
+  it("leaves the quarter without a summary", () => {
+    expect(buildQuarterView(2026, 3, [], todayKey).summary).toBeNull();
+  });
+
+  it("never exposes facts through the slot", () => {
+    const view = buildDayView("2026-10-02", [], [], todayKey, now, null, summaryRow("day", "2026-10-02"));
+    expect(JSON.stringify(view.summary)).not.toContain("4242");
   });
 });
 

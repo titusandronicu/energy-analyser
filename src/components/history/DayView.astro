@@ -7,6 +7,7 @@ import RecommendationForecast from "@/components/RecommendationForecast.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import DayNotePanel from "@/components/history/DayNotePanel.astro";
 import RatingPanel from "@/components/history/RatingPanel.astro";
+import SummaryPanel from "@/components/history/SummaryPanel.astro";
 import { VerdictChip } from "@/components/live/VerdictChip";
 import Panel from "@/components/ui/Panel.astro";
 import { parseAdviceMarkdown, splitAdviceLead } from "@/lib/format/advice-markdown";
@@ -99,6 +100,10 @@ const figures =
 </Panel>
 
 <RatingPanel title="Ocena dnia" rating={rowFailed ? null : view.rating} testId="history-day-rating" />
+
+{view.summary !== null && (
+  <SummaryPanel title="Podsumowanie dnia" summary={view.summary} testId="history-day-summary" />
+)}
 
 <DayNotePanel day={view.day} note={view.note} notice={notice} failed={noteFailed} />
 

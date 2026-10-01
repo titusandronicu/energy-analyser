@@ -102,16 +102,23 @@ export function isStaleRecommendation(generatedAt: Date, now: Date): boolean {
   return isFromEarlierDay(generatedAt, now);
 }
 
+// A problem: the text was written for an earlier Warsaw day, so its "today" is another day than the reader's. Shared with
+// the period summaries (S-18), which word the same state the same way.
+export function earlierDayStatus(dayKey: string): Status {
+  return { tone: "problem", label: `z ${formatDayMonth(dayKey)} — dotyczy innego dnia` };
+}
+
+// Good within two hours, worth watching when older (exactly two hours is still good). Shared with the period summaries.
+export function ageStatus(ageMs: number): Status {
+  if (ageMs > STALE_AFTER_MS) return { tone: "watch", label: `sprzed ${formatAge(ageMs)}` };
+  return { tone: "good", label: "aktualna" };
+}
+
 // Good when from today within two hours, worth watching when from today but older, a problem when from an
 // earlier Warsaw day (the advice was about another day).
 function recommendationStatus(generatedAt: Date, now: Date): Status {
-  const generatedDay = warsawParts(generatedAt).dayKey;
-  if (isFromEarlierDay(generatedAt, now)) {
-    return { tone: "problem", label: `z ${formatDayMonth(generatedDay)} — dotyczy innego dnia` };
-  }
-  const ageMs = now.getTime() - generatedAt.getTime();
-  if (ageMs > STALE_AFTER_MS) return { tone: "watch", label: `sprzed ${formatAge(ageMs)}` };
-  return { tone: "good", label: "aktualna" };
+  if (isFromEarlierDay(generatedAt, now)) return earlierDayStatus(warsawParts(generatedAt).dayKey);
+  return ageStatus(now.getTime() - generatedAt.getTime());
 }
 
 // Trimmed text, or null for a blank or non-string value; over FINDING_TEXT_MAX_CHARS it is cut and ends in "…".

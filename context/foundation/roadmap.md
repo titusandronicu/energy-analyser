@@ -56,7 +56,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-17 | period-ratings            | see a good / neutral / bad rating for each completed day and month                          | S-15          | US-05, FR-022                         | done        |
 | S-20 | consumption-trends        | see a remark when consumption rises or falls noticeably over weeks and months               | S-14, S-15    | US-05, FR-031                         | proposed    |
 | S-19 | day-notes                 | add, view, edit and delete notes on calendar days                                           | S-15          | US-06, FR-025, FR-026, FR-027, FR-028 | done        |
-| S-18 | period-summaries          | read plain-language explanations of today and summaries of past days and months             | F-04, S-15    | US-01, US-05, FR-023, FR-030          | proposed    |
+| S-18 | period-summaries          | read plain-language explanations of today and summaries of past days and months             | F-04, S-15    | US-01, US-05, FR-023, FR-030          | in-progress |
 | S-11 | forecast-accuracy         | see how accurate the PV forecast has been and how certain today's forecast is               | F-05, S-14    | US-01, FR-015, FR-020, FR-006         | proposed    |
 | S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff                         | F-01, S-01    | US-03, FR-012                         | blocked     |
 | S-09 | consumption-plan-actions  | see the lab's consumption-plan actions next to today's recommendation                       | S-03          | US-07, FR-013                         | proposed    |
@@ -305,7 +305,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Display only; like the recommendation card, the summary is shown as narrated, with its generation time and the period it covers.
-- **Status:** proposed
+- **Status:** in-progress
 
 ### S-11: Forecast accuracy and certainty
 

@@ -33,6 +33,7 @@ import {
   type QuarterView as QuarterViewModel,
 } from "@/lib/services/calendar-view";
 import { noteNotice } from "@/lib/services/day-notes";
+import { loadPeriodSummary } from "@/lib/services/period-summary";
 import type { DailyEnergyRow } from "@/types";
 
 // The history calendar (S-15): the period comes from the URL (?day=, ?month=, ?quarter=), only its rows are loaded
@@ -97,7 +98,7 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
     const range = ratedPeriodRange(period);
     const rows = preloaded === undefined ? await dailyRange(range.first, range.last) : preloaded;
     if (rows === null) return { kind: "month", period, view: null, markersFailed: false, noteMarkersFailed: false };
-    const [times, noteDays] = await Promise.all([
+    const [times, noteDays, summary] = await Promise.all([
       orLoadError(async () => {
         const supabase = getClient();
         return supabase ? await loadRecommendationTimes(supabase, fromMs, toMs) : { times: [], truncated: false };
@@ -106,10 +107,24 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
         const supabase = getClient();
         return supabase ? await loadNoteDays(supabase, first, last) : [];
       }),
+      // Only a completed month has a text. A failed load shows no panel (the panel is decorative, so no error line).
+      orLoadError(async () => {
+        const supabase = getClient();
+        return {
+          row: supabase && month < today.slice(0, 7) ? await loadPeriodSummary(supabase, "month", month) : null,
+        };
+      }),
     ]);
     const view = await orLoadError(async () =>
       Promise.resolve(
-        buildMonthView(month, rows, times ?? { times: [], truncated: false }, today, new Set(noteDays ?? [])),
+        buildMonthView(
+          month,
+          rows,
+          times ?? { times: [], truncated: false },
+          today,
+          new Set(noteDays ?? []),
+          summary?.row ?? null,
+        ),
       ),
     );
     return { kind: "month", period, view, markersFailed: times === null, noteMarkersFailed: noteDays === null };
@@ -118,7 +133,7 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
   if (period.kind === "day") {
     const day = period.day;
     const range = ratedPeriodRange(period);
-    const [rows, recs, note] = await Promise.all([
+    const [rows, recs, note, summary] = await Promise.all([
       dailyRange(range.first, range.last),
       orLoadError(async () => {
         const supabase = getClient();
@@ -129,9 +144,14 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
         const supabase = getClient();
         return { row: supabase ? await loadNoteForDay(supabase, day) : null };
       }),
+      // Only a completed day has a text. A failed load shows no panel (the panel is decorative, so no error line).
+      orLoadError(async () => {
+        const supabase = getClient();
+        return { row: supabase && day < today ? await loadPeriodSummary(supabase, "day", day) : null };
+      }),
     ]);
     const view = await orLoadError(async () =>
-      Promise.resolve(buildDayView(day, rows ?? [], recs ?? [], today, now, note?.row ?? null)),
+      Promise.resolve(buildDayView(day, rows ?? [], recs ?? [], today, now, note?.row ?? null, summary?.row ?? null)),
     );
     return {
       kind: "day",

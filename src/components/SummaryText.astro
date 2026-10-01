@@ -1,0 +1,22 @@
+---
+interface Props {
+  // The lab's text, or null when the lab has the period's facts but no text yet.
+  text: string | null;
+  // The muted line under the text or the pending sentence: when it was written and/or which period it covers.
+  meta: string;
+}
+
+// The body of a lab summary (S-18), shared by the dashboard card and the calendar panel so the two cannot drift apart.
+// The text is untrusted, so it renders as escaped text, never as HTML; a missing text says so in one sentence and shows
+// no figures. No client JavaScript.
+const { text, meta } = Astro.props;
+---
+
+<div class="space-y-1">
+  {text !== null ? (
+    <p class="text-card-foreground leading-relaxed whitespace-pre-line [overflow-wrap:anywhere]">{text}</p>
+  ) : (
+    <p class="text-muted-foreground text-sm">Opis jeszcze się nie pojawił.</p>
+  )}
+  <p class="text-muted-foreground text-xs">{meta}</p>
+</div>

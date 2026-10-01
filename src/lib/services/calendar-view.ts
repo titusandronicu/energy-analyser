@@ -41,6 +41,7 @@ import {
   rowsNeededFrom,
   type PeriodRating,
 } from "@/lib/services/period-rating";
+import { toSummaryView, type PeriodSummaryText, type SummaryView } from "@/lib/services/period-summary";
 import { FORECAST_HISTORY_START, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 
 // View models for the history calendar (S-15): every figure, status and sentence of the day, month and quarter views
@@ -190,12 +191,12 @@ export type ForecastComparison =
     }
   | { kind: "insufficient"; days: number; needed: number; reason: string };
 
-// Slots reserved for S-18 (lab summary), and for a note on the month and quarter: the day view carries its own note
-// (S-19) and the month marks noted days on its cells. The rating (S-17) is filled on the day and month views and stays
-// null on the quarter.
+// Slots reserved for a note on the month and quarter: the day view carries its own note (S-19) and the month marks
+// noted days on its cells. The rating (S-17) and the lab's summary (S-18) are filled on the day and month views and
+// stay null on the quarter.
 interface ReservedSlots {
   note: null;
-  summary: null;
+  summary: SummaryView | null;
 }
 
 // The owner's note on a day, as the day view shows it: the text as written and when it was last changed
@@ -419,6 +420,12 @@ function startNote(p: CalendarPeriod): string | null {
   return first < HISTORY_START && HISTORY_START <= last ? HISTORY_START_NOTE : null;
 }
 
+// The lab's summary as the day or month view shows it: only for a completed period (`isOver`), whatever row is passed,
+// because today's text lives on the dashboard and a running month has none yet.
+function periodSummary(row: PeriodSummaryText | null, kind: "day" | "month", isOver: boolean): SummaryView | null {
+  return row === null || !isOver ? null : toSummaryView(row, kind);
+}
+
 // The month's rating over all the rows read (they reach RATING_WINDOW_DAYS before the month); a running month says it
 // is not rated yet.
 function monthRating(month: string, rows: readonly DailyEnergyRow[], today: string): PeriodRating {
@@ -440,6 +447,8 @@ export function buildMonthView(
   today: string,
   // The month's days that carry a note.
   noteDays: ReadonlySet<string> = new Set(),
+  // The lab's summary row for the month, if it wrote one.
+  summary: PeriodSummaryText | null = null,
 ): MonthView {
   const period: CalendarPeriod = { kind: "month", month };
   const days = periodDays(period);
@@ -479,6 +488,7 @@ export function buildMonthView(
     markersNote: recTimes.truncated ? MARKERS_INCOMPLETE : null,
     rating: monthRating(month, rows, today),
     ...RESERVED,
+    summary: periodSummary(summary, "month", month < today.slice(0, 7)),
   };
 }
 
@@ -600,7 +610,7 @@ function dayNote(row: DayNoteRow | null): DayNote | null {
 }
 
 // `rows` are the day's row and the RATING_WINDOW_DAYS before it (ratedPeriodRange); only the day's own row gives the
-// totals and the forecast. `note` is the owner's note on the day, if any.
+// totals and the forecast. `note` is the owner's note on the day, if any; `summary` is the lab's text for the day.
 export function buildDayView(
   day: string,
   rows: readonly DailyEnergyRow[],
@@ -608,6 +618,7 @@ export function buildDayView(
   today: string,
   now: Date,
   note: DayNoteRow | null = null,
+  summary: PeriodSummaryText | null = null,
 ): DayView {
   const dayRow = rows.find((row) => row.day === day);
   return {
@@ -620,6 +631,6 @@ export function buildDayView(
     advice: dayAdvice(day, recs, now),
     rating: dayRating(day, rows, today),
     note: dayNote(note),
-    summary: null,
+    summary: periodSummary(summary, "day", day < today),
   };
 }

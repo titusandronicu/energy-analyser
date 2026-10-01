@@ -1,0 +1,30 @@
+---
+import { FileText } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
+import SummaryText from "@/components/SummaryText.astro";
+import Panel from "@/components/ui/Panel.astro";
+import type { SummaryView } from "@/lib/services/period-summary";
+
+interface Props {
+  title: string;
+  summary: SummaryView;
+  testId: string;
+}
+
+// The lab's plain-language text for a completed day or month (S-18). The body is the shared SummaryText fragment.
+const { title, summary, testId } = Astro.props;
+---
+
+<Panel>
+  <div data-testid={testId}>
+    <CardHeading class="mb-2" title={title} icon={FileText} iconClass="text-primary" />
+    {summary.kind === "narrated" ? (
+      <SummaryText
+        text={summary.text}
+        meta={`napisane ${summary.generatedAtLabel} · dotyczy: ${summary.periodLabel}`}
+      />
+    ) : (
+      <SummaryText text={null} meta={`Dotyczy: ${summary.periodLabel}`} />
+    )}
+  </div>
+</Panel>
