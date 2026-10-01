@@ -265,52 +265,52 @@ None. No schema, contract or data change. The two behaviour changes are display-
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, including the cross-surface table — 1d05696
-- [x] 1.2 Linting passes — 1d05696
-- [x] 1.3 Type check passes — 1d05696
-- [x] 1.4 Production build succeeds — 1d05696
-- [x] 1.5 Deliberate break: removing the future-time rule turns the new table and the recommendation tests red — 1d05696
+- [x] 1.1 Unit tests pass, including the cross-surface table — 1efe18c
+- [x] 1.2 Linting passes — 1efe18c
+- [x] 1.3 Type check passes — 1efe18c
+- [x] 1.4 Production build succeeds — 1efe18c
+- [x] 1.5 Deliberate break: removing the future-time rule turns the new table and the recommendation tests red — 1efe18c
 
 #### Manual
 
-- [x] 1.6 The owner reads the new status wording "czas z przyszłości" on the recommendation and the today card and approves it — 1d05696
-- [x] 1.7 With a recommendation dated about 10 minutes ahead on the local stack, the card shows the "czas z przyszłości" badge and the clock-error message, not the outage message, and its forecast days are not called "dziś" and "jutro" — 1d05696
+- [x] 1.6 The owner reads the new status wording "czas z przyszłości" on the recommendation and the today card and approves it — 1efe18c
+- [x] 1.7 With a recommendation dated about 10 minutes ahead on the local stack, the card shows the "czas z przyszłości" badge and the clock-error message, not the outage message, and its forecast days are not called "dziś" and "jutro" — 1efe18c
 
 ### Phase 2: Money guards and refusal ladder (risk #2)
 
 #### Automated
 
-- [x] 2.1 Unit tests pass, including the ladder edges and the fixture table — 6bdc785
-- [x] 2.2 Linting passes — 6bdc785
-- [x] 2.3 Type check passes — 6bdc785
-- [x] 2.4 Production build succeeds — 6bdc785
-- [x] 2.5 Deliberate break: removing the sign guard, and separately the closed-month ceiling, turns the matching tests red — 6bdc785
+- [x] 2.1 Unit tests pass, including the ladder edges and the fixture table — 1efe18c
+- [x] 2.2 Linting passes — 1efe18c
+- [x] 2.3 Type check passes — 1efe18c
+- [x] 2.4 Production build succeeds — 1efe18c
+- [x] 2.5 Deliberate break: removing the sign guard, and separately the closed-month ceiling, turns the matching tests red — 1efe18c
 
 #### Manual
 
-- [x] 2.6 The owner spot-checks two of the hand-computed oracle comments against docs/logic.md and agrees the arithmetic is independent of the code — 6bdc785
+- [x] 2.6 The owner spot-checks two of the hand-computed oracle comments against docs/logic.md and agrees the arithmetic is independent of the code — 1efe18c
 
 ### Phase 3: Boundary gaps (risk #5)
 
 #### Automated
 
-- [x] 3.1 Unit tests pass, including the new boundary cases — 2bfb89c
-- [x] 3.2 Linting passes — 2bfb89c
-- [x] 3.3 Type check passes — 2bfb89c
-- [x] 3.4 Production build succeeds — 2bfb89c
-- [x] 3.5 Deliberate break: changing the periodTotals 7-day comparison from < to <= turns the new 6-versus-7 test red — 2bfb89c
+- [x] 3.1 Unit tests pass, including the new boundary cases — 1efe18c
+- [x] 3.2 Linting passes — 1efe18c
+- [x] 3.3 Type check passes — 1efe18c
+- [x] 3.4 Production build succeeds — 1efe18c
+- [x] 3.5 Deliberate break: changing the periodTotals 7-day comparison from < to <= turns the new 6-versus-7 test red — 1efe18c
 
 ### Phase 4: Docs, cookbook and plan backport
 
 #### Automated
 
-- [x] 4.1 Unit tests pass — 81215a6
-- [x] 4.2 Linting passes — 81215a6
-- [x] 4.3 Type check passes — 81215a6
-- [x] 4.4 Production build succeeds — 81215a6
-- [x] 4.5 The docs state the new rules — 81215a6
+- [x] 4.1 Unit tests pass — 1efe18c
+- [x] 4.2 Linting passes — 1efe18c
+- [x] 4.3 Type check passes — 1efe18c
+- [x] 4.4 Production build succeeds — 1efe18c
+- [x] 4.5 The docs state the new rules — 1efe18c
 
 #### Manual
 
-- [x] 4.6 The owner reads test-plan.md §6.1 and §6.5 and confirms the patterns are usable for the next rollout phase — 81215a6
-- [x] 4.7 The pull request description lists the example-v1.json scrub as a follow-up and the owner agrees — 81215a6
+- [x] 4.6 The owner reads test-plan.md §6.1 and §6.5 and confirms the patterns are usable for the next rollout phase — 1efe18c
+- [x] 4.7 The pull request description lists the example-v1.json scrub as a follow-up and the owner agrees — 1efe18c
