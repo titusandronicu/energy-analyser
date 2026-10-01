@@ -276,4 +276,4 @@ None. The table, grants and policy ship with F-04. The app deploy is the owner's
 - [x] 3.7 With a current today row the card shows "aktualna", the text, the generation time and today's date; older than 2 hours and from yesterday show "sprzed X" and "z <date> — dotyczy innego dnia" — 4a5dc25
 - [x] 3.8 With no row and with null narration the card shows its neutral states and no numbers — 4a5dc25
 - [x] 3.9 The card sits under the recommendation, keeps the right column in balance and reads well at phone width — 4a5dc25
-- [ ] 3.10 After the app deploy, production shows today's text and a completed day's and month's summary as F-04's backfill wrote them
+- [x] 3.10 After the app deploy, production shows today's text and a completed day's and month's summary as F-04's backfill wrote them — 2712268
