@@ -251,9 +251,20 @@ describe("toTodaySummaryView", () => {
     expect(previous).toMatchObject({ status: { tone: "problem", label: "z 31 grudnia — dotyczy innego dnia" } });
   });
 
-  it("shows a text written in the future as current, not an error", () => {
+  it("shows a text written up to 5 minutes ahead of the clock as current", () => {
     const view = toTodaySummaryView(row({ narration_generated_at: "2026-09-23T11:05:00Z" }), now);
     expect(view).toMatchObject({ status: { tone: "good", label: "aktualna" }, isStale: false });
+  });
+
+  it("flags a text written more than 5 minutes ahead of the clock as a clock error", () => {
+    const view = toTodaySummaryView(row({ narration_generated_at: "2026-09-23T11:05:00.001Z" }), now);
+    expect(view).toMatchObject({ status: { tone: "problem", label: "czas z przyszłości" }, isStale: true });
+  });
+
+  it("lets the earlier-day rule win over the future-time rule", () => {
+    // The period is yesterday, so the text is about another day however its time reads.
+    const view = toTodaySummaryView(row({ period: "2026-09-22", narration_generated_at: "2026-09-23T11:30:00Z" }), now);
+    expect(view).toMatchObject({ status: { tone: "problem", label: "z 22 września — dotyczy innego dnia" } });
   });
 
   it.each([null, "  "])("is pending for a row from today with narration %j", (narration_text) => {

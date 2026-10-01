@@ -7,6 +7,9 @@ import { formatAge } from "@/lib/services/live-state";
 
 // The lab narrates roughly hourly; two missed runs make the advice stale.
 export const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
+// A generation time ahead of the app's clock by more than this is a producer clock error, not fresh advice. The same
+// 5-minute skew the bill forecast and the ingest contract allow.
+export const FUTURE_SKEW_MS = 5 * 60 * 1000;
 // The app stores forecasts from this Warsaw day on; certainty can only be computed from that history (S-11).
 export const FORECAST_HISTORY_START = "2026-09-27";
 
@@ -66,6 +69,8 @@ export type RecommendationView =
       isCurrent: boolean;
       // Generated before today in Warsaw: its "today" and "tomorrow" are other days than the reader's.
       isFromEarlierDay: boolean;
+      // Generated more than FUTURE_SKEW_MS ahead of the app's clock: a clock error, not an outage. Also stale.
+      isFutureDated: boolean;
       forecast: {
         todayLabel: string;
         tomorrowLabel: string;
@@ -96,10 +101,16 @@ function isFromEarlierDay(generatedAt: Date, now: Date): boolean {
   return warsawParts(generatedAt).dayKey < warsawParts(now).dayKey;
 }
 
-// Stale when generated before the start of today in Europe/Warsaw, or more than two hours ago.
+// True when the time is more than FUTURE_SKEW_MS ahead of `now` (exactly the skew ahead is still fine).
+function isFutureDated(generatedAt: Date, now: Date): boolean {
+  return now.getTime() - generatedAt.getTime() < -FUTURE_SKEW_MS;
+}
+
+// Stale when generated before the start of today in Europe/Warsaw, more than two hours ago, or more than five minutes
+// ahead of the clock.
 export function isStaleRecommendation(generatedAt: Date, now: Date): boolean {
   if (now.getTime() - generatedAt.getTime() > STALE_AFTER_MS) return true;
-  return isFromEarlierDay(generatedAt, now);
+  return isFromEarlierDay(generatedAt, now) || isFutureDated(generatedAt, now);
 }
 
 // A problem: the text was written for an earlier Warsaw day, so its "today" is another day than the reader's. Shared with
@@ -108,8 +119,10 @@ export function earlierDayStatus(dayKey: string): Status {
   return { tone: "problem", label: `z ${formatDayMonth(dayKey)} — dotyczy innego dnia` };
 }
 
-// Good within two hours, worth watching when older (exactly two hours is still good). Shared with the period summaries.
+// Good within two hours, worth watching when older (exactly two hours is still good), a problem when more than five
+// minutes ahead of the clock (exactly five minutes ahead is still good). Shared with the period summaries.
 export function ageStatus(ageMs: number): Status {
+  if (ageMs < -FUTURE_SKEW_MS) return { tone: "problem", label: "czas z przyszłości" };
   if (ageMs > STALE_AFTER_MS) return { tone: "watch", label: `sprzed ${formatAge(ageMs)}` };
   return { tone: "good", label: "aktualna" };
 }
@@ -171,7 +184,7 @@ function historicalStatus(generatedAt: Date): Status {
   return { tone: "insufficient", label: `z ${formatDayMonth(dayKey)}, ${time}` };
 }
 
-// With `historical`, the view is not stale or current and findings keep their real tones; the forecast day labels
+// With `historical`, the view is not stale, current or future-dated and findings keep their real tones; the forecast day labels
 // and `isFromEarlierDay` are the same as without it.
 export function toRecommendationView(
   row: RecommendationRow | null,
@@ -198,6 +211,7 @@ export function toRecommendationView(
     isStale,
     isCurrent: !historical && !isStale,
     isFromEarlierDay: isFromEarlierDay(generatedAt, now),
+    isFutureDated: !historical && isFutureDated(generatedAt, now),
     forecast: {
       todayLabel: kwhLabel(forecast.today_kwh),
       tomorrowLabel: kwhLabel(forecast.tomorrow_kwh),

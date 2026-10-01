@@ -5,6 +5,8 @@ import {
   FINDING_TEXT_MAX_CHARS,
   FINDINGS_VISIBLE_MAX,
   FORECAST_HISTORY_START,
+  ageStatus,
+  earlierDayStatus,
   isStaleRecommendation,
   toRecommendationView,
 } from "./recommendation";
@@ -49,6 +51,41 @@ describe("isStaleRecommendation", () => {
     // 00:10 and 01:40 Warsaw on the 23rd are the 22nd in UTC for the first one — same Warsaw day.
     expect(isStaleRecommendation(at("2026-09-22T22:10:00Z"), at("2026-09-22T23:40:00Z"))).toBe(false);
   });
+
+  it("is not stale exactly 5 minutes ahead of the clock and stale one millisecond beyond", () => {
+    const clock = at("2026-09-23T10:00:00Z");
+    expect(isStaleRecommendation(at("2026-09-23T10:05:00Z"), clock)).toBe(false);
+    expect(isStaleRecommendation(at("2026-09-23T10:05:00.001Z"), clock)).toBe(true);
+  });
+});
+
+const MINUTE = 60 * 1000;
+const HOUR = 60 * MINUTE;
+
+describe("ageStatus", () => {
+  it.each([
+    [0, { tone: "good", label: "aktualna" }],
+    [2 * HOUR, { tone: "good", label: "aktualna" }],
+    [2 * HOUR + 1, { tone: "watch", label: "sprzed 2 godz." }],
+    [-5 * MINUTE, { tone: "good", label: "aktualna" }],
+    [-(5 * MINUTE + 1), { tone: "problem", label: "czas z przyszłości" }],
+    [-3 * HOUR, { tone: "problem", label: "czas z przyszłości" }],
+  ])("rates an age of %i ms as %j", (ageMs, status) => {
+    expect(ageStatus(ageMs)).toEqual(status);
+  });
+});
+
+describe("earlierDayStatus", () => {
+  it("is a problem naming the day the text was written for", () => {
+    expect(earlierDayStatus("2026-09-22")).toEqual({
+      tone: "problem",
+      label: "z 22 września — dotyczy innego dnia",
+    });
+    expect(earlierDayStatus("2026-12-31")).toEqual({
+      tone: "problem",
+      label: "z 31 grudnia — dotyczy innego dnia",
+    });
+  });
 });
 
 describe("toRecommendationView", () => {
@@ -70,6 +107,7 @@ describe("toRecommendationView", () => {
       isStale: false,
       isCurrent: true,
       isFromEarlierDay: false,
+      isFutureDated: false,
       forecast: {
         todayLabel: "18,6 kWh",
         tomorrowLabel: "9,2 kWh",
@@ -185,6 +223,59 @@ describe("toRecommendationView", () => {
     expect(isCurrent("2026-09-23T09:00:00Z", "2026-09-23T11:00:00Z")).toBe(true);
     expect(isCurrent("2026-09-23T09:00:00Z", "2026-09-23T11:00:01Z")).toBe(false);
     expect(isCurrent("2026-09-22T21:30:00Z", "2026-09-22T22:30:00Z")).toBe(false);
+  });
+
+  describe("with a generation time ahead of the clock", () => {
+    // `now` is 11:00 UTC: 11:05 is exactly 5 minutes ahead, 11:05:00.001 one millisecond beyond.
+    const within = row({ generated_at: "2026-09-23T11:05:00Z" });
+    const beyond = row({ generated_at: "2026-09-23T11:05:00.001Z" });
+    const mixed = [
+      { fact: "ok", severity: "ok" },
+      { fact: "warn", severity: "warn" },
+    ];
+
+    function recommendationView(r: RecommendationRow) {
+      const view = toRecommendationView(r, now);
+      if (view.kind !== "recommendation") throw new Error("expected a recommendation");
+      return view;
+    }
+
+    it("keeps exactly 5 minutes ahead current and not flagged", () => {
+      const view = recommendationView(within);
+      expect(view.status).toEqual({ tone: "good", label: "aktualna" });
+      expect([view.isFutureDated, view.isStale, view.isCurrent]).toEqual([false, false, true]);
+    });
+
+    it("flags a time beyond 5 minutes as a clock error, not as an outage or an earlier day", () => {
+      const view = recommendationView(beyond);
+      expect(view.status).toEqual({ tone: "problem", label: "czas z przyszłości" });
+      expect([view.isFutureDated, view.isStale, view.isCurrent, view.isFromEarlierDay]).toEqual([
+        true,
+        true,
+        false,
+        false,
+      ]);
+    });
+
+    it("turns the findings neutral beyond the skew and keeps their tones within it", () => {
+      const tones = (r: RecommendationRow) =>
+        recommendationView({ ...r, facts: { local_findings: mixed } }).findings.map((f) => f.tone);
+      expect(tones(within)).toEqual(["watch", "good"]);
+      expect(tones(beyond)).toEqual(["insufficient", "insufficient"]);
+    });
+
+    it("is not flagged for a past time, however old", () => {
+      expect(recommendationView(row({ generated_at: "2026-09-20T10:00:00Z" })).isFutureDated).toBe(false);
+    });
+
+    it("is not flagged in the historical view", () => {
+      const view = toRecommendationView(beyond, now, { historical: true });
+      expect(view.kind === "recommendation" && [view.isFutureDated, view.isStale, view.isCurrent]).toEqual([
+        false,
+        false,
+        false,
+      ]);
+    });
   });
 });
 
