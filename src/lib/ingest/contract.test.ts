@@ -22,11 +22,17 @@ function withChanges(mutate: (payload: IngestPayloadV1) => void) {
 }
 
 function sections(payload: IngestPayloadV1) {
-  const { recommendation, daily_history, bill_forecast, hourly_history } = payload;
-  if (!recommendation || !daily_history || !bill_forecast || !hourly_history) {
+  const { recommendation, daily_history, bill_forecast, hourly_history, period_summaries } = payload;
+  if (!recommendation || !daily_history || !bill_forecast || !hourly_history || !period_summaries) {
     throw new Error("example must include every section");
   }
-  return { recommendation, days: daily_history, billForecast: bill_forecast, hours: hourly_history };
+  return {
+    recommendation,
+    days: daily_history,
+    billForecast: bill_forecast,
+    hours: hourly_history,
+    summaries: period_summaries,
+  };
 }
 
 // The example carries the `ok` body; the `no_data` branch is built explicitly where it is needed.
@@ -68,6 +74,7 @@ describe("ingest contract v1", () => {
       delete p.daily_history;
       delete p.bill_forecast;
       delete p.hourly_history;
+      delete p.period_summaries;
     });
     expect(validateIngestPayload(payload, now).success).toBe(true);
   });
@@ -357,5 +364,120 @@ describe("ingest contract v1", () => {
     expect(firstIssuePath(withChanges((p) => Object.assign(sections(p).hours[0], { phase_l1_w: 1 })))).toBe(
       "hourly_history.0",
     );
+  });
+
+  it("accepts the period summaries in the committed example, one of each kind", () => {
+    expect(sections(validExample).summaries.map((s) => s.kind)).toEqual(["today", "day", "month"]);
+    expect(validateIngestPayload(example, now).success).toBe(true);
+  });
+
+  it("accepts a payload without period summaries", () => {
+    const payload = withChanges((p) => delete p.period_summaries);
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it("accepts a summary whose narration is null (the cloud model failed, the facts still travel)", () => {
+    const payload = withChanges((p) => (sections(p).summaries[0].narration = null));
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it("rejects an empty period summaries list", () => {
+    expect(firstIssuePath(withChanges((p) => (p.period_summaries = [])))).toBe("period_summaries");
+  });
+
+  it("rejects a repeated (kind, period) pair", () => {
+    const payload = withChanges((p) => {
+      const { summaries } = sections(p);
+      summaries[1] = { ...summaries[1], kind: summaries[0].kind, period: summaries[0].period };
+    });
+    expect(firstIssuePath(payload)).toBe("period_summaries");
+  });
+
+  it("accepts the same period under two kinds", () => {
+    const payload = withChanges((p) => {
+      const { summaries } = sections(p);
+      summaries[1] = { ...summaries[1], period: summaries[0].period };
+    });
+    expect(validateIngestPayload(payload, now).success).toBe(true);
+  });
+
+  it.each([
+    ["today", "2026-09"],
+    ["day", "2026-09"],
+    ["day", "2026-02-30"],
+    ["month", "2026-09-23"],
+    ["month", "2026-13"],
+  ] as const)("rejects a %s summary with period %s", (kind, period) => {
+    const payload = withChanges((p) => {
+      const { summaries } = sections(p);
+      summaries[0] = { ...summaries[0], kind, period };
+    });
+    expect(firstIssuePath(payload)).toBe("period_summaries.0.period");
+  });
+
+  it("rejects a narration from Ollama", () => {
+    const payload = withChanges((p) => {
+      const { narration } = sections(p).summaries[0];
+      if (!narration) throw new Error("example today summary must carry a narration");
+      Object.assign(narration, { provider: "ollama" });
+    });
+    expect(firstIssuePath(payload)).toBe("period_summaries.0.narration.provider");
+  });
+
+  it("accepts a narration of 1500 characters and rejects 1501", () => {
+    const withText = (length: number) =>
+      withChanges((p) => {
+        const { narration } = sections(p).summaries[0];
+        if (!narration) throw new Error("example today summary must carry a narration");
+        narration.text = "a".repeat(length);
+      });
+    expect(validateIngestPayload(withText(1500), now).success).toBe(true);
+    expect(firstIssuePath(withText(1501))).toBe("period_summaries.0.narration.text");
+  });
+
+  it("accepts 40 facts and rejects 41", () => {
+    const withFacts = (count: number) =>
+      withChanges((p) => {
+        sections(p).summaries[1].facts = Object.fromEntries(
+          Array.from({ length: count }, (_, i) => [`fact_${String(i)}`, i]),
+        );
+      });
+    expect(validateIngestPayload(withFacts(40), now).success).toBe(true);
+    expect(firstIssuePath(withFacts(41))).toBe("period_summaries.1.facts");
+  });
+
+  it("rejects a nested value in summary facts", () => {
+    const payload = withChanges((p) => Object.assign(sections(p).summaries[1].facts, { pv: { kwh: 1 } }));
+    expect(firstIssuePath(payload)).toBe("period_summaries.1.facts.pv");
+  });
+
+  it("rejects an unknown key inside a summary or its narration", () => {
+    expect(firstIssuePath(withChanges((p) => Object.assign(sections(p).summaries[1], { prompt: "..." })))).toBe(
+      "period_summaries.1",
+    );
+    const payload = withChanges((p) => {
+      const { narration } = sections(p).summaries[0];
+      if (!narration) throw new Error("example today summary must carry a narration");
+      Object.assign(narration, { raw_response: "..." });
+    });
+    expect(firstIssuePath(payload)).toBe("period_summaries.0.narration");
+  });
+
+  it("accepts 80 summaries and rejects 81", () => {
+    const daysFrom = (count: number) =>
+      Array.from({ length: count }, (_, i) => ({
+        kind: "day" as const,
+        period: new Date(Date.parse("2026-07-01T00:00:00Z") + i * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+        built_at: "2026-09-23T00:05:00+02:00",
+        facts: { pv_kwh: 10 },
+        narration: null,
+      }));
+    expect(
+      validateIngestPayload(
+        withChanges((p) => (p.period_summaries = daysFrom(80))),
+        now,
+      ).success,
+    ).toBe(true);
+    expect(firstIssuePath(withChanges((p) => (p.period_summaries = daysFrom(81))))).toBe("period_summaries");
   });
 });

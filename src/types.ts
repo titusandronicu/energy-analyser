@@ -59,3 +59,19 @@ export interface DayNoteRow {
   text: string;
   updated_at: string;
 }
+
+// A row of public.period_summaries: the lab's plain-language text for today, a completed day or a completed month,
+// one row per (kind, period). `period` is the Europe/Warsaw date ("YYYY-MM-DD") for today and day, the month
+// ("YYYY-MM") for month. `facts` is the pushed jsonb the text was written from (validated by the ingest contract on
+// the way in), so readers still treat its shape as untrusted. The narration columns are all null when the cloud model
+// failed and only the facts arrived. `built_at` decides which push's entry is kept (latest wins).
+export interface PeriodSummaryRow {
+  kind: "today" | "day" | "month";
+  period: string;
+  facts: unknown;
+  narration_text: string | null;
+  narration_generated_at: string | null;
+  narration_provider: string | null;
+  narration_model: string | null;
+  built_at: string;
+}

@@ -10,6 +10,14 @@ The main product and technical decisions, newest first, each with the reason. De
   - **Update, then insert, instead of an upsert:** an upsert needs `on conflict (user_id, day)`, and the client may neither read nor write `user_id`, so PostgREST can't target that conflict. The route updates the day's note, inserts one when no row changed, and retries once as an update if a concurrent insert loses on the unique constraint (SQLSTATE `23505`). Granting `user_id` to make the upsert work would have weakened the security model.
   - **Writes go through `/api/notes` only,** so the middleware's `Origin` check covers them; the route checks the session itself.
   - **Notes stay in the app:** they never reach the lab or an LLM and never change ratings, summaries or recommendations.
+- **Period summaries (F-04) are written in the lab by the cloud model alone, from facts that travel with them, and stored in the app one row per period with the latest `built_at` winning (`context/changes/lab-period-summaries/`; owner's decisions on the research questions).** _Why:_ the texts must describe without advising and introduce no numbers of their own, and a failed LLM call must not cost the facts (owner's decision 2026-09-30). Display is S-18, not this change.
+  - **Facts:** PV against the forecast, battery cycling and the season from the date. Grid import, export and house use stay in the facts flagged unreliable and are never quoted in a text, because the grid sensor is wrong for the whole history. The local model's observations are left out for now: 97% of them are fixed rules on those faulty counters.
+  - **Cloud only, facts kept:** when OpenRouter fails, the entry goes with `narration: null` instead of a text from Ollama, and a later run fills it in. The lab re-sends each period's last accepted text, so a push never downgrades a narrated period.
+  - **Today is its own hourly call,** with facts and text built together so they always match (about 4 USD a month more), rather than riding the advisory call, whose prompt is shaped for advice.
+  - **Latest wins, not first wins:** a backfill or a fix can replace a stored text; `built_at` decides, so a late retry of an older push cannot.
+  - **Only complete periods:** no text for an incomplete day or for a month with fewer than 7 complete days; the month text runs from the 1st.
+  - **A lab numbers check** drops a text that quotes a number missing from its facts; the app shows the text as narrated.
+  - **Backfill** of 2026-07-16 to 2026-09-30 (days, July, August and September) once, in batches of at most 14 days, and the advisory's SSL crash (`request_json`) is fixed in the same change, since the summary job reuses that client.
 
 ## 2026-09-30
 
