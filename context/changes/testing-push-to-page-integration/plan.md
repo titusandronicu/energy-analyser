@@ -331,7 +331,7 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Manual
 
-- [ ] 1.7 Kamil runs `npm run test:integration` twice in a row against the UGREEN stack and both runs are green
+- [x] 1.7 Kamil runs `npm run test:integration` twice in a row against the UGREEN stack and both runs are green — 3c6090f
 - [ ] 1.8 The `smoke` job on the PR runs the new integration step and it is green
 
 ### Phase 2: Push to page, one test per section
@@ -346,7 +346,7 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Manual
 
-- [ ] 2.6 Kamil runs `npm run smoke` against a local server and stack and the new hourly step passes
+- [x] 2.6 Kamil runs `npm run smoke` against a local server and stack and the new hourly step passes — 38f19ee
 - [ ] 2.7 The `smoke` job on the PR is green with the new smoke step and the integration step
 
 ### Phase 3: History safety: replay, order, gaps and known gaps
@@ -361,18 +361,18 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Manual
 
-- [ ] 3.6 Kamil reads the three `KNOWN GAP` test names and comments and agrees they say what is pinned and what a fix would change
+- [x] 3.6 Kamil reads the three `KNOWN GAP` test names and comments and agrees they say what is pinned and what a fix would change — 939d573
 - [ ] 3.7 The `smoke` job on the PR is green with all integration tests
 
 ### Phase 4: Docs and cookbook
 
 #### Automated
 
-- [x] 4.1 Docs are formatted: `npx prettier --check context/foundation/test-plan.md docs/decisions.md docs/logic.md docs/prerequisites.md CLAUDE.md AGENTS.md README.md`
-- [x] 4.2 Linting passes: `npm run lint`
-- [x] 4.3 §6.2 is filled and the command is documented: `/usr/bin/grep -c "test:integration" context/foundation/test-plan.md CLAUDE.md AGENTS.md README.md`
-- [x] 4.4 The decision entry exists: `/usr/bin/grep -n "pinned" docs/decisions.md`
+- [x] 4.1 Docs are formatted: `npx prettier --check context/foundation/test-plan.md docs/decisions.md docs/logic.md docs/prerequisites.md CLAUDE.md AGENTS.md README.md` — 1bdc6f2
+- [x] 4.2 Linting passes: `npm run lint` — 1bdc6f2
+- [x] 4.3 §6.2 is filled and the command is documented: `/usr/bin/grep -c "test:integration" context/foundation/test-plan.md CLAUDE.md AGENTS.md README.md` — 1bdc6f2
+- [x] 4.4 The decision entry exists: `/usr/bin/grep -n "pinned" docs/decisions.md` — 1bdc6f2
 
 #### Manual
 
-- [ ] 4.5 Kamil confirms §6.2 matches how he would add the next integration test
+- [x] 4.5 Kamil confirms §6.2 matches how he would add the next integration test — 1bdc6f2
