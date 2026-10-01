@@ -13,7 +13,8 @@
     "smoke": "node scripts/smoke.mjs",
     "test": "vitest run",
     "contract:export": "UPDATE_INGEST_CONTRACT=1 vitest run src/lib/ingest/contract.test.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "mutate": "stryker run"
   },
   "dependencies": {
     "@astrojs/node": "^11.1.6",
@@ -36,6 +37,8 @@
     "@eslint/compat": "^2.1.1",
     "@eslint/config-helpers": "^0.7.0",
     "@eslint/js": "^10.0.1",
+    "@stryker-mutator/core": "^10.0.0",
+    "@stryker-mutator/vitest-runner": "^10.0.0",
     "@tailwindcss/vite": "^4.2.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
