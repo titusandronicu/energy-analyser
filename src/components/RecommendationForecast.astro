@@ -13,7 +13,8 @@ interface Props {
 }
 
 // The PV forecast the lab generated with the advice, shown inside the recommendation card. Advice from an earlier
-// day gets date-only labels: its "today" and "tomorrow" are other days than the reader's.
+// day gets date-only labels: its "today" and "tomorrow" are other days than the reader's. The card passes the same
+// for advice dated in the future (a clock error), whose "today" is not the reader's today either.
 const { forecast, isFromEarlierDay, animate = false } = Astro.props;
 ---
 

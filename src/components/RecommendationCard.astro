@@ -40,7 +40,12 @@ const explained =
 
   {view?.kind === "recommendation" && (
     <div class="space-y-4">
-      {view.isStale && (
+      {view.isFutureDated && (
+        <p class="text-sm text-muted-foreground" data-testid="clock-error-warning">
+          Czas wygenerowania jest w przyszłości — sprawdź zegar laboratorium.
+        </p>
+      )}
+      {view.isStale && !view.isFutureDated && (
         <p class="text-sm text-muted-foreground" data-testid="stale-warning">
           Laboratorium mogło przestać przesyłać dane.
         </p>
@@ -54,7 +59,7 @@ const explained =
 
       <RecommendationForecast
         forecast={view.forecast}
-        isFromEarlierDay={view.isFromEarlierDay}
+        isFromEarlierDay={view.isFromEarlierDay || view.isFutureDated}
         animate={view.isCurrent}
       />
 

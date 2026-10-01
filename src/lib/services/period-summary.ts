@@ -3,7 +3,7 @@ import type { PeriodSummaryRow } from "@/types";
 import { periodLabel } from "@/lib/calendar/period";
 import { LOAD_FAILED, type Status } from "@/lib/format/status";
 import { formatMonth, formatWarsawDateTime, warsawParts } from "@/lib/format/warsaw-time";
-import { STALE_AFTER_MS, ageStatus, earlierDayStatus } from "@/lib/services/recommendation";
+import { FUTURE_SKEW_MS, STALE_AFTER_MS, ageStatus, earlierDayStatus } from "@/lib/services/recommendation";
 
 // The lab's plain-language texts for today, a completed day and a completed month (S-18). Each loader reads only the
 // signed-in owner's rows; RLS returns nothing for non-owners. Errors are thrown so the page can show a load failure
@@ -57,7 +57,7 @@ export type SummaryView =
   | { kind: "pending"; periodLabel: string };
 
 // What the dashboard shows for today: `empty` when nothing usable was pushed. A narrated text carries its status and
-// whether it is stale (older than two hours, or about an earlier day).
+// whether it is stale (older than two hours, more than five minutes ahead of the clock, or about an earlier day).
 export type TodaySummaryView =
   | { kind: "empty" }
   | { kind: "pending"; periodLabel: string }
@@ -140,6 +140,6 @@ export function toTodaySummaryView(row: PeriodSummaryText | null, now: Date): To
     generatedAtLabel: generatedAtLabel(row),
     periodLabel: coveredLabel(row.period, "day"),
     status,
-    isStale: isFromEarlierDay || ageMs === null || ageMs > STALE_AFTER_MS,
+    isStale: isFromEarlierDay || ageMs === null || ageMs > STALE_AFTER_MS || ageMs < -FUTURE_SKEW_MS,
   };
 }

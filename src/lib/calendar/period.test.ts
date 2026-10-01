@@ -4,6 +4,7 @@ import {
   adjacent,
   defaultMonth,
   HISTORY_START,
+  isOpenable,
   monthGrid,
   parsePeriod,
   periodContaining,
@@ -178,6 +179,58 @@ describe("adjacent", () => {
       prev: { kind: "quarter", year: 2026, quarter: 4 },
       next: null,
     });
+  });
+});
+
+describe("isOpenable", () => {
+  it("opens a day equal to the history start and refuses the day before", () => {
+    expect(isOpenable({ kind: "day", day: "2026-07-16" }, today)).toBe(true);
+    expect(isOpenable({ kind: "day", day: "2026-07-15" }, today)).toBe(false);
+  });
+
+  it("opens a day equal to today and refuses the day after", () => {
+    expect(isOpenable({ kind: "day", day: "2026-09-30" }, today)).toBe(true);
+    expect(isOpenable({ kind: "day", day: "2026-10-01" }, today)).toBe(false);
+  });
+
+  it("opens a month or quarter that only overlaps the window", () => {
+    // July 2026 ends on the 31st, after 16 July; October begins on today.
+    expect(isOpenable({ kind: "month", month: "2026-07" }, today)).toBe(true);
+    expect(isOpenable({ kind: "month", month: "2026-10" }, "2026-10-01")).toBe(true);
+    expect(isOpenable({ kind: "month", month: "2026-10" }, today)).toBe(false);
+  });
+});
+
+describe("adjacent across the new year", () => {
+  it("steps a month between December and January", () => {
+    expect(adjacent({ kind: "month", month: "2026-12" }, "2027-01-15")).toEqual({
+      prev: { kind: "month", month: "2026-11" },
+      next: { kind: "month", month: "2027-01" },
+    });
+    expect(adjacent({ kind: "month", month: "2027-01" }, "2027-01-15").prev).toEqual({
+      kind: "month",
+      month: "2026-12",
+    });
+  });
+
+  it("does not offer January from December while today is still in December", () => {
+    expect(adjacent({ kind: "month", month: "2026-12" }, "2026-12-31").next).toBeNull();
+    expect(adjacent({ kind: "month", month: "2026-12" }, "2027-01-01").next).toEqual({
+      kind: "month",
+      month: "2027-01",
+    });
+  });
+
+  it("steps a day between 31 December and 1 January", () => {
+    expect(adjacent({ kind: "day", day: "2026-12-31" }, "2027-01-01")).toEqual({
+      prev: { kind: "day", day: "2026-12-30" },
+      next: { kind: "day", day: "2027-01-01" },
+    });
+    expect(adjacent({ kind: "day", day: "2027-01-01" }, "2027-01-01")).toEqual({
+      prev: { kind: "day", day: "2026-12-31" },
+      next: null,
+    });
+    expect(adjacent({ kind: "day", day: "2026-12-31" }, "2026-12-31").next).toBeNull();
   });
 });
 

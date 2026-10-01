@@ -210,6 +210,36 @@ describe("buildMonthView", () => {
     }
   });
 
+  it("totals a December that completed on 1 January 2027, 31 days and no unfinished note", () => {
+    // Every row is 10 kWh PV, 20 use, 5 import; 31 days sum to 310, 620 and 155. 31 December is complete since today is
+    // the 1st; the 14 norm days from 17 November let the month be rated too.
+    const view = buildMonthView("2026-12", rows("2026-11-17", 45), noTimes, "2027-01-01");
+    expect(view.totals).toEqual({
+      kind: "totals",
+      totals: {
+        pvKwh: 310,
+        loadKwh: 620,
+        importKwh: 155,
+        pvLabel: "310,0 kWh",
+        loadLabel: "620,0 kWh",
+        importLabel: "155,0 kWh",
+      },
+      completeDays: 31,
+      calendarDays: 31,
+      periodLabel: "31 dni: 1–31 grudnia 2026",
+      unfinished: false,
+    });
+    expect(view.unfinishedNote).toBeNull();
+    expect(view.rating).toMatchObject({ kind: "rated", word: "Przeciętny miesiąc", days: 31 });
+  });
+
+  it("still calls December unfinished on 31 December, with 30 complete days", () => {
+    const view = buildMonthView("2026-12", rows("2026-11-17", 45), noTimes, "2026-12-31");
+    expect(view.totals).toMatchObject({ kind: "totals", completeDays: 30, calendarDays: 31, unfinished: true });
+    expect(view.totals.kind === "totals" && view.totals.periodLabel).toBe("30 dni: 1–30 grudnia");
+    expect(view.unfinishedNote).toBe("Miesiąc jeszcze trwa — liczą się tylko pełne dni, bez szacowania całości");
+  });
+
   it("never counts today or future days, even with full rows", () => {
     // Six complete past days plus full rows for today and the next two days.
     const view = buildMonthView("2026-10", rows("2026-10-01", 9), noTimes, "2026-10-07");

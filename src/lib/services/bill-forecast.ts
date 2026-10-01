@@ -371,6 +371,11 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
       "Ostatnie wyliczenie nie zawiera czytelnej kwoty, więc nie ma czego pokazać.",
     );
   }
+  // The contract already rejects a negative central, low or high with a 422, so this only protects a stored row that
+  // skipped validation; the view model does not trust stored jsonb.
+  if (central < 0 || low < 0 || high < 0) {
+    return unavailable("problem", "ujemna kwota", "Wyliczona kwota jest ujemna, więc jej nie pokazujemy.");
+  }
   if (low > high) {
     return unavailable(
       "problem",
@@ -385,7 +390,14 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
       "Dane z ostatniego wyliczenia są sprzeczne — najbardziej prawdopodobna kwota leży poza swoim przedziałem — więc kwoty nie pokazujemy.",
     );
   }
-  if (Math.max(central, low, high) > MAX_PLAUSIBLE_BILL_PLN) {
+  // The contract has no ceiling on the closed-month amounts either, and an inflated invoice would flip the verdict to
+  // good, so they share the ceiling when readable.
+  const rawCheck = body.closed_month_check;
+  const check = rawCheck && typeof rawCheck === "object" && !Array.isArray(rawCheck) ? asRecord(rawCheck) : null;
+  const closedMonthAmounts =
+    check === null ? [] : [asNumber(check.computed_gross_pln), asNumber(check.invoice_gross_pln)];
+  const amounts = [central, low, high, ...closedMonthAmounts.filter((amount) => amount !== null)];
+  if (Math.max(...amounts) > MAX_PLAUSIBLE_BILL_PLN) {
     return unavailable(
       "problem",
       "nierealna kwota",
@@ -438,9 +450,7 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
     );
   }
 
-  // Present but not an object (null, a string) is as good as absent.
-  const rawCheck = body.closed_month_check;
-  const check = rawCheck && typeof rawCheck === "object" && !Array.isArray(rawCheck) ? asRecord(rawCheck) : null;
+  // `check` was read with the plausibility guards: present but not an object (null, a string) is as good as absent.
   const invoice = check === null ? null : asNumber(check.invoice_gross_pln);
   // The delta names the invoice's own month (the closed-month check's period), not the settlement's reference.
   const invoiceMonth = check === null ? MISSING : periodMonthLabel(check.period);

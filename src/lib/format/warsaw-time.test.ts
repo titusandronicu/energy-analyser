@@ -1,5 +1,88 @@
 import { describe, expect, it } from "vitest";
-import { dayMonthYear, formatWeekday, HOUR_MS, warsawDayHours, warsawHour } from "./warsaw-time";
+import {
+  dayKeyToUtcMs,
+  dayMonthYear,
+  formatDayMonth,
+  formatMonth,
+  formatWeekday,
+  HOUR_MS,
+  utcMsToDayKey,
+  warsawDayHours,
+  warsawHour,
+  warsawMonthKey,
+  warsawParts,
+} from "./warsaw-time";
+
+// Expected values come from the Warsaw offsets (UTC+1 in winter, UTC+2 in summer), written by hand.
+describe("warsawParts", () => {
+  it.each([
+    // Winter (UTC+1): 22:59:59Z is 23:59 on the same day, 23:00:00Z is midnight of the next one.
+    ["2026-01-15T22:59:59Z", "2026-01-15", "23:59", "15 stycznia 2026, 23:59"],
+    ["2026-01-15T23:00:00Z", "2026-01-16", "00:00", "16 stycznia 2026, 00:00"],
+    // Summer (UTC+2): 21:59:59Z is 23:59, 22:00:00Z is midnight of the next day.
+    ["2026-07-15T21:59:59Z", "2026-07-15", "23:59", "15 lipca 2026, 23:59"],
+    ["2026-07-15T22:00:00Z", "2026-07-16", "00:00", "16 lipca 2026, 00:00"],
+  ])("reads %s as Warsaw day %s at %s", (iso, dayKey, time, label) => {
+    expect(warsawParts(new Date(iso))).toEqual({ dayKey, time, label });
+  });
+
+  it("rolls the year at Warsaw midnight, 23:00Z on 31 December", () => {
+    expect(warsawParts(new Date("2026-12-31T22:59:59Z")).dayKey).toBe("2026-12-31");
+    expect(warsawParts(new Date("2026-12-31T23:00:00Z")).dayKey).toBe("2027-01-01");
+  });
+});
+
+describe("warsawMonthKey", () => {
+  it.each([
+    // Winter month end (UTC+1): 22:59:59Z on 31 January is still January in Warsaw.
+    ["2026-01-31T22:59:59Z", "2026-01"],
+    ["2026-01-31T23:00:00Z", "2026-02"],
+    // Summer month end (UTC+2): 21:59:59Z on 31 July is still July.
+    ["2026-07-31T21:59:59Z", "2026-07"],
+    ["2026-07-31T22:00:00Z", "2026-08"],
+    // Year end (UTC+1).
+    ["2026-12-31T22:59:59Z", "2026-12"],
+    ["2026-12-31T23:00:00Z", "2027-01"],
+  ])("puts %s in %s", (iso, month) => {
+    expect(warsawMonthKey(new Date(iso))).toBe(month);
+  });
+});
+
+describe("dayKeyToUtcMs and utcMsToDayKey", () => {
+  it.each(["2026-03-29", "2026-10-25", "2026-12-31", "2027-01-01"])("round-trips %s", (dayKey) => {
+    expect(dayKeyToUtcMs(dayKey)).toBe(Date.parse(`${dayKey}T00:00:00Z`));
+    expect(utcMsToDayKey(dayKeyToUtcMs(dayKey))).toBe(dayKey);
+  });
+
+  it("keeps a day key at 24 hours across both DST changes and the new year", () => {
+    const DAY = 86_400_000;
+    // Warsaw's offset changes on 29 March and 25 October, but a day key is a plain calendar date.
+    expect(dayKeyToUtcMs("2026-03-30") - dayKeyToUtcMs("2026-03-29")).toBe(DAY);
+    expect(dayKeyToUtcMs("2026-10-26") - dayKeyToUtcMs("2026-10-25")).toBe(DAY);
+    expect(dayKeyToUtcMs("2027-01-01") - dayKeyToUtcMs("2026-12-31")).toBe(DAY);
+  });
+
+  it("turns a UTC instant into its UTC date, one second either side of midnight", () => {
+    expect(utcMsToDayKey(Date.parse("2026-12-31T23:59:59Z"))).toBe("2026-12-31");
+    expect(utcMsToDayKey(Date.parse("2027-01-01T00:00:00Z"))).toBe("2027-01-01");
+    expect(utcMsToDayKey(Date.parse("2026-03-29T23:59:59Z"))).toBe("2026-03-29");
+    expect(utcMsToDayKey(Date.parse("2026-10-25T23:59:59Z"))).toBe("2026-10-25");
+  });
+});
+
+describe("formatDayMonth and formatMonth", () => {
+  it("names the day and the genitive month", () => {
+    expect(formatDayMonth("2026-03-29")).toBe("29 marca");
+    expect(formatDayMonth("2026-10-25")).toBe("25 października");
+    expect(formatDayMonth("2027-01-01")).toBe("1 stycznia");
+  });
+
+  it("names the nominative month and the year", () => {
+    expect(formatMonth("2026-09")).toBe("wrzesień 2026");
+    expect(formatMonth("2026-12")).toBe("grudzień 2026");
+    expect(formatMonth("2027-01")).toBe("styczeń 2027");
+  });
+});
 
 describe("warsawHour", () => {
   it("labels an hour by its Warsaw date and clock hour in summer (UTC+2)", () => {
