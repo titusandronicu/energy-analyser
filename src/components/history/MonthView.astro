@@ -4,6 +4,7 @@ import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import DailyBarsChart from "@/components/history/DailyBarsChart.astro";
 import RatingPanel from "@/components/history/RatingPanel.astro";
+import SummaryPanel from "@/components/history/SummaryPanel.astro";
 import TotalsPanel from "@/components/history/TotalsPanel.astro";
 import Panel from "@/components/ui/Panel.astro";
 import { periodHref } from "@/lib/calendar/nav";
@@ -80,6 +81,8 @@ const dayKeys = days.map((cell) => cell.day);
 />
 
 <RatingPanel title="Ocena miesiąca" rating={view?.rating ?? null} testId="history-month-rating" />
+
+{view?.summary && <SummaryPanel title="Podsumowanie miesiąca" summary={view.summary} testId="history-month-summary" />}
 
 <Panel>
   <CardHeading class="mb-4" title="Dni miesiąca" icon={CalendarDays} iconClass="text-primary" />

@@ -53,15 +53,31 @@ async function request(path, { method = "GET", form, readBody = false, origin = 
 // text in place. The owner read near the end checks that.
 const freshMarker = `Smoke rekomendacja ${Date.now()}`;
 const freshSummaryMarker = `Smoke podsumowanie ${Date.now()}`;
+// The calendar shows a text only for a completed day or month, and the example's own day row has no narration, so the
+// fresh set also carries a narrated entry for yesterday and for the previous Warsaw month, each with its own marker
+// (an example entry for the same kind and period is replaced, keeping the (kind, period) pairs unique).
+const daySummaryMarker = `Smoke podsumowanie dnia ${Date.now()}`;
+const monthSummaryMarker = `Smoke podsumowanie miesiąca ${Date.now()}`;
 const freshSummaries = () => {
   const now = new Date().toISOString();
-  return example.period_summaries.map((entry) => ({
-    ...entry,
+  const narrated = (kind, period, text) => ({
+    kind,
+    period,
     built_at: now,
-    narration: entry.narration
-      ? { ...entry.narration, generated_at: now, ...(entry.kind === "today" ? { text: freshSummaryMarker } : {}) }
-      : entry.narration,
-  }));
+    facts: { period, complete_days: 7, pv_kwh_total: 12.5, grid_sensor_reliable: false },
+    narration: { text, generated_at: now, provider: "openrouter", model: "smoke/synthetic" },
+  });
+  const own = [narrated("day", summaryDay, daySummaryMarker), narrated("month", summaryMonth, monthSummaryMarker)];
+  const fromExample = example.period_summaries
+    .filter((entry) => !own.some((mine) => mine.kind === entry.kind && mine.period === entry.period))
+    .map((entry) => ({
+      ...entry,
+      built_at: now,
+      narration: entry.narration
+        ? { ...entry.narration, generated_at: now, ...(entry.kind === "today" ? { text: freshSummaryMarker } : {}) }
+        : entry.narration,
+    }));
+  return [...fromExample, ...own];
 };
 const freshPush = () =>
   ingest({
@@ -86,6 +102,11 @@ const warsawToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Warsaw"
 const noteDay = new Date(Date.parse(`${warsawToday}T00:00:00Z`) - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const noteDayPath = `/dashboard/history?day=${noteDay}`;
 const noteMonthPath = `/dashboard/history?month=${noteDay.slice(0, 7)}`;
+// The summaries' day is the same yesterday; their month is the previous Warsaw month (a completed month).
+const summaryDay = noteDay;
+const summaryMonth = new Date(Date.parse(`${warsawToday.slice(0, 7)}-01T00:00:00Z`) - 24 * 60 * 60 * 1000)
+  .toISOString()
+  .slice(0, 7);
 const noteStamp = Date.now();
 const noteText = `Smoke notatka ${noteStamp} <b>pogrubiona</b>`;
 // Astro escapes the text, so the page holds it as literal characters, never as markup.
@@ -192,6 +213,26 @@ const steps = [
     "note post from a foreign origin is forbidden",
     () => postNote({ intent: "save", text: crossSiteText }, { origin: "https://evil.example" }),
     { status: 403 },
+  ],
+  [
+    "day page shows yesterday's summary as text, with the panel and its marker",
+    () => request(noteDayPath, { readBody: true }),
+    { status: 200, contains: ['data-testid="history-day-summary"', "Podsumowanie dnia", daySummaryMarker] },
+  ],
+  [
+    "month page shows the previous month's summary as text, with the panel and its marker",
+    () => request(`/dashboard/history?month=${summaryMonth}`, { readBody: true }),
+    { status: 200, contains: ['data-testid="history-month-summary"', "Podsumowanie miesiąca", monthSummaryMarker] },
+  ],
+  [
+    "today's day view has no summary panel",
+    () => request(`/dashboard/history?day=${warsawToday}`, { readBody: true }),
+    { status: 200, notContains: ['data-testid="history-day-summary"', daySummaryMarker] },
+  ],
+  [
+    "the current month view has no summary panel",
+    () => request(`/dashboard/history?month=${warsawToday.slice(0, 7)}`, { readBody: true }),
+    { status: 200, notContains: ['data-testid="history-month-summary"', monthSummaryMarker] },
   ],
   [
     "owner saves a note",

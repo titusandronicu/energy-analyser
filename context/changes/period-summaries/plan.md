@@ -238,27 +238,27 @@ None. The table, grants and policy ship with F-04. The app deploy is the owner's
 
 #### Automated
 
-- [x] 1.1 Service tests pass, including the eight-column select, the staleness boundary, the earlier-day case, the null and blank narration case and "facts never exposed"
-- [x] 1.2 Calendar view tests pass with the summary slot filled on completed days and months and null on today, the current month and the quarter
-- [x] 1.3 Linting passes
-- [x] 1.4 Type check passes
+- [x] 1.1 Service tests pass, including the eight-column select, the staleness boundary, the earlier-day case, the null and blank narration case and "facts never exposed" — 4249b3a
+- [x] 1.2 Calendar view tests pass with the summary slot filled on completed days and months and null on today, the current month and the quarter — 4249b3a
+- [x] 1.3 Linting passes — 4249b3a
+- [x] 1.4 Type check passes — 4249b3a
 
 ### Phase 2: Calendar display
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass
-- [ ] 2.2 Linting passes
-- [ ] 2.3 Type check passes
-- [ ] 2.4 Production build succeeds
-- [ ] 2.5 Smoke test passes against local Supabase and a running server, never production
+- [x] 2.1 Unit tests pass
+- [x] 2.2 Linting passes
+- [x] 2.3 Type check passes
+- [x] 2.4 Production build succeeds
+- [x] 2.5 Smoke test passes against local Supabase and a running server, never production
 
 #### Manual
 
-- [ ] 2.6 On a completed day and a completed month with a narrated row, the panel shows the text, the written time and the covered day or month, directly under the rating
-- [ ] 2.7 A completed day without a row shows no panel and no error; a row with null narration shows the "has not appeared yet" sentence and no numbers
-- [ ] 2.8 Today's day view and the quarter view show no summary panel
-- [ ] 2.9 The panel reads well at phone width and in the frosted theme, with the day note panel still beneath it
+- [x] 2.6 On a completed day and a completed month with a narrated row, the panel shows the text, the written time and the covered day or month, directly under the rating
+- [x] 2.7 A completed day without a row shows no panel and no error; a row with null narration shows the "has not appeared yet" sentence and no numbers
+- [x] 2.8 Today's day view and the quarter view show no summary panel
+- [x] 2.9 The panel reads well at phone width and in the frosted theme, with the day note panel still beneath it
 
 ### Phase 3: Dashboard card and docs
 
