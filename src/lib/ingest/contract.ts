@@ -181,6 +181,36 @@ const billForecast = z.discriminatedUnion("status", [
   }),
 ]);
 
+// The lab's plain-language texts for today, a completed day and a completed month (docs/logic.md, "Period
+// summaries"). `period` is the Europe/Warsaw date ("YYYY-MM-DD") for `today` and `day`, the month ("YYYY-MM") for
+// `month`; the lab computes it and the app never re-derives it. `facts` are the figures the text was written from
+// and travel even when the cloud model failed, so `narration` may be null. Only the cloud model narrates these
+// texts, so `provider` is OpenRouter alone.
+export const MAX_SUMMARY_FACTS = 40;
+const summaryDay = z.iso.date();
+const summaryNarration = z.strictObject({
+  text: z.string().min(1).max(1500),
+  generated_at: z.iso.datetime({ offset: true }),
+  provider: z.literal("openrouter"),
+  model: z.string().min(1).max(100),
+});
+const periodSummary = z
+  .strictObject({
+    kind: z.enum(["today", "day", "month"]),
+    // The pattern (shown in the JSON Schema) admits either form; the refine below ties the form to the kind.
+    period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])(-\d{2})?$/),
+    built_at: z.iso.datetime({ offset: true }),
+    // The key count is a refine, so the exported JSON Schema can't show it; docs/ingest/README.md states it.
+    facts: factRecord.refine((record) => Object.keys(record).length <= MAX_SUMMARY_FACTS, {
+      message: `facts must have at most ${String(MAX_SUMMARY_FACTS)} keys`,
+    }),
+    narration: summaryNarration.nullable(),
+  })
+  .refine((entry) => (entry.kind === "month" ? monthKey : summaryDay).safeParse(entry.period).success, {
+    message: "period must be YYYY-MM-DD for today and day, YYYY-MM for month",
+    path: ["period"],
+  });
+
 export const ingestPayloadV1 = z.strictObject({
   contract_version: z.literal(INGEST_CONTRACT_VERSION),
   source: z.literal("homelab"),
@@ -202,6 +232,16 @@ export const ingestPayloadV1 = z.strictObject({
     .max(900)
     .refine((hours) => new Set(hours.map((h) => Date.parse(h.hour_start))).size === hours.length, {
       message: "hourly_history hour_start values must be unique",
+    })
+    .optional(),
+  // A regular push carries today, the last 7 completed days and the last 2 months; 80 leaves room for the lab's
+  // backfill batches. One entry per (kind, period): the app keeps one row per pair.
+  period_summaries: z
+    .array(periodSummary)
+    .min(1)
+    .max(80)
+    .refine((entries) => new Set(entries.map((e) => `${e.kind}:${e.period}`)).size === entries.length, {
+      message: "period_summaries (kind, period) pairs must be unique",
     })
     .optional(),
 });

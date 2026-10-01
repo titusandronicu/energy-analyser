@@ -156,5 +156,86 @@
     },
     "generated_at": "2026-09-23T11:55:00+02:00",
     "method": "net_metering_credit_estimate"
-  }
+  },
+  "period_summaries": [
+    {
+      "kind": "today",
+      "period": "2026-09-23",
+      "built_at": "2026-09-23T11:50:00+02:00",
+      "facts": {
+        "period": "2026-09-23",
+        "as_of": "11:50",
+        "weekday": "środa",
+        "season": "jesień",
+        "pv_kwh": 11.4,
+        "pv_forecast_kwh": 18.6,
+        "pv_vs_forecast_pct": 61,
+        "battery_charged_kwh": 3.2,
+        "battery_discharged_kwh": 1.1,
+        "battery_soc_min_pct": 38,
+        "battery_soc_max_pct": 74,
+        "grid_import_kwh": 1.2,
+        "grid_export_kwh": 4.8,
+        "load_kwh": 7.8,
+        "grid_sensor_reliable": false
+      },
+      "narration": {
+        "text": "Do 11:50 panele wyprodukowały 11.4 kWh, czyli 61% tego, co przewiduje prognoza na cały dzień. Bateria naładowała się w tym czasie z 38% do 74%. To typowy początek jesiennego dnia, a najwięcej słońca zwykle przypada jeszcze na wczesne popołudnie.",
+        "generated_at": "2026-09-23T11:50:00+02:00",
+        "provider": "openrouter",
+        "model": "openai/gpt-4.1-mini"
+      }
+    },
+    {
+      "kind": "day",
+      "period": "2026-09-22",
+      "built_at": "2026-09-23T00:05:00+02:00",
+      "facts": {
+        "period": "2026-09-22",
+        "weekday": "wtorek",
+        "season": "jesień",
+        "pv_kwh": 16.2,
+        "pv_forecast_kwh": 17.5,
+        "pv_vs_forecast_pct": 93,
+        "battery_charged_kwh": 6.4,
+        "battery_discharged_kwh": 5.9,
+        "battery_soc_min_pct": 21,
+        "battery_soc_max_pct": 100,
+        "grid_import_kwh": 1.4,
+        "grid_export_kwh": 6.3,
+        "load_kwh": 9.1,
+        "grid_sensor_reliable": false
+      },
+      "narration": null
+    },
+    {
+      "kind": "month",
+      "period": "2026-08",
+      "built_at": "2026-09-01T00:10:00+02:00",
+      "facts": {
+        "period": "2026-08",
+        "month_name": "sierpień",
+        "season": "lato",
+        "complete_days": 31,
+        "pv_kwh_total": 512.3,
+        "pv_kwh_best_day": 24.8,
+        "pv_best_day": "2026-08-09",
+        "pv_kwh_worst_day": 4.1,
+        "pv_worst_day": "2026-08-27",
+        "pv_forecast_total_kwh": 540.0,
+        "battery_charged_kwh": 182.5,
+        "battery_discharged_kwh": 171.2,
+        "grid_import_kwh": 98.4,
+        "grid_export_kwh": 301.7,
+        "load_kwh": 309.0,
+        "grid_sensor_reliable": false
+      },
+      "narration": {
+        "text": "W sierpniu panele wyprodukowały 512.3 kWh w ciągu 31 pełnych dni. Najlepszy był 9 sierpnia z 24.8 kWh, a najsłabszy 27 sierpnia z 4.1 kWh. Bateria w ciągu miesiąca przyjęła 182.5 kWh i oddała 171.2 kWh, więc pracowała codziennie, jak to bywa latem.",
+        "generated_at": "2026-09-01T00:10:00+02:00",
+        "provider": "openrouter",
+        "model": "openai/gpt-4.1-mini"
+      }
+    }
+  ]
 }

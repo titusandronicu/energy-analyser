@@ -23,6 +23,8 @@ flowchart LR
       Adv --> Push[push-energy-analyser.py]
       Brief --> Push
       Hist -- "daily_history,<br/>hourly_history (last 48 h)" --> Push
+      Hist --> Sum["period summaries<br/>facts + cloud LLM text<br/>today ~hourly, days, months"]
+      Sum -- "period_summaries" --> Push
     end
     HA --> Snap
     HA --> Micro
@@ -36,7 +38,7 @@ flowchart LR
 
 - **Push, never pull.** The home network is LAN-only. The lab sends public-safe data outbound; the app never connects into the home.
 - **The lab computes, the app presents.** Telemetry collection, PGE bill math and LLM narration stay in the lab. The app adds access control, storage, its own season-aware rules and the user interface.
-- **Stored by the push.** `public.ingest_push` keeps each raw push for 14 days and upserts what it carries: `daily_energy` from `daily_history`, `hourly_energy` from `hourly_history` (per clock hour, kept 35 days), and `recommendations`. The newer capture wins for days and hours.
+- **Stored by the push.** `public.ingest_push` keeps each raw push for 14 days and upserts what it carries: `daily_energy` from `daily_history`, `hourly_energy` from `hourly_history` (per clock hour, kept 35 days), `period_summaries` from `period_summaries` (one row per today/day/month period, kept), and `recommendations`. The newer capture wins for days and hours; the newer `built_at` wins for period summaries.
 - **Advisory only.** Nothing in the app or the push path writes to Home Assistant or the inverter.
 
 ## Inside the app
@@ -49,7 +51,7 @@ flowchart LR
 | Services   | Pure, unit-tested functions that turn rows into view models (staleness, baselines, labels) plus thin Supabase loaders; the calendar's range loaders read `daily_energy` by day range, recommendation times (at most 1000) for a month and full recommendations for one day, and `day_notes` gives the note for one day and the noted days of a month | `src/lib/services/`, `src/lib/services/calendar-data.ts`                                               |
 | Notes      | `POST /api/notes`: the owner's one note per day, saved, changed or deleted from the history day view with plain forms; the route checks the session and wires in the Supabase writes; a pure service validates the form, runs the save (`saveNote`) and picks the redirect                                                                           | `src/pages/api/notes.ts`, `src/lib/services/day-notes.ts`, `src/components/history/DayNotePanel.astro` |
 | Ingest     | Validates the lab's payload against a strict versioned contract and stores it through one database function                                                                                                                                                                                                                                          | `src/pages/api/ingest.ts`, `src/lib/ingest/contract.ts`                                                |
-| Database   | Tables for raw pushes (14 days), daily and hourly (`hourly_energy`, 35 days) energy totals, recommendations, owner-only reads; `day_notes`, the one table the signed-in owner writes                                                                                                                                                                 | `supabase/migrations/`                                                                                 |
+| Database   | Tables for raw pushes (14 days), daily and hourly (`hourly_energy`, 35 days) energy totals, recommendations, the lab's period summaries (`period_summaries`, one row per period, latest `built_at` wins; not shown yet, S-18), owner-only reads; `day_notes`, the one table the signed-in owner writes                                               | `supabase/migrations/`                                                                                 |
 
 Both signed-in pages share `AppShell.astro`: the header with the brand `h1` and the "Pulpit / Historia" navigation, one `<main>` and the legend footer. The history page reads `daily_energy`, `recommendations` and the owner's `day_notes`, through owner-only grants, and makes no hourly query.
 
@@ -70,10 +72,11 @@ Both signed-in pages share `AppShell.astro`: the header with the brand `h1` and 
 
 ## The two LLMs
 
-| Model                                                | Where                      | Role                                                                                                                                                                          |
-| ---------------------------------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Local (Ollama `gemma3:4b`)                           | docker-core                | Probes often: short observations every ~12 minutes into a local notes file. Never writes user-facing text directly.                                                           |
-| Stronger (OpenRouter `gpt-4.1-mini`, then fallbacks) | cloud, called from the lab | Interprets the verified facts and the local notes into every text the owner reads: the daily recommendation now; plain-language explanations and day/month summaries planned. |
+| Model                                                | Where                                                    | Role                                                                                                                                                                                                                                                                                                                            |
+| ---------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local (Ollama `gemma3:4b`)                           | docker-core                                              | Probes often: short observations every ~12 minutes into a local notes file. Never writes user-facing text directly.                                                                                                                                                                                                             |
+| Stronger (OpenRouter `gpt-4.1-mini`, then fallbacks) | cloud, called from the lab                               | Interprets the verified facts and the local notes into every text the owner reads: the daily recommendation, with the fallback chain.                                                                                                                                                                                           |
+| OpenRouter `gpt-4.1-mini` only, no fallback          | cloud, called from the lab (`build-period-summaries.py`) | Period summaries (F-04): the plain-language explanation of today (about hourly) and the summary of each completed day and month, from a facts bundle only (no local notes), describing and never advising. When the call fails the facts are pushed with no text, and a later run fills it in; Ollama never writes these texts. |
 
 Both only narrate numbers the deterministic rules computed; they never introduce facts of their own. The app never calls an LLM, so opening a page never waits for one.
 

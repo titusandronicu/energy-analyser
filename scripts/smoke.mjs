@@ -48,13 +48,28 @@ async function request(path, { method = "GET", form, readBody = false, origin = 
 // The bill forecast's generated_at is rewritten the same way and for the same reason: the example's fixed
 // timestamp is always older than the card's 30-minute freshness rule, so without this the card would render
 // its refusal state on every smoke run and the happy path would never be exercised.
+// The period summaries are rebuilt "now" as well, with the today text unique to this run: the app keeps the entry
+// with the latest built_at, so the example's own (older) built_at, re-sent by the ingest steps below, must leave this
+// text in place. The owner read near the end checks that.
 const freshMarker = `Smoke rekomendacja ${Date.now()}`;
+const freshSummaryMarker = `Smoke podsumowanie ${Date.now()}`;
+const freshSummaries = () => {
+  const now = new Date().toISOString();
+  return example.period_summaries.map((entry) => ({
+    ...entry,
+    built_at: now,
+    narration: entry.narration
+      ? { ...entry.narration, generated_at: now, ...(entry.kind === "today" ? { text: freshSummaryMarker } : {}) }
+      : entry.narration,
+  }));
+};
 const freshPush = () =>
   ingest({
     ...example,
     captured_at: new Date(Date.now() - 60_000).toISOString(),
     recommendation: { ...example.recommendation, generated_at: new Date().toISOString(), text: freshMarker },
     bill_forecast: { ...example.bill_forecast, generated_at: new Date().toISOString() },
+    period_summaries: freshSummaries(),
   });
 
 // The history page opens on the current month or, while it has fewer than 7 complete days, the previous one; the
@@ -351,6 +366,16 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     },
     { status: 401 },
   ]);
+  steps.push([
+    "anon cannot read period summaries directly",
+    async () => {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/period_summaries?select=kind,period,narration_text`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      return { status: response.status, location: "" };
+    },
+    { status: 401 },
+  ]);
   // Password alternative: create a local user with a password through Supabase, then sign in via the app.
   const passwordEmail = `smoke-pw-${Date.now()}@example.com`;
   const passwordValue = "Smoke-Test-Passw0rd!";
@@ -399,6 +424,32 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     [
       "signed-in owner cannot read daily energy push_id",
       () => ownerRead("daily_energy?select=push_id"),
+      { status: 403 },
+    ],
+    [
+      // The example's three (kind, period) rows must all be there, and the today text must still be this run's fresh
+      // one: the ingest steps above re-sent the example with its older built_at, which must not replace it. A missing
+      // row reports 299, a replaced text 298.
+      "signed-in owner reads the period summaries, and an older built_at did not replace them",
+      async () => {
+        const result = await ownerRead("period_summaries?select=kind,period,narration_text,built_at", {
+          readBody: true,
+        });
+        if (result.status !== 200 || !Array.isArray(result.rows)) return result;
+        const rows = example.period_summaries.map((entry) =>
+          result.rows.find((row) => row.kind === entry.kind && row.period === entry.period),
+        );
+        if (rows.some((row) => row === undefined)) return { status: 299, location: "example summary rows missing" };
+        const today = rows.find((row) => row.kind === "today");
+        return today.narration_text === freshSummaryMarker
+          ? result
+          : { status: 298, location: "today summary replaced by an older built_at" };
+      },
+      { status: 200 },
+    ],
+    [
+      "signed-in owner cannot read period summaries push_id",
+      () => ownerRead("period_summaries?select=push_id"),
       { status: 403 },
     ],
     [
