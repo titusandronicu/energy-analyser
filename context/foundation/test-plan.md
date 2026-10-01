@@ -97,14 +97,14 @@ them a risk. Revisit at the next refresh.
 The classic test base for this project. AI-native tools (if any) carry a
 `checked:` date so future readers can see which lines need re-verification.
 
-| Layer                | Tool                               | Version | Notes                                                                                                                                                                               |
-| -------------------- | ---------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| unit + integration   | Vitest                             | 5.x     | Includes `src/**/*.test.ts` only; node environment; no coverage config. 34 test files, all pure logic or mocked clients under `src`                                                 |
-| end-to-end over HTTP | the smoke script (`npm run smoke`) | n/a     | At most 68 steps (hand count, 49 without the Supabase env vars) against a built server, local Supabase and Mailpit; runs in one CI job; not a browser run; never against production |
-| browser e2e          | none yet                           | n/a     | Not planned in this rollout (see §3); Playwright's setup project with `storageState` is the current pattern if it is added later                                                    |
-| API mocking          | none yet                           | n/a     | Add only at the network edge if a phase needs it                                                                                                                                    |
-| accessibility        | none yet                           | n/a     | The smoke script checks landmark and heading presence only                                                                                                                          |
-| lint, types, build   | ESLint, `astro check`, Astro build | n/a     | Already required in CI                                                                                                                                                              |
+| Layer                | Tool                               | Version | Notes                                                                                                                                                                                                                                                                                                      |
+| -------------------- | ---------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| unit + integration   | Vitest                             | 5.x     | `vitest.config.ts` includes `src/**/*.test.ts` only (34 files, all pure logic or mocked clients); node environment; no coverage config. `vitest.integration.config.ts` includes `tests/integration/**/*.test.ts` (`npm run test:integration`, local Supabase)                                              |
+| end-to-end over HTTP | the smoke script (`npm run smoke`) | n/a     | 70 steps (counted from a run, 51 without the Supabase env vars) against a built server, local Supabase and Mailpit, now including a complete-day hourly step for the hourly card; runs in one CI job, and the integration suite runs after it in the same job; not a browser run; never against production |
+| browser e2e          | none yet                           | n/a     | Not planned in this rollout (see §3); Playwright's setup project with `storageState` is the current pattern if it is added later                                                                                                                                                                           |
+| API mocking          | none yet                           | n/a     | Add only at the network edge if a phase needs it                                                                                                                                                                                                                                                           |
+| accessibility        | none yet                           | n/a     | The smoke script checks landmark and heading presence only                                                                                                                                                                                                                                                 |
+| lint, types, build   | ESLint, `astro check`, Astro build | n/a     | Already required in CI                                                                                                                                                                                                                                                                                     |
 
 **Stack grounding tools (current session):**
 
@@ -150,7 +150,29 @@ the relevant rollout phase ships; before that, the sub-section reads
 
 ### 6.2 Adding an integration test
 
-- TBD — see §3 Phase 2 for the push-to-page and history-safety pattern.
+- **Location**: `tests/integration/<topic>.test.ts`, outside `src`, with its own config `vitest.integration.config.ts`. `npm test` and Stryker never collect it. Files run one after another, not in parallel.
+- **Helpers** (`tests/integration/support/`):
+  - `stack.ts`: `requireStack` refuses a missing env, a non-local host and a secret key, and never skips; `anonClient`; `ownerClient` signs up a user (every local user is an owner through the seed trigger).
+  - `push.ts`: `push()` mirrors the route (`handleIngest` plus `rpc("ingest_push")`) with the public seed token.
+  - `bodies.ts`: `baseBody`, `dailyRow`, `hourRow`, `summary`, `recommendation`, `billForecast`, with invented figures only; `billForecast` re-dates `generated_at` and `month` of `scripts/fixtures/bill-forecast/lab-shape.json`.
+  - `keys.ts`: `freshDays`, `emptyWeek`, `emptySummaryDay`, `freshWindowHours`, `windowHours`, `nextCapturedAt`, `olderCapturedAt`.
+  - `warsaw-day.ts`: the clock hours of a Warsaw day (23 to 25).
+- **Isolation**: the database is never reset, and `live_state`, `bill_forecast` and the newest recommendation are global. So:
+  - Use the real "now" with a strictly increasing `captured_at` (`nextCapturedAt`).
+  - Each test seeds its own first state.
+  - Keys for absence checks are drawn far in the past and verified absent first (`freshDays`, `emptyWeek`, `emptySummaryDay`).
+  - Filter a loaded window to the test's own keys before a view mapper.
+  - A positive assertion on a shared row uses a value that differs per run.
+- **Pitfall, hourly keys**: `ingest_push` deletes every hour older than 35 days in the same call, so a far-past hour never holds a row and an "absent" check on one proves nothing. Hourly keys that must stay stored, or be proven absent, come from `freshWindowHours` (10 to 28 days back, loads well under 1 kWh).
+- **Dashboard interaction**: any complete Warsaw day the suite puts in the 35-day window keeps every load at or below 1 kWh, because smoke's day (4 days back, heaviest hour 9.5 kWh) must stay the heaviest on the dashboard. The history-safety complete day is 7 days back.
+- **Control per guard**: every guard test also shows that a newer push does change the row, so a store that ignored every push could not pass.
+- **Known gaps**: pinned as in §6.5. The name starts with `KNOWN GAP` and the comment says what a fix would change. There are five: lower daily total, null daily total, fewer hourly samples, far-future `built_at`, repeated `generated_at`.
+- **Reading back**: use the owner's real loaders and view mappers. Some columns are not loaded or not readable (`loadPeriodSummary` omits `facts`; `hourly_energy.captured_at` is not readable by owners), so read those with a direct owner select. Owners can read `ingest_pushes` columns `source, captured_at, received_at, payload`, not `token_id` or `payload_hash`.
+- **Expected values**: invented literals, or hand arithmetic in a comment. Never read them from `docs/ingest/example-v1.json` or the live-flow and recommendation fixtures (provenance unconfirmed).
+- **Run locally**: the stack runs on the UGREEN. Start the relay (`scripts/remote-docker.sh relay-start`) and take only `API_URL` and `ANON_KEY` from `scripts/remote-docker.sh exec npx supabase status -o env` (the output also carries secret keys, which must not reach logs, `.env` or commits). Then `SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=<anon key> npm run test:integration`. Prerequisite details: `docs/prerequisites.md`.
+- **Run in CI**: the step follows smoke in the `smoke` job and reuses its stack; a smoke failure skips it.
+- **Ordering with smoke**: both push the newest `live_state` and `bill_forecast`. The suite pushes `captured_at` = now, newer than smoke's `freshPush` (now minus 60 s), so smoke within about 60 s after the suite fails its "bill forecast card" step (as when smoke is rerun within a minute). Run smoke first or wait over a minute. In CI smoke runs first.
+- **Reference tests**: `tests/integration/history-safety.test.ts` (replay, order, gaps, prune, known gaps), `tests/integration/push-to-page.test.ts` (a lab-shaped push read back through the loaders and view mappers).
 
 ### 6.3 Adding an e2e test
 
@@ -176,6 +198,8 @@ here capturing anything surprising the rollout phase taught.)
 
 - **Phase 1 (time and number guards):** most thresholds already had exact-edge tests; the real value was two behaviour holes that tests alone could not prove (a future time read as current; a closed-month amount had no ceiling), so the phase paired each with a small guard. Check what a guard protects against before testing it: the contract already rejected negative money, so the sign guard is defence in depth only.
 - A "synthetic" example fixture can carry real household values; confirm provenance before copying one, and keep new fixtures fully invented.
+- **Phase 2 (push-to-page integration):** the store already guarded most of risk #4 in SQL (replay, order, narration), so the real finds were three unguarded holes, pinned and not fixed (a newer lower or empty total, a far-future `built_at`, a repeated `generated_at`), and that far-past hourly keys are pruned by every push, which makes an absence check on them meaningless.
+- The smoke gap for the hourly card is closed by a complete-day step in `scripts/smoke.mjs`; the non-owner and second-token tests stay in Phase 3.
 
 ## 7. What We Deliberately Don't Test
 

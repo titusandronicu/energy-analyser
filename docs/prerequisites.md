@@ -15,6 +15,16 @@ State as of 2026-09-28. Secrets are named with their location only; no values be
 | Energy Analyser app        | Mikrus VPS (`https://neil170-20170.mikrus.cloud`), Docker image from GHCR                                                   | Production deploy is manual through the protected `production` environment.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Database and auth          | Supabase (cloud project linked in `supabase/.temp`)                                                                         | Migrations in `supabase/migrations/`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
+## Local Supabase stack (development and tests)
+
+The integration suite (`npm run test:integration`, `tests/integration/`) needs a reachable local Supabase stack with all 12 migrations applied. It is not part of `npm test`.
+
+- **Owner's machine:** the stack runs on the UGREEN through remote Docker, with the relay on 54321 (`scripts/remote-docker.sh relay-start` in dev-hub). Mailpit (54324) is relayed only if `RELAY_PORTS` includes it, which only the smoke script needs.
+- **Env:** `SUPABASE_URL=http://127.0.0.1:54321` and `SUPABASE_ANON_KEY` (the anon key only, never the service-role key; the suite refuses non-local hosts and secret keys). Take only `API_URL` and `ANON_KEY` from `scripts/remote-docker.sh exec npx supabase status -o env`; its output also carries secret keys that must not reach logs, `.env` or commits.
+- **Changing the stack** (restart, reset, new migrations applied) needs the owner's explicit OK. The suite never resets the database.
+- **CI:** the `smoke` job's own stack is used; the suite runs after smoke in that job.
+- **Order with smoke:** run smoke first, or wait over a minute after the suite (`context/foundation/test-plan.md` §6.2).
+
 ## Home Assistant integrations
 
 The lab's collector reads these entities (homelab-2 `infra/compose/energy-app/scripts/collect-ha-snapshot.py`, `ENTITY_MAP`). Any missing mapped entity marks the snapshot `degraded`.

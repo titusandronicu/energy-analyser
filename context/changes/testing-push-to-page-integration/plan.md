@@ -353,11 +353,11 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Automated
 
-- [x] 3.1 Linting passes: `npm run lint`
-- [x] 3.2 Type checking passes: `npx astro check`
-- [x] 3.3 Unit tests still pass with the same 1201 tests: `npm test`
-- [x] 3.4 The history-safety tests pass against a reachable local stack: `npm run test:integration`
-- [x] 3.5 The whole integration suite passes twice in a row on the same database, so it is rerun-safe: `npm run test:integration && npm run test:integration`
+- [x] 3.1 Linting passes: `npm run lint` — 939d573
+- [x] 3.2 Type checking passes: `npx astro check` — 939d573
+- [x] 3.3 Unit tests still pass with the same 1201 tests: `npm test` — 939d573
+- [x] 3.4 The history-safety tests pass against a reachable local stack: `npm run test:integration` — 939d573
+- [x] 3.5 The whole integration suite passes twice in a row on the same database, so it is rerun-safe: `npm run test:integration && npm run test:integration` — 939d573
 
 #### Manual
 
@@ -368,10 +368,10 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Automated
 
-- [ ] 4.1 Docs are formatted: `npx prettier --check context/foundation/test-plan.md docs/decisions.md docs/logic.md docs/prerequisites.md CLAUDE.md AGENTS.md README.md`
-- [ ] 4.2 Linting passes: `npm run lint`
-- [ ] 4.3 §6.2 is filled and the command is documented: `/usr/bin/grep -c "test:integration" context/foundation/test-plan.md CLAUDE.md AGENTS.md README.md`
-- [ ] 4.4 The decision entry exists: `/usr/bin/grep -n "pinned" docs/decisions.md`
+- [x] 4.1 Docs are formatted: `npx prettier --check context/foundation/test-plan.md docs/decisions.md docs/logic.md docs/prerequisites.md CLAUDE.md AGENTS.md README.md`
+- [x] 4.2 Linting passes: `npm run lint`
+- [x] 4.3 §6.2 is filled and the command is documented: `/usr/bin/grep -c "test:integration" context/foundation/test-plan.md CLAUDE.md AGENTS.md README.md`
+- [x] 4.4 The decision entry exists: `/usr/bin/grep -n "pinned" docs/decisions.md`
 
 #### Manual
 
