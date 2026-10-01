@@ -20,7 +20,7 @@ The rules Energy Analyser and the home lab apply to the data, with the exact thr
 | Daily totals per day, which days are complete                                     | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py`                |
 | Current-month bill forecast                                                       | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/build-current-month-bill-forecast.py`   |
 | Period summaries: which periods, their facts, the narration and its numbers check | Lab (facts, then cloud LLM narration)         | homelab-2 `infra/compose/energy-app/scripts/build-period-summaries.py`              |
-| Period summaries: one row per period, latest `built_at` wins                      | Database                                      | `supabase/migrations/20261001091500_period_summaries.sql`                           |
+| Period summaries: one row per period, latest `built_at` wins                      | Database                                      | `supabase/migrations/20261001094118_period_summaries.sql`                           |
 | Facts bundle and battery recommendation                                           | Lab (deterministic rules, then LLM narration) | homelab-2 `build-energy-agent-briefing.py`, `run-energy-advisory.py`                |
 | PV forecast                                                                       | Solcast via Home Assistant, read by the lab   | homelab-2 `collect-ha-snapshot.py`                                                  |
 
