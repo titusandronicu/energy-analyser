@@ -1,4 +1,4 @@
-import type { DailyEnergyRow, RecommendationRow } from "@/types";
+import type { DailyEnergyRow, DayNoteRow, RecommendationRow } from "@/types";
 import {
   addMonths,
   defaultMonth,
@@ -15,7 +15,15 @@ import type { MonthGroup } from "@/lib/bars";
 import { formatPeriod } from "@/lib/format/period";
 import type { Status } from "@/lib/format/status";
 import { kwhLabel } from "@/lib/format/values";
-import { addDays, dayMonthYear, formatDayMonth, formatMonth, warsawHour, warsawParts } from "@/lib/format/warsaw-time";
+import {
+  addDays,
+  dayMonthYear,
+  formatDayMonth,
+  formatMonth,
+  formatWarsawDateTime,
+  warsawHour,
+  warsawParts,
+} from "@/lib/format/warsaw-time";
 import { isCompleteDay, kwh } from "@/lib/services/complete-day";
 import { dailySeries, type DailySeries } from "@/lib/services/daily-series";
 import { SENSOR_CHANGE_DAY, SENSOR_DIRECTION_CHANGED_ON } from "@/lib/services/grid-sensor";
@@ -100,6 +108,8 @@ export interface DayCell {
   day: string;
   status: DayStatus;
   hasRecommendation: boolean;
+  // The owner wrote a note on this day (S-19).
+  hasNote: boolean;
 }
 
 // The word each day status reads as in the month grid and its legend.
@@ -112,16 +122,18 @@ export const DAY_STATUS_WORD: Record<DayStatus, string> = {
 };
 export const BEFORE_HISTORY_WORD = "przed początkiem historii";
 export const HAS_RECOMMENDATION_WORD = "jest rekomendacja";
+export const HAS_NOTE_WORD = "jest notatka";
 
 // The word for a grid day; a day before HISTORY_START is not "missing" data but outside the history.
 export function dayCellWord(cell: DayCell): string {
   return cell.day < HISTORY_START ? BEFORE_HISTORY_WORD : DAY_STATUS_WORD[cell.status];
 }
 
-// The grid day's accessible name: "14 września, dane pełne, jest rekomendacja".
+// The grid day's accessible name: "14 września, dane pełne, jest rekomendacja, jest notatka".
 export function dayCellName(cell: DayCell): string {
   const parts = [formatDayMonth(cell.day), dayCellWord(cell)];
   if (cell.hasRecommendation) parts.push(HAS_RECOMMENDATION_WORD);
+  if (cell.hasNote) parts.push(HAS_NOTE_WORD);
   return parts.join(", ");
 }
 
@@ -178,11 +190,19 @@ export type ForecastComparison =
     }
   | { kind: "insufficient"; days: number; needed: number; reason: string };
 
-// Slots reserved for S-19 (note) and S-18 (lab summary); empty until those slices fill them. The rating (S-17) is
-// filled on the day and month views and stays null on the quarter.
+// Slots reserved for S-18 (lab summary), and for a note on the month and quarter: the day view carries its own note
+// (S-19) and the month marks noted days on its cells. The rating (S-17) is filled on the day and month views and stays
+// null on the quarter.
 interface ReservedSlots {
   note: null;
   summary: null;
+}
+
+// The owner's note on a day, as the day view shows it: the text as written and when it was last changed
+// ("1 października 2026, 09:15").
+export interface DayNote {
+  text: string;
+  updatedLabel: string;
 }
 
 export interface MonthView extends ReservedSlots {
@@ -261,7 +281,7 @@ export type DayAdvice =
     }
   | { kind: "none"; reason: string };
 
-export interface DayView extends ReservedSlots {
+export interface DayView extends Omit<ReservedSlots, "note"> {
   kind: "day";
   day: string;
   label: string;
@@ -273,6 +293,8 @@ export interface DayView extends ReservedSlots {
   // The day's rating; null when there is nothing worth saying (today, the future, or a day whose missing or
   // incomplete data the totals already name).
   rating: PeriodRating | null;
+  // The owner's note on this day, or null when there is none.
+  note: DayNote | null;
 }
 
 const RESERVED: ReservedSlots = { note: null, summary: null };
@@ -416,6 +438,8 @@ export function buildMonthView(
   rows: readonly DailyEnergyRow[],
   recTimes: { times: readonly string[]; truncated: boolean },
   today: string,
+  // The month's days that carry a note.
+  noteDays: ReadonlySet<string> = new Set(),
 ): MonthView {
   const period: CalendarPeriod = { kind: "month", month };
   const days = periodDays(period);
@@ -438,7 +462,12 @@ export function buildMonthView(
       week.map((day) =>
         day === null
           ? null
-          : { day, status: dayStatus(day, monthRows.get(day), today), hasRecommendation: recommendationDays.has(day) },
+          : {
+              day,
+              status: dayStatus(day, monthRows.get(day), today),
+              hasRecommendation: recommendationDays.has(day),
+              hasNote: noteDays.has(day),
+            },
       ),
     ),
     series: {
@@ -565,14 +594,20 @@ function dayAdvice(day: string, recs: readonly RecommendationRow[], now: Date): 
   };
 }
 
+// The note as the day view shows it; updated_at arrives from PostgREST as an ISO string.
+function dayNote(row: DayNoteRow | null): DayNote | null {
+  return row === null ? null : { text: row.text, updatedLabel: formatWarsawDateTime(new Date(row.updated_at)) };
+}
+
 // `rows` are the day's row and the RATING_WINDOW_DAYS before it (ratedPeriodRange); only the day's own row gives the
-// totals and the forecast.
+// totals and the forecast. `note` is the owner's note on the day, if any.
 export function buildDayView(
   day: string,
   rows: readonly DailyEnergyRow[],
   recs: readonly RecommendationRow[],
   today: string,
   now: Date,
+  note: DayNoteRow | null = null,
 ): DayView {
   const dayRow = rows.find((row) => row.day === day);
   return {
@@ -584,6 +619,7 @@ export function buildDayView(
     forecast: dayForecast(day, dayRow, today),
     advice: dayAdvice(day, recs, now),
     rating: dayRating(day, rows, today),
-    ...RESERVED,
+    note: dayNote(note),
+    summary: null,
   };
 }

@@ -1,0 +1,101 @@
+---
+import { NotebookPen } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import { buttonVariants } from "@/components/ui/button";
+import Panel from "@/components/ui/Panel.astro";
+import { LOAD_FAILED } from "@/lib/format/status";
+import type { DayNote } from "@/lib/services/calendar-view";
+import { NOTE_MAX_LENGTH, type noteNotice } from "@/lib/services/day-notes";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  day: string;
+  note: DayNote | null;
+  // The outcome of the last post, read back from ?note=.
+  notice: ReturnType<typeof noteNotice>;
+  // The note failed to load: the panel says so and offers no form, since it can't tell whether a note exists.
+  failed: boolean;
+}
+
+// The owner's note on the day (S-19). No client JavaScript: the forms post to /api/notes, which redirects back here
+// with ?note=, and native <details> open the form and the delete confirmation. The text is the owner's own input, so
+// it renders as escaped text with its line breaks kept, never as HTML.
+const { day, note, notice, failed } = Astro.props;
+
+const SUMMARY_CLASS = cn(
+  buttonVariants({ variant: "outline" }),
+  "border-border-strong h-11 cursor-pointer list-none rounded-xl bg-transparent px-4 [&::-webkit-details-marker]:hidden",
+);
+const SUBMIT_CLASS = cn(buttonVariants(), "h-11 rounded-xl px-4");
+const DELETE_CLASS = cn(buttonVariants({ variant: "destructive" }), "h-11 rounded-xl px-4");
+const textareaId = note === null ? "history-note-add" : "history-note-edit";
+---
+
+<Panel>
+  <div data-testid="history-day-note">
+    <CardHeading class="mb-2" title="Notatka" icon={NotebookPen} iconClass="text-primary" />
+
+    {notice !== null && (
+      <div role="status" class="mb-3" data-testid="history-note-notice">
+        <StatusBadge status={{ tone: notice.tone, label: "" }} text={notice.text} />
+      </div>
+    )}
+
+    {failed ? (
+      <div class="space-y-2">
+        <StatusBadge status={LOAD_FAILED} />
+        <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      </div>
+    ) : (
+      <div class="space-y-4">
+        {note === null ? (
+          <p class="text-muted-foreground text-sm">Ten dzień nie ma notatki.</p>
+        ) : (
+          <div class="space-y-1">
+            <p class="text-card-foreground leading-relaxed whitespace-pre-line [overflow-wrap:anywhere]">{note.text}</p>
+            <p class="text-muted-foreground text-xs">zmieniona {note.updatedLabel}</p>
+          </div>
+        )}
+
+        <div class="flex flex-col gap-3">
+          <details>
+            <summary class:list={SUMMARY_CLASS}>{note === null ? "Dodaj notatkę" : "Edytuj"}</summary>
+            <form method="POST" action="/api/notes" class="mt-3 space-y-3">
+              <input type="hidden" name="day" value={day} />
+              <input type="hidden" name="intent" value="save" />
+              <label for={textareaId} class="text-card-foreground block text-sm font-medium">
+                Treść notatki (do {NOTE_MAX_LENGTH} znaków)
+              </label>
+              <textarea
+                id={textareaId}
+                name="text"
+                rows="4"
+                maxlength={NOTE_MAX_LENGTH}
+                required
+                class="bg-inset border-border-strong text-card-foreground focus-visible:border-ring focus-visible:ring-ring/50 block w-full rounded-xl border px-3 py-2 text-sm leading-relaxed outline-none focus-visible:ring-[3px]"
+              >{note?.text ?? ""}</textarea>
+              <button type="submit" class:list={SUBMIT_CLASS}>
+                Zapisz
+              </button>
+            </form>
+          </details>
+
+          {note !== null && (
+            <details>
+              <summary class:list={SUMMARY_CLASS}>Usuń</summary>
+              <form method="POST" action="/api/notes" class="mt-3 space-y-3">
+                <input type="hidden" name="day" value={day} />
+                <input type="hidden" name="intent" value="delete" />
+                <p class="text-muted-foreground text-sm">Notatki nie da się potem przywrócić.</p>
+                <button type="submit" class:list={DELETE_CLASS}>
+                  Na pewno usuń
+                </button>
+              </form>
+            </details>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+</Panel>

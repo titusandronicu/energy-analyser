@@ -14,6 +14,7 @@ import {
   DAY_STATUS_WORD,
   dayCellName,
   forecastDaysText,
+  HAS_NOTE_WORD,
   HAS_RECOMMENDATION_WORD,
   MONTH_CHART_NOTE,
   NEUTRAL,
@@ -29,13 +30,15 @@ interface Props {
   view: MonthView | null;
   // The recommendation times failed to load, so the grid has no markers.
   markersFailed: boolean;
+  // The noted days failed to load, so the grid has no note markers.
+  noteMarkersFailed: boolean;
   today: string;
 }
 
 // The month view: totals over complete days with the month's rating beside them, a tappable Monday-first grid of days, the daily charts and forecast
 // against actual. Every figure and word comes from the view model; days that cannot be opened (before 16 July 2026,
 // after today) are plain text, never links.
-const { view, markersFailed, today } = Astro.props;
+const { view, markersFailed, noteMarkersFailed, today } = Astro.props;
 const WEEKDAYS = [
   ["Pn", "poniedziałek"],
   ["Wt", "wtorek"],
@@ -53,6 +56,8 @@ const CELL_CLASS: Record<DayStatus, string> = {
   today: "border-primary text-card-foreground border-2",
   future: "border-transparent text-muted-foreground",
 };
+// The note marker is a corner triangle, so it differs from the recommendation's round dot in shape, not only colour.
+const NOTE_MARKER_CLASS = "border-t-flow-pv size-0 border-t-[7px] border-l-[7px] border-l-transparent";
 // A day before HISTORY_START is outside the history, not a day yet to come: a muted fill instead of the future's blank.
 const BEFORE_HISTORY_CLASS = "bg-muted border-transparent text-muted-foreground";
 const LEGEND: DayStatus[] = ["complete", "empty", "missing", "today"];
@@ -112,6 +117,9 @@ const dayKeys = days.map((cell) => cell.day);
                     {cell.hasRecommendation && (
                       <span aria-hidden="true" class="bg-primary absolute bottom-1 size-1.5 rounded-full" />
                     )}
+                    {cell.hasNote && (
+                      <span aria-hidden="true" class:list={cn("absolute top-1 right-1", NOTE_MARKER_CLASS)} />
+                    )}
                   </>
                 );
                 return (
@@ -148,12 +156,22 @@ const dayKeys = days.map((cell) => cell.day);
           <span aria-hidden="true" class="bg-primary inline-block size-1.5 rounded-full" />
           {HAS_RECOMMENDATION_WORD}
         </li>
+        <li class="inline-flex items-center gap-1.5">
+          <span aria-hidden="true" class:list={cn("inline-block", NOTE_MARKER_CLASS)} />
+          {HAS_NOTE_WORD}
+        </li>
       </ul>
 
       {markersFailed && (
         <div class="flex flex-wrap items-center gap-2">
           <StatusBadge status={LOAD_FAILED} />
           <span class="text-muted-foreground text-sm">Znaczniki rekomendacji nie są pokazane.</span>
+        </div>
+      )}
+      {noteMarkersFailed && (
+        <div class="flex flex-wrap items-center gap-2">
+          <StatusBadge status={LOAD_FAILED} />
+          <span class="text-muted-foreground text-sm">Znaczniki notatek nie są pokazane.</span>
         </div>
       )}
       {view.markersNote !== null && <p class="text-muted-foreground text-sm">{sentence(view.markersNote)}</p>}

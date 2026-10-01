@@ -5,12 +5,14 @@ import CardHeading from "@/components/CardHeading.astro";
 import RecommendationFindings from "@/components/RecommendationFindings.astro";
 import RecommendationForecast from "@/components/RecommendationForecast.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
+import DayNotePanel from "@/components/history/DayNotePanel.astro";
 import RatingPanel from "@/components/history/RatingPanel.astro";
 import { VerdictChip } from "@/components/live/VerdictChip";
 import Panel from "@/components/ui/Panel.astro";
 import { parseAdviceMarkdown, splitAdviceLead } from "@/lib/format/advice-markdown";
 import { LOAD_FAILED } from "@/lib/format/status";
 import { capitalize, NEUTRAL, type DayView } from "@/lib/services/calendar-view";
+import type { noteNotice } from "@/lib/services/day-notes";
 
 interface Props {
   view: DayView;
@@ -18,12 +20,16 @@ interface Props {
   rowFailed: boolean;
   // The day's recommendations failed to load: the advice shows a load error.
   adviceFailed: boolean;
+  // The day's note failed to load: the note panel shows a load error.
+  noteFailed: boolean;
+  // The outcome of the last note post (?note=), or null.
+  notice: ReturnType<typeof noteNotice>;
 }
 
-// The day view: the day's totals, its rating, its forecast against actual, and the advice it was given. The advice is a record of
+// The day view: the day's totals, its rating, the owner's note, its forecast against actual, and the advice it was given. The advice is a record of
 // that day, not judged against today, so this is its own section rather than the dashboard's "Rekomendacja na dziś"
 // card: a neutral badge with the generation time, no stale warning, no motion, and native <details> only.
-const { view, rowFailed, adviceFailed } = Astro.props;
+const { view, rowFailed, adviceFailed, noteFailed, notice } = Astro.props;
 
 const totals = view.totals;
 const forecast = view.forecast;
@@ -93,6 +99,8 @@ const figures =
 </Panel>
 
 <RatingPanel title="Ocena dnia" rating={rowFailed ? null : view.rating} testId="history-day-rating" />
+
+<DayNotePanel day={view.day} note={view.note} notice={notice} failed={noteFailed} />
 
 <Panel>
   <CardHeading class="mb-2" title="Prognoza a rzeczywistość" icon={Sun} iconClass="text-flow-pv" />
