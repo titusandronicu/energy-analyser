@@ -27,3 +27,7 @@ release.env
 
 # agent worktrees (full repo checkouts)
 .claude/worktrees/
+
+# Stryker mutation testing
+.stryker-tmp/
+reports/
