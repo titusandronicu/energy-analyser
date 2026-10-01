@@ -1,6 +1,7 @@
 ---
 import { NotebookPen } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
+import NoteNotice from "@/components/history/NoteNotice.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import { buttonVariants } from "@/components/ui/button";
 import Panel from "@/components/ui/Panel.astro";
@@ -36,11 +37,7 @@ const textareaId = note === null ? "history-note-add" : "history-note-edit";
   <div data-testid="history-day-note">
     <CardHeading class="mb-2" title="Notatka" icon={NotebookPen} iconClass="text-primary" />
 
-    {notice !== null && (
-      <div role="status" class="mb-3" data-testid="history-note-notice">
-        <StatusBadge status={{ tone: notice.tone, label: "" }} text={notice.text} />
-      </div>
-    )}
+    {notice !== null && <NoteNotice notice={notice} class="mb-3" />}
 
     {failed ? (
       <div class="space-y-2">

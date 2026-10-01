@@ -1,0 +1,18 @@
+---
+import StatusBadge from "@/components/StatusBadge.astro";
+import type { noteNotice } from "@/lib/services/day-notes";
+
+interface Props {
+  // The outcome of the last note post, read back from ?note=.
+  notice: NonNullable<ReturnType<typeof noteNotice>>;
+  class?: string;
+}
+
+// The note post's outcome notice (S-19): inside the day's note panel, and above the calendar when /api/notes fell back
+// to a view that has no panel.
+const { notice, class: className } = Astro.props;
+---
+
+<div role="status" class:list={className} data-testid="history-note-notice">
+  <StatusBadge status={{ tone: notice.tone, label: "" }} text={notice.text} />
+</div>
