@@ -56,7 +56,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-17 | period-ratings            | see a good / neutral / bad rating for each completed day and month                          | S-15          | US-05, FR-022                         | done        |
 | S-20 | consumption-trends        | see a remark when consumption rises or falls noticeably over weeks and months               | S-14, S-15    | US-05, FR-031                         | proposed    |
 | S-19 | day-notes                 | add, view, edit and delete notes on calendar days                                           | S-15          | US-06, FR-025, FR-026, FR-027, FR-028 | done        |
-| S-18 | period-summaries          | read plain-language explanations of today and summaries of past days and months             | F-04, S-15    | US-01, US-05, FR-023, FR-030          | in-progress |
+| S-18 | period-summaries          | read plain-language explanations of today and summaries of past days and months             | F-04, S-15    | US-01, US-05, FR-023, FR-030          | done        |
 | S-11 | forecast-accuracy         | see how accurate the PV forecast has been and how certain today's forecast is               | F-05, S-14    | US-01, FR-015, FR-020, FR-006         | proposed    |
 | S-08 | closed-period-bill        | see the actual cost of the last closed period under the full tariff                         | F-01, S-01    | US-03, FR-012                         | blocked     |
 | S-09 | consumption-plan-actions  | see the lab's consumption-plan actions next to today's recommendation                       | S-03          | US-07, FR-013                         | proposed    |
@@ -305,7 +305,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Display only; like the recommendation card, the summary is shown as narrated, with its generation time and the period it covers.
-- **Status:** in-progress
+- **Status:** done
 
 ### S-11: Forecast accuracy and certainty
 
@@ -468,3 +468,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-15: user can move between days, months and quarters in a calendar and see each period's PV production, consumption, grid import, forecast against actual, and the recommendations from that period. The year view is S-16; grid export and PGE figures are left out (plan 2026-09-30: the inverter's export counter under-reads, and PGE figures wait on a privacy decision, see Parked).** — Archived 2026-09-30 → `context/archive/2026-09-30-history-calendar/`. Lesson: —.
 - **S-17: user can see a good / neutral / bad rating for each completed day and month in the calendar, based on self-sufficiency against a norm (the season-adjusted one when a year of history exists, otherwise the recent trailing one, said plainly on the card), with the basis stated and no advice.** — Archived 2026-09-30 → `context/archive/2026-09-30-period-ratings/`. Lesson: —.
 - **S-19: user can add a note to a calendar day, see it on that day and see which days in a month have notes, and edit or delete it.** — Archived 2026-10-01 → `context/archive/2026-10-01-day-notes/`. Lesson: —.
+- **S-18: user can read on the dashboard a short plain-language explanation of what today's figures mean, and in the calendar the home lab's summary of what happened on a completed day or in a completed month, next to its rating.** — Archived 2026-10-01 → `context/archive/2026-10-01-period-summaries/`. Lesson: —.
