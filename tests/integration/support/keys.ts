@@ -3,7 +3,7 @@ import { addDays, HOUR_MS } from "@/lib/format/warsaw-time";
 
 const MAX_DRAWS = 25;
 const DAY_RANGE_START = Date.UTC(1900, 0, 1);
-const DAY_RANGE_END = Date.UTC(2040, 11, 31);
+const DAY_RANGE_END = Date.UTC(2020, 11, 31);
 const WINDOW_DAYS = 35;
 
 function randomBetween(from: number, to: number): number {
@@ -26,8 +26,9 @@ async function drawAbsent(
   throw new Error(`could not draw ${String(n)} unused keys in ${String(MAX_DRAWS)} attempts`);
 }
 
-// `n` distinct far-past calendar days ("YYYY-MM-DD", ascending), none stored in daily_energy. The contract bounds no
-// day, and no windowed loader is used for them, so they never touch what smoke renders.
+// `n` distinct far-past calendar days ("YYYY-MM-DD", ascending, 1900-01-01 to 2020-12-31), none stored in daily_energy.
+// The contract bounds no day. The range ends years before the dashboard's 400-day usage baseline and never reaches the
+// future, and no windowed loader reads these days, so they never touch what smoke renders.
 export function freshDays(owner: SupabaseClient, n: number): Promise<string[]> {
   return drawAbsent(
     n,
@@ -66,9 +67,10 @@ export async function emptySummaryDay(owner: SupabaseClient): Promise<string> {
 
 // `n` distinct whole hours (ISO instants, ascending) between 10 and 28 days back, none stored in hourly_energy. There
 // is no far-past variant on purpose: ingest_push deletes every hour older than 35 days in the same call, so a far-past
-// hour can never hold a row and an "absent" check on one proves nothing. The range stays clear of smoke's day (4 days back), the complete day
-// the history-safety test pushes (7 days back) and the prune test's 30-day hour. Loads pushed to these hours must stay
-// well under 1 kWh: they sit inside the dashboard's window.
+// hour can never hold a row and an "absent" check on one proves nothing. The range stays clear of smoke's day (4 days
+// back), the complete day the history-safety test pushes (7 days back) and the prune test's 30-day hour. Complete days
+// the suite pushes into the window keep every load at or below 1 kWh; single loads pushed to these hours (incomplete
+// blocks) may be higher but must stay far below smoke's 9.5 kWh, as they sit inside the dashboard's window.
 export function freshWindowHours(owner: SupabaseClient, n: number, now: Date = new Date()): Promise<string[]> {
   const nowHour = Math.floor(now.getTime() / HOUR_MS) * HOUR_MS;
   return drawAbsent(

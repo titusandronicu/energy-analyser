@@ -25,8 +25,8 @@ function jwtRole(key: string): string | null {
 // Reads the stack settings and refuses unsafe ones. Never skips: a skipped suite would pass CI vacuously.
 // src/lib/supabase.ts has the same anon-key rule but imports `astro:env/server`, so it is replicated here.
 export function requireStack(): Stack {
-  const url = process.env.SUPABASE_URL;
-  const anonKey = process.env.SUPABASE_ANON_KEY;
+  const url = process.env.SUPABASE_URL?.trim();
+  const anonKey = process.env.SUPABASE_ANON_KEY?.trim();
   if (!url || !anonKey) {
     throw new Error(
       "The integration suite needs a reachable local Supabase stack: set SUPABASE_URL and SUPABASE_ANON_KEY " +
@@ -34,22 +34,29 @@ export function requireStack(): Stack {
     );
   }
 
-  let host: string;
+  let parsed: URL;
   try {
-    host = new URL(url).hostname;
+    parsed = new URL(url);
   } catch {
     throw new Error("SUPABASE_URL is not a valid URL; the integration suite only runs against 127.0.0.1 or localhost.");
   }
-  if (!LOCAL_HOSTS.has(host)) {
+  if (!LOCAL_HOSTS.has(parsed.hostname)) {
     throw new Error(
-      `Refusing to run against SUPABASE_URL host "${host}": the integration suite writes data and only runs against a local stack (127.0.0.1 or localhost).`,
+      `Refusing to run against SUPABASE_URL host "${parsed.hostname}": the integration suite writes data and only runs against a local stack (127.0.0.1 or localhost).`,
     );
   }
+  if (parsed.protocol !== "http:") {
+    throw new Error("SUPABASE_URL must use http: the local stack has no TLS.");
+  }
 
+  // Fails closed: only an anon key passes, whatever shape a secret key might take.
   if (anonKey.startsWith("sb_secret_") || jwtRole(anonKey) === "service_role") {
     throw new Error(
       "SUPABASE_ANON_KEY holds a secret or service_role key; secret keys are forbidden here. Use the anon (publishable) key.",
     );
+  }
+  if (!anonKey.startsWith("sb_publishable_") && jwtRole(anonKey) !== "anon") {
+    throw new Error("SUPABASE_ANON_KEY must be the anon key (an sb_publishable_ key or a JWT with role anon).");
   }
 
   return { url, anonKey };

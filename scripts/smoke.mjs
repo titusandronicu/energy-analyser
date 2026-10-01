@@ -127,6 +127,24 @@ const HOUR_MS = 60 * 60 * 1000;
 const HEAVIEST_CLOCK_HOUR = 20;
 const HEAVIEST_HOUR_LABEL = "20:00–21:00";
 const hourlyDay = new Date(Date.parse(`${warsawToday}T00:00:00Z`) - 4 * 24 * HOUR_MS).toISOString().slice(0, 10);
+// The card prints the day next to each ranked hour as "D miesiąca, dzień tygodnia" (day without a leading zero and the
+// genitive month, e.g. "3 października, sobota"). The day and month are written by hand from `hourlyDay`, so the step
+// below cannot pass on an earlier smoke run's day.
+const GENITIVE_MONTHS = [
+  "stycznia",
+  "lutego",
+  "marca",
+  "kwietnia",
+  "maja",
+  "czerwca",
+  "lipca",
+  "sierpnia",
+  "września",
+  "października",
+  "listopada",
+  "grudnia",
+];
+const HOURLY_DAY_LABEL = `${Number(hourlyDay.slice(8, 10))} ${GENITIVE_MONTHS[Number(hourlyDay.slice(5, 7)) - 1]}`;
 const warsawClock = new Intl.DateTimeFormat("en-GB", {
   timeZone: "Europe/Warsaw",
   year: "numeric",
@@ -273,14 +291,17 @@ const steps = [
   ["hourly history of one complete day is pushed", hourlyPush, { status: 201 }],
   [
     // The pushed day makes the hourly card rank hours: the status badge is there, the empty-state reason (rendered only
-    // for an empty view) is not, and the heaviest hour is the first entry of the "Najwyższe" list inside the hours block.
+    // for an empty view) is not, and the heaviest hour of the pushed day (its hour label followed by that day's own label,
+    // so an earlier run's day cannot satisfy it) comes right after the "Najwyższe" heading inside the hours block.
     "dashboard shows the hourly card with the heaviest hour of the pushed day",
     () => request("/dashboard", { readBody: true }),
     {
       status: 200,
       contains: ['data-testid="hourly-status"', 'data-testid="hourly-hours"'],
       notContains: 'data-testid="hourly-empty-reason"',
-      matches: new RegExp(`data-testid="hourly-hours"[\\s\\S]*?Najwyższe[\\s\\S]{0,500}?${HEAVIEST_HOUR_LABEL}`),
+      matches: new RegExp(
+        `data-testid="hourly-hours"[\\s\\S]*?Najwyższe[\\s\\S]{0,500}?${HEAVIEST_HOUR_LABEL}[^<]*</span>[^>]*>${HOURLY_DAY_LABEL},`,
+      ),
     },
   ],
   [

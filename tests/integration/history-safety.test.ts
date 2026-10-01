@@ -34,7 +34,7 @@ const HOUR_MS = 60 * 60 * 1000;
 // Postgres hands timestamptz back as "...+00:00"; compare instants, not spellings.
 const instant = (value: string | null | undefined): number => Date.parse(value ?? "");
 const iso = (value: string): string => new Date(value).toISOString();
-const round2 = (value: number): number => Math.round(value * 100) / 100;
+const round3 = (value: number): number => Math.round(value * 1000) / 1000;
 
 interface StoredHour {
   hour_start: string;
@@ -266,7 +266,8 @@ describe("history safety: replay, order, gaps and the hourly prune", () => {
 
     // A complete Warsaw day seven days back (never smoke's, four days back), inside the 35-day window. Every load is at
     // or below 1 kWh, so smoke's 9.5 kWh hour stays the heaviest on the dashboard. The clock hour 13 is the heaviest
-    // of the day at 0.95 kWh (plus the run's shift of at most 0.04); every other hour is 0.40 to 0.80 (+ shift).
+    // of the day at 0.95 kWh (plus the run's shift of at most 0.049, so at most 0.999); every other hour is 0.40 to 0.80
+    // (+ shift).
     it("an hour with fewer than 10 samples leaves its day incomplete, and with 10 samples the day is ranked", async () => {
       const day = warsawDayBefore(new Date(), 7);
       const clock = warsawDayHours(day);
@@ -276,10 +277,11 @@ describe("history safety: replay, order, gaps and the hourly prune", () => {
       const hourKeys = clock.map((entry) => entry.hourStart);
 
       const firstAt = nextCapturedAt();
-      // Invented per-run shift of 0.00 to 0.04 kWh, so rows left by an earlier run never equal this run's.
-      const shift = (firstAt.getTime() % 5) / 100;
+      // Invented per-run shift of 0.000 to 0.049 kWh from the millisecond clock, so rows left by an earlier run are very
+      // unlikely to equal this run's (the 9-versus-10 samples control below discriminates either way).
+      const shift = (firstAt.getTime() % 50) / 1000;
       const baseLoads = [0.4, 0.5, 0.6, 0.7, 0.8];
-      const loadOf = (hour: number): number => round2((hour === heaviestHour ? 0.95 : baseLoads[hour % 5]) + shift);
+      const loadOf = (hour: number): number => round3((hour === heaviestHour ? 0.95 : baseLoads[hour % 5]) + shift);
       const dayBody = (capturedAt: Date, samplesAtHeaviest: number) => ({
         ...baseBody(capturedAt),
         hourly_history: clock.map(({ hourStart, hour }) =>
@@ -338,10 +340,10 @@ describe("history safety: replay, order, gaps and the hourly prune", () => {
       const recent = hourAgo(30);
 
       const capturedAt = nextCapturedAt();
-      // Values unique to this run: a stored row of an earlier run can never equal them. Loads stay under 1 kWh, as the
-      // 30-day hour sits inside the dashboard's window.
+      // Values taken from the millisecond clock: a stored row of an earlier run is very unlikely to equal them. Loads stay
+      // under 1 kWh (0.400 to 0.799), as the 30-day hour sits inside the dashboard's window.
       const ms = capturedAt.getTime();
-      const load = round2(0.4 + (ms % 40) / 100);
+      const load = round3(0.4 + (ms % 400) / 1000);
       const pv = (ms % 1000) / 1000;
       expect(
         await push({
@@ -424,8 +426,10 @@ describe("history safety: replay, order, gaps and the hourly prune", () => {
 
     // KNOWN GAP: the contract accepts any ISO built_at, and the store keeps a summary row only against an entry whose
     // built_at is the same or newer, so one entry with a far-future built_at locks its (kind, period) row for good.
-    // A contract bound (built_at at most a few minutes ahead of the push) or an upsert that compares against now()
-    // would flip this test: the later entry with a current built_at would replace the far-future one.
+    // Fixed behaviour: a contract bound (built_at at most a few minutes ahead of the push) makes the far-future push
+    // itself answer 422, so this test fails first at that push (the `farFuture` CREATED expectation). An upsert that
+    // compares against now() instead would let the later current entry replace the far-future one, and the final
+    // narration expectation would change.
     it("KNOWN GAP: a summary with a far-future built_at locks its row against a later, current entry", async () => {
       const day = await emptySummaryDay(owner);
       const text = (label: string) => `Invented ${label} text for ${day}.`;
@@ -456,8 +460,9 @@ describe("history safety: replay, order, gaps and the hourly prune", () => {
     });
 
     // KNOWN GAP: a second recommendation with the same generated_at but different text is dropped silently
-    // (on conflict do nothing) while the push answers 201. A 409 for a repeated generated_at, or an upsert that
-    // replaces the text, would flip this test.
+    // (on conflict do nothing) while the push answers 201. Fixed behaviour: a 409 for a repeated generated_at makes the
+    // second push fail the second CREATED expectation first; an upsert that replaces the text would instead change the
+    // final text expectation.
     it("KNOWN GAP: a second recommendation with the same generated_at keeps the first text and still answers 201", async () => {
       const generatedAt = nextCapturedAt();
       const firstText = `Invented first advice ${String(generatedAt.getTime())}: charge at night.`;

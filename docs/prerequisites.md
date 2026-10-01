@@ -20,10 +20,10 @@ State as of 2026-09-28. Secrets are named with their location only; no values be
 The integration suite (`npm run test:integration`, `tests/integration/`) needs a reachable local Supabase stack with all 12 migrations applied. It is not part of `npm test`.
 
 - **Owner's machine:** the stack runs on the UGREEN through remote Docker, with the relay on 54321 (`scripts/remote-docker.sh relay-start` in dev-hub). Mailpit (54324) is relayed only if `RELAY_PORTS` includes it, which only the smoke script needs.
-- **Env:** `SUPABASE_URL=http://127.0.0.1:54321` and `SUPABASE_ANON_KEY` (the anon key only, never the service-role key; the suite refuses non-local hosts and secret keys). Take only `API_URL` and `ANON_KEY` from `scripts/remote-docker.sh exec npx supabase status -o env`; its output also carries secret keys that must not reach logs, `.env` or commits.
-- **Changing the stack** (restart, reset, new migrations applied) needs the owner's explicit OK. The suite never resets the database.
+- **Env:** `SUPABASE_URL=http://127.0.0.1:54321` and `SUPABASE_ANON_KEY` (the anon key only, never the service-role key; the suite refuses non-local hosts and secret keys). Take only those two: `scripts/remote-docker.sh exec npx supabase status -o env | grep -E '^(API_URL|ANON_KEY)='` (as CI does); the unfiltered output also carries secret keys that must not reach logs, `.env` or commits. The suite accepts only an anon key (an `sb_publishable_` key or a JWT with role `anon`), over `http:` to 127.0.0.1 or localhost.
+- **Changing the stack** (restart, reset, new migrations applied) needs the owner's explicit OK. The suite never resets the database, and it overwrites the newest live, bill and recommendation rows and prunes old rows (every push prunes raw pushes older than 14 days and hours older than 35 days), so run it only on a stack that receives no real lab pushes.
 - **CI:** the `smoke` job's own stack is used; the suite runs after smoke in that job.
-- **Order with smoke:** run smoke first, or wait over a minute after the suite (`context/foundation/test-plan.md` §6.2).
+- **Order with smoke:** smoke's steps "dashboard shows the bill forecast card" and "dashboard shows the fresh live state" fail when smoke runs within about a minute after the suite (the suite's pushes are newer than smoke's). Run smoke first, or wait over a minute after the suite (`context/foundation/test-plan.md` §6.2).
 
 ## Home Assistant integrations
 

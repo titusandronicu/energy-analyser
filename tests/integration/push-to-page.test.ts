@@ -7,7 +7,7 @@ import { loadLiveState, toLiveStateView } from "@/lib/services/live-state";
 import { loadPeriodSummary, toSummaryView } from "@/lib/services/period-summary";
 import { loadLatestRecommendation, toRecommendationView } from "@/lib/services/recommendation";
 import { baseBody, billForecast, dailyRow, hourRow, recommendation, summary } from "./support/bodies";
-import { emptySummaryDay, emptyWeek, freshDays, freshWindowHours, nextCapturedAt, windowHours } from "./support/keys";
+import { emptySummaryDay, emptyWeek, freshDays, nextCapturedAt, windowHours } from "./support/keys";
 import { push } from "./support/push";
 import { ownerClient, requireStack } from "./support/stack";
 
@@ -21,6 +21,17 @@ const CREATED = { status: 201, body: { status: "created" } };
 
 // Postgres hands timestamptz back as "...+00:00"; compare instants, not spellings.
 const instant = (value: string | null | undefined): number => Date.parse(value ?? "");
+
+type Table = "recommendations" | "daily_energy" | "hourly_energy";
+
+// Rows in a table as the owner sees them. The suite runs one file after another, so the count moves only with its pushes.
+async function countRows(owner: Owner, table: Table): Promise<number> {
+  const key = { recommendations: "generated_at", daily_energy: "day", hourly_energy: "hour_start" }[table];
+  const { count, error } = await owner.from(table).select(key, { count: "exact", head: true });
+  if (error) throw new Error(`counting ${table} failed: ${error.message}`);
+  if (count === null) throw new Error(`counting ${table} returned no count`);
+  return count;
+}
 
 describe("push to page: one test per section", () => {
   let owner: Owner;
@@ -78,10 +89,11 @@ describe("push to page: one test per section", () => {
         // 5 whole hours that have ended: not a complete Warsaw day, so the ranking has nothing to rank yet.
         const hours = windowHours(5);
         // The same hours can hold rows from a run in the same clock hour, so the house-use figures shift by an invented
-        // 0.00 to 0.49 kWh each run: a stored row of an earlier run can never equal what this push wrote.
+        // 0.000 to 0.499 kWh each run (three decimals from the millisecond clock): a stored row of an earlier run is
+        // very unlikely to equal what this push wrote.
         const capturedAt = nextCapturedAt();
-        const shift = (capturedAt.getTime() % 50) / 100;
-        const load = (base: number) => Math.round((base + shift) * 100) / 100;
+        const shift = (capturedAt.getTime() % 500) / 1000;
+        const load = (base: number) => Math.round((base + shift) * 1000) / 1000;
         const pushed = [
           { load_kwh: load(0.6), grid_net_kwh: 0.2, pv_kwh: 0.1, samples: 12 },
           { load_kwh: load(0.7), grid_net_kwh: 0.3, pv_kwh: 0.2, samples: 11 },
@@ -208,8 +220,11 @@ describe("push to page: one test per section", () => {
   describe("right surface", () => {
     it("a daily-only push creates no hourly row and no recommendation", async () => {
       const [day] = await freshDays(owner, 1);
-      const hours = await freshWindowHours(owner, 3);
-      const generatedAt = nextCapturedAt();
+      const before = {
+        recommendations: await countRows(owner, "recommendations"),
+        daily: await countRows(owner, "daily_energy"),
+        hourly: await countRows(owner, "hourly_energy"),
+      };
 
       const result = await push({ ...baseBody(nextCapturedAt()), daily_history: [dailyRow(day, { load_kwh: 12.3 })] });
       expect(result).toEqual(CREATED);
@@ -219,20 +234,19 @@ describe("push to page: one test per section", () => {
         { day, pv_kwh: 7.5, load_kwh: 12.3, grid_import_kwh: 3, grid_export_kwh: 1.5, pv_forecast_kwh: null },
       ]);
 
-      const hourly = await owner.from("hourly_energy").select("hour_start").in("hour_start", hours);
-      expect(hourly.error).toBeNull();
-      expect(hourly.data).toEqual([]);
-
-      const recommendations = await owner
-        .from("recommendations")
-        .select("generated_at")
-        .eq("generated_at", generatedAt.toISOString());
-      expect(recommendations.error).toBeNull();
-      expect(recommendations.data).toEqual([]);
+      // Nothing else was written: recommendations are unchanged, and hourly rows can only have been pruned by the push.
+      expect(await countRows(owner, "recommendations")).toBe(before.recommendations);
+      expect(await countRows(owner, "hourly_energy")).toBeLessThanOrEqual(before.hourly);
+      // The day itself is the one new daily row.
+      expect(await countRows(owner, "daily_energy")).toBe(before.daily + 1);
     });
 
-    it("a state-only push leaves daily keys empty", async () => {
-      const days = await freshDays(owner, 3);
+    it("a state-only push creates no daily, hourly or recommendation row", async () => {
+      const before = {
+        recommendations: await countRows(owner, "recommendations"),
+        daily: await countRows(owner, "daily_energy"),
+        hourly: await countRows(owner, "hourly_energy"),
+      };
       const capturedAt = nextCapturedAt();
 
       expect(await push(baseBody(capturedAt, { pv_w: 2740 }))).toEqual(CREATED);
@@ -240,9 +254,9 @@ describe("push to page: one test per section", () => {
       // Control: the push did land, as the newest live state.
       expect(instant((await loadLiveState(owner))?.captured_at)).toBe(capturedAt.getTime());
 
-      const daily = await owner.from("daily_energy").select("day").in("day", days);
-      expect(daily.error).toBeNull();
-      expect(daily.data).toEqual([]);
+      expect(await countRows(owner, "daily_energy")).toBe(before.daily);
+      expect(await countRows(owner, "recommendations")).toBe(before.recommendations);
+      expect(await countRows(owner, "hourly_energy")).toBeLessThanOrEqual(before.hourly);
     });
 
     it("a newer push without bill_forecast keeps the earlier forecast and still moves the live state", async () => {
