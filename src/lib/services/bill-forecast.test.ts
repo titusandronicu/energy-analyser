@@ -793,3 +793,219 @@ describe("toBillForecastView closed-month check and delta rounding", () => {
     expect(view.delta).toMatchObject({ text, direction });
   });
 });
+
+describe("toBillForecastView plausibility ceiling on the central figure and the closed-month amounts", () => {
+  // The range is ordered before the ceiling is checked, so a central or low end above the ceiling always drags the
+  // high end above it too. The central and low cases below are therefore the ordered ranges that sit on the line.
+  it.each([
+    ["central", { projected_bill_gross_pln: 7000, range_gross_pln: { low: 155.08, high: 7000 } }],
+    ["low end", { projected_bill_gross_pln: 7000, range_gross_pln: { low: 7000, high: 7000 } }],
+  ])("keeps a %s of exactly 7000 PLN", (_name, fields) => {
+    expect(forecast(okRow(fields)).centralLabel).toBe("ok. 7000 zł");
+  });
+
+  it.each([
+    ["central", { projected_bill_gross_pln: 7000.01, range_gross_pln: { low: 155.08, high: 7000.01 } }],
+    ["low end", { projected_bill_gross_pln: 7000.01, range_gross_pln: { low: 7000.01, high: 7000.01 } }],
+  ])("blanks the figure when the %s is 1 grosz above 7000 PLN", (_name, fields) => {
+    const view = refusal(okRow(fields));
+    expect(view.status).toEqual({ tone: "problem", label: "nierealna kwota" });
+    expect(view.reason).toContain("7000 zł");
+  });
+
+  it("blanks a central figure far above the ceiling even when the range is ordered around it", () => {
+    const view = refusal(
+      okRow({ projected_bill_gross_pln: 41_000_000, range_gross_pln: { low: 155.08, high: 41_000_001 } }),
+    );
+    expect(view.status).toEqual({ tone: "problem", label: "nierealna kwota" });
+  });
+
+  // The contract has no ceiling on these two amounts, so a push carrying one is stored; the card must not show a
+  // normal verdict computed against an inflated invoice.
+  it.each([
+    ["computed amount alone", { computed_gross_pln: 7000.01 }],
+    ["invoice amount alone", { invoice_gross_pln: 7000.01 }],
+  ])("blanks the figure when the closed-month %s is above the ceiling", (_name, amounts) => {
+    const view = refusal(okRow({ closed_month_check: { ...ok.closed_month_check, ...amounts } }));
+    expect(view.status).toEqual({ tone: "problem", label: "nierealna kwota" });
+    expect(view.reason).toContain("7000 zł");
+  });
+
+  it("keeps a closed-month computed amount and invoice of exactly 7000 PLN", () => {
+    const view = forecast(
+      okRow({ closed_month_check: { ...ok.closed_month_check, computed_gross_pln: 7000, invoice_gross_pln: 7000 } }),
+    );
+    // 257.73 is below the 7000 PLN invoice, so the verdict is good.
+    expect(view.status).toEqual({ tone: "good", label: "nie więcej niż ostatni rachunek (7000 zł)" });
+  });
+
+  // The ceiling sits before the day count, so the more serious refusal wins over "too few days".
+  it("reports an implausible closed-month amount rather than the day count when both apply", () => {
+    const view = refusal(
+      okRow({
+        completed_days_used: 6,
+        observed_days: observedDays(6),
+        closed_month_check: { ...ok.closed_month_check, invoice_gross_pln: 7000.01 },
+      }),
+    );
+    expect(view.status).toEqual({ tone: "problem", label: "nierealna kwota" });
+  });
+
+  it("still shows the day count when the closed-month amounts are plausible", () => {
+    const view = refusal(okRow({ completed_days_used: 6, observed_days: observedDays(6) }));
+    expect(view.status).toEqual({ tone: "insufficient", label: "" });
+  });
+});
+
+// Defence in depth: the ingest contract already rejects a negative central, low or high with a 422, so these bodies
+// can only come from a stored row that skipped validation (a direct database write). The view model does not trust
+// stored jsonb, so it must refuse them as well.
+describe("toBillForecastView defence in depth against a negative figure", () => {
+  it.each([
+    ["central", { projected_bill_gross_pln: -1, range_gross_pln: { low: 155.08, high: 360.4 } }],
+    ["low end", { projected_bill_gross_pln: 200, range_gross_pln: { low: -1, high: 360.4 } }],
+    ["high end", { projected_bill_gross_pln: 200, range_gross_pln: { low: 155.08, high: -1 } }],
+    ["central, low and high", { projected_bill_gross_pln: -3, range_gross_pln: { low: -5, high: -1 } }],
+  ])("refuses a negative %s with its own label, not as a reversed range", (_name, fields) => {
+    const view = refusal(okRow(fields));
+    expect(view.status).toEqual({ tone: "problem", label: "ujemna kwota" });
+    expect(view.reason).toContain("ujemna");
+  });
+
+  it("keeps a central, low and high of exactly zero", () => {
+    const view = forecast(okRow({ projected_bill_gross_pln: 0, range_gross_pln: { low: 0, high: 0 } }));
+    expect(view.centralLabel).toBe("ok. 0 zł");
+  });
+});
+
+describe("toBillForecastView other-month relabel through a real Warsaw rollover", () => {
+  // Generated at 23:58 CEST on 30 September (21:58Z) and read at 00:05 CEST on 1 October (22:05Z). The UTC date is
+  // still 30 September, so only the Warsaw day key makes this another month.
+  const lastDay = { month: "2026-09", generated_at: "2026-09-30T23:58:00+02:00" };
+
+  it("relabels a fresh September forecast read just after midnight on 1 October", () => {
+    const view = forecast(okRow(lastDay), at("2026-09-30T22:05:00Z"));
+    expect(view.isOtherMonth).toBe(true);
+    expect(view.status).toEqual({ tone: "problem", label: "to prognoza za wrzesień 2026, nie za bieżący miesiąc" });
+    // Relabelled, not withheld: the figure and the day share (30 days of September) stay.
+    expect(view.centralLabel).toBe("ok. 258 zł");
+    expect(view.days).toEqual({ used: 15, inMonth: 30, label: "15 z 30", share: 0.5 });
+    expect(view.delta).toBeNull();
+  });
+
+  it("does not relabel the same body one minute before Warsaw midnight", () => {
+    // 21:59:00Z is 23:59 in Warsaw, still 30 September.
+    const view = forecast(okRow(lastDay), at("2026-09-30T21:59:00Z"));
+    expect(view.isOtherMonth).toBe(false);
+    expect(view.status.label).toBe("ponad 20% powyżej ostatniego rachunku (215 zł)");
+  });
+
+  it("relabels a forecast for a month that has not begun yet", () => {
+    const view = forecast(okRow({ month: "2026-10" }));
+    expect(view.isOtherMonth).toBe(true);
+    expect(view.status).toEqual({ tone: "problem", label: "to prognoza za październik 2026, nie za bieżący miesiąc" });
+    expect(view.days).toEqual({ used: 15, inMonth: 31, label: "15 z 31", share: 15 / 31 });
+  });
+
+  it("rolls over the year: a December forecast read on 1 January", () => {
+    // Generated 23:58 CET on 31 December (22:58Z), read at 00:05 CET on 1 January (23:05Z).
+    const view = forecast(
+      okRow({ month: "2026-12", generated_at: "2026-12-31T23:58:00+01:00" }),
+      at("2026-12-31T23:05:00Z"),
+    );
+    expect(view.isOtherMonth).toBe(true);
+    expect(view.status.label).toBe("to prognoza za grudzień 2026, nie za bieżący miesiąc");
+  });
+});
+
+describe("toBillForecastView closed-month check that failed its own test", () => {
+  // `ok: false` tests the lab's arithmetic, not the estimate: the verdict, the delta and the badge stay as they are.
+  it("keeps the verdict, the delta and the status of a check with ok true", () => {
+    const failed = forecast(okRow({ closed_month_check: { ...ok.closed_month_check, diff_pct: -9.5, ok: false } }));
+    const passed = forecast(okRow());
+    expect(failed.closedMonthCheck?.ok).toBe(false);
+    expect(failed.status).toEqual(passed.status);
+    expect(failed.delta).toEqual(passed.delta);
+    expect(failed.confidence).toEqual(passed.confidence);
+    expect(failed.centralLabel).toBe(passed.centralLabel);
+  });
+});
+
+// Known gaps, pinned so that a later fix flips them knowingly (docs: Phase 4 of this change). The contract accepts
+// both bodies, and no view-model guard ties the central figure to its own inputs or bounds it from below.
+describe("toBillForecastView known gaps (not yet guarded)", () => {
+  it("KNOWN GAP: shows a central figure inconsistent with its own billable kWh, rate and fee", () => {
+    // Hand arithmetic (docs/logic.md): bill = billable kWh x rate + fee = 193.9 x 1.0991 + 44.62 = 213.1 + 44.62
+    // = about 257.7 PLN. The body says 120 (range 100 to 150) next to the same 193.9 kWh, which the lab would never
+    // publish; the card shows it with a normal status.
+    const view = forecast(okRow({ projected_bill_gross_pln: 120, range_gross_pln: { low: 100, high: 150 } }));
+    expect(view.centralLabel).toBe("ok. 120 zł");
+    expect(view.rangeLabel).toBe("od 100 zł do 150 zł");
+    expect(view.status.tone).toBe("good");
+  });
+
+  it("KNOWN GAP: shows a central figure below the fixed monthly fee of 44,62 zł", () => {
+    // The fee is due whatever the meter says (docs/logic.md), so no honest bill is below 44.62 PLN.
+    const view = forecast(okRow({ projected_bill_gross_pln: 20, range_gross_pln: { low: 10, high: 30 } }));
+    expect(view.centralLabel).toBe("ok. 20 zł");
+    expect(view.status.tone).toBe("good");
+  });
+});
+
+// Every expectation below is hand arithmetic from docs/logic.md ("What the app shows (S-07)"), not read off the code:
+// the verdict compares the whole-złoty amounts the card shows (at or below the invoice is good), then the exact
+// central against invoice x 1.2 (up to it is watch, above is problem); the delta is round(central) - round(invoice)
+// with the percent central / invoice - 1 rounded half away from zero, one decimal on the +20% line.
+describe("toBillForecastView verdict and delta, hand-computed", () => {
+  const against = "względem ostatniego rachunku za sierpień 2026";
+
+  function check(central: number, invoice: number) {
+    return forecast(
+      okRow({
+        projected_bill_gross_pln: central,
+        range_gross_pln: { low: central / 2, high: central * 1.5 },
+        closed_month_check: { ...ok.closed_month_check, invoice_gross_pln: invoice },
+      }),
+    );
+  }
+
+  it.each([
+    // Invoice 312.40 -> 312 zł. +20% line: 312.40 x 1.2 = 374.88. Central 374.88 is exactly on it -> watch.
+    // Whole złoty: 375 - 312 = +63. Percent 374.88 / 312.40 - 1 = 0.20 -> 20, on the line, milder -> "+20,0%".
+    [374.88, 312.4, "watch", "do 20% powyżej ostatniego rachunku (312 zł)", `+63 zł (+20,0%) ${against}`, "up"],
+    // One grosz above the line: 374.89 > 374.88 -> problem. 375 - 312 = +63. Percent 20.003 -> whole 20 on the
+    // line, past it -> at least "+20,1%".
+    [374.89, 312.4, "problem", "ponad 20% powyżej ostatniego rachunku (312 zł)", `+63 zł (+20,1%) ${against}`, "up"],
+    // Invoice 150.40 -> 150 zł, central 150.45 -> 150 zł: equal in whole złoty -> good, delta 0 -> "bez zmian".
+    [150.45, 150.4, "good", "nie więcej niż ostatni rachunek (150 zł)", `bez zmian ${against}`, "flat"],
+    // Central 150.60 -> 151 zł against 150 zł: above in whole złoty, inside +20% (180.48) -> watch. +1 zł; percent
+    // 150.60 / 150.40 - 1 = 0.13% rounds to 0, so no percent is shown.
+    [150.6, 150.4, "watch", "do 20% powyżej ostatniego rachunku (150 zł)", `+1 zł ${against}`, "up"],
+    // Decrease: 310 against 400 -> -90 zł. Percent 310 / 400 - 1 = -22.5, half away from zero -> -23.
+    [310, 400, "good", "nie więcej niż ostatni rachunek (400 zł)", `−90 zł (−23%) ${against}`, "down"],
+    // Far above: 600 against 400 -> 400 x 1.2 = 480 < 600 -> problem. +200 zł, percent +50.
+    [600, 400, "problem", "ponad 20% powyżej ostatniego rachunku (400 zł)", `+200 zł (+50%) ${against}`, "up"],
+  ])("rates %d against an invoice of %d as %s", (central, invoice, tone, label, text, direction) => {
+    const view = check(central, invoice);
+    expect(view.status).toEqual({ tone, label });
+    expect(view.delta).toEqual({ text, tone, direction });
+  });
+
+  // Display rounding to whole złoty, half away from zero: 99.5 -> 100, 150.5 -> 151, 411.49 -> 411.
+  it("shows money in whole złoty with halves rounded up", () => {
+    const view = forecast(okRow({ projected_bill_gross_pln: 150.5, range_gross_pln: { low: 99.5, high: 411.49 } }));
+    expect(view.centralLabel).toBe("ok. 151 zł");
+    expect(view.rangeLabel).toBe("od 100 zł do 411 zł");
+  });
+
+  // 7-day rule: the count is the days listed. 6 days -> refused with "jest 6 dni z 7", 7 days -> shown, even when
+  // the body claims the other number.
+  it.each([
+    [6, 7, "refused"],
+    [7, 6, "shown"],
+  ])("with %d observed days and a claimed %d the figure is %s", (observed, claimed, outcome) => {
+    const r = okRow({ completed_days_used: claimed, observed_days: observedDays(observed) });
+    if (outcome === "shown") expect(forecast(r).dayLabel).toBe("7 dni: 1–7 września");
+    else expect(refusal(r).reason).toContain("jest 6 dni z 7 potrzebnych");
+  });
+});

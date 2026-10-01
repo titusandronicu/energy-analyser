@@ -22,6 +22,100 @@ describe("bill-forecast fixtures", () => {
     expect(result.data?.bill_forecast).toBeDefined();
   });
 
+  // Every fixture, rendered through the real view model. The expected outcomes are listed by hand per file name
+  // (hand arithmetic in the comments, from docs/logic.md), never read off the mapper, and the table must match the
+  // directory exactly: a file nobody classified, or an entry without a file, fails, so a new fixture cannot be
+  // added unreviewed. Contract-invalid bodies (a negative central) cannot live in this directory at all, because the
+  // loop above requires the strict contract; those are inline cases in bill-forecast.test.ts.
+  //
+  // `minutesAfter` is the app clock relative to the body's own `generated_at` (5 minutes unless said otherwise).
+  type Expected =
+    | { kind: "forecast"; tone: string; minutesAfter?: number }
+    | { kind: "unavailable"; tone: string; label?: string; reason: string; minutesAfter?: number };
+
+  const expected: Record<string, Expected> = {
+    // Range end 9500 is above the 7000 ceiling.
+    "above-plausibility-ceiling.json": {
+      kind: "unavailable",
+      tone: "problem",
+      label: "nierealna kwota",
+      reason: "7000 zł",
+    },
+    // Closed-month amounts 8123.45 and 8201.90 are above the 7000 ceiling, which the contract does not check.
+    "closed-month-amount-above-ceiling.json": {
+      kind: "unavailable",
+      tone: "problem",
+      label: "nierealna kwota",
+      reason: "7000 zł",
+    },
+    // Invoice 191.05, central 231.75: 191.05 x 1.2 = 229.26 < 231.75, so above +20% -> problem.
+    "lab-shape.json": { kind: "forecast", tone: "problem" },
+    // A projected credit of -12.5 kWh is a negative derived figure.
+    "negative-derived-kwh.json": {
+      kind: "unavailable",
+      tone: "problem",
+      label: "błędne dane w wyliczeniu",
+      reason: "ujemne lub nieczytelne",
+    },
+    // No closed-month check, so no invoice and no verdict.
+    "no-closed-month-check.json": { kind: "forecast", tone: "insufficient" },
+    "no-data-no-complete-days.json": {
+      kind: "unavailable",
+      tone: "insufficient",
+      reason: "po pierwszym pełnym dniu",
+    },
+    "no-data-rates-unavailable.json": {
+      kind: "unavailable",
+      tone: "problem",
+      label: "brak ceny prądu",
+      reason: "ceny prądu",
+    },
+    "no-data-settlement-facts-missing.json": {
+      kind: "unavailable",
+      tone: "insufficient",
+      reason: "PGE nie rozliczyło",
+    },
+    // 7 observed days pass the gate. Invoice 214.66, central 256.31: 214.66 x 1.2 = 257.59 >= 256.31 -> watch.
+    "seven-complete-days.json": { kind: "forecast", tone: "watch" },
+    // 6 observed days are one short of the 7 needed.
+    "six-complete-days.json": { kind: "unavailable", tone: "insufficient", reason: "jest 6 dni z 7 potrzebnych" },
+    // Generated 31 minutes before the clock, one minute past the 30-minute window.
+    "stale-generated-at.json": {
+      kind: "unavailable",
+      tone: "problem",
+      label: "wyliczona 31 min temu",
+      reason: "ma już 31 min",
+      minutesAfter: 31,
+    },
+    // Invoice 200, central 260: 200 x 1.2 = 240 < 260 -> problem.
+    "verdict-above-plus-20-pct.json": { kind: "forecast", tone: "problem" },
+    // Invoice 200, central 240 = 200 x 1.2, exactly on the line -> the milder status, watch.
+    "verdict-at-plus-20-pct.json": { kind: "forecast", tone: "watch" },
+    // Invoice 200, central 200 -> at the invoice, good.
+    "verdict-equal-to-invoice.json": { kind: "forecast", tone: "good" },
+  };
+
+  it("classifies every fixture file, and only files that exist", () => {
+    expect(Object.keys(expected).sort()).toEqual(files);
+  });
+
+  it.each(Object.entries(expected))("%s renders as its documented outcome", (file, outcome) => {
+    const forecast = ingestPayloadV1.parse(read(file)).bill_forecast;
+    if (!forecast) throw new Error(`${file} carries no bill forecast`);
+    const clock = new Date(Date.parse(forecast.generated_at) + (outcome.minutesAfter ?? 5) * 60_000);
+    const view = toBillForecastView(
+      { captured_at: clock.toISOString(), received_at: clock.toISOString(), bill_forecast: forecast },
+      clock,
+    );
+    expect(view.kind).toBe(outcome.kind);
+    if (view.kind === "empty") return;
+    expect(view.status.tone).toBe(outcome.tone);
+    if (view.kind === "unavailable" && outcome.kind === "unavailable") {
+      expect(view.reason).toContain(outcome.reason);
+      if (outcome.label !== undefined) expect(view.status.label).toBe(outcome.label);
+    }
+  });
+
   // A negative derived kWh figure must reach the card's mapper (which blanks it), not stop at a 422.
   it("negative-derived-kwh.json is stored by the contract and refused by the card", () => {
     const forecast = ingestPayloadV1.parse(read("negative-derived-kwh.json")).bill_forecast;

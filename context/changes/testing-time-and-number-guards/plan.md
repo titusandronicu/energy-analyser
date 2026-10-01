@@ -265,30 +265,30 @@ None. No schema, contract or data change. The two behaviour changes are display-
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, including the cross-surface table
-- [x] 1.2 Linting passes
-- [x] 1.3 Type check passes
-- [x] 1.4 Production build succeeds
-- [x] 1.5 Deliberate break: removing the future-time rule turns the new table and the recommendation tests red
+- [x] 1.1 Unit tests pass, including the cross-surface table — 1d05696
+- [x] 1.2 Linting passes — 1d05696
+- [x] 1.3 Type check passes — 1d05696
+- [x] 1.4 Production build succeeds — 1d05696
+- [x] 1.5 Deliberate break: removing the future-time rule turns the new table and the recommendation tests red — 1d05696
 
 #### Manual
 
-- [x] 1.6 The owner reads the new status wording "czas z przyszłości" on the recommendation and the today card and approves it
-- [x] 1.7 With a recommendation dated about 10 minutes ahead on the local stack, the card shows the "czas z przyszłości" badge and the clock-error message, not the outage message, and its forecast days are not called "dziś" and "jutro"
+- [x] 1.6 The owner reads the new status wording "czas z przyszłości" on the recommendation and the today card and approves it — 1d05696
+- [x] 1.7 With a recommendation dated about 10 minutes ahead on the local stack, the card shows the "czas z przyszłości" badge and the clock-error message, not the outage message, and its forecast days are not called "dziś" and "jutro" — 1d05696
 
 ### Phase 2: Money guards and refusal ladder (risk #2)
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass, including the ladder edges and the fixture table
-- [ ] 2.2 Linting passes
-- [ ] 2.3 Type check passes
-- [ ] 2.4 Production build succeeds
-- [ ] 2.5 Deliberate break: removing the sign guard, and separately the closed-month ceiling, turns the matching tests red
+- [x] 2.1 Unit tests pass, including the ladder edges and the fixture table
+- [x] 2.2 Linting passes
+- [x] 2.3 Type check passes
+- [x] 2.4 Production build succeeds
+- [x] 2.5 Deliberate break: removing the sign guard, and separately the closed-month ceiling, turns the matching tests red
 
 #### Manual
 
-- [ ] 2.6 The owner spot-checks two of the hand-computed oracle comments against docs/logic.md and agrees the arithmetic is independent of the code
+- [x] 2.6 The owner spot-checks two of the hand-computed oracle comments against docs/logic.md and agrees the arithmetic is independent of the code
 
 ### Phase 3: Boundary gaps (risk #5)
 
