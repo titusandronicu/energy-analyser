@@ -379,37 +379,37 @@ Send the summaries with each push, run the July–September backfill once, and d
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, including the contract schema drift test: `npm test`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Type checks pass: `npx astro check`
-- [x] 1.4 Production build succeeds: `npm run build`
-- [x] 1.5 The migration applies to a fresh local database: `npx supabase db reset --local`
-- [x] 1.6 Smoke passes against the local stack: `npm run smoke`
+- [x] 1.1 Unit tests pass, including the contract schema drift test: `npm test` — 19c42ad
+- [x] 1.2 Linting passes: `npm run lint` — 19c42ad
+- [x] 1.3 Type checks pass: `npx astro check` — 19c42ad
+- [x] 1.4 Production build succeeds: `npm run build` — 19c42ad
+- [x] 1.5 The migration applies to a fresh local database: `npx supabase db reset --local` — 19c42ad
+- [x] 1.6 Smoke passes against the local stack: `npm run smoke` — 19c42ad
 
 #### Manual
 
-- [x] 1.7 Local push-fixture: 3 rows stored; older built_at leaves them, newer replaces them
+- [x] 1.7 Local push-fixture: 3 rows stored; older built_at leaves them, newer replaces them — 19c42ad
 
 ### Phase 2: Lab facts bundles and summary job
 
 #### Automated
 
-- [ ] 2.1 Summary job tests pass: `python3 -m unittest scripts/test_build_period_summaries.py`
-- [ ] 2.2 Advisory client tests pass: `python3 -m unittest scripts/test_run_energy_advisory.py`
-- [ ] 2.3 Existing lab tests still pass: `make test-solar-analyser` and the push tests
-- [ ] 2.4 Scripts compile: `py_compile` on both scripts; `sh -n` on the refresh script
+- [x] 2.1 Summary job tests pass: `python3 -m unittest scripts/test_build_period_summaries.py` — 7101a1a
+- [x] 2.2 Advisory client tests pass: `python3 -m unittest scripts/test_run_energy_advisory.py` — 7101a1a
+- [x] 2.3 Existing lab tests still pass: `make test-solar-analyser` and the push tests — 7101a1a
+- [x] 2.4 Scripts compile: `py_compile` on both scripts; `sh -n` on the refresh script — 7101a1a
 
 #### Manual
 
-- [ ] 2.5 Docker-core dry run: today, yesterday and September 2026 texts read by the owner (descriptive, no advice, no grid figures, natural Polish)
+- [x] 2.5 Docker-core dry run: today, yesterday and September 2026 texts read by the owner (descriptive, no advice, no grid figures, natural Polish) — eae8269
 
 ### Phase 3: Push, backfill and deploy
 
 #### Automated
 
-- [ ] 3.1 Push tests pass: `python3 -m unittest scripts/test_push_energy_analyser.py`
-- [ ] 3.2 All lab tests pass: `make test-solar-analyser` and the two new test files
-- [ ] 3.3 The runbook lists the new script: grep prints at least one line
+- [x] 3.1 Push tests pass: `python3 -m unittest scripts/test_push_energy_analyser.py` — dafa9d9
+- [x] 3.2 All lab tests pass: `make test-solar-analyser` and the two new test files — dafa9d9
+- [x] 3.3 The runbook lists the new script: grep prints at least one line — dafa9d9
 
 #### Manual
 
