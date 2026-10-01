@@ -413,6 +413,6 @@ Send the summaries with each push, run the July–September backfill once, and d
 
 #### Manual
 
-- [ ] 3.4 With the owner's approval: production migration and app deploy, lab install, next push logs period_summaries
-- [ ] 3.5 Backfill: production rows for each complete day 2026-07-16..09-30 and Jul/Aug/Sep, narration coverage listed, three samples read
+- [x] 3.4 With the owner's approval: production migration and app deploy, lab install, next push logs period_summaries — bd42189
+- [x] 3.5 Backfill: production rows for each complete day 2026-07-16..09-30 and Jul/Aug/Sep, narration coverage listed, three samples read — 62/62 complete days + 3 months narrated; 15 incomplete days skipped
 - [ ] 3.6 After a day: today row refreshed hourly and yesterday's day row narrated
