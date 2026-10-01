@@ -13,6 +13,7 @@ This file provides guidance to AI Agent when working with code in this repositor
 - `npm test` — Vitest unit tests (`src/**/*.test.ts`)
 - `npm run contract:export` — regenerate `docs/ingest/contract-v1.schema.json` from the zod contract; `npm test` fails if the committed schema drifts
 - `npm run smoke` — dependency-free smoke test (`scripts/smoke.mjs`) of the auth flow and push ingestion against a running server, `BASE_URL` env (default `http://localhost:4321`). It creates a user and uses the local seed ingest token, so it requires `ALLOW_SIGNUP=true` and local Supabase; never run it against production. `SUPABASE_URL` + `SUPABASE_ANON_KEY` enable its direct-table access check.
+- `npm run test:integration` — Vitest integration suite (`tests/integration/**/*.test.ts`, config `vitest.integration.config.ts`): pushes through `handleIngest` and the real `ingest_push` and reads back with an owner session. Needs a reachable local Supabase plus `SUPABASE_URL` and `SUPABASE_ANON_KEY` (anon key only), refuses non-local URLs, and is not part of `npm test`.
 
 Pre-commit hooks: husky + lint-staged runs `eslint --fix` on `*.{ts,tsx,astro}` and `prettier --write` on `*.{json,css,md}`.
 

@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "smoke": "node scripts/smoke.mjs",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "contract:export": "UPDATE_INGEST_CONTRACT=1 vitest run src/lib/ingest/contract.test.ts",
     "prepare": "husky",
     "mutate": "stryker run"
