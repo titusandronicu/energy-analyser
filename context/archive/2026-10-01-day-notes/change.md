@@ -1,10 +1,10 @@
 ---
 change_id: day-notes
 title: Add, view, edit and delete notes on calendar days
-status: impl_reviewed
+status: archived
 created: 2026-10-01
 updated: 2026-10-01
-archived_at: null
+archived_at: 2026-10-01T07:47:56Z
 ---
 
 ## Notes

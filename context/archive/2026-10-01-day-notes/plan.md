@@ -340,36 +340,36 @@ This is a new table only, with no backfill. Rollback is a down step (`drop table
 
 #### Automated
 
-- [x] 1.1 Unit tests pass: `npm test` — c5657e6
-- [x] 1.2 Linting passes: `npm run lint` — c5657e6
-- [x] 1.3 Type checks pass: `npx astro check` — c5657e6
-- [x] 1.4 The migration applies to a fresh local database: `npx supabase db reset --local` — c5657e6
+- [x] 1.1 Unit tests pass: `npm test` — 9215188
+- [x] 1.2 Linting passes: `npm run lint` — 9215188
+- [x] 1.3 Type checks pass: `npx astro check` — 9215188
+- [x] 1.4 The migration applies to a fresh local database: `npx supabase db reset --local` — 9215188
 
 #### Manual
 
-- [x] 1.5 Local REST checks: owner CRUD on own note, DB rejects blank/501 chars, anon and non-owner get nothing — c5657e6
+- [x] 1.5 Local REST checks: owner CRUD on own note, DB rejects blank/501 chars, anon and non-owner get nothing — 9215188
 
 ### Phase 2: Route and calendar UI
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test` — 9640522
-- [x] 2.2 Linting passes: `npm run lint` — 9640522
-- [x] 2.3 Type checks pass: `npx astro check` — 9640522
-- [x] 2.4 Production build succeeds: `npm run build` — 9640522
-- [x] 2.5 Smoke passes against the local stack: `npm run smoke` — 9640522
-- [x] 2.6 No HTML injection path: `git grep -n "set:html\|dangerouslySetInnerHTML" -- src` prints nothing — 9640522
+- [x] 2.1 Unit tests pass: `npm test` — 9215188
+- [x] 2.2 Linting passes: `npm run lint` — 9215188
+- [x] 2.3 Type checks pass: `npx astro check` — 9215188
+- [x] 2.4 Production build succeeds: `npm run build` — 9215188
+- [x] 2.5 Smoke passes against the local stack: `npm run smoke` — 9215188
+- [x] 2.6 No HTML injection path: `git grep -n "set:html\|dangerouslySetInnerHTML" -- src` prints nothing — 9215188
 
 #### Manual
 
-- [x] 2.7 Local stack at 1440/390 px: add → edit → delete with confirmation, notices, month marker and legend, screen-reader name, HTML shown literally, today accepted, works without JS — 9640522
+- [x] 2.7 Local stack at 1440/390 px: add → edit → delete with confirmation, notices, month marker and legend, screen-reader name, HTML shown literally, today accepted, works without JS — 9215188
 
 ### Phase 3: Docs and production
 
 #### Automated
 
-- [x] 3.1 Docs formatted: `npx prettier --check docs context/foundation/roadmap.md context/changes/day-notes` — fe5f9fa
-- [x] 3.2 The rules are recorded: `git grep -n "day_notes" -- docs/architecture.md docs/logic.md` prints at least two lines — fe5f9fa
+- [x] 3.1 Docs formatted: `npx prettier --check docs context/foundation/roadmap.md context/changes/day-notes` — 9215188
+- [x] 3.2 The rules are recorded: `git grep -n "day_notes" -- docs/architecture.md docs/logic.md` prints at least two lines — 9215188
 
 #### Manual
 
