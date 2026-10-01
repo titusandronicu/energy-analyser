@@ -4,6 +4,7 @@ import StatusBadge from "@/components/StatusBadge.astro";
 import DayView from "@/components/history/DayView.astro";
 import HistoryNotes from "@/components/history/HistoryNotes.astro";
 import MonthView from "@/components/history/MonthView.astro";
+import NoteNotice from "@/components/history/NoteNotice.astro";
 import PeriodNav from "@/components/history/PeriodNav.astro";
 import QuarterView from "@/components/history/QuarterView.astro";
 import Panel from "@/components/ui/Panel.astro";
@@ -159,14 +160,23 @@ if (parsed === null) {
 }
 const page = parsed === null ? null : await loadPage(parsed);
 const nav = page === null ? null : periodNav(page.period, today);
-// The outcome of the last note post (/api/notes redirects back with ?note=), shown in the day's note panel.
+// The outcome of the last note post (/api/notes redirects back with ?note=), shown in the day's note panel. When the
+// post fell back to a view without that panel (a day it couldn't open, or a day that failed to load), it shows above
+// the calendar instead, so a failure is never silent.
 const notice = noteNotice(Astro.url.searchParams.get("note"));
+const pageNotice = page !== null && (page.kind !== "day" || page.view === null) ? notice : null;
 ---
 
 {page !== null && nav !== null && (
   <Layout title={`Historia — ${periodLabel(page.period)}`}>
     <AppShell email={user?.email} current="history">
       <PeriodNav nav={nav} />
+
+      {pageNotice !== null && (
+        <Panel class="py-4">
+          <NoteNotice notice={pageNotice} />
+        </Panel>
+      )}
 
       {page.kind === "month" && (
         <MonthView

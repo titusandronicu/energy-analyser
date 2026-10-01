@@ -4,8 +4,11 @@ import {
   NOTE_MAX_LENGTH,
   NOTE_NOTICES,
   noteNotice,
+  noteRedirect,
   parseNoteForm,
+  saveNote,
   type NotePostDeps,
+  type NoteWrites,
 } from "./day-notes";
 
 // All data here is synthetic.
@@ -59,6 +62,38 @@ describe("parseNoteForm", () => {
     expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text }), TODAY)).toBe("invalid");
   });
 
+  it("counts a CRLF line break as one character, as the textarea's maxlength does", () => {
+    // 499 characters including one line break, as the browser counts them; 500 as submitted.
+    const text = `${"x".repeat(249)}\r\n${"x".repeat(249)}`;
+    expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text }), TODAY)).toEqual({
+      intent: "save",
+      day: "2026-09-14",
+      text: `${"x".repeat(249)}\n${"x".repeat(249)}`,
+    });
+  });
+
+  it("accepts the maximum length with a CRLF line break (501 characters as submitted)", () => {
+    const text = `${"x".repeat(250)}\r\n${"x".repeat(249)}`;
+    expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text }), TODAY)).toEqual({
+      intent: "save",
+      day: "2026-09-14",
+      text: `${"x".repeat(250)}\n${"x".repeat(249)}`,
+    });
+  });
+
+  it("rejects 500 characters plus a CRLF line break", () => {
+    const text = `${"x".repeat(250)}\r\n${"x".repeat(250)}`;
+    expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text }), TODAY)).toBe("invalid");
+  });
+
+  it("normalises a lone CR to a line feed", () => {
+    expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text: "one\rtwo" }), TODAY)).toEqual({
+      intent: "save",
+      day: "2026-09-14",
+      text: "one\ntwo",
+    });
+  });
+
   it.each([" \n\t ", ""])("rejects blank text on save (%j)", (text) => {
     expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text }), TODAY)).toBe("invalid");
   });
@@ -80,6 +115,110 @@ describe("parseNoteForm", () => {
 
   it("rejects a form without an intent", () => {
     expect(parseNoteForm(form({ day: "2026-09-14", text: "Synthetic note" }), TODAY)).toBe("invalid");
+  });
+});
+
+describe("saveNote", () => {
+  type Updated = Awaited<ReturnType<NoteWrites["update"]>>;
+  type Inserted = Awaited<ReturnType<NoteWrites["insert"]>>;
+
+  function writes(updates: Updated[], inserted: Inserted = { error: null }) {
+    const queue = [...updates];
+    return {
+      update: vi.fn<NoteWrites["update"]>(() => Promise.resolve(queue.shift() ?? { count: 0, error: null })),
+      insert: vi.fn<NoteWrites["insert"]>(() => Promise.resolve(inserted)),
+    };
+  }
+
+  const duplicate = { message: "synthetic duplicate key", code: "23505" };
+
+  it("changes the day's existing note without an insert", async () => {
+    const w = writes([{ count: 1, error: null }]);
+    expect(await saveNote("2026-09-14", "Synthetic note", w)).toEqual({ error: null });
+    expect(w.update).toHaveBeenCalledWith("2026-09-14", "Synthetic note");
+    expect(w.insert).not.toHaveBeenCalled();
+  });
+
+  it("adds the note when the day had none", async () => {
+    const w = writes([{ count: 0, error: null }]);
+    expect(await saveNote("2026-09-14", "Synthetic note", w)).toEqual({ error: null });
+    expect(w.insert).toHaveBeenCalledWith("2026-09-14", "Synthetic note");
+    expect(w.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries a concurrent add (23505) once as a change", async () => {
+    const w = writes(
+      [
+        { count: 0, error: null },
+        { count: 1, error: null },
+      ],
+      { error: duplicate },
+    );
+    expect(await saveNote("2026-09-14", "Synthetic note", w)).toEqual({ error: null });
+    expect(w.update).toHaveBeenCalledTimes(2);
+  });
+
+  it("fails when the retried change matches no row", async () => {
+    const w = writes(
+      [
+        { count: 0, error: null },
+        { count: 0, error: null },
+      ],
+      { error: duplicate },
+    );
+    const { error } = await saveNote("2026-09-14", "Synthetic note", w);
+    expect(error).not.toBeNull();
+    expect(w.update).toHaveBeenCalledTimes(2);
+  });
+
+  it("fails on a retried change's error", async () => {
+    const retryError = { message: "synthetic retry error" };
+    const w = writes(
+      [
+        { count: 0, error: null },
+        { count: null, error: retryError },
+      ],
+      { error: duplicate },
+    );
+    expect(await saveNote("2026-09-14", "Synthetic note", w)).toEqual({ error: retryError });
+  });
+
+  it("fails on an update error without an insert", async () => {
+    const updateError = { message: "synthetic update error" };
+    const w = writes([{ count: null, error: updateError }]);
+    expect(await saveNote("2026-09-14", "Synthetic note", w)).toEqual({ error: updateError });
+    expect(w.insert).not.toHaveBeenCalled();
+  });
+
+  it("fails on any other insert error without a retry", async () => {
+    const insertError = { message: "synthetic check violation", code: "23514" };
+    const w = writes([{ count: 0, error: null }], { error: insertError });
+    expect(await saveNote("2026-09-14", "Synthetic note", w)).toEqual({ error: insertError });
+    expect(w.update).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports a failed save through handleNotePost as failed", async () => {
+    const w = writes(
+      [
+        { count: 0, error: null },
+        { count: 0, error: null },
+      ],
+      { error: duplicate },
+    );
+    const d = { ...deps(), save: (day: string, text: string) => saveNote(day, text, w) };
+    expect(await handleNotePost(form({ day: "2026-09-14", intent: "save", text: "Synthetic note" }), d)).toEqual({
+      redirect: dayRedirect("2026-09-14", "failed"),
+    });
+  });
+});
+
+describe("noteRedirect", () => {
+  it("goes back to an openable day", () => {
+    expect(noteRedirect("2026-09-14", TODAY, "failed")).toEqual({ redirect: dayRedirect("2026-09-14", "failed") });
+  });
+
+  it.each([undefined, "2026-02-30"])("falls back to the calendar for %j", (day) => {
+    expect(noteRedirect(day, TODAY, "invalid")).toEqual({ redirect: "/dashboard/history?note=invalid" });
   });
 });
 
@@ -173,6 +312,10 @@ describe("noteNotice", () => {
     ["failed", "problem"],
   ] as const)("maps %s to its %s notice", (param, tone) => {
     expect(noteNotice(param)).toEqual({ tone, text: NOTE_NOTICES[param] });
+  });
+
+  it("builds the invalid notice from NOTE_MAX_LENGTH", () => {
+    expect(NOTE_NOTICES.invalid).toContain(String(NOTE_MAX_LENGTH));
   });
 
   it("pins the Polish copy", () => {

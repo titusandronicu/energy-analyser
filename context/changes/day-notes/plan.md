@@ -39,6 +39,7 @@ From `context/changes/day-notes/research.md`:
 - One note per day is `unique (user_id, day)`, which lets "save" be a single upsert whether the note exists or not (owner decision, singular wording in `prd-v3.md:247`).
 - `user_id` defaults to `auth.uid()` in the database, and the client gets no insert or update grant on that column, so it cannot write a note for someone else even if a policy were wrong.
 - The page needs no client JavaScript: forms post natively and `<details>` handles both disclosure steps. This is the history calendar's no-JS rule (archived plan `context/archive/2026-09-30-history-calendar/plan.md:69`).
+- **Addendum (2026-10-01):** save is built as update-then-insert (`saveNote` in `src/lib/services/day-notes.ts`, one retry as an update on `23505`), not one upsert: an upsert can't target `(user_id, day)` because the client can neither read nor write `user_id`.
 
 ## What We're NOT Doing
 

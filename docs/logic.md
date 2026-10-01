@@ -206,8 +206,10 @@ The owner can write a short note on a calendar day ("urlop", "pompa ciepła od d
 - **After every post** the browser is redirected (303) back to the day with `?note=`, and the panel shows one notice:
   - `saved`: "Notatka zapisana."
   - `deleted`: "Notatka usunięta."
-  - `invalid`: "Notatka jest pusta albo dłuższa niż 500 znaków." (also for an unknown intent; when the day itself can't be opened the redirect goes to `/dashboard/history?note=invalid`)
-  - `failed`: "Nie udało się zapisać notatki. Spróbuj ponownie." (a database error, logged on the server)
+  - `invalid`: "Notatka jest pusta albo dłuższa niż 500 znaków." (also for an unknown intent or a body that isn't a form; when the day itself can't be opened the redirect goes to `/dashboard/history?note=invalid`, and the notice shows above the calendar)
+  - `failed`: "Nie udało się zapisać notatki. Spróbuj ponownie." (a database error, Supabase not configured, or a retried save that changed no row; logged on the server)
+- **Line breaks count once:** the form normalises CRLF (and a lone CR) to a line feed before trimming and the length check, so a note within the textarea's `maxlength` is never rejected for its line breaks.
+- **Expired session (known limitation):** a post with an expired session redirects to sign-in, and the typed text is lost.
 - **A note that fails to load** shows a load error in the panel and no form, since the page can't tell whether a note exists.
 - **Notes stay notes:** they never change ratings, summaries or recommendations, and nothing sends them to the lab or to an LLM.
 

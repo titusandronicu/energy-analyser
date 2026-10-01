@@ -17,17 +17,18 @@ A "Notatka" panel sits right after "Ocena dnia" on each day from 16 July 2026 th
 
 ## Key Decisions Made
 
-| Decision       | Choice                                                                                  | Why (1 sentence)                                                                     | Source   |
-| -------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | -------- |
-| Notes per day  | One (`unique (user_id, day)`); "add" on a day with a note is an edit                    | Matches the PRD's singular wording and keeps markers and forms simple                | Plan     |
-| Which days     | 2026-07-16 through today (openable days)                                                | Today's event can be noted the same day; future days can't be opened in the calendar | Plan     |
-| Length         | 1–500 characters, blank rejected, enforced in zod, the DB check and `maxlength`         | Same as S-05 and the contract's text limit; fits a one-line explanation              | Plan     |
-| Placement      | Right after "Ocena dnia"                                                                | The note explains the rating, so it sits beside it                                   | Plan     |
-| Delete         | Second step in a native `<details>` ("Na pewno usuń")                                   | Guards against accidental loss without JavaScript                                    | Plan     |
-| Access         | Author (`user_id = auth.uid()`, set by the DB) and owner (`app_owners`) on every policy | Meets the PRD's per-account scope and the app's owner-only model                     | Plan     |
-| Write path     | Native form POST to `/api/notes` (`intent=save\|delete`), redirect back with `?note=…`  | `/api/*` gets the Origin check; the history page stays JavaScript-free               | Research |
-| Save semantics | One upsert on `(user_id, day)`; `user_id` has no client grant                           | Idempotent re-submits; the client cannot write another user's row                    | Research |
-| Notes outbound | None: not to the lab, the LLM, ratings or summaries                                     | PRD :140, :288; the app has no outbound path                                         | Research |
+| Decision                   | Choice                                                                                  | Why (1 sentence)                                                                         | Source      |
+| -------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ----------- |
+| Notes per day              | One (`unique (user_id, day)`); "add" on a day with a note is an edit                    | Matches the PRD's singular wording and keeps markers and forms simple                    | Plan        |
+| Which days                 | 2026-07-16 through today (openable days)                                                | Today's event can be noted the same day; future days can't be opened in the calendar     | Plan        |
+| Length                     | 1–500 characters, blank rejected, enforced in zod, the DB check and `maxlength`         | Same as S-05 and the contract's text limit; fits a one-line explanation                  | Plan        |
+| Placement                  | Right after "Ocena dnia"                                                                | The note explains the rating, so it sits beside it                                       | Plan        |
+| Delete                     | Second step in a native `<details>` ("Na pewno usuń")                                   | Guards against accidental loss without JavaScript                                        | Plan        |
+| Access                     | Author (`user_id = auth.uid()`, set by the DB) and owner (`app_owners`) on every policy | Meets the PRD's per-account scope and the app's owner-only model                         | Plan        |
+| Write path                 | Native form POST to `/api/notes` (`intent=save\|delete`), redirect back with `?note=…`  | `/api/*` gets the Origin check; the history page stays JavaScript-free                   | Research    |
+| Save semantics             | One upsert on `(user_id, day)`; `user_id` has no client grant                           | Idempotent re-submits; the client cannot write another user's row                        | Research    |
+| Notes outbound             | None: not to the lab, the LLM, ratings or summaries                                     | PRD :140, :288; the app has no outbound path                                             | Research    |
+| Save as built (2026-10-01) | Update-then-insert (`saveNote`), one retry as an update on `23505`                      | An upsert can't target `(user_id, day)`: the client can neither read nor write `user_id` | Impl review |
 
 ## Scope
 
