@@ -1,4 +1,4 @@
-import type { DailyEnergyRow, DayNoteRow, PeriodSummaryRow, RecommendationRow } from "@/types";
+import type { DailyEnergyRow, DayNoteRow, RecommendationRow } from "@/types";
 import {
   addMonths,
   defaultMonth,
@@ -41,7 +41,7 @@ import {
   rowsNeededFrom,
   type PeriodRating,
 } from "@/lib/services/period-rating";
-import { toSummaryView, type SummaryView } from "@/lib/services/period-summary";
+import { toSummaryView, type PeriodSummaryText, type SummaryView } from "@/lib/services/period-summary";
 import { FORECAST_HISTORY_START, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 
 // View models for the history calendar (S-15): every figure, status and sentence of the day, month and quarter views
@@ -422,7 +422,7 @@ function startNote(p: CalendarPeriod): string | null {
 
 // The lab's summary as the day or month view shows it: only for a completed period (`isOver`), whatever row is passed,
 // because today's text lives on the dashboard and a running month has none yet.
-function periodSummary(row: PeriodSummaryRow | null, kind: "day" | "month", isOver: boolean): SummaryView | null {
+function periodSummary(row: PeriodSummaryText | null, kind: "day" | "month", isOver: boolean): SummaryView | null {
   return row === null || !isOver ? null : toSummaryView(row, kind);
 }
 
@@ -448,7 +448,7 @@ export function buildMonthView(
   // The month's days that carry a note.
   noteDays: ReadonlySet<string> = new Set(),
   // The lab's summary row for the month, if it wrote one.
-  summary: PeriodSummaryRow | null = null,
+  summary: PeriodSummaryText | null = null,
 ): MonthView {
   const period: CalendarPeriod = { kind: "month", month };
   const days = periodDays(period);
@@ -618,7 +618,7 @@ export function buildDayView(
   today: string,
   now: Date,
   note: DayNoteRow | null = null,
-  summary: PeriodSummaryRow | null = null,
+  summary: PeriodSummaryText | null = null,
 ): DayView {
   const dayRow = rows.find((row) => row.day === day);
   return {

@@ -21,6 +21,7 @@ function mockClient(result: { data: unknown; error: { message: string } | null }
     from: (...args: unknown[]) => ((calls.from = args), chain),
     select: (...args: unknown[]) => ((calls.select = args), chain),
     eq: (...args: unknown[]) => (eqs.push(args), chain),
+    lte: (...args: unknown[]) => ((calls.lte = args), chain),
     order: (...args: unknown[]) => ((calls.order = args), chain),
     limit: (...args: unknown[]) => ((calls.limit = args), chain),
     maybeSingle: (...args: unknown[]) => ((calls.maybeSingle = args), chain),
@@ -31,8 +32,8 @@ function mockClient(result: { data: unknown; error: { message: string } | null }
 
 const failure = { data: null, error: { message: "boom" } };
 
-const COLUMNS =
-  "kind, period, facts, narration_text, narration_generated_at, narration_provider, narration_model, built_at";
+// The granted columns less `facts`: the app never shows it, so the loaders do not even read it.
+const COLUMNS = "kind, period, narration_text, narration_generated_at, narration_provider, narration_model, built_at";
 
 function row(overrides: Partial<PeriodSummaryRow> = {}): PeriodSummaryRow {
   return {
@@ -52,24 +53,29 @@ function row(overrides: Partial<PeriodSummaryRow> = {}): PeriodSummaryRow {
 const at = (iso: string) => new Date(iso);
 
 describe("loadTodaySummary", () => {
-  it("reads the newest today row by name-listed columns, never *", async () => {
+  it("reads the newest today row up to today by name-listed columns, never * and never facts", async () => {
     const stored = row();
     const { client, calls, eqs } = mockClient({ data: [stored], error: null });
-    await expect(loadTodaySummary(client)).resolves.toEqual(stored);
+    await expect(loadTodaySummary(client, "2026-09-23")).resolves.toEqual(stored);
     expect(calls.from).toEqual(["period_summaries"]);
     expect(calls.select).toEqual([COLUMNS]);
-    expect(COLUMNS.split(", ")).toHaveLength(8);
+    expect(COLUMNS.split(", ")).toHaveLength(7);
+    expect(COLUMNS).not.toContain("facts");
     expect(eqs).toEqual([["kind", "today"]]);
+    // A row dated after today (a skewed lab clock) is never read, so it cannot show as current.
+    expect(calls.lte).toEqual(["period", "2026-09-23"]);
     expect(calls.order).toEqual(["period", { ascending: false }]);
     expect(calls.limit).toEqual([1]);
   });
 
   it("returns null when there is no today row", async () => {
-    await expect(loadTodaySummary(mockClient({ data: [], error: null }).client)).resolves.toBeNull();
+    await expect(loadTodaySummary(mockClient({ data: [], error: null }).client, "2026-09-23")).resolves.toBeNull();
   });
 
   it("throws on an error", async () => {
-    await expect(loadTodaySummary(mockClient(failure).client)).rejects.toThrow("loading today's summary failed: boom");
+    await expect(loadTodaySummary(mockClient(failure).client, "2026-09-23")).rejects.toThrow(
+      "loading today's summary failed: boom",
+    );
   });
 });
 
@@ -133,6 +139,21 @@ describe("toSummaryView", () => {
       expect(view).not.toHaveProperty("facts");
     }
   });
+
+  it("keeps markup in the text as plain text for the page to escape", () => {
+    const view = toSummaryView(row({ narration_text: "<b>pogrubione</b> <script>x()</script>" }), "day");
+    expect(view).toMatchObject({ text: "<b>pogrubione</b> <script>x()</script>" });
+  });
+
+  it("survives unreadable times without throwing", () => {
+    expect(toSummaryView(row({ narration_generated_at: "nie czas" }), "day")).toMatchObject({
+      generatedAtLabel: "23 września 2026, 12:00",
+    });
+    expect(toSummaryView(row({ narration_generated_at: null, built_at: "nie czas" }), "day")).toMatchObject({
+      kind: "narrated",
+      generatedAtLabel: "w nieznanym czasie",
+    });
+  });
 });
 
 describe("toTodaySummaryView", () => {
@@ -153,29 +174,49 @@ describe("toTodaySummaryView", () => {
     });
   });
 
-  it("treats built_at exactly 2 hours old as current and one millisecond over as stale", () => {
-    const builtAt = at("2026-09-23T09:00:00Z");
+  it("treats a text written exactly 2 hours ago as current and one millisecond over as stale", () => {
+    const written = at("2026-09-23T09:00:00Z");
     const exact = toTodaySummaryView(
-      row({ built_at: builtAt.toISOString() }),
-      new Date(builtAt.getTime() + STALE_AFTER_MS),
+      row({ narration_generated_at: written.toISOString() }),
+      new Date(written.getTime() + STALE_AFTER_MS),
     );
     expect(exact).toMatchObject({ status: { tone: "good", label: "aktualna" }, isStale: false });
     const over = toTodaySummaryView(
-      row({ built_at: builtAt.toISOString() }),
-      new Date(builtAt.getTime() + STALE_AFTER_MS + 1),
+      row({ narration_generated_at: written.toISOString() }),
+      new Date(written.getTime() + STALE_AFTER_MS + 1),
     );
     expect(over).toMatchObject({ status: { tone: "watch", label: "sprzed 2 godz." }, isStale: true });
   });
 
-  it("words an older text from today by its age", () => {
+  it("measures the age from the time the card shows, so badge and label agree", () => {
+    // Facts built at 06:00 UTC, the text written at 10:05 UTC, seen at 11:00 UTC: the text is under 2 hours old.
     const view = toTodaySummaryView(row({ built_at: "2026-09-23T06:00:00Z" }), now);
+    expect(view).toMatchObject({ generatedAtLabel: "23 września 2026, 12:05", isStale: false });
+  });
+
+  it("falls back to built_at for the age when the text has no generation time", () => {
+    const view = toTodaySummaryView(row({ narration_generated_at: null, built_at: "2026-09-23T06:00:00Z" }), now);
     expect(view).toMatchObject({ status: { tone: "watch", label: "sprzed 5 godz." }, isStale: true });
+  });
+
+  it("words an older text from today by its age", () => {
+    const view = toTodaySummaryView(row({ narration_generated_at: "2026-09-23T06:00:00Z" }), now);
+    expect(view).toMatchObject({ status: { tone: "watch", label: "sprzed 5 godz." }, isStale: true });
+  });
+
+  it("calls a text with no readable time stale instead of throwing", () => {
+    const view = toTodaySummaryView(row({ narration_generated_at: "nie czas", built_at: "też nie czas" }), now);
+    expect(view).toMatchObject({
+      generatedAtLabel: "w nieznanym czasie",
+      status: { tone: "watch", label: "nieznany czas wygenerowania" },
+      isStale: true,
+    });
   });
 
   it("reads a text from an earlier day as about another day, whatever its age", () => {
     // 23:30 Warsaw on the 22nd, seen at 00:30 Warsaw on the 23rd: one hour old, but about another day.
     const view = toTodaySummaryView(
-      row({ period: "2026-09-22", built_at: "2026-09-22T21:30:00Z" }),
+      row({ period: "2026-09-22", narration_generated_at: "2026-09-22T21:30:00Z" }),
       at("2026-09-22T22:30:00Z"),
     );
     expect(view).toMatchObject({
@@ -183,18 +224,35 @@ describe("toTodaySummaryView", () => {
       periodLabel: "22 września 2026, wtorek",
       isStale: true,
     });
-    const old = toTodaySummaryView(row({ period: "2026-09-20", built_at: "2026-09-20T21:30:00Z" }), now);
+    const old = toTodaySummaryView(row({ period: "2026-09-20", narration_generated_at: "2026-09-20T21:30:00Z" }), now);
     expect(old).toMatchObject({ status: { tone: "problem", label: "z 20 września — dotyczy innego dnia" } });
   });
 
   it("uses the Warsaw day, not the UTC day, at midnight", () => {
     // 00:10 Warsaw on the 23rd is still the 22nd in UTC: the period is the 23rd and the text is current.
-    const view = toTodaySummaryView(row({ built_at: "2026-09-22T22:10:00Z" }), at("2026-09-22T23:40:00Z"));
+    const view = toTodaySummaryView(
+      row({ narration_generated_at: "2026-09-22T22:10:00Z" }),
+      at("2026-09-22T23:40:00Z"),
+    );
     expect(view).toMatchObject({ status: { tone: "good", label: "aktualna" }, isStale: false });
   });
 
-  it("shows a built_at in the future as current, not an error", () => {
-    const view = toTodaySummaryView(row({ built_at: "2026-09-23T11:05:00Z" }), now);
+  it("works across a year boundary", () => {
+    // 00:10 Warsaw on 1 January 2027 (CET, UTC+1): the period is the new year's first day.
+    const fresh = toTodaySummaryView(
+      row({ period: "2027-01-01", narration_generated_at: "2026-12-31T23:10:00Z" }),
+      at("2026-12-31T23:40:00Z"),
+    );
+    expect(fresh).toMatchObject({ status: { tone: "good", label: "aktualna" }, isStale: false });
+    const previous = toTodaySummaryView(
+      row({ period: "2026-12-31", narration_generated_at: "2026-12-31T22:30:00Z" }),
+      at("2026-12-31T23:40:00Z"),
+    );
+    expect(previous).toMatchObject({ status: { tone: "problem", label: "z 31 grudnia — dotyczy innego dnia" } });
+  });
+
+  it("shows a text written in the future as current, not an error", () => {
+    const view = toTodaySummaryView(row({ narration_generated_at: "2026-09-23T11:05:00Z" }), now);
     expect(view).toMatchObject({ status: { tone: "good", label: "aktualna" }, isStale: false });
   });
 

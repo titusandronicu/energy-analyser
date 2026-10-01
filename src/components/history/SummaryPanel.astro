@@ -1,6 +1,7 @@
 ---
 import { FileText } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
+import SummaryText from "@/components/SummaryText.astro";
 import Panel from "@/components/ui/Panel.astro";
 import type { SummaryView } from "@/lib/services/period-summary";
 
@@ -10,9 +11,7 @@ interface Props {
   testId: string;
 }
 
-// The lab's plain-language text for a completed day or month (S-18). The text is untrusted, so it renders as escaped
-// text, never as HTML. A period the lab has facts for but no text yet says so in one sentence and shows no figures. No
-// client JavaScript.
+// The lab's plain-language text for a completed day or month (S-18). The body is the shared SummaryText fragment.
 const { title, summary, testId } = Astro.props;
 ---
 
@@ -20,17 +19,12 @@ const { title, summary, testId } = Astro.props;
   <div data-testid={testId}>
     <CardHeading class="mb-2" title={title} icon={FileText} iconClass="text-primary" />
     {summary.kind === "narrated" ? (
-      <div class="space-y-1">
-        <p class="text-card-foreground leading-relaxed whitespace-pre-line [overflow-wrap:anywhere]">{summary.text}</p>
-        <p class="text-muted-foreground text-xs">
-          napisane {summary.generatedAtLabel} · dotyczy: {summary.periodLabel}
-        </p>
-      </div>
+      <SummaryText
+        text={summary.text}
+        meta={`napisane ${summary.generatedAtLabel} · dotyczy: ${summary.periodLabel}`}
+      />
     ) : (
-      <div class="space-y-1">
-        <p class="text-muted-foreground text-sm">Opis jeszcze się nie pojawił.</p>
-        <p class="text-muted-foreground text-xs">Dotyczy: {summary.periodLabel}</p>
-      </div>
+      <SummaryText text={null} meta={`Dotyczy: ${summary.periodLabel}`} />
     )}
   </div>
 </Panel>

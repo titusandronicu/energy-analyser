@@ -54,7 +54,7 @@ const [liveView, billView, usageView, view, todaySummary, hourlyView]: [
   }),
   orLoadError(async () => {
     const supabase = getClient();
-    return toTodaySummaryView(supabase ? await loadTodaySummary(supabase) : null, now);
+    return toTodaySummaryView(supabase ? await loadTodaySummary(supabase, warsawParts(now).dayKey) : null, now);
   }),
   orLoadError(async () => {
     const supabase = getClient();

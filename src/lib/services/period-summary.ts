@@ -2,28 +2,32 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PeriodSummaryRow } from "@/types";
 import { periodLabel } from "@/lib/calendar/period";
 import { LOAD_FAILED, type Status } from "@/lib/format/status";
-import { formatDayMonth, formatMonth, formatWarsawDateTime, warsawParts } from "@/lib/format/warsaw-time";
-import { formatAge } from "@/lib/services/live-state";
-import { isStaleRecommendation } from "@/lib/services/recommendation";
+import { formatMonth, formatWarsawDateTime, warsawParts } from "@/lib/format/warsaw-time";
+import { STALE_AFTER_MS, ageStatus, earlierDayStatus } from "@/lib/services/recommendation";
 
 // The lab's plain-language texts for today, a completed day and a completed month (S-18). Each loader reads only the
 // signed-in owner's rows; RLS returns nothing for non-owners. Errors are thrown so the page can show a load failure
 // instead of pretending nothing was written.
 
-// The eight columns the owner may read: `push_id` is not granted, so `select *` would fail. `facts` is the data the
-// text was written from; it is loaded with the row but no view reads or exposes it.
-const SUMMARY_COLUMNS =
-  "kind, period, facts, narration_text, narration_generated_at, narration_provider, narration_model, built_at";
+// What the app reads of a stored text. `facts` (the untrusted jsonb the text was written from) is deliberately not
+// part of it: nothing shows it, so it is not even loaded.
+export type PeriodSummaryText = Omit<PeriodSummaryRow, "facts">;
 
-// Today's text for the dashboard: the `today` row with the newest period (one row exists per Warsaw day), or null.
-export async function loadTodaySummary(client: SupabaseClient): Promise<PeriodSummaryRow | null> {
+// The columns the owner may read, less `facts`: `push_id` is not granted, so `select *` would fail.
+const SUMMARY_COLUMNS =
+  "kind, period, narration_text, narration_generated_at, narration_provider, narration_model, built_at";
+
+// Today's text for the dashboard: the `today` row with the newest period up to `today` (one row exists per Warsaw day,
+// and a row dated after today, from a skewed lab clock, must not read as current), or null.
+export async function loadTodaySummary(client: SupabaseClient, today: string): Promise<PeriodSummaryText | null> {
   const { data, error } = await client
     .from("period_summaries")
     .select(SUMMARY_COLUMNS)
     .eq("kind", "today")
+    .lte("period", today)
     .order("period", { ascending: false })
     .limit(1)
-    .overrideTypes<PeriodSummaryRow[], { merge: false }>();
+    .overrideTypes<PeriodSummaryText[], { merge: false }>();
   if (error) throw new Error(`loading today's summary failed: ${error.message}`);
   return data[0] ?? null;
 }
@@ -34,14 +38,14 @@ export async function loadPeriodSummary(
   client: SupabaseClient,
   kind: "day" | "month",
   period: string,
-): Promise<PeriodSummaryRow | null> {
+): Promise<PeriodSummaryText | null> {
   const { data, error } = await client
     .from("period_summaries")
     .select(SUMMARY_COLUMNS)
     .eq("kind", kind)
     .eq("period", period)
     .maybeSingle()
-    .overrideTypes<PeriodSummaryRow | null, { merge: false }>();
+    .overrideTypes<PeriodSummaryText | null, { merge: false }>();
   if (error) throw new Error(`loading the ${kind} summary failed: ${error.message}`);
   return data;
 }
@@ -67,14 +71,25 @@ export type TodaySummaryView =
     };
 
 // The trimmed text, or null when the row has none (null or blank): the lab's text is untrusted and shown as given.
-function narrationText(row: PeriodSummaryRow): string | null {
+function narrationText(row: PeriodSummaryText): string | null {
   const text = row.narration_text?.trim() ?? "";
   return text === "" ? null : text;
 }
 
-// When the text was written; a row without that time falls back to when its entry was built.
-function generatedAtLabel(row: PeriodSummaryRow): string {
-  return formatWarsawDateTime(new Date(row.narration_generated_at ?? row.built_at));
+// When the text was written; a row without that time falls back to when its entry was built, and a row with neither
+// readable (the columns are timestamptz, so this is a safety net) has none.
+function writtenAt(row: PeriodSummaryText): Date | null {
+  for (const value of [row.narration_generated_at, row.built_at]) {
+    if (value === null) continue;
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+  return null;
+}
+
+function generatedAtLabel(row: PeriodSummaryText): string {
+  const at = writtenAt(row);
+  return at === null ? "w nieznanym czasie" : formatWarsawDateTime(at);
 }
 
 // "27 września 2026, niedziela" for a day row, "wrzesień 2026" for a month row.
@@ -83,19 +98,11 @@ function coveredLabel(period: string, kind: "day" | "month"): string {
 }
 
 // `kind` is the calendar view the row is shown on; the caller has already chosen a completed day or month.
-export function toSummaryView(row: PeriodSummaryRow, kind: "day" | "month"): SummaryView {
+export function toSummaryView(row: PeriodSummaryText, kind: "day" | "month"): SummaryView {
   const label = coveredLabel(row.period, kind);
   const text = narrationText(row);
   if (text === null) return { kind: "pending", periodLabel: label };
   return { kind: "narrated", text, generatedAtLabel: generatedAtLabel(row), periodLabel: label };
-}
-
-// Same wording as the recommendation card: good when built within two hours, worth watching when older, a problem
-// when the text is about an earlier Warsaw day.
-function todayStatus(row: PeriodSummaryRow, now: Date, isFromEarlierDay: boolean, isStale: boolean): Status {
-  if (isFromEarlierDay) return { tone: "problem", label: `z ${formatDayMonth(row.period)} — dotyczy innego dnia` };
-  if (isStale) return { tone: "watch", label: `sprzed ${formatAge(now.getTime() - Date.parse(row.built_at))}` };
-  return { tone: "good", label: "aktualna" };
 }
 
 // The badge of the dashboard card: a narrated text carries its own status; `empty` and `pending` are neutral, with the
@@ -109,8 +116,9 @@ export function todaySummaryStatus(view: TodaySummaryView | null): Status {
 
 // A row from an earlier day without a text is `empty`: it would otherwise say a finished day's text has not appeared
 // yet. A row from an earlier day with a text is shown, marked as about another day; a row from today without one is
-// `pending`. Staleness uses the recommendation's rule, measured from `built_at` (how fresh the figures are).
-export function toTodaySummaryView(row: PeriodSummaryRow | null, now: Date): TodaySummaryView {
+// `pending`. Staleness is the recommendation's rule (more than two hours old, or about an earlier day), measured from
+// the time the card shows as "Wygenerowano", so the badge and the label always agree.
+export function toTodaySummaryView(row: PeriodSummaryText | null, now: Date): TodaySummaryView {
   if (row === null) return { kind: "empty" };
 
   const isFromEarlierDay = row.period < warsawParts(now).dayKey;
@@ -119,14 +127,19 @@ export function toTodaySummaryView(row: PeriodSummaryRow | null, now: Date): Tod
     return isFromEarlierDay ? { kind: "empty" } : { kind: "pending", periodLabel: coveredLabel(row.period, "day") };
   }
 
-  const builtAt = new Date(row.built_at);
-  const isStale = isFromEarlierDay || isStaleRecommendation(builtAt, now);
+  const at = writtenAt(row);
+  const ageMs = at === null ? null : now.getTime() - at.getTime();
+  const status: Status = isFromEarlierDay
+    ? earlierDayStatus(row.period)
+    : ageMs === null
+      ? { tone: "watch", label: "nieznany czas wygenerowania" }
+      : ageStatus(ageMs);
   return {
     kind: "narrated",
     text,
     generatedAtLabel: generatedAtLabel(row),
     periodLabel: coveredLabel(row.period, "day"),
-    status: todayStatus(row, now, isFromEarlierDay, isStale),
-    isStale,
+    status,
+    isStale: isFromEarlierDay || ageMs === null || ageMs > STALE_AFTER_MS,
   };
 }

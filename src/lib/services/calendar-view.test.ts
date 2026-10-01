@@ -612,6 +612,32 @@ describe("summaries in the views", () => {
     }
   });
 
+  it("counts yesterday and the month just ended as completed when today is the 1st", () => {
+    const firstOfMonth = new Date("2026-11-01T10:00:00Z");
+    const day = buildDayView("2026-10-31", [], [], "2026-11-01", firstOfMonth, null, summaryRow("day", "2026-10-31"));
+    expect(day.summary).toMatchObject({ kind: "narrated", periodLabel: "31 października 2026, sobota" });
+    const month = buildMonthView("2026-10", [], noTimes, "2026-11-01", new Set(), summaryRow("month", "2026-10"));
+    expect(month.summary).toMatchObject({ kind: "narrated", periodLabel: "październik 2026" });
+    // Today itself and the month that just began still have none.
+    expect(
+      buildDayView("2026-11-01", [], [], "2026-11-01", firstOfMonth, null, summaryRow("day", "2026-11-01")).summary,
+    ).toBeNull();
+    expect(
+      buildMonthView("2026-11", [], noTimes, "2026-11-01", new Set(), summaryRow("month", "2026-11")).summary,
+    ).toBeNull();
+  });
+
+  it("completes December and its last day across the year boundary", () => {
+    const newYear = new Date("2027-01-01T10:00:00Z");
+    const day = buildDayView("2026-12-31", [], [], "2027-01-01", newYear, null, summaryRow("day", "2026-12-31"));
+    expect(day.summary).toMatchObject({ kind: "narrated", periodLabel: "31 grudnia 2026, czwartek" });
+    const month = buildMonthView("2026-12", [], noTimes, "2027-01-01", new Set(), summaryRow("month", "2026-12"));
+    expect(month.summary).toMatchObject({ kind: "narrated", periodLabel: "grudzień 2026" });
+    expect(
+      buildMonthView("2027-01", [], noTimes, "2027-01-01", new Set(), summaryRow("month", "2027-01")).summary,
+    ).toBeNull();
+  });
+
   it("leaves the quarter without a summary", () => {
     expect(buildQuarterView(2026, 3, [], todayKey).summary).toBeNull();
   });

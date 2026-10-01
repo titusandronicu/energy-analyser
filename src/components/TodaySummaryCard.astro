@@ -2,6 +2,7 @@
 import { FileText } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
+import SummaryText from "@/components/SummaryText.astro";
 import Panel from "@/components/ui/Panel.astro";
 import { todaySummaryStatus, type TodaySummaryView } from "@/lib/services/period-summary";
 
@@ -10,8 +11,7 @@ interface Props {
 }
 
 // The lab's plain-language explanation of today's figures (S-18). null means loading failed; the page never throws a
-// 500 for a data problem. The text is untrusted, so it renders as escaped text, never as HTML. A row the lab has facts
-// for but no text yet says so in one sentence and shows no figures. No client JavaScript.
+// 500 for a data problem. The body is the shared SummaryText fragment.
 const { view } = Astro.props;
 const status = todaySummaryStatus(view);
 ---
@@ -34,20 +34,10 @@ const status = todaySummaryStatus(view);
 
     {view === null && <p class="text-sm text-muted-foreground">Spróbuj odświeżyć stronę.</p>}
 
-    {view?.kind === "narrated" && (
-      <div class="space-y-1">
-        <p class="text-card-foreground leading-relaxed whitespace-pre-line [overflow-wrap:anywhere]">{view.text}</p>
-        <p class="text-muted-foreground text-xs">Dotyczy: {view.periodLabel}</p>
-      </div>
-    )}
+    {view?.kind === "narrated" && <SummaryText text={view.text} meta={`Dotyczy: ${view.periodLabel}`} />}
 
-    {view?.kind === "pending" && (
-      <div class="space-y-1">
-        <p class="text-muted-foreground text-sm">Opis jeszcze się nie pojawił.</p>
-        <p class="text-muted-foreground text-xs">Dotyczy: {view.periodLabel}</p>
-      </div>
-    )}
+    {view?.kind === "pending" && <SummaryText text={null} meta={`Dotyczy: ${view.periodLabel}`} />}
 
-    {view?.kind === "empty" && <p class="text-muted-foreground text-sm">Laboratorium jeszcze nic nie przesłało.</p>}
+    {view?.kind === "empty" && <p class="text-sm text-muted-foreground">Laboratorium jeszcze nic nie przesłało.</p>}
   </div>
 </Panel>

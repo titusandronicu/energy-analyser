@@ -9,6 +9,8 @@ import { URL } from "node:url";
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:4321";
 const INGEST_TOKEN = process.env.INGEST_TOKEN ?? "local-dev-ingest-token-not-secret";
 const MAILPIT_URL = process.env.MAILPIT_URL ?? "http://127.0.0.1:54324";
+// The example push the ingest steps send (and the pending-day check below reads); loaded first because the steps list uses it.
+const example = JSON.parse(readFileSync(new URL("../docs/ingest/example-v1.json", import.meta.url), "utf8"));
 const { SUPABASE_URL, SUPABASE_ANON_KEY } = process.env;
 const email = `smoke-${Date.now()}@example.com`;
 const jar = new Map();
@@ -57,6 +59,8 @@ const freshSummaryMarker = `Smoke podsumowanie ${Date.now()}`;
 // fresh set also carries a narrated entry for yesterday and for the previous Warsaw month, each with its own marker
 // (an example entry for the same kind and period is replaced, keeping the (kind, period) pairs unique).
 const daySummaryMarker = `Smoke podsumowanie dnia ${Date.now()}`;
+// The day's text carries markup on purpose: the page must show it as literal characters, never as HTML.
+const daySummaryText = `${daySummaryMarker} <b>pogrubione</b>`;
 const monthSummaryMarker = `Smoke podsumowanie miesiąca ${Date.now()}`;
 const freshSummaries = () => {
   const now = new Date().toISOString();
@@ -67,7 +71,7 @@ const freshSummaries = () => {
     facts: { period, complete_days: 7, pv_kwh_total: 12.5, grid_sensor_reliable: false },
     narration: { text, generated_at: now, provider: "openrouter", model: "smoke/synthetic" },
   });
-  const own = [narrated("day", summaryDay, daySummaryMarker), narrated("month", summaryMonth, monthSummaryMarker)];
+  const own = [narrated("day", summaryDay, daySummaryText), narrated("month", summaryMonth, monthSummaryMarker)];
   const fromExample = examplePeriodSummaries
     .filter((entry) => !own.some((mine) => mine.kind === entry.kind && mine.period === entry.period))
     .map((entry) => ({
@@ -107,6 +111,11 @@ const summaryDay = noteDay;
 const summaryMonth = new Date(Date.parse(`${warsawToday.slice(0, 7)}-01T00:00:00Z`) - 24 * 60 * 60 * 1000)
   .toISOString()
   .slice(0, 7);
+// The example's own day row has no narration: a completed day the lab has facts for but no text yet (unless this run's
+// yesterday happens to be that day, when the fresh set replaces it).
+const pendingExample = example.period_summaries.find(
+  (entry) => entry.kind === "day" && entry.narration === null && entry.period !== summaryDay,
+);
 const noteStamp = Date.now();
 const noteText = `Smoke notatka ${noteStamp} <b>pogrubiona</b>`;
 // Astro escapes the text, so the page holds it as literal characters, never as markup.
@@ -204,7 +213,9 @@ const steps = [
     () => request("/dashboard", { readBody: true }),
     {
       status: 200,
-      contains: ['data-testid="today-summary"', 'data-testid="today-summary-status"', freshSummaryMarker, "aktualna"],
+      contains: ['data-testid="today-summary"', 'data-testid="today-summary-status"', freshSummaryMarker],
+      // "aktualna" is also the recommendation card's badge word, so it must come from the summary card's own badge.
+      matches: /data-testid="today-summary-status"[\s\S]{0,1500}?aktualna/,
     },
   ],
   [
@@ -226,8 +237,31 @@ const steps = [
   [
     "day page shows yesterday's summary as text, with the panel and its marker",
     () => request(noteDayPath, { readBody: true }),
-    { status: 200, contains: ['data-testid="history-day-summary"', "Podsumowanie dnia", daySummaryMarker] },
+    {
+      status: 200,
+      contains: [
+        'data-testid="history-day-summary"',
+        "Podsumowanie dnia",
+        daySummaryMarker,
+        "&lt;b&gt;pogrubione&lt;/b&gt;",
+      ],
+      notContains: "<b>pogrubione</b>",
+    },
   ],
+  ...(pendingExample
+    ? [
+        [
+          // The lab has this day's facts but no text yet: one neutral sentence, and none of this run's texts.
+          "a completed day without a text says so, with no text of this run",
+          () => request(`/dashboard/history?day=${pendingExample.period}`, { readBody: true }),
+          {
+            status: 200,
+            contains: ['data-testid="history-day-summary"', "Opis jeszcze się nie pojawił."],
+            notContains: [daySummaryMarker, monthSummaryMarker, freshSummaryMarker],
+          },
+        ],
+      ]
+    : []),
   [
     "month page shows the previous month's summary as text, with the panel and its marker",
     () => request(`/dashboard/history?month=${summaryMonth}`, { readBody: true }),
@@ -324,7 +358,6 @@ async function ingest(body, token = INGEST_TOKEN) {
   return { status: response.status, location: "" };
 }
 
-const example = JSON.parse(readFileSync(new URL("../docs/ingest/example-v1.json", import.meta.url), "utf8"));
 // The example's own today entry is dated 2026-09-23; the dashboard card shows the newest today row as current only when it
 // is about the current Warsaw day, so every push of the example here carries today's key (the same row each time).
 const examplePeriodSummaries = example.period_summaries.map((entry) =>
@@ -557,7 +590,8 @@ for (const [name, run, expected] of steps) {
     actual.status === expected.status &&
     (expected.location === undefined || actual.location.startsWith(expected.location)) &&
     [expected.contains ?? []].flat().every((text) => Boolean(actual.body?.includes(text))) &&
-    [expected.notContains ?? []].flat().every((text) => !actual.body?.includes(text));
+    [expected.notContains ?? []].flat().every((text) => !actual.body?.includes(text)) &&
+    (expected.matches === undefined || expected.matches.test(actual.body ?? ""));
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
   if (!ok) {
     failed++;
