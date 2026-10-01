@@ -332,7 +332,7 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 #### Manual
 
 - [x] 1.7 Kamil runs `npm run test:integration` twice in a row against the UGREEN stack and both runs are green — 3c6090f
-- [ ] 1.8 The `smoke` job on the PR runs the new integration step and it is green
+- [x] 1.8 The `smoke` job on the PR runs the new integration step and it is green — 3c6090f
 
 ### Phase 2: Push to page, one test per section
 
@@ -347,7 +347,7 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 #### Manual
 
 - [x] 2.6 Kamil runs `npm run smoke` against a local server and stack and the new hourly step passes — 38f19ee
-- [ ] 2.7 The `smoke` job on the PR is green with the new smoke step and the integration step
+- [x] 2.7 The `smoke` job on the PR is green with the new smoke step and the integration step — 38f19ee
 
 ### Phase 3: History safety: replay, order, gaps and known gaps
 
@@ -362,7 +362,7 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 #### Manual
 
 - [x] 3.6 Kamil reads the three `KNOWN GAP` test names and comments and agrees they say what is pinned and what a fix would change — 939d573
-- [ ] 3.7 The `smoke` job on the PR is green with all integration tests
+- [x] 3.7 The `smoke` job on the PR is green with all integration tests — 939d573
 
 ### Phase 4: Docs and cookbook
 
