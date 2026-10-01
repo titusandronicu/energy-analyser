@@ -367,8 +367,8 @@ This is a new table only, with no backfill. Rollback is a down step (`drop table
 
 #### Automated
 
-- [x] 3.1 Docs formatted: `npx prettier --check docs context/foundation/roadmap.md context/changes/day-notes`
-- [x] 3.2 The rules are recorded: `git grep -n "day_notes" -- docs/architecture.md docs/logic.md` prints at least two lines
+- [x] 3.1 Docs formatted: `npx prettier --check docs context/foundation/roadmap.md context/changes/day-notes` — fe5f9fa
+- [x] 3.2 The rules are recorded: `git grep -n "day_notes" -- docs/architecture.md docs/logic.md` prints at least two lines — fe5f9fa
 
 #### Manual
 
