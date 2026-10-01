@@ -292,7 +292,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Parallel with:** S-17, S-20, S-18
 - **Blockers:** —
 - **Unknowns:** —
-- **Risk:** The app's only create/update/delete surface and its first client write; the owner-only table approach from the dropped S-05 (branch `feat/record-feedback`) can be reused.
+- **Risk:** The app's only create/update/delete surface and its first client write; the owner-only table approach from the dropped S-05 is reused (its patterns are recorded in `context/changes/day-notes/research.md`).
 - **Status:** in-progress
 
 ### S-18: Period summaries
@@ -409,7 +409,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 | S-15       | history-calendar          | Calendar with day and month views of production and advice              | no                    | Needs S-14                                                   |
 | S-17       | period-ratings            | Good / neutral / bad ratings for days and months                        | no                    | Needs S-15                                                   |
 | S-20       | consumption-trends        | Remarks when consumption rises or falls over weeks and months           | no                    | Needs S-14, S-15                                             |
-| S-19       | day-notes                 | Notes on calendar days (create, view, edit, delete)                     | no                    | Needs S-15                                                   |
+| S-19       | day-notes                 | Notes on calendar days (create, view, edit, delete)                     | no                    | In progress; planned in `context/changes/day-notes/`         |
 | S-18       | period-summaries          | Show today's plain explanation and the day/month summaries              | no                    | Needs F-04, S-15                                             |
 | S-11       | forecast-accuracy         | Show forecast accuracy and today's forecast certainty                   | no                    | Needs F-05 and ~1–2 weeks of forecasts, S-14                 |
 | S-07       | bill-forecast             | Show the projected cost of the current month                            | yes                   | Right after S-14                                             |
@@ -432,7 +432,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 
 ## Parked
 
-- **Recommendation feedback: S-05 `record-feedback` and S-06 `edit-delete-feedback`** — Why parked: dropped by the owner on 2026-09-26 (PRD v3 removed US-02 and FR-007–FR-010); the system rates days and months instead (S-17), and notes on days (S-19) are the CRUD surface. S-05's phase 1 stays unmerged on branch `feat/record-feedback` for reference.
+- **Recommendation feedback: S-05 `record-feedback` and S-06 `edit-delete-feedback`** — Why parked: dropped by the owner on 2026-09-26 (PRD v3 removed US-02 and FR-007–FR-010); the system rates days and months instead (S-17), and notes on days (S-19) are the CRUD surface. The `feat/record-feedback` branch no longer exists; the patterns worth reusing from S-05's phase 1 are recorded in `context/changes/day-notes/research.md`, and its commits `f94d796` and `d651733` are reachable only through the reflog.
 - **Custom weather-forecast modelling** — Why parked: PRD Non-Goals; the lab's existing forecast source is consumed (F-05 restores it).
 - **Multi-user / multi-household support** — Why parked: PRD Non-Goals; single-tenant by design.
 - **PGE bill reconciliation (predicted vs actual) and the PGE vs Deye cross-check** — Why parked: PRD Non-Goals; the projection and closed-period cost (S-07, S-08) are in scope, the comparison is not.

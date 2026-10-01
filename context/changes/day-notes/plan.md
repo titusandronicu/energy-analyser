@@ -352,23 +352,23 @@ This is a new table only, with no backfill. Rollback is a down step (`drop table
 
 #### Automated
 
-- [x] 2.1 Unit tests pass: `npm test`
-- [x] 2.2 Linting passes: `npm run lint`
-- [x] 2.3 Type checks pass: `npx astro check`
-- [x] 2.4 Production build succeeds: `npm run build`
-- [x] 2.5 Smoke passes against the local stack: `npm run smoke`
-- [x] 2.6 No HTML injection path: `git grep -n "set:html\|dangerouslySetInnerHTML" -- src` prints nothing
+- [x] 2.1 Unit tests pass: `npm test` — 9640522
+- [x] 2.2 Linting passes: `npm run lint` — 9640522
+- [x] 2.3 Type checks pass: `npx astro check` — 9640522
+- [x] 2.4 Production build succeeds: `npm run build` — 9640522
+- [x] 2.5 Smoke passes against the local stack: `npm run smoke` — 9640522
+- [x] 2.6 No HTML injection path: `git grep -n "set:html\|dangerouslySetInnerHTML" -- src` prints nothing — 9640522
 
 #### Manual
 
-- [ ] 2.7 Local stack at 1440/390 px: add → edit → delete with confirmation, notices, month marker and legend, screen-reader name, HTML shown literally, today accepted, works without JS
+- [x] 2.7 Local stack at 1440/390 px: add → edit → delete with confirmation, notices, month marker and legend, screen-reader name, HTML shown literally, today accepted, works without JS — 9640522
 
 ### Phase 3: Docs and production
 
 #### Automated
 
-- [ ] 3.1 Docs formatted: `npx prettier --check docs context/foundation/roadmap.md context/changes/day-notes`
-- [ ] 3.2 The rules are recorded: `git grep -n "day_notes" -- docs/architecture.md docs/logic.md` prints at least two lines
+- [x] 3.1 Docs formatted: `npx prettier --check docs context/foundation/roadmap.md context/changes/day-notes`
+- [x] 3.2 The rules are recorded: `git grep -n "day_notes" -- docs/architecture.md docs/logic.md` prints at least two lines
 
 #### Manual
 
