@@ -4,22 +4,23 @@ The rules Energy Analyser and the home lab apply to the data, with the exact thr
 
 ## Where each rule runs
 
-| Rule                                                                             | Runs in                                       | Source                                                                            |
-| -------------------------------------------------------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------- |
-| Live state, its staleness and the node verdicts                                  | App                                           | `src/lib/services/live-state.ts`                                                  |
-| Usage insight (season-adjusted baseline)                                         | App                                           | `src/lib/services/usage-insight.ts`                                               |
-| Hourly usage: complete hours, days and nights, night draw, rankings              | App                                           | `src/lib/services/hourly-usage.ts`                                                |
-| Recommendation staleness and labels                                              | App                                           | `src/lib/services/recommendation.ts`                                              |
-| Bill forecast card: freshness, minimum days, verdict bands, plausibility ceiling | App                                           | `src/lib/services/bill-forecast.ts`                                               |
-| Status colours, period text, term explanations                                   | App                                           | `src/lib/format/status.ts`, `period.ts`, `glossary.ts`                            |
-| Daily series for the sparklines (windows, gaps) and their drawing                | App                                           | `src/lib/services/daily-series.ts`, `src/lib/sparkline.ts`                        |
-| History calendar: periods, complete days, totals, forecast vs actual, day advice | App                                           | `src/lib/calendar/`, `src/lib/services/calendar-view.ts`, `src/lib/bars.ts`       |
-| Day and month ratings: self-sufficiency, recent norm, bands, low-sun note        | App                                           | `src/lib/services/period-rating.ts`, `src/lib/services/complete-day.ts`           |
-| Grid sensor caveat: its dates and texts, the sensor-change window                | App                                           | `src/lib/services/grid-sensor.ts`                                                 |
-| Daily totals per day, which days are complete                                    | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py`              |
-| Current-month bill forecast                                                      | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/build-current-month-bill-forecast.py` |
-| Facts bundle and battery recommendation                                          | Lab (deterministic rules, then LLM narration) | homelab-2 `build-energy-agent-briefing.py`, `run-energy-advisory.py`              |
-| PV forecast                                                                      | Solcast via Home Assistant, read by the lab   | homelab-2 `collect-ha-snapshot.py`                                                |
+| Rule                                                                             | Runs in                                       | Source                                                                              |
+| -------------------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Live state, its staleness and the node verdicts                                  | App                                           | `src/lib/services/live-state.ts`                                                    |
+| Usage insight (season-adjusted baseline)                                         | App                                           | `src/lib/services/usage-insight.ts`                                                 |
+| Hourly usage: complete hours, days and nights, night draw, rankings              | App                                           | `src/lib/services/hourly-usage.ts`                                                  |
+| Recommendation staleness and labels                                              | App                                           | `src/lib/services/recommendation.ts`                                                |
+| Bill forecast card: freshness, minimum days, verdict bands, plausibility ceiling | App                                           | `src/lib/services/bill-forecast.ts`                                                 |
+| Status colours, period text, term explanations                                   | App                                           | `src/lib/format/status.ts`, `period.ts`, `glossary.ts`                              |
+| Daily series for the sparklines (windows, gaps) and their drawing                | App                                           | `src/lib/services/daily-series.ts`, `src/lib/sparkline.ts`                          |
+| History calendar: periods, complete days, totals, forecast vs actual, day advice | App                                           | `src/lib/calendar/`, `src/lib/services/calendar-view.ts`, `src/lib/bars.ts`         |
+| Day and month ratings: self-sufficiency, recent norm, bands, low-sun note        | App                                           | `src/lib/services/period-rating.ts`, `src/lib/services/complete-day.ts`             |
+| Day notes: one per day, length, which days, redirect notices                     | App and database                              | `src/lib/services/day-notes.ts`, `supabase/migrations/20261001072438_day_notes.sql` |
+| Grid sensor caveat: its dates and texts, the sensor-change window                | App                                           | `src/lib/services/grid-sensor.ts`                                                   |
+| Daily totals per day, which days are complete                                    | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py`                |
+| Current-month bill forecast                                                      | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/build-current-month-bill-forecast.py`   |
+| Facts bundle and battery recommendation                                          | Lab (deterministic rules, then LLM narration) | homelab-2 `build-energy-agent-briefing.py`, `run-energy-advisory.py`                |
+| PV forecast                                                                      | Solcast via Home Assistant, read by the lab   | homelab-2 `collect-ha-snapshot.py`                                                  |
 
 ## Live state
 
@@ -189,6 +190,26 @@ A completed day and a completed month in the history calendar are rated good, ne
 - **Colours:** green, grey and red. Neutral uses the grey tone with its own word, so it isn't read as "za mało danych"; "Za mało danych", "Poza oceną" and "Bez oceny" are grey too, each with its words. Amber keeps meaning "warto sprawdzić" and is not used.
 - **Where:** a rating panel under "Dzień w liczbach" on the day view, and beside the totals on the month view. Not in the month grid, the quarter view or the dashboard.
 - **Not rated:** today and future days (no rating panel), missing or incomplete days (their totals already say so), the current month ("miesiąc jeszcze trwa — oceniamy tylko zakończone miesiące", under a grey "Bez oceny" badge), and the quarter.
+
+## Notatki (day notes)
+
+The owner can write a short note on a calendar day ("urlop", "pompa ciepła od dziś"), read it on that day, see which days of a month have one, edit it and delete it (S-19, US-06, FR-025–FR-028). The rules are in `src/lib/services/day-notes.ts`; the database repeats the text rules in `public.day_notes` (`supabase/migrations/20261001072438_day_notes.sql`), and the security model is in [architecture.md](architecture.md#security-model).
+
+- **One note per day:** at most one note per user and day (`unique (user_id, day)` in `day_notes`). Saving a day that already has a note replaces its text; there is no version history and no undo.
+- **Length:** **1–500** characters after trimming (`NOTE_MAX_LENGTH`). Blank or whitespace-only text is rejected. The limit is enforced three times: the zod form schema, the database `check` (`char_length(text) <= 500 and btrim(text) <> ''`) and `maxlength="500"` on the textarea. Line breaks are kept; the text is always shown as escaped plain text, never as HTML.
+- **Which days:** only days the calendar can open, **2026-07-16** (`HISTORY_START`) through today in Europe/Warsaw (`isOpenable`, applied through `parsePeriod`). Future days and earlier days are rejected; a malformed day too.
+- **Where notes show:**
+  - **Day view:** a "Notatka" panel right after "Ocena dnia", with the text and "zmieniona {data, godzina}" (Warsaw time). "Dodaj notatkę" or "Edytuj" opens the form (one labelled textarea and "Zapisz") in a native `<details>`; nothing on the page needs JavaScript.
+  - **Month view:** a day with a note carries a small corner triangle, a different shape from the round recommendation dot, so it is not told apart by colour alone. Its accessible name gains ", jest notatka" (`HAS_NOTE_WORD`) and the legend lists "jest notatka". If the noted days fail to load, the grid says "Znaczniki notatek nie są pokazane." and the rest of the month still shows.
+  - **Not shown:** in the quarter view or on the dashboard.
+- **Delete with confirmation:** "Usuń" opens a second `<details>` step that says the note can't be restored, with a "Na pewno usuń" button. Deleting a day that has no note still counts as deleted, so a repeated submit is harmless.
+- **After every post** the browser is redirected (303) back to the day with `?note=`, and the panel shows one notice:
+  - `saved`: "Notatka zapisana."
+  - `deleted`: "Notatka usunięta."
+  - `invalid`: "Notatka jest pusta albo dłuższa niż 500 znaków." (also for an unknown intent; when the day itself can't be opened the redirect goes to `/dashboard/history?note=invalid`)
+  - `failed`: "Nie udało się zapisać notatki. Spróbuj ponownie." (a database error, logged on the server)
+- **A note that fails to load** shows a load error in the panel and no form, since the page can't tell whether a note exists.
+- **Notes stay notes:** they never change ratings, summaries or recommendations, and nothing sends them to the lab or to an LLM.
 
 ## Daily totals (lab → app)
 

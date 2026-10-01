@@ -28,13 +28,13 @@ function storeCookies(response) {
   }
 }
 
-async function request(path, { method = "GET", form, readBody = false } = {}) {
+async function request(path, { method = "GET", form, readBody = false, origin = BASE_URL } = {}) {
   const response = await fetch(new URL(path, BASE_URL), {
     method,
     redirect: "manual",
     headers: {
       Cookie: cookieHeader(),
-      Origin: BASE_URL,
+      Origin: origin,
       ...(form ? { "Content-Type": "application/x-www-form-urlencoded" } : {}),
     },
     body: form ? new URLSearchParams(form).toString() : undefined,
@@ -65,6 +65,24 @@ const currentMonthLabel = new Intl.DateTimeFormat("pl-PL", {
   year: "numeric",
 }).format(new Date());
 
+// Day notes (S-19): yesterday in Warsaw is always a day the calendar can open, so a note can be written on it. Every
+// text is synthetic and unique to this run; the owner's flow ends by deleting the note again.
+const warsawToday = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Warsaw" }).format(new Date());
+const noteDay = new Date(Date.parse(`${warsawToday}T00:00:00Z`) - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+const noteDayPath = `/dashboard/history?day=${noteDay}`;
+const noteMonthPath = `/dashboard/history?month=${noteDay.slice(0, 7)}`;
+const noteStamp = Date.now();
+const noteText = `Smoke notatka ${noteStamp} <b>pogrubiona</b>`;
+// Astro escapes the text, so the page holds it as literal characters, never as markup.
+const noteTextEscaped = `Smoke notatka ${noteStamp} &lt;b&gt;pogrubiona&lt;/b&gt;`;
+const editedText = `Smoke notatka ${noteStamp} poprawiona`;
+const signedOutText = `Smoke notatka bez sesji ${noteStamp}`;
+const crossSiteText = `Smoke notatka z obcej strony ${noteStamp}`;
+// A month cell's accessible name ends with this when the day has a note; the legend's entry has no leading comma.
+const NOTE_MARKER = ", jest notatka</span>";
+const postNote = (form, options = {}) =>
+  request("/api/notes", { method: "POST", form: { day: noteDay, ...form }, ...options });
+
 // The smoke matcher compares locations by prefix, so an invalid period's redirect checks the exact location itself:
 // "/dashboard/history?month=bad" would also start with "/dashboard/history" (a redirect loop). A mismatch reports 399.
 async function historyInvalidPeriod() {
@@ -74,6 +92,11 @@ async function historyInvalidPeriod() {
 
 const steps = [
   ["home redirects anonymous user to sign-in", () => request("/"), { status: 302, location: "/auth/signin" }],
+  [
+    "signed-out note post goes to sign-in",
+    () => postNote({ intent: "save", text: signedOutText }),
+    { status: 303, location: "/auth/signin" },
+  ],
   ["dashboard redirects anonymous user", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
   ["history redirects anonymous user", () => request("/dashboard/history"), { status: 302, location: "/auth/signin" }],
   ["password sign-up is gone", () => request("/auth/signup"), { status: 404 }],
@@ -150,6 +173,60 @@ const steps = [
     { status: 200, contains: ["<main", "<h1", currentMonthLabel] },
   ],
   ["history redirects an invalid period to the default month", historyInvalidPeriod, { status: 302 }],
+  [
+    "note post from a foreign origin is forbidden",
+    () => postNote({ intent: "save", text: crossSiteText }, { origin: "https://evil.example" }),
+    { status: 403 },
+  ],
+  [
+    "owner saves a note",
+    () => postNote({ intent: "save", text: noteText }),
+    { status: 303, location: `${noteDayPath}&note=saved` },
+  ],
+  [
+    "day page shows the saved note as text, and no rejected one",
+    () => request(`${noteDayPath}&note=saved`, { readBody: true }),
+    {
+      status: 200,
+      contains: ['data-testid="history-day-note"', noteTextEscaped, "Notatka zapisana.", 'role="status"'],
+      notContains: [`<b>pogrubiona</b>`, signedOutText, crossSiteText],
+    },
+  ],
+  [
+    "month page marks the noted day",
+    () => request(noteMonthPath, { readBody: true }),
+    { status: 200, contains: NOTE_MARKER },
+  ],
+  [
+    "owner edits the note",
+    () => postNote({ intent: "save", text: editedText }),
+    { status: 303, location: `${noteDayPath}&note=saved` },
+  ],
+  [
+    "day page shows the edited note",
+    () => request(noteDayPath, { readBody: true }),
+    { status: 200, contains: editedText, notContains: noteTextEscaped },
+  ],
+  [
+    "a blank note is rejected",
+    () => postNote({ intent: "save", text: "   " }),
+    { status: 303, location: `${noteDayPath}&note=invalid` },
+  ],
+  [
+    "owner deletes the note",
+    () => postNote({ intent: "delete" }),
+    { status: 303, location: `${noteDayPath}&note=deleted` },
+  ],
+  [
+    "day page no longer shows the note",
+    () => request(`${noteDayPath}&note=deleted`, { readBody: true }),
+    { status: 200, contains: ["Notatka usunięta.", "Dodaj notatkę"], notContains: editedText },
+  ],
+  [
+    "month page no longer marks the day",
+    () => request(noteMonthPath, { readBody: true }),
+    { status: 200, notContains: NOTE_MARKER },
+  ],
   ["used sign-in link is rejected", () => request(signinLink), { status: 302, location: "/auth/signin?error=" }],
   ["signout clears session", () => request("/api/auth/signout", { method: "POST" }), { status: 302, location: "/" }],
   ["dashboard redirects after signout", () => request("/dashboard"), { status: 302, location: "/auth/signin" }],
@@ -238,6 +315,33 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     { status: 401 },
   ]);
   steps.push([
+    "anon cannot read day notes directly",
+    async () => {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/day_notes?select=day,text`, {
+        headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+      });
+      return { status: response.status, location: "" };
+    },
+    { status: 401 },
+  ]);
+  steps.push([
+    "anon cannot write day notes directly",
+    async () => {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/day_notes`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({ day: noteDay, text: `Smoke notatka anonimowa ${noteStamp}` }),
+      });
+      return { status: response.status, location: "" };
+    },
+    { status: 401 },
+  ]);
+  steps.push([
     "anon cannot read bill forecast directly",
     async () => {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/bill_forecast?select=bill_forecast`, {
@@ -316,7 +420,7 @@ for (const [name, run, expected] of steps) {
     actual.status === expected.status &&
     (expected.location === undefined || actual.location.startsWith(expected.location)) &&
     [expected.contains ?? []].flat().every((text) => Boolean(actual.body?.includes(text))) &&
-    (expected.notContains === undefined || !actual.body?.includes(expected.notContains));
+    [expected.notContains ?? []].flat().every((text) => !actual.body?.includes(text));
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}  -> ${actual.status} ${actual.location}`);
   if (!ok) {
     failed++;

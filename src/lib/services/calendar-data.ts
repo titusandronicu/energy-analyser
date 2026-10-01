@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { DailyEnergyRow, RecommendationRow } from "@/types";
+import type { DailyEnergyRow, DayNoteRow, RecommendationRow } from "@/types";
 
 // Range loaders for the history calendar (S-15). Each reads only the chosen period's rows; RLS returns nothing for
 // non-owners. Errors are thrown so the page can show a load failure instead of pretending the period is empty.
@@ -57,4 +57,31 @@ export async function loadRecommendationsForDay(
     .overrideTypes<RecommendationRow[], { merge: false }>();
   if (error) throw new Error(`loading recommendations for the day failed: ${error.message}`);
   return data;
+}
+
+// The signed-in owner's note on one Warsaw day (S-19), or null when there is none. RLS returns only the user's own
+// rows, and unique (user_id, day) keeps it to at most one.
+export async function loadNoteForDay(client: SupabaseClient, day: string): Promise<DayNoteRow | null> {
+  const { data, error } = await client
+    .from("day_notes")
+    .select("day, text, updated_at")
+    .eq("day", day)
+    .maybeSingle()
+    .overrideTypes<DayNoteRow | null, { merge: false }>();
+  if (error) throw new Error(`loading the day note failed: ${error.message}`);
+  return data;
+}
+
+// The days from `from` to `to` inclusive (day keys) that carry a note, oldest first; only the keys, for the month
+// grid's markers. A month is at most 31 rows.
+export async function loadNoteDays(client: SupabaseClient, from: string, to: string): Promise<string[]> {
+  const { data, error } = await client
+    .from("day_notes")
+    .select("day")
+    .gte("day", from)
+    .lte("day", to)
+    .order("day", { ascending: true })
+    .overrideTypes<{ day: string }[], { merge: false }>();
+  if (error) throw new Error(`loading the note days failed: ${error.message}`);
+  return data.map((row) => row.day);
 }

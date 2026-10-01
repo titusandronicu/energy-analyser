@@ -17,6 +17,7 @@ import {
   FORECAST_NOT_COLLECTED,
   FORECAST_TOO_FEW,
   forecastDaysText,
+  HAS_NOTE_WORD,
   HISTORY_START_NOTE,
   INCOMPLETE_DAY,
   MARKERS_INCOMPLETE,
@@ -253,6 +254,17 @@ describe("buildMonthView", () => {
     expect(view.markersNote).toBeNull();
   });
 
+  it("marks the days that carry a note", () => {
+    const view = buildMonthView("2026-09", september, noTimes, "2026-09-30", new Set(["2026-09-03", "2026-09-30"]));
+    expect(
+      cells(view)
+        .filter((c) => c.hasNote)
+        .map((c) => c.day),
+    ).toEqual(["2026-09-03", "2026-09-30"]);
+    // The month carries its notes on the cells; its own note slot stays reserved.
+    expect(view.note).toBeNull();
+  });
+
   it("says the markers may be incomplete when the times were truncated", () => {
     const view = buildMonthView("2026-09", september, { times: [], truncated: true }, "2026-09-30");
     expect(view.markersNote).toBe(MARKERS_INCOMPLETE);
@@ -261,7 +273,12 @@ describe("buildMonthView", () => {
   it("lays the month out Monday first and reserves the later slices' slots", () => {
     const view = buildMonthView("2026-11", [], noTimes, "2026-11-10");
     expect(view.grid[0].slice(0, 6)).toEqual([null, null, null, null, null, null]);
-    expect(view.grid[0][6]).toEqual({ day: "2026-11-01", status: "missing", hasRecommendation: false });
+    expect(view.grid[0][6]).toEqual({
+      day: "2026-11-01",
+      status: "missing",
+      hasRecommendation: false,
+      hasNote: false,
+    });
     expect([view.note, view.summary]).toEqual([null, null]);
     expect(view.rating).toEqual(notRated(MONTH_NOT_RATED));
   });
@@ -359,6 +376,19 @@ describe("buildDayView", () => {
     expect([view.note, view.summary]).toEqual([null, null]);
     // Only the day's own row was read, so its norm has no days.
     expect(view.rating).toMatchObject({ kind: "insufficient", word: "Za mało danych: 0 z 7" });
+  });
+
+  it("shows the day's note with its last change in Warsaw time", () => {
+    const view = buildDayView("2026-09-27", [], [], todayKey, now, {
+      day: "2026-09-27",
+      text: "Synthetic note\n<b>line two</b>",
+      updated_at: "2026-09-28T07:15:00+00:00",
+    });
+    expect(view.note).toEqual({
+      text: "Synthetic note\n<b>line two</b>",
+      updatedLabel: "28 września 2026, 09:15",
+    });
+    expect(view.summary).toBeNull();
   });
 
   it("says why a missing or empty day has no totals", () => {
@@ -531,6 +561,20 @@ describe("history start and display helpers", () => {
     expect(name("2026-07-19")).toBe("19 lipca, brak danych");
     expect(name("2026-07-20")).toBe("20 lipca, dziś, dzień jeszcze trwa");
     expect(name("2026-07-21")).toBe("21 lipca, jeszcze nie nadszedł");
+    const noted = buildMonthView(
+      "2026-07",
+      rows("2026-07-16", 3),
+      { times: ["2026-07-17T08:00:00Z"], truncated: false },
+      "2026-07-20",
+      new Set(["2026-07-17", "2026-07-18"]),
+    );
+    const notedName = (day: string) => {
+      const cell = cells(noted).find((c) => c.day === day);
+      if (cell === undefined) throw new Error(day);
+      return dayCellName(cell);
+    };
+    expect(notedName("2026-07-17")).toBe("17 lipca, dane pełne, jest rekomendacja, jest notatka");
+    expect(notedName("2026-07-18")).toBe("18 lipca, dane pełne, jest notatka");
     const empty = buildMonthView("2026-09", september, noTimes, "2026-09-30");
     const cell = cells(empty).find((c) => c.day === "2026-09-13");
     expect(cell && dayCellWord(cell)).toBe("dane niepełne");
@@ -572,6 +616,7 @@ describe("history copy", () => {
       "Jaka część zużycia domu nie była kupiona z sieci, tylko przyszła z paneli albo z baterii. 100% to dzień bez prądu z sieci, 0% to dzień, w którym cały prąd był kupiony.",
     );
     expect(RATING_TERM).toBe("Ocena dnia i miesiąca");
+    expect(HAS_NOTE_WORD).toBe("jest notatka");
     expect(RATING_EXPLANATION).toBe(
       "Dzień jest porównywany z normą domu: medianą samowystarczalności z pełnych dni wśród 14 dni przed nim. Norma potrzebuje co najmniej 7 takich dni, inaczej dzień nie jest oceniany. Więcej niż 10 punktów procentowych powyżej normy to dobry dzień, więcej niż 10 poniżej to słaby, a wszystko pomiędzy to przeciętny. Zakończony miesiąc jest oceniany tak samo, po medianie odchyleń swoich ocenionych dni. Samowystarczalność idzie głównie za słońcem, więc słoneczne dni wypadają lepiej, a pochmurne gorzej; gdy panele dały mniej niż 70% tego, co zwykle, ocena mówi „Mało słońca”. Po południu 3 sierpnia 2026 zmienił się kierunek czujnika prądu falownika, więc dni od 3 do 17 sierpnia (3 sierpnia sam łączy obie strony), których norma sięgałaby sprzed tej zmiany, są „Poza oceną”, a norma nigdy nie łączy dni sprzed i po zmianie. Miesiąc zmiany (sierpień 2026) jest oceniany tylko z dni od 4 sierpnia. Dni z okna zmiany, choć „Poza oceną”, liczą się do późniejszych norm. Inaczej jest z dniami, w których z sieci kupiono więcej, niż dom zużył (np. ładowanie baterii z sieci albo błąd licznika): są „Poza oceną” i nie są ani oceniane, ani liczone do norm.",
     );

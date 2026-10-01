@@ -1,9 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
-import type { DailyEnergyRow, RecommendationRow } from "@/types";
+import type { DailyEnergyRow, DayNoteRow, RecommendationRow } from "@/types";
 import { periodInstants } from "@/lib/calendar/period";
 import {
   loadDailyRange,
+  loadNoteDays,
+  loadNoteForDay,
   loadRecommendationsForDay,
   loadRecommendationTimes,
   RECOMMENDATION_TIMES_LIMIT,
@@ -12,7 +14,7 @@ import {
 // All data here is synthetic.
 
 // Records the arguments of the query chain and resolves with the given result.
-function mockClient(result: { data: unknown[] | null; error: { message: string } | null }) {
+function mockClient(result: { data: unknown; error: { message: string } | null }) {
   const calls: Record<string, unknown[]> = {};
   const chain = {
     from: (...args: unknown[]) => ((calls.from = args), chain),
@@ -20,8 +22,10 @@ function mockClient(result: { data: unknown[] | null; error: { message: string }
     gte: (...args: unknown[]) => ((calls.gte = args), chain),
     lte: (...args: unknown[]) => ((calls.lte = args), chain),
     lt: (...args: unknown[]) => ((calls.lt = args), chain),
+    eq: (...args: unknown[]) => ((calls.eq = args), chain),
     order: (...args: unknown[]) => ((calls.order = args), chain),
     limit: (...args: unknown[]) => ((calls.limit = args), chain),
+    maybeSingle: (...args: unknown[]) => ((calls.maybeSingle = args), chain),
     overrideTypes: () => Promise.resolve(result),
   };
   return { client: chain as unknown as SupabaseClient, calls };
@@ -103,5 +107,41 @@ describe("loadRecommendationsForDay", () => {
 
   it("throws on an error", async () => {
     await expect(loadRecommendationsForDay(mockClient(failure).client, 0, 1)).rejects.toThrow("boom");
+  });
+});
+
+describe("loadNoteForDay", () => {
+  it("reads the one note of the day", async () => {
+    const row: DayNoteRow = { day: "2026-09-14", text: "Synthetic note", updated_at: "2026-09-14T18:30:00+00:00" };
+    const { client, calls } = mockClient({ data: row, error: null });
+    await expect(loadNoteForDay(client, "2026-09-14")).resolves.toEqual(row);
+    expect(calls.from).toEqual(["day_notes"]);
+    expect(calls.select).toEqual(["day, text, updated_at"]);
+    expect(calls.eq).toEqual(["day", "2026-09-14"]);
+    expect(calls.maybeSingle).toEqual([]);
+  });
+
+  it("returns null when the day has no note", async () => {
+    await expect(loadNoteForDay(mockClient({ data: null, error: null }).client, "2026-09-14")).resolves.toBeNull();
+  });
+
+  it("throws on an error", async () => {
+    await expect(loadNoteForDay(mockClient(failure).client, "2026-09-14")).rejects.toThrow("boom");
+  });
+});
+
+describe("loadNoteDays", () => {
+  it("reads only the days that carry a note, inclusive, oldest first", async () => {
+    const { client, calls } = mockClient({ data: [{ day: "2026-09-03" }, { day: "2026-09-30" }], error: null });
+    await expect(loadNoteDays(client, "2026-09-01", "2026-09-30")).resolves.toEqual(["2026-09-03", "2026-09-30"]);
+    expect(calls.from).toEqual(["day_notes"]);
+    expect(calls.select).toEqual(["day"]);
+    expect(calls.gte).toEqual(["day", "2026-09-01"]);
+    expect(calls.lte).toEqual(["day", "2026-09-30"]);
+    expect(calls.order).toEqual(["day", { ascending: true }]);
+  });
+
+  it("throws on an error", async () => {
+    await expect(loadNoteDays(mockClient(failure).client, "2026-09-01", "2026-09-30")).rejects.toThrow("boom");
   });
 });
