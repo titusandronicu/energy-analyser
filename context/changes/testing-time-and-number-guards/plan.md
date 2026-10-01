@@ -280,25 +280,25 @@ None. No schema, contract or data change. The two behaviour changes are display-
 
 #### Automated
 
-- [x] 2.1 Unit tests pass, including the ladder edges and the fixture table
-- [x] 2.2 Linting passes
-- [x] 2.3 Type check passes
-- [x] 2.4 Production build succeeds
-- [x] 2.5 Deliberate break: removing the sign guard, and separately the closed-month ceiling, turns the matching tests red
+- [x] 2.1 Unit tests pass, including the ladder edges and the fixture table — 6bdc785
+- [x] 2.2 Linting passes — 6bdc785
+- [x] 2.3 Type check passes — 6bdc785
+- [x] 2.4 Production build succeeds — 6bdc785
+- [x] 2.5 Deliberate break: removing the sign guard, and separately the closed-month ceiling, turns the matching tests red — 6bdc785
 
 #### Manual
 
-- [x] 2.6 The owner spot-checks two of the hand-computed oracle comments against docs/logic.md and agrees the arithmetic is independent of the code
+- [x] 2.6 The owner spot-checks two of the hand-computed oracle comments against docs/logic.md and agrees the arithmetic is independent of the code — 6bdc785
 
 ### Phase 3: Boundary gaps (risk #5)
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass, including the new boundary cases
-- [ ] 3.2 Linting passes
-- [ ] 3.3 Type check passes
-- [ ] 3.4 Production build succeeds
-- [ ] 3.5 Deliberate break: changing the periodTotals 7-day comparison from < to <= turns the new 6-versus-7 test red
+- [x] 3.1 Unit tests pass, including the new boundary cases
+- [x] 3.2 Linting passes
+- [x] 3.3 Type check passes
+- [x] 3.4 Production build succeeds
+- [x] 3.5 Deliberate break: changing the periodTotals 7-day comparison from < to <= turns the new 6-versus-7 test red
 
 ### Phase 4: Docs, cookbook and plan backport
 

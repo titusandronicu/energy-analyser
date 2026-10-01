@@ -247,6 +247,35 @@ describe("rateDay", () => {
     });
   });
 
+  // KNOWN GAP (research Risk #5): the low-sun rule compares the unrounded PV but the text prints one decimal, so PV 13.96
+  // against a norm of 20 (70% of 20 is 14, and 13.96 < 14) is flagged low while the text reads "14,0 … 20,0", which
+  // looks like exactly 70%. This pins today's behaviour; a later fix (edge labels, as the usage insight has) flips it.
+  it("KNOWN GAP: flags 13.96 kWh against a norm of 20 as low sun while the text prints 14,0", () => {
+    const lowSun = rated(rateWith(50, 13.96)).lowSun;
+    expect(lowSun).not.toBeNull();
+    expect(lowSun?.text).toBe("Mało słońca: 14,0 kWh z paneli, zwykle 20,0 kWh.");
+  });
+
+  // The norm days are plain calendar days, so a 23- or 25-hour day counts once like any other.
+  it.each([
+    // Spring change, Sunday 2026-03-29: the day itself (norm 15–28 March) and a later day whose window holds it.
+    ["2026-03-29", "2026-03-15", "2026-03-30", "14 dni: 15–28 marca"],
+    ["2026-03-31", "2026-03-17", "2026-04-05", "14 dni: 17–30 marca"],
+    // Autumn change, Sunday 2026-10-25: the day itself (norm 11–24 October) and a later day whose window holds it.
+    ["2026-10-25", "2026-10-11", "2026-10-26", "14 dni: 11–24 października"],
+    ["2026-10-27", "2026-10-13", "2026-11-05", "14 dni: 13–26 października"],
+  ])("rates %s with a norm window of 14 full days (%s – %s)", (day, normFirst, today, label) => {
+    // 14 days at 50%, the rated day at 70%: 20 points above its norm, so good.
+    const rating = rated(rateDay(day, [...steadyDays(normFirst, 14, 50), ...steadyDays(day, 1, 70)], today));
+    expect(rating.days).toBe(14);
+    expect(rating.periodLabel).toBe(label);
+    expect(rating.band).toBe("good");
+    expect(rating.delta).toBeCloseTo(20, 9);
+    expect(rating.basis).toContain(
+      `— 20,0 punktu powyżej normy. Norma: mediana z ${label.replace(": ", " (")}), ostatnie dni`,
+    );
+  });
+
   it("needs 7 qualifying days in the 14 before", () => {
     const day = steadyDays("2026-07-01", 1, 50);
     expect(rateDay("2026-07-01", [...steadyDays("2026-06-24", 6, 50), ...day], TODAY)).toMatchObject({
@@ -361,6 +390,29 @@ describe("rateMonth", () => {
     expect(rateMonth("2026-10", FIXTURE, TODAY)).toEqual(notRated(MONTH_RUNNING));
     expect(rateMonth("2026-11", FIXTURE, TODAY)).toEqual(notRated(MONTH_RUNNING));
     expect(rateMonth("2026-09", FIXTURE, "2026-09-30")).toEqual(notRated(MONTH_RUNNING));
+  });
+
+  it("rates a month that just ended on the 1st of the next month, its last day included", () => {
+    // 14 norm days from 18 August, then all 30 days of September at 50%; 30 September is complete since today is 1 October.
+    const rows = steadyDays("2026-08-18", 44, 50);
+    const rating = rated(rateMonth("2026-09", rows, "2026-10-01"));
+    expect(rating.days).toBe(30);
+    expect(rating.periodLabel).toBe("30 dni: 1–30 września");
+    expect(rating.word).toBe("Przeciętny miesiąc");
+    // The day before, the month is still running.
+    expect(rateMonth("2026-09", rows, "2026-09-30")).toEqual(notRated(MONTH_RUNNING));
+  });
+
+  it("rates December 2026 on 1 January 2027 and not the new January", () => {
+    // 14 norm days from 17 November, then all 31 days of December at 50% (17 Nov + 44 days is 31 Dec).
+    const rows = steadyDays("2026-11-17", 45, 50);
+    const rating = rated(rateMonth("2026-12", rows, "2027-01-01"));
+    expect(rating.days).toBe(31);
+    // Another year than today's, so the label names it once.
+    expect(rating.periodLabel).toBe("31 dni: 1–31 grudnia 2026");
+    expect(rating.word).toBe("Przeciętny miesiąc");
+    expect(rateMonth("2027-01", rows, "2027-01-01")).toEqual(notRated(MONTH_RUNNING));
+    expect(rateMonth("2026-12", rows, "2026-12-31")).toEqual(notRated(MONTH_RUNNING));
   });
 
   it("says Brak danych z tego miesiąca for a completed month with no rated day", () => {
