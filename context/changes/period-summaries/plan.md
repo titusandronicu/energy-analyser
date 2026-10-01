@@ -264,16 +264,16 @@ None. The table, grants and policy ship with F-04. The app deploy is the owner's
 
 #### Automated
 
-- [x] 3.1 Unit tests pass
-- [x] 3.2 Linting passes
-- [x] 3.3 Type check passes
-- [x] 3.4 Production build succeeds
-- [x] 3.5 Smoke test shows the card against local Supabase
-- [x] 3.6 The docs no longer claim the display is missing
+- [x] 3.1 Unit tests pass — 4a5dc25
+- [x] 3.2 Linting passes — 4a5dc25
+- [x] 3.3 Type check passes — 4a5dc25
+- [x] 3.4 Production build succeeds — 4a5dc25
+- [x] 3.5 Smoke test shows the card against local Supabase — 4a5dc25
+- [x] 3.6 The docs no longer claim the display is missing — 4a5dc25
 
 #### Manual
 
-- [x] 3.7 With a current today row the card shows "aktualna", the text, the generation time and today's date; older than 2 hours and from yesterday show "sprzed X" and "z <date> — dotyczy innego dnia"
-- [x] 3.8 With no row and with null narration the card shows its neutral states and no numbers
-- [x] 3.9 The card sits under the recommendation, keeps the right column in balance and reads well at phone width
+- [x] 3.7 With a current today row the card shows "aktualna", the text, the generation time and today's date; older than 2 hours and from yesterday show "sprzed X" and "z <date> — dotyczy innego dnia" — 4a5dc25
+- [x] 3.8 With no row and with null narration the card shows its neutral states and no numbers — 4a5dc25
+- [x] 3.9 The card sits under the recommendation, keeps the right column in balance and reads well at phone width — 4a5dc25
 - [ ] 3.10 After the app deploy, production shows today's text and a completed day's and month's summary as F-04's backfill wrote them
