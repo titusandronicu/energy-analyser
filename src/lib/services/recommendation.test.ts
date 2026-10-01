@@ -267,15 +267,6 @@ describe("toRecommendationView", () => {
     it("is not flagged for a past time, however old", () => {
       expect(recommendationView(row({ generated_at: "2026-09-20T10:00:00Z" })).isFutureDated).toBe(false);
     });
-
-    it("is not flagged in the historical view", () => {
-      const view = toRecommendationView(beyond, now, { historical: true });
-      expect(view.kind === "recommendation" && [view.isFutureDated, view.isStale, view.isCurrent]).toEqual([
-        false,
-        false,
-        false,
-      ]);
-    });
   });
 });
 

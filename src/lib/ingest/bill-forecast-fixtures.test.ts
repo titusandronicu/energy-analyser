@@ -75,7 +75,7 @@ describe("bill-forecast fixtures", () => {
       tone: "insufficient",
       reason: "PGE nie rozliczyło",
     },
-    // 7 observed days pass the gate. Invoice 214.66, central 256.31: 214.66 x 1.2 = 257.59 >= 256.31 -> watch.
+    // 7 observed days pass the gate. Central 256.31 is above the invoice figure but not past invoice x 1.2 -> watch.
     "seven-complete-days.json": { kind: "forecast", tone: "watch" },
     // 6 observed days are one short of the 7 needed.
     "six-complete-days.json": { kind: "unavailable", tone: "insufficient", reason: "jest 6 dni z 7 potrzebnych" },

@@ -371,9 +371,16 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
       "Ostatnie wyliczenie nie zawiera czytelnej kwoty, więc nie ma czego pokazać.",
     );
   }
-  // The contract already rejects a negative central, low or high with a 422, so this only protects a stored row that
-  // skipped validation; the view model does not trust stored jsonb.
-  if (central < 0 || low < 0 || high < 0) {
+  // The closed-month check is read here because both the sign guard and the ceiling below judge its amounts: present
+  // but not an object (null, a string) is as good as absent, and an amount that is absent or not a number is skipped.
+  const rawCheck = body.closed_month_check;
+  const check = rawCheck && typeof rawCheck === "object" && !Array.isArray(rawCheck) ? asRecord(rawCheck) : null;
+  const closedMonthAmounts = (
+    check === null ? [] : [asNumber(check.computed_gross_pln), asNumber(check.invoice_gross_pln)]
+  ).filter((amount) => amount !== null);
+  // The contract already rejects a negative central, low, high or closed-month amount with a 422, so this only
+  // protects a stored row that skipped validation; the view model does not trust stored jsonb.
+  if ([central, low, high, ...closedMonthAmounts].some((amount) => amount < 0)) {
     return unavailable("problem", "ujemna kwota", "Wyliczona kwota jest ujemna, więc jej nie pokazujemy.");
   }
   if (low > high) {
@@ -392,12 +399,7 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
   }
   // The contract has no ceiling on the closed-month amounts either, and an inflated invoice would flip the verdict to
   // good, so they share the ceiling when readable.
-  const rawCheck = body.closed_month_check;
-  const check = rawCheck && typeof rawCheck === "object" && !Array.isArray(rawCheck) ? asRecord(rawCheck) : null;
-  const closedMonthAmounts =
-    check === null ? [] : [asNumber(check.computed_gross_pln), asNumber(check.invoice_gross_pln)];
-  const amounts = [central, low, high, ...closedMonthAmounts.filter((amount) => amount !== null)];
-  if (Math.max(...amounts) > MAX_PLAUSIBLE_BILL_PLN) {
+  if (Math.max(central, low, high, ...closedMonthAmounts) > MAX_PLAUSIBLE_BILL_PLN) {
     return unavailable(
       "problem",
       "nierealna kwota",
@@ -450,7 +452,7 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
     );
   }
 
-  // `check` was read with the plausibility guards: present but not an object (null, a string) is as good as absent.
+  // `check` was read with the sign guard above.
   const invoice = check === null ? null : asNumber(check.invoice_gross_pln);
   // The delta names the invoice's own month (the closed-month check's period), not the settlement's reference.
   const invoiceMonth = check === null ? MISSING : periodMonthLabel(check.period);

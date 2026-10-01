@@ -25,6 +25,9 @@ interface Reading {
   outcome: Outcome;
   isStale: boolean;
   label: string;
+  // Only the bill forecast: its `isStale` and `outcome` both come from the view kind, so for a current forecast the
+  // tone and the month flag are what the edge rows actually pin.
+  forecast?: { tone: string; isOtherMonth: boolean };
 }
 
 function liveState(ageMs: number): Reading {
@@ -85,7 +88,12 @@ function billForecast(ageMs: number): Reading {
   // A refusal is the bill forecast's way of saying "not current": it shows no figure.
   if (view.kind === "unavailable") return { outcome: "problem", isStale: true, label: view.status.label };
   if (view.kind !== "forecast") throw new Error("expected a forecast or a refusal");
-  return { outcome: "current", isStale: false, label: view.status.label };
+  return {
+    outcome: "current",
+    isStale: false,
+    label: view.status.label,
+    forecast: { tone: view.status.tone, isOtherMonth: view.isOtherMonth },
+  };
 }
 
 const surfaces = {
@@ -132,6 +140,22 @@ describe("age-bearing surfaces at their edges", () => {
     expect(reading.outcome).toBe(outcome);
     expect(reading.isStale).toBe(outcome !== "current");
     if (label !== null) expect(reading.label).toBe(label);
+    // The fixture body has no closed-month check, so by docs/logic.md ("Bill forecast": no invoice, no comparison)
+    // a current forecast reads "insufficient" (grey), and its month is the clock's month (September 2026).
+    if (surface === "bill forecast" && outcome === "current") {
+      expect(reading.forecast).toEqual({ tone: "insufficient", isOtherMonth: false });
+    }
+  });
+
+  // The live view has no future guard (a negative age is clamped to 0 in its label and counts as fresh), unlike the
+  // other three surfaces. The contract refuses a future `captured_at` beyond 5 minutes at receipt, so this is only
+  // reachable through a stored row that skipped it.
+  it("KNOWN GAP: live state with a time more than 5 minutes ahead of the clock still reads current", () => {
+    const reading = liveState(-(5 * MINUTE + 1));
+    expect(reading.outcome).toBe("current");
+    expect(reading.isStale).toBe(false);
+    // A future guard should flip this to a problem, as on the recommendation ("czas z przyszłości").
+    expect(reading.label).toBe("aktualne");
   });
 });
 
@@ -176,8 +200,9 @@ describe("a text from another Warsaw day", () => {
 });
 
 describe("the historical recommendation", () => {
-  it("never reports stale or current, whatever its age or whether it is in the future", () => {
-    for (const ageMs of [0, 2 * HOUR + 1, 3 * 24 * HOUR, -(5 * MINUTE + 1)]) {
+  it.each([0, 2 * HOUR + 1, 3 * 24 * HOUR, -(5 * MINUTE + 1)])(
+    "never reports stale, current or future-dated for a text %i ms old (negative: in the future)",
+    (ageMs) => {
       const row: RecommendationRow = {
         generated_at: timeAt(ageMs),
         language: "pl",
@@ -189,9 +214,14 @@ describe("the historical recommendation", () => {
       };
       const view = toRecommendationView(row, NOW, { historical: true });
       if (view.kind !== "recommendation") throw new Error("expected a recommendation");
-      expect([view.isStale, view.isCurrent, view.status.tone]).toEqual([false, false, "insufficient"]);
-    }
-  });
+      expect([view.isStale, view.isCurrent, view.isFutureDated, view.status.tone]).toEqual([
+        false,
+        false,
+        false,
+        "insufficient",
+      ]);
+    },
+  );
 });
 
 describe("the future skew", () => {
