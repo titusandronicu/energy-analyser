@@ -304,13 +304,13 @@ None. No schema, contract or data change. The two behaviour changes are display-
 
 #### Automated
 
-- [x] 4.1 Unit tests pass
-- [x] 4.2 Linting passes
-- [x] 4.3 Type check passes
-- [x] 4.4 Production build succeeds
-- [x] 4.5 The docs state the new rules
+- [x] 4.1 Unit tests pass — 81215a6
+- [x] 4.2 Linting passes — 81215a6
+- [x] 4.3 Type check passes — 81215a6
+- [x] 4.4 Production build succeeds — 81215a6
+- [x] 4.5 The docs state the new rules — 81215a6
 
 #### Manual
 
-- [x] 4.6 The owner reads test-plan.md §6.1 and §6.5 and confirms the patterns are usable for the next rollout phase
-- [x] 4.7 The pull request description lists the example-v1.json scrub as a follow-up and the owner agrees
+- [x] 4.6 The owner reads test-plan.md §6.1 and §6.5 and confirms the patterns are usable for the next rollout phase — 81215a6
+- [x] 4.7 The pull request description lists the example-v1.json scrub as a follow-up and the owner agrees — 81215a6
