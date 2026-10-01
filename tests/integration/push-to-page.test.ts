@@ -1,5 +1,4 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { addDays } from "@/lib/format/warsaw-time";
 import { toBillForecastView, loadBillForecast } from "@/lib/services/bill-forecast";
 import { loadDailyRange } from "@/lib/services/calendar-data";
 import { dailySeries } from "@/lib/services/daily-series";
@@ -8,7 +7,7 @@ import { loadLiveState, toLiveStateView } from "@/lib/services/live-state";
 import { loadPeriodSummary, toSummaryView } from "@/lib/services/period-summary";
 import { loadLatestRecommendation, toRecommendationView } from "@/lib/services/recommendation";
 import { baseBody, billForecast, dailyRow, hourRow, recommendation, summary } from "./support/bodies";
-import { freshDays, freshHours, nextCapturedAt, windowHours } from "./support/keys";
+import { emptySummaryDay, emptyWeek, freshDays, freshWindowHours, nextCapturedAt, windowHours } from "./support/keys";
 import { push } from "./support/push";
 import { ownerClient, requireStack } from "./support/stack";
 
@@ -31,30 +30,6 @@ describe("push to page: one test per section", () => {
     owner = await ownerClient();
   });
 
-  // A run of days that no row occupies: `first` ... `first + 6`. The pushes use some of them, the rest must stay gaps,
-  // so the loaded range holds exactly the pushed days even though the database is never reset.
-  async function emptyWeek(): Promise<string[]> {
-    for (let attempt = 0; attempt < 10; attempt++) {
-      const [first] = await freshDays(owner, 1);
-      const week = Array.from({ length: 7 }, (_, i) => addDays(first, i));
-      const { data, error } = await owner.from("daily_energy").select("day").in("day", week);
-      if (error) throw new Error(`checking daily_energy keys failed: ${error.message}`);
-      if (data.length === 0) return week;
-    }
-    throw new Error("could not find 7 consecutive unused days");
-  }
-
-  // A far-past day with no daily row and no period summary of its own.
-  async function emptySummaryDay(): Promise<string> {
-    for (let attempt = 0; attempt < 10; attempt++) {
-      const [day] = await freshDays(owner, 1);
-      const { data, error } = await owner.from("period_summaries").select("period").eq("kind", "day").eq("period", day);
-      if (error) throw new Error(`checking period_summaries keys failed: ${error.message}`);
-      if (data.length === 0) return day;
-    }
-    throw new Error("could not find an unused summary day");
-  }
-
   const sections: { section: string; run: () => Promise<void> }[] = [
     {
       section: "state",
@@ -76,7 +51,7 @@ describe("push to page: one test per section", () => {
     {
       section: "daily_history",
       run: async () => {
-        const week = await emptyWeek();
+        const week = await emptyWeek(owner);
         const [d0, , d2, d3, , , d6] = week;
         const pushed = [
           { day: d0, pv_kwh: 6.4, load_kwh: 11.2, grid_import_kwh: 3.9, grid_export_kwh: 1.1 },
@@ -185,7 +160,7 @@ describe("push to page: one test per section", () => {
     {
       section: "period_summaries",
       run: async () => {
-        const day = await emptySummaryDay();
+        const day = await emptySummaryDay(owner);
         const builtAt = new Date().toISOString();
         const narrationAt = new Date().toISOString();
         const text = `Invented day text ${day}: the house used more than it made.`;
@@ -233,7 +208,7 @@ describe("push to page: one test per section", () => {
   describe("right surface", () => {
     it("a daily-only push creates no hourly row and no recommendation", async () => {
       const [day] = await freshDays(owner, 1);
-      const hours = await freshHours(owner, 3);
+      const hours = await freshWindowHours(owner, 3);
       const generatedAt = nextCapturedAt();
 
       const result = await push({ ...baseBody(nextCapturedAt()), daily_history: [dailyRow(day, { load_kwh: 12.3 })] });

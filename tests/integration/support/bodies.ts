@@ -41,7 +41,7 @@ export function dailyRow(day: string, overrides: Partial<DailyRow> = {}): DailyR
   return { day, pv_kwh: 7.5, load_kwh: 10, grid_import_kwh: 3, grid_export_kwh: 1.5, ...overrides };
 }
 
-// `hourStart` is an ISO instant on a whole hour, as `freshHours` and `windowHours` return it.
+// `hourStart` is an ISO instant on a whole hour, as `freshWindowHours` and `windowHours` return it.
 export function hourRow(hourStart: string, overrides: Partial<HourRow> = {}): HourRow {
   return { hour_start: hourStart, load_kwh: 0.5, grid_net_kwh: 0.2, pv_kwh: 0.3, samples: 12, ...overrides };
 }

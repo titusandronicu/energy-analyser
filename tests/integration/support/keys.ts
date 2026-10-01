@@ -1,11 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { HOUR_MS } from "@/lib/format/warsaw-time";
+import { addDays, HOUR_MS } from "@/lib/format/warsaw-time";
 
 const MAX_DRAWS = 25;
 const DAY_RANGE_START = Date.UTC(1900, 0, 1);
 const DAY_RANGE_END = Date.UTC(2040, 11, 31);
-const HOUR_RANGE_START = Date.UTC(1900, 0, 1);
-const HOUR_RANGE_END = Date.UTC(2020, 11, 31);
 const WINDOW_DAYS = 35;
 
 function randomBetween(from: number, to: number): number {
@@ -42,11 +40,40 @@ export function freshDays(owner: SupabaseClient, n: number): Promise<string[]> {
   );
 }
 
-// `n` distinct far-past whole hours (ISO instants, ascending), none stored in hourly_energy.
-export function freshHours(owner: SupabaseClient, n: number): Promise<string[]> {
+// A run of 7 consecutive far-past days (`first` ... `first + 6`) that no daily row occupies. A push uses some of them,
+// the rest must stay gaps, so a loaded range holds exactly the pushed days even though the database is never reset.
+export async function emptyWeek(owner: SupabaseClient): Promise<string[]> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const [first] = await freshDays(owner, 1);
+    const week = Array.from({ length: 7 }, (_, i) => addDays(first, i));
+    const { data, error } = await owner.from("daily_energy").select("day").in("day", week);
+    if (error) throw new Error(`checking daily_energy keys failed: ${error.message}`);
+    if (data.length === 0) return week;
+  }
+  throw new Error("could not find 7 consecutive unused days");
+}
+
+// A far-past day with no daily row and no period summary of its own.
+export async function emptySummaryDay(owner: SupabaseClient): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const [day] = await freshDays(owner, 1);
+    const { data, error } = await owner.from("period_summaries").select("period").eq("kind", "day").eq("period", day);
+    if (error) throw new Error(`checking period_summaries keys failed: ${error.message}`);
+    if (data.length === 0) return day;
+  }
+  throw new Error("could not find an unused summary day");
+}
+
+// `n` distinct whole hours (ISO instants, ascending) between 10 and 28 days back, none stored in hourly_energy. There
+// is no far-past variant on purpose: ingest_push deletes every hour older than 35 days in the same call, so a far-past
+// hour can never hold a row and an "absent" check on one proves nothing. The range stays clear of smoke's day (4 days back), the complete day
+// the history-safety test pushes (7 days back) and the prune test's 30-day hour. Loads pushed to these hours must stay
+// well under 1 kWh: they sit inside the dashboard's window.
+export function freshWindowHours(owner: SupabaseClient, n: number, now: Date = new Date()): Promise<string[]> {
+  const nowHour = Math.floor(now.getTime() / HOUR_MS) * HOUR_MS;
   return drawAbsent(
     n,
-    () => new Date(Math.floor(randomBetween(HOUR_RANGE_START, HOUR_RANGE_END) / HOUR_MS) * HOUR_MS).toISOString(),
+    () => new Date(nowHour - randomBetween(10 * 24, 28 * 24) * HOUR_MS).toISOString(),
     async (hours) => {
       const { data, error } = await owner.from("hourly_energy").select("hour_start").in("hour_start", hours);
       if (error) throw new Error(`checking hourly_energy keys failed: ${error.message}`);
@@ -72,4 +99,21 @@ export function nextCapturedAt(): Date {
   const ms = Math.max(Date.now(), lastCapturedAt + 1);
   lastCapturedAt = ms;
   return new Date(ms);
+}
+
+const OLDER_MIN_AGE_MS = 60_000;
+const OLDER_JITTER_MS = 60_000;
+const usedOlder = new Set<number>();
+
+// A captured_at the real now minus one to two minutes: older than any push made through `nextCapturedAt`, never in the
+// future and well inside the contract's 14 days. The millisecond jitter keeps it from equalling another push's
+// captured_at (an equal one with different content is a 409); a value already handed out is redrawn.
+export function olderCapturedAt(): Date {
+  for (;;) {
+    const ms = Date.now() - OLDER_MIN_AGE_MS - Math.floor(Math.random() * OLDER_JITTER_MS);
+    if (!usedOlder.has(ms)) {
+      usedOlder.add(ms);
+      return new Date(ms);
+    }
+  }
 }

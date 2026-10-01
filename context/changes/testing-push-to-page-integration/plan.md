@@ -338,11 +338,11 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Automated
 
-- [x] 2.1 Linting passes: `npm run lint`
-- [x] 2.2 Type checking passes: `npx astro check`
-- [x] 2.3 Unit tests still pass with the same 1201 tests: `npm test`
-- [x] 2.4 The push-to-page tests pass against a reachable local stack: `npm run test:integration`
-- [x] 2.5 Deliberate break: comment out the `hourly_history` section in the hourly row's body builder and the hourly test fails, then restore it
+- [x] 2.1 Linting passes: `npm run lint` — 38f19ee
+- [x] 2.2 Type checking passes: `npx astro check` — 38f19ee
+- [x] 2.3 Unit tests still pass with the same 1201 tests: `npm test` — 38f19ee
+- [x] 2.4 The push-to-page tests pass against a reachable local stack: `npm run test:integration` — 38f19ee
+- [x] 2.5 Deliberate break: comment out the `hourly_history` section in the hourly row's body builder and the hourly test fails, then restore it — 38f19ee
 
 #### Manual
 
@@ -353,11 +353,11 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Automated
 
-- [ ] 3.1 Linting passes: `npm run lint`
-- [ ] 3.2 Type checking passes: `npx astro check`
-- [ ] 3.3 Unit tests still pass with the same 1201 tests: `npm test`
-- [ ] 3.4 The history-safety tests pass against a reachable local stack: `npm run test:integration`
-- [ ] 3.5 The whole integration suite passes twice in a row on the same database, so it is rerun-safe: `npm run test:integration && npm run test:integration`
+- [x] 3.1 Linting passes: `npm run lint`
+- [x] 3.2 Type checking passes: `npx astro check`
+- [x] 3.3 Unit tests still pass with the same 1201 tests: `npm test`
+- [x] 3.4 The history-safety tests pass against a reachable local stack: `npm run test:integration`
+- [x] 3.5 The whole integration suite passes twice in a row on the same database, so it is rerun-safe: `npm run test:integration && npm run test:integration`
 
 #### Manual
 
