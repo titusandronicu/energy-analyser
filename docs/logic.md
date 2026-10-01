@@ -15,7 +15,7 @@ The rules Energy Analyser and the home lab apply to the data, with the exact thr
 | Daily series for the sparklines (windows, gaps) and their drawing                | App                                           | `src/lib/services/daily-series.ts`, `src/lib/sparkline.ts`                          |
 | History calendar: periods, complete days, totals, forecast vs actual, day advice | App                                           | `src/lib/calendar/`, `src/lib/services/calendar-view.ts`, `src/lib/bars.ts`         |
 | Day and month ratings: self-sufficiency, recent norm, bands, low-sun note        | App                                           | `src/lib/services/period-rating.ts`, `src/lib/services/complete-day.ts`             |
-| Day notes: one per day, length, which days, redirect notices                     | App and database                              | `src/lib/services/day-notes.ts`, `supabase/migrations/20261001101500_day_notes.sql` |
+| Day notes: one per day, length, which days, redirect notices                     | App and database                              | `src/lib/services/day-notes.ts`, `supabase/migrations/20261001072438_day_notes.sql` |
 | Grid sensor caveat: its dates and texts, the sensor-change window                | App                                           | `src/lib/services/grid-sensor.ts`                                                   |
 | Daily totals per day, which days are complete                                    | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py`                |
 | Current-month bill forecast                                                      | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/build-current-month-bill-forecast.py`   |
@@ -193,7 +193,7 @@ A completed day and a completed month in the history calendar are rated good, ne
 
 ## Notatki (day notes)
 
-The owner can write a short note on a calendar day ("urlop", "pompa ciepła od dziś"), read it on that day, see which days of a month have one, edit it and delete it (S-19, US-06, FR-025–FR-028). The rules are in `src/lib/services/day-notes.ts`; the database repeats the text rules in `public.day_notes` (`supabase/migrations/20261001101500_day_notes.sql`), and the security model is in [architecture.md](architecture.md#security-model).
+The owner can write a short note on a calendar day ("urlop", "pompa ciepła od dziś"), read it on that day, see which days of a month have one, edit it and delete it (S-19, US-06, FR-025–FR-028). The rules are in `src/lib/services/day-notes.ts`; the database repeats the text rules in `public.day_notes` (`supabase/migrations/20261001072438_day_notes.sql`), and the security model is in [architecture.md](architecture.md#security-model).
 
 - **One note per day:** at most one note per user and day (`unique (user_id, day)` in `day_notes`). Saving a day that already has a note replaces its text; there is no version history and no undo.
 - **Length:** **1–500** characters after trimming (`NOTE_MAX_LENGTH`). Blank or whitespace-only text is rejected. The limit is enforced three times: the zod form schema, the database `check` (`char_length(text) <= 500 and btrim(text) <> ''`) and `maxlength="500"` on the textarea. Line breaks are kept; the text is always shown as escaped plain text, never as HTML.

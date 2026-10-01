@@ -71,7 +71,7 @@ Narration runs in the lab (`scripts/run-energy-advisory.py`), never in this app.
 - Ingest token hash row in `public.ingest_tokens` (`scripts/create-ingest-token.mjs`).
 - Each migration applied in production with its deploy. In particular `20260929101548_owner_read_daily_energy_captured_at.sql` (owners may read `daily_energy.captured_at`): if it is missing, the consumption chip on the live card reads "Bez oceny · brak czasu historii" and the server log shows "permission denied for table daily_energy".
 - `20260930081229_hourly_energy.sql` (the `hourly_energy` table and the `ingest_push` that fills it) applied **before** the lab sends `hourly_history`: the contract rejects unknown keys, so a lab push with the section against an older app is refused whole (422), `state` included. Then, once, the 35-day backfill from the lab: `push-energy-analyser.py --hourly-hours 840` (homelab-2 `runbooks/energy-analyser-push.md`).
-- `20261001101500_day_notes.sql` (the `day_notes` table, its column grants, policies and trigger) applied with the day-notes deploy, **before** the app that reads it: without it the history day view shows the note panel's load error, the month grid says "Znaczniki notatek nie są pokazane." and every save fails.
+- `20261001072438_day_notes.sql` (the `day_notes` table, its column grants, policies and trigger) applied with the day-notes deploy, **before** the app that reads it: without it the history day view shows the note panel's load error, the month grid says "Znaczniki notatek nie są pokazane." and every save fails.
 - Once, the F-03 daily backfill: `push-energy-analyser.py --from 2026-07-16 --to 2026-07-25` (homelab-2 `runbooks/energy-analyser-push.md` step 6; done 2026-09-30).
 
 ## Prerequisites by roadmap item
