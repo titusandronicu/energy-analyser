@@ -50,3 +50,12 @@ export interface HourlyEnergyRow {
   pv_kwh: number | null;
   samples: number;
 }
+
+// A row of public.day_notes as the history calendar reads it: the signed-in owner's note on one Europe/Warsaw
+// calendar day ("YYYY-MM-DD"). `text` is 1–500 characters typed by the user, so it is only ever rendered as escaped
+// text. `updated_at` is the timestamptz PostgREST returns as an ISO string.
+export interface DayNoteRow {
+  day: string;
+  text: string;
+  updated_at: string;
+}
