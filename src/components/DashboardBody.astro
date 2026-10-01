@@ -5,10 +5,12 @@ import HourlyUsageCard from "@/components/HourlyUsageCard.astro";
 import LiveStateCard from "@/components/LiveStateCard.astro";
 import RecommendationCard from "@/components/RecommendationCard.astro";
 import SourceLegend from "@/components/SourceLegend.astro";
+import TodaySummaryCard from "@/components/TodaySummaryCard.astro";
 import UsageInsightCard from "@/components/UsageInsightCard.astro";
 import type { BillForecastView } from "@/lib/services/bill-forecast";
 import type { HourlyUsageView } from "@/lib/services/hourly-usage";
 import type { LiveStateView } from "@/lib/services/live-state";
+import type { TodaySummaryView } from "@/lib/services/period-summary";
 import type { RecommendationView } from "@/lib/services/recommendation";
 import type { UsageInsightView } from "@/lib/services/usage-insight";
 
@@ -17,20 +19,22 @@ interface Props {
   billView: BillForecastView | null;
   usageView: UsageInsightView | null;
   recommendationView: RecommendationView | null;
+  todaySummary: TodaySummaryView | null;
   hourlyView: HourlyUsageView | null;
   email: string | undefined;
 }
 
 // The dashboard's card grid inside the shared shell: the cards sit in the page's main landmark, the full-width hourly
 // card below the grid, and the legend footer in the shell's legend slot, outside main.
-const { liveView, billView, usageView, recommendationView, hourlyView, email } = Astro.props;
+const { liveView, billView, usageView, recommendationView, todaySummary, hourlyView, email } = Astro.props;
 ---
 
 <AppShell email={email} current="dashboard">
   <LiveStateCard view={liveView} />
   <div class="grid gap-6 lg:grid-cols-3 lg:items-start">
-    <div class="lg:col-span-2">
+    <div class="space-y-6 lg:col-span-2">
       <RecommendationCard view={recommendationView} />
+      <TodaySummaryCard view={todaySummary} />
     </div>
     <div class="space-y-6">
       <BillForecastCard view={billView} />

@@ -68,7 +68,7 @@ const freshSummaries = () => {
     narration: { text, generated_at: now, provider: "openrouter", model: "smoke/synthetic" },
   });
   const own = [narrated("day", summaryDay, daySummaryMarker), narrated("month", summaryMonth, monthSummaryMarker)];
-  const fromExample = example.period_summaries
+  const fromExample = examplePeriodSummaries
     .filter((entry) => !own.some((mine) => mine.kind === entry.kind && mine.period === entry.period))
     .map((entry) => ({
       ...entry,
@@ -199,6 +199,15 @@ const steps = [
     { status: 200, contains: ["Prognoza rachunku", "od 155 zł do 360 zł", "ok. 258 zł"] },
   ],
   [
+    // The fresh set's today entry is about the current Warsaw day and built now, so the card reads "aktualna".
+    "dashboard shows today's summary card as current, with its text",
+    () => request("/dashboard", { readBody: true }),
+    {
+      status: 200,
+      contains: ['data-testid="today-summary"', 'data-testid="today-summary-status"', freshSummaryMarker, "aktualna"],
+    },
+  ],
+  [
     "dashboard has a main landmark and a top-level heading",
     () => request("/dashboard", { readBody: true }),
     { status: 200, contains: ["<main", "<h1"] },
@@ -316,7 +325,12 @@ async function ingest(body, token = INGEST_TOKEN) {
 }
 
 const example = JSON.parse(readFileSync(new URL("../docs/ingest/example-v1.json", import.meta.url), "utf8"));
-const payload = { ...example, captured_at: new Date().toISOString() };
+// The example's own today entry is dated 2026-09-23; the dashboard card shows the newest today row as current only when it
+// is about the current Warsaw day, so every push of the example here carries today's key (the same row each time).
+const examplePeriodSummaries = example.period_summaries.map((entry) =>
+  entry.kind === "today" ? { ...entry, period: warsawToday } : entry,
+);
+const payload = { ...example, period_summaries: examplePeriodSummaries, captured_at: new Date().toISOString() };
 const changed = { ...payload, state: { ...payload.state, pv_w: (payload.state.pv_w ?? 0) + 1 } };
 
 steps.push(
@@ -477,7 +491,7 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
           readBody: true,
         });
         if (result.status !== 200 || !Array.isArray(result.rows)) return result;
-        const rows = example.period_summaries.map((entry) =>
+        const rows = examplePeriodSummaries.map((entry) =>
           result.rows.find((row) => row.kind === entry.kind && row.period === entry.period),
         );
         if (rows.some((row) => row === undefined)) return { status: 299, location: "example summary rows missing" };
@@ -499,7 +513,7 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       "ingest stores a newer facts-only entry for a narrated period",
       () => {
         const now = new Date().toISOString();
-        const today = example.period_summaries.find((entry) => entry.kind === "today");
+        const today = examplePeriodSummaries.find((entry) => entry.kind === "today");
         return ingest({
           ...example,
           captured_at: now,
@@ -515,7 +529,7 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       async () => {
         const result = await ownerRead("period_summaries?select=kind,period,narration_text", { readBody: true });
         if (result.status !== 200 || !Array.isArray(result.rows)) return result;
-        const todayPeriod = example.period_summaries.find((entry) => entry.kind === "today").period;
+        const todayPeriod = examplePeriodSummaries.find((entry) => entry.kind === "today").period;
         const today = result.rows.find((row) => row.kind === "today" && row.period === todayPeriod);
         if (today === undefined) return { status: 299, location: "today summary row missing" };
         return today.narration_text === freshSummaryMarker

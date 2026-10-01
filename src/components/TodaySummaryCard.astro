@@ -1,0 +1,53 @@
+---
+import { FileText } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import Panel from "@/components/ui/Panel.astro";
+import { todaySummaryStatus, type TodaySummaryView } from "@/lib/services/period-summary";
+
+interface Props {
+  view: TodaySummaryView | null;
+}
+
+// The lab's plain-language explanation of today's figures (S-18). null means loading failed; the page never throws a
+// 500 for a data problem. The text is untrusted, so it renders as escaped text, never as HTML. A row the lab has facts
+// for but no text yet says so in one sentence and shows no figures. No client JavaScript.
+const { view } = Astro.props;
+const status = todaySummaryStatus(view);
+---
+
+<Panel>
+  <div data-testid="today-summary">
+    <CardHeading
+      class="mb-2"
+      title="Co oznaczają dzisiejsze liczby"
+      size="lead"
+      icon={FileText}
+      iconClass="text-primary"
+    />
+    <div class="mb-4 flex flex-wrap items-center gap-2">
+      <StatusBadge status={status} testId="today-summary-status" />
+      {view?.kind === "narrated" && (
+        <span class="text-xs text-muted-foreground">Wygenerowano {view.generatedAtLabel}</span>
+      )}
+    </div>
+
+    {view === null && <p class="text-sm text-muted-foreground">Spróbuj odświeżyć stronę.</p>}
+
+    {view?.kind === "narrated" && (
+      <div class="space-y-1">
+        <p class="text-card-foreground leading-relaxed whitespace-pre-line [overflow-wrap:anywhere]">{view.text}</p>
+        <p class="text-muted-foreground text-xs">Dotyczy: {view.periodLabel}</p>
+      </div>
+    )}
+
+    {view?.kind === "pending" && (
+      <div class="space-y-1">
+        <p class="text-muted-foreground text-sm">Opis jeszcze się nie pojawił.</p>
+        <p class="text-muted-foreground text-xs">Dotyczy: {view.periodLabel}</p>
+      </div>
+    )}
+
+    {view?.kind === "empty" && <p class="text-muted-foreground text-sm">Laboratorium jeszcze nic nie przesłało.</p>}
+  </div>
+</Panel>

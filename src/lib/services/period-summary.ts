@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { PeriodSummaryRow } from "@/types";
 import { periodLabel } from "@/lib/calendar/period";
-import type { Status } from "@/lib/format/status";
+import { LOAD_FAILED, type Status } from "@/lib/format/status";
 import { formatDayMonth, formatMonth, formatWarsawDateTime, warsawParts } from "@/lib/format/warsaw-time";
 import { formatAge } from "@/lib/services/live-state";
 import { isStaleRecommendation } from "@/lib/services/recommendation";
@@ -96,6 +96,15 @@ function todayStatus(row: PeriodSummaryRow, now: Date, isFromEarlierDay: boolean
   if (isFromEarlierDay) return { tone: "problem", label: `z ${formatDayMonth(row.period)} — dotyczy innego dnia` };
   if (isStale) return { tone: "watch", label: `sprzed ${formatAge(now.getTime() - Date.parse(row.built_at))}` };
   return { tone: "good", label: "aktualna" };
+}
+
+// The badge of the dashboard card: a narrated text carries its own status; `empty` and `pending` are neutral, with the
+// recommendation card's wording for "nothing received yet"; null is a failed load.
+export function todaySummaryStatus(view: TodaySummaryView | null): Status {
+  if (view === null) return LOAD_FAILED;
+  if (view.kind === "narrated") return view.status;
+  if (view.kind === "pending") return { tone: "insufficient", label: "opis jeszcze się nie pojawił" };
+  return { tone: "insufficient", label: "laboratorium jeszcze nic nie przesłało" };
 }
 
 // A row from an earlier day without a text is `empty`: it would otherwise say a finished day's text has not appeared

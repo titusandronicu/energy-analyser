@@ -1,7 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { PeriodSummaryRow } from "@/types";
-import { loadPeriodSummary, loadTodaySummary, toSummaryView, toTodaySummaryView } from "./period-summary";
+import { LOAD_FAILED } from "@/lib/format/status";
+import {
+  loadPeriodSummary,
+  loadTodaySummary,
+  toSummaryView,
+  todaySummaryStatus,
+  toTodaySummaryView,
+} from "./period-summary";
 import { STALE_AFTER_MS } from "./recommendation";
 
 // All data here is synthetic.
@@ -206,5 +213,31 @@ describe("toTodaySummaryView", () => {
     const view = toTodaySummaryView(row(), now);
     expect(JSON.stringify(view)).not.toContain("4242");
     expect(view).not.toHaveProperty("facts");
+  });
+});
+
+describe("todaySummaryStatus", () => {
+  const now = at("2026-09-23T11:00:00Z");
+
+  it("keeps the status of a narrated text", () => {
+    expect(todaySummaryStatus(toTodaySummaryView(row(), now))).toEqual({ tone: "good", label: "aktualna" });
+  });
+
+  it("is neutral for a row without text", () => {
+    expect(todaySummaryStatus({ kind: "pending", periodLabel: "x" })).toEqual({
+      tone: "insufficient",
+      label: "opis jeszcze się nie pojawił",
+    });
+  });
+
+  it("is neutral when nothing was pushed", () => {
+    expect(todaySummaryStatus({ kind: "empty" })).toEqual({
+      tone: "insufficient",
+      label: "laboratorium jeszcze nic nie przesłało",
+    });
+  });
+
+  it("is the shared load failure for null", () => {
+    expect(todaySummaryStatus(null)).toBe(LOAD_FAILED);
   });
 });

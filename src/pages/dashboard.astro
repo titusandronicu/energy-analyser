@@ -6,6 +6,7 @@ import { warsawParts } from "@/lib/format/warsaw-time";
 import { loadDailyRowCapturedAt, loadLiveState, toLiveStateView, type LiveStateView } from "@/lib/services/live-state";
 import { loadHourlyEnergy, toHourlyUsageView, type HourlyUsageView } from "@/lib/services/hourly-usage";
 import { loadLatestRecommendation, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
+import { loadTodaySummary, toTodaySummaryView, type TodaySummaryView } from "@/lib/services/period-summary";
 import { loadDailyEnergy, toUsageInsightView, type UsageInsightView } from "@/lib/services/usage-insight";
 import { orLoadError, pageClient } from "@/lib/page-load";
 
@@ -21,11 +22,12 @@ const dailyRowsPromise = orLoadError(async () => {
   const supabase = getClient();
   return supabase ? await loadDailyEnergy(supabase, now) : [];
 });
-const [liveView, billView, usageView, view, hourlyView]: [
+const [liveView, billView, usageView, view, todaySummary, hourlyView]: [
   LiveStateView | null,
   BillForecastView | null,
   UsageInsightView | null,
   RecommendationView | null,
+  TodaySummaryView | null,
   HourlyUsageView | null,
 ] = await Promise.all([
   orLoadError(async () => {
@@ -52,6 +54,10 @@ const [liveView, billView, usageView, view, hourlyView]: [
   }),
   orLoadError(async () => {
     const supabase = getClient();
+    return toTodaySummaryView(supabase ? await loadTodaySummary(supabase) : null, now);
+  }),
+  orLoadError(async () => {
+    const supabase = getClient();
     return toHourlyUsageView(supabase ? await loadHourlyEnergy(supabase, now) : [], now);
   }),
 ]);
@@ -63,6 +69,7 @@ const [liveView, billView, usageView, view, hourlyView]: [
     billView={billView}
     usageView={usageView}
     recommendationView={view}
+    todaySummary={todaySummary}
     hourlyView={hourlyView}
     email={user?.email}
   />

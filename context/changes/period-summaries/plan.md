@@ -247,33 +247,33 @@ None. The table, grants and policy ship with F-04. The app deploy is the owner's
 
 #### Automated
 
-- [x] 2.1 Unit tests pass
-- [x] 2.2 Linting passes
-- [x] 2.3 Type check passes
-- [x] 2.4 Production build succeeds
-- [x] 2.5 Smoke test passes against local Supabase and a running server, never production
+- [x] 2.1 Unit tests pass — 74cecd0
+- [x] 2.2 Linting passes — 74cecd0
+- [x] 2.3 Type check passes — 74cecd0
+- [x] 2.4 Production build succeeds — 74cecd0
+- [x] 2.5 Smoke test passes against local Supabase and a running server, never production — 74cecd0
 
 #### Manual
 
-- [x] 2.6 On a completed day and a completed month with a narrated row, the panel shows the text, the written time and the covered day or month, directly under the rating
-- [x] 2.7 A completed day without a row shows no panel and no error; a row with null narration shows the "has not appeared yet" sentence and no numbers
-- [x] 2.8 Today's day view and the quarter view show no summary panel
-- [x] 2.9 The panel reads well at phone width and in the frosted theme, with the day note panel still beneath it
+- [x] 2.6 On a completed day and a completed month with a narrated row, the panel shows the text, the written time and the covered day or month, directly under the rating — 74cecd0
+- [x] 2.7 A completed day without a row shows no panel and no error; a row with null narration shows the "has not appeared yet" sentence and no numbers — 74cecd0
+- [x] 2.8 Today's day view and the quarter view show no summary panel — 74cecd0
+- [x] 2.9 The panel reads well at phone width and in the frosted theme, with the day note panel still beneath it — 74cecd0
 
 ### Phase 3: Dashboard card and docs
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass
-- [ ] 3.2 Linting passes
-- [ ] 3.3 Type check passes
-- [ ] 3.4 Production build succeeds
-- [ ] 3.5 Smoke test shows the card against local Supabase
-- [ ] 3.6 The docs no longer claim the display is missing
+- [x] 3.1 Unit tests pass
+- [x] 3.2 Linting passes
+- [x] 3.3 Type check passes
+- [x] 3.4 Production build succeeds
+- [x] 3.5 Smoke test shows the card against local Supabase
+- [x] 3.6 The docs no longer claim the display is missing
 
 #### Manual
 
-- [ ] 3.7 With a current today row the card shows "aktualna", the text, the generation time and today's date; older than 2 hours and from yesterday show "sprzed X" and "z <date> — dotyczy innego dnia"
-- [ ] 3.8 With no row and with null narration the card shows its neutral states and no numbers
-- [ ] 3.9 The card sits under the recommendation, keeps the right column in balance and reads well at phone width
+- [x] 3.7 With a current today row the card shows "aktualna", the text, the generation time and today's date; older than 2 hours and from yesterday show "sprzed X" and "z <date> — dotyczy innego dnia"
+- [x] 3.8 With no row and with null narration the card shows its neutral states and no numbers
+- [x] 3.9 The card sits under the recommendation, keeps the right column in balance and reads well at phone width
 - [ ] 3.10 After the app deploy, production shows today's text and a completed day's and month's summary as F-04's backfill wrote them
