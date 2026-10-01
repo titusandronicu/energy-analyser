@@ -372,5 +372,5 @@ This is a new table only, with no backfill. Rollback is a down step (`drop table
 
 #### Manual
 
-- [ ] 3.3 With the owner's approval, the migration is applied in production and the app deployed
-- [ ] 3.4 Production: add → edit → delete a note as the owner; no leftover test note
+- [x] 3.3 With the owner's approval, the migration is applied in production and the app deployed — 9215188
+- [x] 3.4 Production: add → edit → delete a note as the owner; no leftover test note — 9215188
