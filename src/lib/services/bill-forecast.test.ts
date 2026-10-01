@@ -795,19 +795,27 @@ describe("toBillForecastView closed-month check and delta rounding", () => {
 });
 
 describe("toBillForecastView plausibility ceiling on the central figure and the closed-month amounts", () => {
-  // The range is ordered before the ceiling is checked, so a central or low end above the ceiling always drags the
-  // high end above it too. The central and low cases below are therefore the ordered ranges that sit on the line.
+  // The range is ordered before the ceiling is checked, so a lone central or low end above the ceiling is refused
+  // earlier as "sprzeczne dane" (the ordering check), and a central or low end that is ordered below the high end
+  // never exceeds it. The central and low terms of the ceiling's Math.max are therefore redundant and cannot be pinned
+  // separately: in every row below the high end equals the central, so each row protects the HIGH end only.
   it.each([
-    ["central", { projected_bill_gross_pln: 7000, range_gross_pln: { low: 155.08, high: 7000 } }],
-    ["low end", { projected_bill_gross_pln: 7000, range_gross_pln: { low: 7000, high: 7000 } }],
-  ])("keeps a %s of exactly 7000 PLN", (_name, fields) => {
+    [
+      "high end on the line, central on it too",
+      { projected_bill_gross_pln: 7000, range_gross_pln: { low: 155.08, high: 7000 } },
+    ],
+    ["all three on the line", { projected_bill_gross_pln: 7000, range_gross_pln: { low: 7000, high: 7000 } }],
+  ])("keeps a high end of exactly 7000 PLN (%s)", (_name, fields) => {
     expect(forecast(okRow(fields)).centralLabel).toBe("ok. 7000 zł");
   });
 
   it.each([
-    ["central", { projected_bill_gross_pln: 7000.01, range_gross_pln: { low: 155.08, high: 7000.01 } }],
-    ["low end", { projected_bill_gross_pln: 7000.01, range_gross_pln: { low: 7000.01, high: 7000.01 } }],
-  ])("blanks the figure when the %s is 1 grosz above 7000 PLN", (_name, fields) => {
+    [
+      "high end 1 grosz over, central with it",
+      { projected_bill_gross_pln: 7000.01, range_gross_pln: { low: 155.08, high: 7000.01 } },
+    ],
+    ["all three 1 grosz over", { projected_bill_gross_pln: 7000.01, range_gross_pln: { low: 7000.01, high: 7000.01 } }],
+  ])("blanks the figure when the high end is 1 grosz above 7000 PLN (%s)", (_name, fields) => {
     const view = refusal(okRow(fields));
     expect(view.status).toEqual({ tone: "problem", label: "nierealna kwota" });
     expect(view.reason).toContain("7000 zł");
@@ -876,6 +884,28 @@ describe("toBillForecastView defence in depth against a negative figure", () => 
     const view = forecast(okRow({ projected_bill_gross_pln: 0, range_gross_pln: { low: 0, high: 0 } }));
     expect(view.centralLabel).toBe("ok. 0 zł");
   });
+
+  // Defence in depth too: central, low and high are valid and ordered, only one closed-month amount is negative. A
+  // negative invoice would otherwise drive the verdict to good.
+  it.each([
+    ["computed amount alone", { computed_gross_pln: -1 }],
+    ["invoice amount alone", { invoice_gross_pln: -1 }],
+  ])("refuses a negative closed-month %s with the same label", (_name, amounts) => {
+    const view = refusal(okRow({ closed_month_check: { ...ok.closed_month_check, ...amounts } }));
+    expect(view.status).toEqual({ tone: "problem", label: "ujemna kwota" });
+    expect(view.reason).toContain("ujemna");
+  });
+
+  it("keeps closed-month amounts of exactly zero and skips ones that are absent or not numbers", () => {
+    const zero = forecast(
+      okRow({ closed_month_check: { ...ok.closed_month_check, computed_gross_pln: 0, invoice_gross_pln: 0 } }),
+    );
+    expect(zero.closedMonthCheck?.invoiceLabel).toBe("0 zł");
+    const { computed_gross_pln: _computed, ...withoutComputed } = ok.closed_month_check;
+    expect(forecast(okRow({ closed_month_check: withoutComputed })).centralLabel).toBe("ok. 258 zł");
+    const odd = { ...ok.closed_month_check, computed_gross_pln: "-5", invoice_gross_pln: null };
+    expect(forecast(okRow({ closed_month_check: odd })).centralLabel).toBe("ok. 258 zł");
+  });
 });
 
 describe("toBillForecastView other-month relabel through a real Warsaw rollover", () => {
@@ -935,18 +965,32 @@ describe("toBillForecastView closed-month check that failed its own test", () =>
 // both bodies, and no view-model guard ties the central figure to its own inputs or bounds it from below.
 describe("toBillForecastView known gaps (not yet guarded)", () => {
   it("KNOWN GAP: shows a central figure inconsistent with its own billable kWh, rate and fee", () => {
-    // Hand arithmetic (docs/logic.md): bill = billable kWh x rate + fee = 193.9 x 1.0991 + 44.62 = 213.1 + 44.62
-    // = about 257.7 PLN. The body says 120 (range 100 to 150) next to the same 193.9 kWh, which the lab would never
-    // publish; the card shows it with a normal status.
-    const view = forecast(okRow({ projected_bill_gross_pln: 120, range_gross_pln: { low: 100, high: 150 } }));
-    expect(view.centralLabel).toBe("ok. 120 zł");
-    expect(view.rangeLabel).toBe("od 100 zł do 150 zł");
+    // Invented figures. Hand arithmetic (docs/logic.md): bill = billable kWh x rate + fee
+    // = 120 x 1.0412 + 40.15 = 124.944 + 40.15 = about 165.1 PLN. The body says a much smaller central, 60 (range
+    // 50 to 80), next to the same 120 kWh, which the lab would never publish; the card shows it with a normal status.
+    const view = forecast(
+      okRow({
+        projected_billable_kwh: 120,
+        pricing: { ...pricing, variable_gross_pln_per_kwh: 1.0412, fixed_gross_pln_per_month: 40.15 },
+        projected_bill_gross_pln: 60,
+        range_gross_pln: { low: 50, high: 80 },
+      }),
+    );
+    expect(view.centralLabel).toBe("ok. 60 zł");
+    expect(view.rangeLabel).toBe("od 50 zł do 80 zł");
     expect(view.status.tone).toBe("good");
   });
 
-  it("KNOWN GAP: shows a central figure below the fixed monthly fee of 44,62 zł", () => {
-    // The fee is due whatever the meter says (docs/logic.md), so no honest bill is below 44.62 PLN.
-    const view = forecast(okRow({ projected_bill_gross_pln: 20, range_gross_pln: { low: 10, high: 30 } }));
+  it("KNOWN GAP: shows a central figure below the fixed monthly fee of 40,15 zł", () => {
+    // The fee is due whatever the meter says (docs/logic.md), so no honest bill is below the 40.15 PLN fee (an
+    // invented figure); the body says 20 (range 10 to 30).
+    const view = forecast(
+      okRow({
+        pricing: { ...pricing, variable_gross_pln_per_kwh: 1.0412, fixed_gross_pln_per_month: 40.15 },
+        projected_bill_gross_pln: 20,
+        range_gross_pln: { low: 10, high: 30 },
+      }),
+    );
     expect(view.centralLabel).toBe("ok. 20 zł");
     expect(view.status.tone).toBe("good");
   });
