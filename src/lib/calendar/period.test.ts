@@ -82,6 +82,24 @@ describe("parsePeriod", () => {
   });
 });
 
+describe("parsePeriod, values that only look like a period", () => {
+  // A later `today`, so these values are rejected for being malformed and not for lying after today.
+  const later = "2026-12-31";
+
+  it.each([
+    "day=x2026-09-14",
+    "day=2026-09-14x",
+    "day=2026-09-31",
+    "day=2026-11-31",
+    "month=x2026-09",
+    "month=2026-09x",
+    "quarter=x2026-Q3",
+    "quarter=2026-Q3x",
+  ])("rejects %s", (query) => {
+    expect(parse(query, later)).toBeNull();
+  });
+});
+
 describe("defaultMonth", () => {
   it("opens the current month at 7 complete days and the previous one at 6", () => {
     expect(defaultMonth("2026-10-09", 7)).toBe("2026-10");
@@ -147,6 +165,8 @@ describe("periodLabel", () => {
   it.each<[CalendarPeriod, string]>([
     [{ kind: "day", day: "2026-09-14" }, "14 września 2026, poniedziałek"],
     [{ kind: "month", month: "2026-09" }, "wrzesień 2026"],
+    [{ kind: "quarter", year: 2026, quarter: 1 }, "I kwartał 2026"],
+    [{ kind: "quarter", year: 2026, quarter: 2 }, "II kwartał 2026"],
     [{ kind: "quarter", year: 2026, quarter: 3 }, "III kwartał 2026"],
     [{ kind: "quarter", year: 2026, quarter: 4 }, "IV kwartał 2026"],
   ])("names %j as %s", (period, label) => {

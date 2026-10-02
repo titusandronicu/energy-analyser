@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { DailyEnergyRow } from "@/types";
 import { addDays } from "@/lib/format/warsaw-time";
-import { dailyLoadNorm, HISTORY_DAYS, loadDailyEnergy, median, toUsageInsightView } from "./usage-insight";
+import { dailyLoadNorm, deltaLabel, HISTORY_DAYS, loadDailyEnergy, median, toUsageInsightView } from "./usage-insight";
 
 // 12:00 in Warsaw (CEST) on 25 September 2026: today is 2026-09-25, yesterday 2026-09-24.
 const now = new Date("2026-09-25T10:00:00Z");
@@ -472,14 +472,14 @@ describe("median", () => {
 
 describe("loadDailyEnergy", () => {
   // Records the arguments of the query chain and resolves with the given rows.
-  function mockClient(data: DailyEnergyRow[]) {
+  function mockClient(data: DailyEnergyRow[] | null, error: { message: string } | null = null) {
     const calls: Record<string, unknown[]> = {};
     const chain = {
       from: (...args: unknown[]) => ((calls.from = args), chain),
       select: (...args: unknown[]) => ((calls.select = args), chain),
       gte: (...args: unknown[]) => ((calls.gte = args), chain),
       order: (...args: unknown[]) => ((calls.order = args), chain),
-      overrideTypes: () => Promise.resolve({ data, error: null }),
+      overrideTypes: () => Promise.resolve({ data, error }),
     };
     return { client: chain as unknown as SupabaseClient, calls };
   }
@@ -494,10 +494,69 @@ describe("loadDailyEnergy", () => {
     expect(calls.order).toEqual(["day", { ascending: false }]);
   });
 
+  it("selects the columns the cards read", async () => {
+    const { client, calls } = mockClient([]);
+    await loadDailyEnergy(client, now);
+    expect(calls.select).toEqual(["day, pv_kwh, load_kwh, grid_import_kwh, grid_export_kwh, pv_forecast_kwh"]);
+  });
+
+  it("throws on a load error", async () => {
+    const { client } = mockClient(null, { message: "permission denied" });
+    await expect(loadDailyEnergy(client, now)).rejects.toThrow("loading daily energy failed: permission denied");
+  });
+
   it("counts the cutoff from the Warsaw date just after midnight", async () => {
     const { client, calls } = mockClient([]);
     await loadDailyEnergy(client, new Date("2026-09-24T22:30:00Z"));
     expect(calls.gte).toEqual(["day", "2025-08-21"]);
+  });
+});
+
+describe("zero norm", () => {
+  // Every baseline day used nothing, so no range or percentage can be drawn around the norm.
+  const zero = (load: number) => insight([row(YESTERDAY, load), ...daysBefore(YESTERDAY, 7, 0)]);
+
+  it("keeps the load status normal whatever the day used", () => {
+    expect(zero(2).load.status).toBe("normal");
+    expect(zero(0.04).load).toEqual({ kwhLabel: "0,0 kWh", deltaLabel: "—", status: "normal" });
+  });
+});
+
+describe("day figure beside a range edge", () => {
+  it("shows two decimals when one would print the same number as an edge the day is not on", () => {
+    // Norm 29,98 puts the upper edge at 34,477 (one decimal: 34,5); a day of exactly 34,5 is not on it.
+    const v = insight([row(YESTERDAY, 34.5), ...daysBefore(YESTERDAY, 7, 29.98)]);
+    expect(v.load.kwhLabel).toBe("34,50 kWh");
+  });
+});
+
+describe("deltaLabel rounding and signs", () => {
+  it("rounds an exact half away from zero, up and down", () => {
+    expect(deltaLabel(11.25, 10)).toBe("+13%");
+    expect(deltaLabel(8.75, 10)).toBe("−13%");
+  });
+
+  it("shows a whole −40% without the far-above edge format", () => {
+    expect(deltaLabel(6, 10)).toBe("−40%");
+  });
+});
+
+describe("baseline across several years and New Year", () => {
+  it("reaches every earlier year that has data, not just the newest", () => {
+    // Data only two years back: the seasonal window around 24 September 2024 still counts.
+    const rows = [row(YESTERDAY, 10), ...seasonalWindow("2024-09-24", 10)];
+    expect(insight(rows).baseline).toMatchObject({ kind: "seasonal", days: 29 });
+  });
+
+  it("starts one year before the earliest data, so a window around New Year spills into it", () => {
+    // 2026-12-24 is compared. December 2024 is the earliest data, and 1-8 January 2024 only lies in the window
+    // around 24 December 2023: a year before the earliest year.
+    const december2024 = Array.from({ length: 21 }, (_, i) => row(addDays("2024-12-11", i), 10));
+    const january2024 = Array.from({ length: 8 }, (_, i) => row(addDays("2024-01-01", i), 10));
+    const rows = [row("2026-12-24", 10), ...december2024, ...january2024];
+    const v = insight(rows, new Date("2026-12-26T10:00:00Z"));
+    // 21 days of December 2024, plus 1-7 January 2024 from the window a year before the earliest data.
+    expect(v.baseline).toMatchObject({ kind: "seasonal", days: 28 });
   });
 });
 
