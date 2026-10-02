@@ -201,3 +201,55 @@ describe("month groups", () => {
     expect(describeMonthGroups([MONTHS[2]])).toBeNull();
   });
 });
+
+describe("a line series that ends in a gap", () => {
+  it("draws no empty segment after the last run", () => {
+    // Four slots of 10 units; the bars peak at 4, so the line's 1 and 2 sit at 75,5 and 51,0.
+    const g = barGeometry([[1, 2, 3, 4]], { ...OPTS, lineSeries: [1, 2, null, null] });
+    expect(g?.line).toBe("M5.0,75.5 L15.0,51.0");
+  });
+
+  it("closes a lone point before a trailing gap as a dot, and nothing more", () => {
+    const g = barGeometry([[1, 2, 3, 4]], { ...OPTS, lineSeries: [null, 4, null, null] });
+    expect(g?.line).toBe("M15.0,2.0 L15.0,2.0");
+  });
+});
+
+describe("describeBars ties and month wording", () => {
+  it("names the first of equal highest days and the first of equal lowest days", () => {
+    expect(describeBars("PV", "1–4 września", [5, 9, 9, 1])).toBe(
+      "PV, 1–4 września: najwięcej 9,0 kWh (dzień 2), najmniej 1,0 kWh (dzień 4)",
+    );
+    expect(describeBars("PV", "1–4 września", [5, 1, 1, 9])).toBe(
+      "PV, 1–4 września: najwięcej 9,0 kWh (dzień 4), najmniej 1,0 kWh (dzień 2)",
+    );
+  });
+
+  it("calls an unlabelled slot a month when the slots are months", () => {
+    expect(describeBars("PV", "2026", [5, 9, 1], "kWh", { slotNoun: "month" })).toBe(
+      "PV, 2026: najwięcej 9,0 kWh (miesiąc 2), najmniej 1,0 kWh (miesiąc 3)",
+    );
+  });
+
+  it("states equal values once per month", () => {
+    expect(describeBars("PV", "2026", [4, 4, 4], "kWh", { slotNoun: "month" })).toBe(
+      "PV, 2026: po 4,0 kWh w każdym miesiącu z danymi",
+    );
+  });
+});
+
+describe("describeMonthGroups with one month", () => {
+  it("names the window by that month alone", () => {
+    const one: MonthGroup = {
+      label: "sierpień 2026",
+      pv: 500,
+      load: 350,
+      import: 80,
+      completeDays: 29,
+      calendarDays: 31,
+    };
+    const text = describeMonthGroups([one]);
+    expect(text).toContain("Produkcja z paneli, sierpień 2026: po 500,0 kWh w każdym miesiącu z danymi");
+    expect(text).not.toContain("sierpień 2026 – sierpień 2026");
+  });
+});
