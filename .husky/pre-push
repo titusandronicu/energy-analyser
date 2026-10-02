@@ -1,0 +1,2 @@
+npx astro check
+npm test
