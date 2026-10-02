@@ -27,11 +27,15 @@ jobs:
       # --legacy-peer-deps: without it npm 10 (Node 22) crashes with "Cannot read properties of null
       # (reading 'edgesOut')" because the root declares vitest ^5. Drop this step once the issue is fixed.
       - run: npm i --no-save --legacy-peer-deps vitest@4.1.11
+      # Stryker's incremental file is only reused while the tests are the same. After tests are added it keeps stale
+      # results for files whose source did not change (new tests were not counted: glossary.ts and tone-classes.ts
+      # read 0% with their tests merged). So the restore key carries a hash of the tests and their config: change a
+      # test and the run starts cold; change only source and Stryker's own incremental diff still applies.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .stryker-tmp/incremental.json
-          key: stryker-incremental-${{ github.run_id }}
-          restore-keys: stryker-incremental-
+          key: stryker-incremental-${{ hashFiles('src/**/*.test.ts', 'vitest.config.ts', 'stryker.config.mjs', 'package-lock.json') }}-${{ github.run_id }}
+          restore-keys: stryker-incremental-${{ hashFiles('src/**/*.test.ts', 'vitest.config.ts', 'stryker.config.mjs', 'package-lock.json') }}-
       - run: npm run mutate
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
