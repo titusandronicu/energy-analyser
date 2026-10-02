@@ -57,6 +57,14 @@ function firstIssuePath(input: unknown) {
   return result.error?.issues[0]?.path.join(".");
 }
 
+function firstIssue(input: unknown, at: Date = now) {
+  const result = validateIngestPayload(input, at);
+  expect(result.success).toBe(false);
+  const issue = result.error?.issues[0];
+  if (!issue) throw new Error("expected an issue");
+  return issue;
+}
+
 describe("ingest contract v1", () => {
   it("keeps the committed JSON Schema in sync with the zod contract", () => {
     if (exporting) writeFileSync(schemaPath, `${JSON.stringify(exportedSchema, null, 2)}\n`);
@@ -479,5 +487,90 @@ describe("ingest contract v1", () => {
       ).success,
     ).toBe(true);
     expect(firstIssuePath(withChanges((p) => (p.period_summaries = daysFrom(81))))).toBe("period_summaries");
+  });
+});
+
+describe("capture window edges", () => {
+  const capturedAt = (iso: string) => withChanges((p) => (p.captured_at = iso));
+
+  it("accepts a capture exactly 5 minutes in the future and rejects one millisecond more", () => {
+    expect(validateIngestPayload(capturedAt("2026-09-23T12:06:00+02:00"), now).success).toBe(true);
+    expect(firstIssuePath(capturedAt("2026-09-23T12:06:00.001+02:00"))).toBe("captured_at");
+  });
+
+  it("accepts a capture exactly 14 days old and rejects one millisecond older", () => {
+    expect(validateIngestPayload(capturedAt("2026-09-09T12:01:00+02:00"), now).success).toBe(true);
+    expect(firstIssuePath(capturedAt("2026-09-09T12:00:59.999+02:00"))).toBe("captured_at");
+  });
+
+  it("accepts a capture 13 days old", () => {
+    expect(validateIngestPayload(capturedAt("2026-09-10T12:01:00+02:00"), now).success).toBe(true);
+  });
+
+  it("explains a capture outside the window", () => {
+    expect(firstIssue(capturedAt("2026-09-23T12:07:00+02:00"))).toMatchObject({
+      code: "custom",
+      message: "captured_at is in the future",
+    });
+    expect(firstIssue(capturedAt("2026-09-09T12:00:00+02:00"))).toMatchObject({
+      code: "custom",
+      message: "captured_at is older than 14 days",
+    });
+  });
+});
+
+describe("rejection messages", () => {
+  it("says an hour must start on a whole hour", () => {
+    const payload = withChanges((p) => (sections(p).hours[0].hour_start = "2026-09-23T08:30:00+02:00"));
+    expect(firstIssue(payload).message).toBe("hour_start must be on a whole hour");
+  });
+
+  it("says observed_days dates must be unique", () => {
+    const payload = withChanges((p) => {
+      const forecast = okForecast(p);
+      forecast.observed_days = [forecast.observed_days[0], { ...forecast.observed_days[0] }];
+    });
+    expect(firstIssue(payload).message).toBe("observed_days dates must be unique");
+  });
+
+  it("says daily_history days must be unique", () => {
+    const payload = withChanges((p) => {
+      const { days } = sections(p);
+      days[1] = { ...days[1], day: days[0].day };
+    });
+    expect(firstIssue(payload).message).toBe("daily_history days must be unique");
+  });
+
+  it("says hourly_history hour_start values must be unique", () => {
+    const payload = withChanges((p) => {
+      const { hours } = sections(p);
+      hours[1] = { ...hours[1], hour_start: hours[0].hour_start };
+    });
+    expect(firstIssue(payload).message).toBe("hourly_history hour_start values must be unique");
+  });
+
+  it("says period_summaries pairs must be unique", () => {
+    const payload = withChanges((p) => {
+      const { summaries } = sections(p);
+      summaries[1] = { ...summaries[1], kind: summaries[0].kind, period: summaries[0].period };
+    });
+    expect(firstIssue(payload).message).toBe("period_summaries (kind, period) pairs must be unique");
+  });
+
+  it("says summary facts are limited to 40 keys", () => {
+    const payload = withChanges((p) => {
+      sections(p).summaries[1].facts = Object.fromEntries(
+        Array.from({ length: 41 }, (_, i) => [`fact_${String(i)}`, i]),
+      );
+    });
+    expect(firstIssue(payload).message).toBe("facts must have at most 40 keys");
+  });
+
+  it("says which period form each summary kind takes", () => {
+    const payload = withChanges((p) => {
+      const { summaries } = sections(p);
+      summaries[0] = { ...summaries[0], kind: "day", period: "2026-09" };
+    });
+    expect(firstIssue(payload).message).toBe("period must be YYYY-MM-DD for today and day, YYYY-MM for month");
   });
 });

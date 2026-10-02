@@ -51,6 +51,6 @@ describe("formatPeriod", () => {
   });
 
   it("throws on an empty list", () => {
-    expect(() => formatPeriod([])).toThrow();
+    expect(() => formatPeriod([])).toThrow("formatPeriod needs at least one day");
   });
 });
