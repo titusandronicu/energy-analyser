@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { statusText } from "./status";
+import { LOAD_FAILED, statusText } from "./status";
 
 describe("statusText", () => {
   it("joins the tone word and the label, capitalised", () => {
@@ -12,5 +12,12 @@ describe("statusText", () => {
 
   it("shows only the tone word when the label is empty", () => {
     expect(statusText({ tone: "insufficient", label: "" })).toBe("Za mało danych");
+  });
+});
+
+describe("LOAD_FAILED", () => {
+  it("is a problem that says the card could not load", () => {
+    expect(LOAD_FAILED).toEqual({ tone: "problem", label: "nie udało się wczytać" });
+    expect(statusText(LOAD_FAILED)).toBe("Problem · nie udało się wczytać");
   });
 });
