@@ -482,3 +482,43 @@ describe("rateDay norm days and the size of a small gap", () => {
     });
   });
 });
+
+describe("wording of the unrated reasons", () => {
+  const reasonOf = (rating: PeriodRating) => {
+    if (rating.kind !== "none") throw new Error(`expected an unrated result, got ${rating.kind}`);
+    return rating.reason;
+  };
+
+  it("says why a slot is not rated, in the words the card shows", () => {
+    expect(DAY_RUNNING).toBe("dzień jeszcze trwa");
+    expect(DAY_FUTURE).toBe("dzień jeszcze nie nadszedł");
+    expect(DAY_INCOMPLETE).toBe("dane z tego dnia są niepełne");
+    expect(DAY_NO_USE).toBe("dom nie zużył tego dnia prądu, więc nie ma czego oceniać");
+  });
+
+  it("gives today, a future day, an incomplete day and a zero-use day their reason", () => {
+    expect(reasonOf(rateDay(TODAY, FIXTURE, TODAY))).toBe("dzień jeszcze trwa");
+    expect(reasonOf(rateDay("2026-10-06", FIXTURE, TODAY))).toBe("dzień jeszcze nie nadszedł");
+    expect(reasonOf(rateDay("2026-08-31", FIXTURE, TODAY))).toBe("dane z tego dnia są niepełne");
+    expect(reasonOf(rateDay("2026-09-05", [row("2026-09-05", 10, 0, 0)], TODAY))).toBe(
+      "dom nie zużył tego dnia prądu, więc nie ma czego oceniać",
+    );
+  });
+
+  it("explains a completed month with too few rated days", () => {
+    const month = rateMonth("2026-08", [], TODAY);
+    expect(month).toMatchObject({ kind: "insufficient", days: 0, needed: 7 });
+    if (month.kind !== "insufficient") throw new Error("expected insufficient");
+    expect(month.basis).toBe("Miesiąc jest oceniany z co najmniej 7 ocenionych dni, a ma ich 0.");
+  });
+});
+
+describe("a gap that rounds up to a tenth of a point", () => {
+  it("words a gap of exactly 0,05 points as 0,1 punktu, not as no gap", () => {
+    // Norm days at 50% self-sufficiency; the rated day 50,05%: the gap sits on the half of a tenth, within float error.
+    const rows = [...steadyDays("2026-09-01", 7, 50), row("2026-09-08", 20, 20, 9.99)];
+    const rating = rated(rateDay("2026-09-08", rows, TODAY));
+    expect(rating.basis).toContain("0,1 punktu powyżej normy");
+    expect(rating.basis).not.toContain("tyle, ile norma");
+  });
+});
