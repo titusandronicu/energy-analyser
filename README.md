@@ -55,6 +55,7 @@ Sign-in on `/auth/signin` offers an emailed one-time link (`POST /api/auth/magic
 - `npm run preview` — local production preview
 - `npm test` — Vitest unit tests
 - `npm run smoke` — smoke test of sign-in and push ingestion against `BASE_URL`
+- `npm run test:integration` — integration tests of push ingestion against a local Supabase (`SUPABASE_URL` and `SUPABASE_ANON_KEY`; refuses non-local URLs; not part of `npm test`)
 
 The smoke test creates a user and reads its sign-in email from Mailpit. Run it only against a disposable/local Supabase instance with `ALLOW_SIGNUP=true`, never against production.
 
@@ -99,7 +100,7 @@ The production service listens on the VPS's dedicated IPv6 address, port `20170`
 
 ## Delivery
 
-- `ci.yml` checks pushes and pull requests to `main`, including an auth smoke test using local Supabase.
+- `ci.yml` checks pushes and pull requests to `main`, including an auth smoke test and the integration tests using local Supabase.
 - `publish-image.yml` publishes `ghcr.io/titusandronicu/energy-analyser:sha-<full-sha>` after successful push CI.
 - `deploy-production.yml` accepts a full SHA, uses the protected `production` environment, deploys over SSH and rolls back when health verification fails.
 
