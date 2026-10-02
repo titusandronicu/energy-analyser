@@ -11,6 +11,8 @@ describe("edgePercentLabel", () => {
     [19.96, 20, true, "+20,0%"],
     [-15.04, 15, true, "−15,0%"],
     [-15.4, 15, false, "−15,4%"],
+    // Zero is not negative: it takes the plus sign.
+    [0, 20, true, "+0,0%"],
   ])("labels %d against an edge of %d (milder %s) as %s", (raw, edge, milder, expected) => {
     expect(edgePercentLabel(raw, edge, milder)).toBe(expected);
   });
