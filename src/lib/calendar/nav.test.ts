@@ -52,4 +52,32 @@ describe("periodNav", () => {
       ["Kwartał", `${HISTORY_PATH}?quarter=2026-Q3`, false],
     ]);
   });
+
+  it("names the previous and next link for every kind", () => {
+    const month = periodNav({ kind: "month", month: "2026-08" }, "2026-09-30");
+    expect(month.prev).toEqual({ href: `${HISTORY_PATH}?month=2026-07`, label: "Poprzedni miesiąc: lipiec 2026" });
+    expect(month.next).toEqual({ href: `${HISTORY_PATH}?month=2026-09`, label: "Następny miesiąc: wrzesień 2026" });
+
+    const day = periodNav({ kind: "day", day: "2026-09-29" }, "2026-09-30");
+    expect(day.next).toEqual({
+      href: `${HISTORY_PATH}?day=2026-09-30`,
+      label: "Następny dzień: 30 września 2026, środa",
+    });
+
+    const quarter = periodNav({ kind: "quarter", year: 2026, quarter: 4 }, "2027-04-15");
+    expect(quarter.prev?.label).toMatch(/^Poprzedni kwartał: /);
+    expect(quarter.prev?.href).toBe(`${HISTORY_PATH}?quarter=2026-Q3`);
+    expect(quarter.next?.label).toMatch(/^Następny kwartał: /);
+    expect(quarter.next?.href).toBe(`${HISTORY_PATH}?quarter=2027-Q1`);
+  });
+
+  it("keeps every switch openable even for a period wholly before the history start", () => {
+    // The URL parser never produces this period, but periodNav is exported: the switch anchors on the history start.
+    const nav = periodNav({ kind: "day", day: "2026-01-05" }, "2026-09-30");
+    expect(nav.kinds.map((k) => [k.word, k.href, k.current])).toEqual([
+      ["Dzień", `${HISTORY_PATH}?day=2026-01-05`, true],
+      ["Miesiąc", `${HISTORY_PATH}?month=2026-07`, false],
+      ["Kwartał", `${HISTORY_PATH}?quarter=2026-Q3`, false],
+    ]);
+  });
 });

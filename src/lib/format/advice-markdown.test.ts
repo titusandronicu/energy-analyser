@@ -23,6 +23,14 @@ describe("parseInline", () => {
     expect(parseInline("2 ** 3 to potęga")).toEqual([plain("2 ** 3 to potęga")]);
   });
 
+  it("reads bold that starts at the second character", () => {
+    expect(parseInline("a**b**")).toEqual([plain("a"), bold("b")]);
+  });
+
+  it("drops an empty bold span", () => {
+    expect(parseInline("a****b")).toEqual([plain("a"), plain("b")]);
+  });
+
   it("keeps HTML as plain text for the renderer to escape", () => {
     expect(parseInline("<script>alert(1)</script>")).toEqual([plain("<script>alert(1)</script>")]);
   });
@@ -70,6 +78,56 @@ describe("parseAdviceMarkdown", () => {
     expect(parseAdviceMarkdown("- a  \r\n- b\r\n")).toEqual([
       { type: "list", ordered: false, items: [[plain("a")], [plain("b")]] },
     ]);
+  });
+
+  it("handles old Mac line endings, a lone carriage return", () => {
+    expect(parseAdviceMarkdown("- a\r- b")).toEqual([
+      { type: "list", ordered: false, items: [[plain("a")], [plain("b")]] },
+    ]);
+  });
+
+  describe("markers only count at the start of a line", () => {
+    it.each([
+      ["a dash in a sentence", "Dziś - słonecznie"],
+      ["a hyphen glued to a word", "well- known"],
+      ["a year followed by a full stop", "Zużycie w 2026. roku było niskie."],
+      ["a number glued to a word", "Faza2. Start"],
+      ["a hash in a sentence", "Hasztag # w tekście"],
+      ["a hash glued to a word", "abc# Tytuł"],
+    ])("leaves %s as a paragraph", (_name, text) => {
+      expect(parseAdviceMarkdown(text)).toEqual([{ type: "paragraph", lines: [[plain(text)]] }]);
+    });
+  });
+
+  describe("markers followed by several spaces", () => {
+    it.each([
+      ["a bullet", "-   a", { type: "list", ordered: false, items: [[plain("a")]] }],
+      ["a numbered item", "1.   a", { type: "list", ordered: true, items: [[plain("a")]] }],
+      ["a heading", "#   a", { type: "paragraph", lines: [[bold("a")]] }],
+    ])("trims the spaces after %s", (_name, text, block) => {
+      expect(parseAdviceMarkdown(text)).toEqual([block]);
+    });
+  });
+
+  it("reads multi-digit numbered items", () => {
+    expect(parseAdviceMarkdown("10. dziesiąty\n11. jedenasty")).toEqual([
+      { type: "list", ordered: true, items: [[plain("dziesiąty")], [plain("jedenasty")]] },
+    ]);
+  });
+
+  it("ends the paragraph before a heading and keeps the order", () => {
+    expect(parseAdviceMarkdown("Tekst\n# Tytuł")).toEqual([
+      { type: "paragraph", lines: [[plain("Tekst")]] },
+      { type: "paragraph", lines: [[bold("Tytuł")]] },
+    ]);
+  });
+
+  it("strips bold markers inside a heading", () => {
+    expect(parseAdviceMarkdown("# **Tytuł**")).toEqual([{ type: "paragraph", lines: [[bold("Tytuł")]] }]);
+  });
+
+  it("trims indentation from paragraph lines", () => {
+    expect(parseAdviceMarkdown("   Tekst")).toEqual([{ type: "paragraph", lines: [[plain("Tekst")]] }]);
   });
 
   it("returns nothing for empty text", () => {
@@ -121,6 +179,11 @@ describe("splitAdviceLead", () => {
     });
   });
 
+  it("does not throw when a colon intro is the last block", () => {
+    expect(shape("Zalecenia:")).toEqual({ lead: "p", rest: "" });
+    expect(shape("# Dziś\n\nZalecenia:")).toEqual({ lead: "hp", rest: "" });
+  });
+
   it("keeps the blocks untouched and in order", () => {
     const blocks = parseAdviceMarkdown("# Dziś\n\nZalecenia:\n- a\n\nKoniec.");
     const { lead, rest } = splitAdviceLead(blocks);
@@ -137,5 +200,20 @@ describe("advice block helpers", () => {
   it("names an intro by a one-line paragraph ending in a colon", () => {
     const [intro, other, multi, list] = parseAdviceMarkdown("Intro:\n\nInaczej.\n\nA\nB:\n\n- x:");
     expect([intro, other, multi, list].map(endsWithColonIntro)).toEqual([true, false, false, false]);
+  });
+
+  it("does not call a bold line followed by plain text a heading", () => {
+    const [mixed] = parseAdviceMarkdown("**Dziś** reszta zdania");
+    expect(isHeadingBlock(mixed)).toBe(false);
+  });
+
+  it("does not call a multi-line paragraph an intro, even when its first line ends in a colon", () => {
+    const [multi] = parseAdviceMarkdown("Zalecenia:\nDruga linia");
+    expect(endsWithColonIntro(multi)).toBe(false);
+  });
+
+  it("ignores trailing spaces inside a bold intro", () => {
+    const [intro] = parseAdviceMarkdown("**Zalecenia: **");
+    expect(endsWithColonIntro(intro)).toBe(true);
   });
 });
