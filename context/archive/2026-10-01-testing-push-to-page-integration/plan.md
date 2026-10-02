@@ -325,57 +325,57 @@ None: no schema, contract or production change. Rows the suite leaves in the loc
 
 #### Automated
 
-- [x] 1.1 Linting passes: `npm run lint` — 3c6090f
-- [x] 1.2 Type checking passes: `npx astro check` — 3c6090f
-- [x] 1.3 Unit tests still pass with the same 34 files and 1201 tests and collect no integration file: `npm test` — 3c6090f
-- [x] 1.4 Production build passes: `npm run build` — 3c6090f
-- [x] 1.5 The seed test passes against a reachable local stack (needs the UGREEN relay or CI): `npm run test:integration` — 3c6090f
-- [x] 1.6 The harness refuses a non-local URL: `SUPABASE_URL=https://example.supabase.co SUPABASE_ANON_KEY=x npm run test:integration` exits non-zero with the refusal message — 3c6090f
+- [x] 1.1 Linting passes: `npm run lint` — 5b5bd83
+- [x] 1.2 Type checking passes: `npx astro check` — 5b5bd83
+- [x] 1.3 Unit tests still pass with the same 34 files and 1201 tests and collect no integration file: `npm test` — 5b5bd83
+- [x] 1.4 Production build passes: `npm run build` — 5b5bd83
+- [x] 1.5 The seed test passes against a reachable local stack (needs the UGREEN relay or CI): `npm run test:integration` — 5b5bd83
+- [x] 1.6 The harness refuses a non-local URL: `SUPABASE_URL=https://example.supabase.co SUPABASE_ANON_KEY=x npm run test:integration` exits non-zero with the refusal message — 5b5bd83
 
 #### Manual
 
-- [x] 1.7 Kamil runs `npm run test:integration` twice in a row against the UGREEN stack and both runs are green — 3c6090f
-- [x] 1.8 The `smoke` job on the PR runs the new integration step and it is green — 3c6090f
+- [x] 1.7 Kamil runs `npm run test:integration` twice in a row against the UGREEN stack and both runs are green — 5b5bd83
+- [x] 1.8 The `smoke` job on the PR runs the new integration step and it is green — 5b5bd83
 
 ### Phase 2: Push to page, one test per section
 
 #### Automated
 
-- [x] 2.1 Linting passes: `npm run lint` — 38f19ee
-- [x] 2.2 Type checking passes: `npx astro check` — 38f19ee
-- [x] 2.3 Unit tests still pass with the same 1201 tests: `npm test` — 38f19ee
-- [x] 2.4 The push-to-page tests pass against a reachable local stack: `npm run test:integration` — 38f19ee
-- [x] 2.5 Deliberate break: comment out the `hourly_history` section in the hourly row's body builder and the hourly test fails, then restore it — 38f19ee
+- [x] 2.1 Linting passes: `npm run lint` — 5b5bd83
+- [x] 2.2 Type checking passes: `npx astro check` — 5b5bd83
+- [x] 2.3 Unit tests still pass with the same 1201 tests: `npm test` — 5b5bd83
+- [x] 2.4 The push-to-page tests pass against a reachable local stack: `npm run test:integration` — 5b5bd83
+- [x] 2.5 Deliberate break: comment out the `hourly_history` section in the hourly row's body builder and the hourly test fails, then restore it — 5b5bd83
 
 #### Manual
 
-- [x] 2.6 Kamil runs `npm run smoke` against a local server and stack and the new hourly step passes — 38f19ee
-- [x] 2.7 The `smoke` job on the PR is green with the new smoke step and the integration step — 38f19ee
+- [x] 2.6 Kamil runs `npm run smoke` against a local server and stack and the new hourly step passes — 5b5bd83
+- [x] 2.7 The `smoke` job on the PR is green with the new smoke step and the integration step — 5b5bd83
 
 ### Phase 3: History safety: replay, order, gaps and known gaps
 
 #### Automated
 
-- [x] 3.1 Linting passes: `npm run lint` — 939d573
-- [x] 3.2 Type checking passes: `npx astro check` — 939d573
-- [x] 3.3 Unit tests still pass with the same 1201 tests: `npm test` — 939d573
-- [x] 3.4 The history-safety tests pass against a reachable local stack: `npm run test:integration` — 939d573
-- [x] 3.5 The whole integration suite passes twice in a row on the same database, so it is rerun-safe: `npm run test:integration && npm run test:integration` — 939d573
+- [x] 3.1 Linting passes: `npm run lint` — 5b5bd83
+- [x] 3.2 Type checking passes: `npx astro check` — 5b5bd83
+- [x] 3.3 Unit tests still pass with the same 1201 tests: `npm test` — 5b5bd83
+- [x] 3.4 The history-safety tests pass against a reachable local stack: `npm run test:integration` — 5b5bd83
+- [x] 3.5 The whole integration suite passes twice in a row on the same database, so it is rerun-safe: `npm run test:integration && npm run test:integration` — 5b5bd83
 
 #### Manual
 
-- [x] 3.6 Kamil reads the three `KNOWN GAP` test names and comments and agrees they say what is pinned and what a fix would change — 939d573
-- [x] 3.7 The `smoke` job on the PR is green with all integration tests — 939d573
+- [x] 3.6 Kamil reads the three `KNOWN GAP` test names and comments and agrees they say what is pinned and what a fix would change — 5b5bd83
+- [x] 3.7 The `smoke` job on the PR is green with all integration tests — 5b5bd83
 
 ### Phase 4: Docs and cookbook
 
 #### Automated
 
-- [x] 4.1 Docs are formatted: `npx prettier --check context/foundation/test-plan.md docs/decisions.md docs/logic.md docs/prerequisites.md CLAUDE.md AGENTS.md README.md` — 1bdc6f2
-- [x] 4.2 Linting passes: `npm run lint` — 1bdc6f2
-- [x] 4.3 §6.2 is filled and the command is documented: `/usr/bin/grep -c "test:integration" context/foundation/test-plan.md CLAUDE.md AGENTS.md README.md` — 1bdc6f2
-- [x] 4.4 The decision entry exists: `/usr/bin/grep -n "pinned" docs/decisions.md` — 1bdc6f2
+- [x] 4.1 Docs are formatted: `npx prettier --check context/foundation/test-plan.md docs/decisions.md docs/logic.md docs/prerequisites.md CLAUDE.md AGENTS.md README.md` — 5b5bd83
+- [x] 4.2 Linting passes: `npm run lint` — 5b5bd83
+- [x] 4.3 §6.2 is filled and the command is documented: `/usr/bin/grep -c "test:integration" context/foundation/test-plan.md CLAUDE.md AGENTS.md README.md` — 5b5bd83
+- [x] 4.4 The decision entry exists: `/usr/bin/grep -n "pinned" docs/decisions.md` — 5b5bd83
 
 #### Manual
 
-- [x] 4.5 Kamil confirms §6.2 matches how he would add the next integration test — 1bdc6f2
+- [x] 4.5 Kamil confirms §6.2 matches how he would add the next integration test — 5b5bd83

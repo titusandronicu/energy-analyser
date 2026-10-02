@@ -1,10 +1,10 @@
 ---
 change_id: testing-push-to-page-integration
 title: Integration tests for lab push to page and history integrity
-status: impl_reviewed
+status: archived
 created: 2026-10-01
-updated: 2026-10-01
-archived_at: null
+archived_at: 2026-10-02T11:24:57Z
+updated: 2026-10-02
 ---
 
 ## Notes
