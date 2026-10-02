@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { RecommendationRow } from "@/types";
 import {
@@ -8,6 +9,7 @@ import {
   ageStatus,
   earlierDayStatus,
   isStaleRecommendation,
+  loadLatestRecommendation,
   toRecommendationView,
 } from "./recommendation";
 
@@ -478,5 +480,74 @@ describe("findings", () => {
     ]);
     expect(view.findings[0].fact).toBe("late warning");
     expect(view.moreFindings).toHaveLength(2);
+  });
+});
+
+describe("provider labels", () => {
+  it.each([
+    ["ollama", "lokalny model"],
+    ["openrouter", "OpenRouter"],
+    ["ha_conversation", "Home Assistant"],
+  ])("names the %s provider next to the model (%s)", (provider, label) => {
+    const v = toRecommendationView(row({ provider, model: "m1" }), at("2026-09-23T10:30:00Z"));
+    if (v.kind !== "recommendation") throw new Error("expected a recommendation view");
+    expect(v.modelLabel).toBe(`m1 (${label})`);
+  });
+});
+
+describe("cutting a long finding next to a surrogate", () => {
+  const max = FINDING_TEXT_MAX_CHARS;
+  const factOf = (text: string) => {
+    const v = toRecommendationView(row({ facts: { local_findings: [{ fact: text }] } }), at("2026-09-23T10:30:00Z"));
+    if (v.kind !== "recommendation") throw new Error("expected a recommendation view");
+    return v.findings[0].fact;
+  };
+
+  it("keeps a last character above the surrogate range", () => {
+    // U+FF21 (fullwidth A) is above the high-surrogate range: nothing to drop before the ellipsis.
+    expect(factOf("\uFF21".repeat(max + 100))).toBe(`${"\uFF21".repeat(max - 1)}…`);
+  });
+
+  it.each([
+    ["the first high surrogate", "\ud800"],
+    ["the last high surrogate", "\udbff"],
+  ])("drops %s left at the cut", (_name, lone) => {
+    // The unit at index max - 2 ends the cut; a lone high surrogate there must not be left before the ellipsis.
+    expect(factOf(`${"a".repeat(max - 2)}${lone}${"b".repeat(20)}`)).toBe(`${"a".repeat(max - 2)}…`);
+  });
+});
+
+describe("loadLatestRecommendation", () => {
+  // Records the arguments of the query chain and resolves with the given result.
+  function mockClient(result: { data: RecommendationRow[] | null; error: { message: string } | null }) {
+    const calls: Record<string, unknown[]> = {};
+    const chain = {
+      from: (...args: unknown[]) => ((calls.from = args), chain),
+      select: (...args: unknown[]) => ((calls.select = args), chain),
+      order: (...args: unknown[]) => ((calls.order = args), chain),
+      limit: (...args: unknown[]) => ((calls.limit = args), chain),
+      overrideTypes: () => Promise.resolve(result),
+    };
+    return { client: chain as unknown as SupabaseClient, calls };
+  }
+
+  it("reads the newest recommendation", async () => {
+    const newest = row();
+    const { client, calls } = mockClient({ data: [newest], error: null });
+    await expect(loadLatestRecommendation(client)).resolves.toBe(newest);
+    expect(calls.from).toEqual(["recommendations"]);
+    expect(calls.select).toEqual(["generated_at, language, text, provider, model, forecast, facts"]);
+    expect(calls.order).toEqual(["generated_at", { ascending: false }]);
+    expect(calls.limit).toEqual([1]);
+  });
+
+  it("returns null when there is none", async () => {
+    const { client } = mockClient({ data: [], error: null });
+    await expect(loadLatestRecommendation(client)).resolves.toBeNull();
+  });
+
+  it("throws on a load error", async () => {
+    const { client } = mockClient({ data: null, error: { message: "permission denied" } });
+    await expect(loadLatestRecommendation(client)).rejects.toThrow("loading recommendation failed: permission denied");
   });
 });
