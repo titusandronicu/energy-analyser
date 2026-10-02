@@ -1,7 +1,8 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { DailyEnergyRow, LiveStateRow } from "@/types";
 import { addDays } from "@/lib/format/warsaw-time";
-import { expectedPvShare, formatAge, toLiveStateView } from "./live-state";
+import { expectedPvShare, formatAge, loadDailyRowCapturedAt, loadLiveState, toLiveStateView } from "./live-state";
 import type { BatteryChargeLevel } from "./live-state";
 
 const state = {
@@ -784,5 +785,156 @@ describe("daily series", () => {
     const captured = new Date(`${DAY}T16:00:00+02:00`);
     const failed = view(row({ captured_at: captured.toISOString() }), new Date(captured.getTime() + 60_000), null);
     expect(failed.series).toBeNull();
+  });
+});
+
+describe("loaders", () => {
+  // Records the arguments of the query chain and resolves with the given result.
+  function mockClient(result: { data: unknown[] | null; error: { message: string } | null }) {
+    const calls: Record<string, unknown[]> = {};
+    const chain = {
+      from: (...args: unknown[]) => ((calls.from = args), chain),
+      select: (...args: unknown[]) => ((calls.select = args), chain),
+      eq: (...args: unknown[]) => ((calls.eq = args), chain),
+      limit: (...args: unknown[]) => ((calls.limit = args), chain),
+      overrideTypes: () => Promise.resolve(result),
+    };
+    return { client: chain as unknown as SupabaseClient, calls };
+  }
+
+  describe("loadLiveState", () => {
+    it("reads the newest snapshot from the live_state view", async () => {
+      const snapshot = row();
+      const { client, calls } = mockClient({ data: [snapshot], error: null });
+      await expect(loadLiveState(client)).resolves.toBe(snapshot);
+      expect(calls.from).toEqual(["live_state"]);
+      expect(calls.select).toEqual(["captured_at, received_at, state"]);
+      expect(calls.limit).toEqual([1]);
+    });
+
+    it("returns null when there is no snapshot", async () => {
+      const { client } = mockClient({ data: [], error: null });
+      await expect(loadLiveState(client)).resolves.toBeNull();
+    });
+
+    it("throws on a load error", async () => {
+      const { client } = mockClient({ data: null, error: { message: "permission denied" } });
+      await expect(loadLiveState(client)).rejects.toThrow("loading live state failed: permission denied");
+    });
+  });
+
+  describe("loadDailyRowCapturedAt", () => {
+    it("reads when the day's row was captured", async () => {
+      const { client, calls } = mockClient({ data: [{ captured_at: "2026-09-25T10:00:00Z" }], error: null });
+      await expect(loadDailyRowCapturedAt(client, "2026-09-25")).resolves.toBe("2026-09-25T10:00:00Z");
+      expect(calls.from).toEqual(["daily_energy"]);
+      expect(calls.select).toEqual(["captured_at"]);
+      expect(calls.eq).toEqual(["day", "2026-09-25"]);
+      expect(calls.limit).toEqual([1]);
+    });
+
+    it("returns null when the day has no row", async () => {
+      const { client } = mockClient({ data: [], error: null });
+      await expect(loadDailyRowCapturedAt(client, "2026-09-25")).resolves.toBeNull();
+    });
+
+    it("throws on a load error", async () => {
+      const { client } = mockClient({ data: null, error: { message: "column grant missing" } });
+      await expect(loadDailyRowCapturedAt(client, "2026-09-25")).rejects.toThrow(
+        "loading daily row time failed: column grant missing",
+      );
+    });
+  });
+});
+
+describe("expected PV share table", () => {
+  it.each(Array.from({ length: 12 }, (_, i) => i + 1))("has a usable curve for month %j", (month) => {
+    const start = expectedPvShare(month, 15);
+    const later = expectedPvShare(month, 16);
+    expect(start).toBeGreaterThan(0.5);
+    expect(start).toBeLessThanOrEqual(1);
+    // Never falls during the afternoon, and is the whole day's PV by the evening.
+    expect(later).toBeGreaterThanOrEqual(start ?? Number.NaN);
+    expect(expectedPvShare(month, 23)).toBe(1);
+  });
+});
+
+describe("battery level label", () => {
+  it.each([
+    [29.4, "29%"],
+    [29.9, "30%"],
+    [74.5, "75%"],
+  ])("shows %j as a whole percent (%s)", (battery_soc_pct, label) => {
+    expect(view(row({}, { battery_soc_pct })).battery.socLabel).toBe(label);
+  });
+});
+
+describe("verdict explanations", () => {
+  const STALE = at("2026-09-25T10:15:01Z");
+  const staleVerdicts = () => view(row(), STALE, history({ pv_forecast_kwh: 10, load_kwh: 5 }), sameTime(now)).verdicts;
+
+  it("explains a stale snapshot for each node", () => {
+    const v = staleVerdicts();
+    expect(v.battery.explanation).toBe("Migawka jest nieaktualna, więc poziom naładowania nie jest oceniany.");
+    expect(v.pv.explanation).toBe("Migawka jest nieaktualna, więc ten odczyt nie jest oceniany.");
+    expect(v.home.explanation).toBe("Migawka jest nieaktualna, więc ten odczyt nie jest oceniany.");
+  });
+
+  it("explains an unrated PV verdict", () => {
+    const noForecast = verdictsAt("15:00", history({ pv_forecast_kwh: null })).pv;
+    expect(noForecast).toMatchObject({ detail: "brak prognozy" });
+    expect(noForecast.explanation).toBe("Brak prognozy produkcji na dziś, więc produkcja PV nie jest oceniana.");
+
+    const noReading = verdictsAt("15:00", history({ pv_forecast_kwh: 10 }), { pv_today_kwh: null }).pv;
+    expect(noReading).toMatchObject({ detail: "brak odczytu" });
+    expect(noReading.explanation).toBe("Brak odczytu dzisiejszej produkcji, więc produkcja PV nie jest oceniana.");
+
+    const noHistory = verdictsAt("15:00", []).pv;
+    expect(noHistory).toMatchObject({ detail: "brak danych historii" });
+    expect(noHistory.explanation).toBe("Brak danych historii, więc nie ma prognozy na dziś do porównania.");
+  });
+
+  it("explains an unrated consumption verdict", () => {
+    const early = verdictsAt("05:59", history({ load_kwh: 1 })).home;
+    expect(early.explanation).toBe(
+      "Zużycie domu jest oceniane od 06:00, gdy dzienne zużycie ma już z czym się porównać.",
+    );
+
+    const noTime = verdictsAt("12:00", history({ load_kwh: 10 }), {}, DAY, () => null).home;
+    expect(noTime.explanation).toBe(
+      "Nie wiadomo, z kiedy pochodzi dzisiejsze zużycie w historii, więc zużycie domu nie jest oceniane.",
+    );
+
+    const old = verdictsAt("12:00", history({ load_kwh: 10 }), {}, DAY, behind(16 * 60_000)).home;
+    expect(old.explanation).toBe(
+      "Dzisiejsze zużycie w historii pochodzi z wcześniejszego odczytu niż ta migawka, więc zużycie domu nie jest oceniane.",
+    );
+
+    const noLoad = verdictsAt("12:00", history({ load_kwh: null })).home;
+    expect(noLoad.explanation).toBe("Brak dzisiejszego zużycia, więc zużycie domu nie jest oceniane.");
+  });
+
+  it("does not rate consumption against a norm of zero", () => {
+    // Every earlier day used nothing, so the norm is 0 and a ratio against it would be meaningless.
+    const zeroNorm = [daily(DAY, { load_kwh: 5 }), ...history(null).map((d) => ({ ...d, load_kwh: 0 }))];
+    const v = verdictsAt("12:00", zeroNorm).home;
+    expect(v).toMatchObject({ tone: "insufficient", detail: "za mało danych" });
+    expect(v.explanation).toBe(
+      "Za mało dni z historii, by wyznaczyć normę zużycia, więc zużycie domu nie jest oceniane.",
+    );
+  });
+});
+
+describe("PV share label just below a line", () => {
+  // September 15:00 expects 8 kWh of a 10 kWh forecast. A share that rounds up to the line while still under it must
+  // read one tenth below, so the number never contradicts the badge.
+  const pv = (kwh: number) => verdictsAt("15:00", history({ pv_forecast_kwh: 10 }), { pv_today_kwh: kwh }).pv;
+
+  it("reads 84,9% for a share of 84,96%, which is still worth watching", () => {
+    expect(pv(6.7968)).toMatchObject({ tone: "watch", detail: "84,9% oczekiwanego" });
+  });
+
+  it("reads 59,9% for a share of 59,96%, which is still a problem", () => {
+    expect(pv(4.7968)).toMatchObject({ tone: "problem", detail: "59,9% oczekiwanego" });
   });
 });
