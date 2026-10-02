@@ -122,6 +122,30 @@ describe("sparklineGeometry", () => {
     expect(sparklineGeometry([1, 2, Number.NaN, Number.NEGATIVE_INFINITY], W, H)).toBeNull();
   });
 
+  it("emits no empty run for leading, repeated or trailing gaps", () => {
+    expect(sparklineGeometry([null, null, 1, 2, 3, null, null, 4, null, null], W, H)).toEqual({
+      line: "M23.3,28.0 L34.0,19.3 L44.7,10.7 M76.7,2.0 L76.7,2.0",
+      area: "M23.3,28.0 L34.0,19.3 L44.7,10.7 L44.7,30.0 L23.3,30.0 Z",
+      points: 4,
+      min: 1,
+      max: 4,
+      last: 4,
+      flat: false,
+    });
+  });
+
+  it("treats a span of exactly the epsilon as flat, and an all-zero one as on the baseline", () => {
+    expect(sparklineGeometry([0, FLAT_SPAN_EPSILON, 0], W, H)).toEqual({
+      line: "M2.0,28.0 L50.0,28.0 L98.0,28.0",
+      area: "M2.0,28.0 L50.0,28.0 L98.0,28.0 L98.0,30.0 L2.0,30.0 Z",
+      points: 3,
+      min: 0,
+      max: FLAT_SPAN_EPSILON,
+      last: 0,
+      flat: true,
+    });
+  });
+
   it("draws isolated points only as dots with an empty area", () => {
     expect(sparklineGeometry([1, null, 2, null, 3], W, H)).toEqual({
       line: "M2.0,28.0 L2.0,28.0 M50.0,15.0 L50.0,15.0 M98.0,2.0 L98.0,2.0",
