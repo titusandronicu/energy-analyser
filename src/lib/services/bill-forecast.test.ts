@@ -1053,3 +1053,102 @@ describe("toBillForecastView verdict and delta, hand-computed", () => {
     else expect(refusal(r).reason).toContain("jest 6 dni z 7 potrzebnych");
   });
 });
+
+describe("toBillForecastView refusal wording", () => {
+  const unavailableOf = (r: BillForecastRow) => {
+    const v = toBillForecastView(r, now);
+    if (v.kind !== "unavailable") throw new Error(`expected unavailable, got ${v.kind}`);
+    return v;
+  };
+
+  it("explains a body of an unknown status", () => {
+    expect(unavailableOf(rowOf({ status: "weird" }))).toEqual({
+      kind: "unavailable",
+      status: { tone: "problem", label: "nierozpoznane wyliczenie" },
+      reason: "Nie rozpoznajemy ostatniego wyliczenia, więc kwoty nie pokazujemy.",
+    });
+  });
+
+  it("explains a body without a readable generation time", () => {
+    expect(unavailableOf(okRow({ generated_at: "not a date" }))).toEqual({
+      kind: "unavailable",
+      status: { tone: "problem", label: "nieznany czas wyliczenia" },
+      reason: "Nie wiadomo, kiedy powstało ostatnie wyliczenie, więc kwoty nie pokazujemy.",
+    });
+  });
+
+  it("explains a body without a readable amount", () => {
+    expect(unavailableOf(okRow({ projected_bill_gross_pln: null }))).toEqual({
+      kind: "unavailable",
+      status: { tone: "problem", label: "kwoty nie da się odczytać" },
+      reason: "Ostatnie wyliczenie nie zawiera czytelnej kwoty, więc nie ma czego pokazać.",
+    });
+  });
+
+  it("explains a central figure outside its own range", () => {
+    expect(unavailableOf(okRow({ projected_bill_gross_pln: 400 }))).toEqual({
+      kind: "unavailable",
+      status: { tone: "problem", label: "sprzeczne dane" },
+      reason:
+        "Dane z ostatniego wyliczenia są sprzeczne — najbardziej prawdopodobna kwota leży poza swoim przedziałem — więc kwoty nie pokazujemy.",
+    });
+  });
+
+  it.each(["no_complete_days", "settlement_facts_missing"])(
+    "gives the lab's %s refusal an empty badge label",
+    (reason) => {
+      expect(unavailableOf(rowOf({ ...noData, reason })).status).toEqual({ tone: "insufficient", label: "" });
+    },
+  );
+
+  it("quotes no average when the body has none", () => {
+    expect(unavailableOf(okRow({ observed_days: observedDays(3), average_daily_import_kwh: null }))).toEqual({
+      kind: "unavailable",
+      status: { tone: "insufficient", label: "" },
+      reason: "Za mało dni, żeby przewidzieć rachunek — jest 3 dni z 7 potrzebnych.",
+    });
+  });
+});
+
+describe("toBillForecastView ceiling without a closed-month check", () => {
+  it("blanks an implausible central figure when the body has no closed-month check", () => {
+    const v = toBillForecastView(
+      okRow({
+        closed_month_check: undefined,
+        projected_bill_gross_pln: 7500,
+        range_gross_pln: { low: 100, high: 8000 },
+      }),
+      now,
+    );
+    expect(v).toMatchObject({ kind: "unavailable", status: { tone: "problem", label: "nierealna kwota" } });
+  });
+});
+
+describe("toBillForecastView settled period in the last months of the year", () => {
+  it.each([
+    ["01.10.2026 - 31.10.2026", "październik 2026"],
+    ["01.11.2026 - 30.11.2026", "listopad 2026"],
+    ["01.12.2026 - 31.12.2026", "grudzień 2026"],
+  ])("reads %s as %s", (period, label) => {
+    const v = toBillForecastView(okRow({ settlement: { ...settlement, reference_period: period } }), now);
+    if (v.kind !== "forecast") throw new Error("expected a forecast");
+    expect(v.basis.referenceMonthLabel).toBe(label);
+  });
+});
+
+describe("toBillForecastView verdict on the invoice line within float error", () => {
+  it("keeps a central figure of 214,5 good against an invoice a hair under it", () => {
+    // Round(214,5) is 215 and round(214,4999999995) is 214, yet the two differ by less than the epsilon: exactly on
+    // the line, so the milder status.
+    const v = toBillForecastView(
+      okRow({
+        projected_bill_gross_pln: 214.5,
+        closed_month_check: { ...ok.closed_month_check, invoice_gross_pln: 214.4999999995 },
+      }),
+      now,
+    );
+    if (v.kind !== "forecast") throw new Error("expected a forecast");
+    expect(v.status.tone).toBe("good");
+    expect(v.delta?.tone).toBe("good");
+  });
+});
