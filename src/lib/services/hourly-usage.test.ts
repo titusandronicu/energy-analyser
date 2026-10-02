@@ -105,6 +105,54 @@ describe("toHourlyUsageView", () => {
     });
   });
 
+  describe("wording", () => {
+    it("words the empty and incomplete-night messages", () => {
+      expect(NO_HOURLY_DATA).toBe("brak danych godzinowych");
+      expect(INCOMPLETE_NIGHTS).toBe("niepełne dane za ostatnie noce");
+      expect(
+        toHourlyUsageView(
+          day("2026-08-09", () => ({ samples: 9 })),
+          now,
+        ),
+      ).toMatchObject({
+        reason: "brak danych godzinowych: żadna godzina nie ma co najmniej 10 z 12 odczytów",
+      });
+    });
+  });
+
+  describe("window edges", () => {
+    // 35 days before 10 August, Warsaw midnight (CEST): the first instant the window reads.
+    const windowStart = Date.parse("2026-07-05T22:00:00Z");
+
+    it("reads the hour that starts exactly at the window start, not the one before", () => {
+      expect(toHourlyUsageView([row(windowStart)], now).kind).toBe("usage");
+      expect(toHourlyUsageView([row(windowStart - 3_600_000)], now).kind).toBe("empty");
+    });
+
+    it("reads an hour that ends exactly now, not one that is still running", () => {
+      const clock = new Date("2026-08-10T10:00:00Z");
+      expect(toHourlyUsageView([row(Date.parse("2026-08-10T09:00:00Z"))], clock).kind).toBe("usage");
+      expect(toHourlyUsageView([row(Date.parse("2026-08-10T09:00:01Z"))], clock).kind).toBe("empty");
+    });
+  });
+
+  describe("hour completeness, other fields", () => {
+    it("drops an hour without house use", () => {
+      const rows = day("2026-08-09").map((r) =>
+        r.hour_start === "2026-08-09T10:00:00.000Z" ? { ...r, load_kwh: null } : r,
+      );
+      expect(usage(rows).window.completeDays).toBe(0);
+    });
+
+    it("drops an hour whose sample count is not a number", () => {
+      // The rows come from jsonb-backed reads, so a string must not pass the numeric comparison.
+      const rows = day("2026-08-09").map((r) =>
+        r.hour_start === "2026-08-09T10:00:00.000Z" ? { ...r, samples: "12" as unknown as number } : r,
+      );
+      expect(usage(rows).window.completeDays).toBe(0);
+    });
+  });
+
   describe("daylight-saving days", () => {
     it("treats the 23-hour spring day as complete with 23 hours", () => {
       const clock = new Date("2026-03-30T10:00:00Z");
@@ -176,6 +224,34 @@ describe("toHourlyUsageView", () => {
       // 05:30 on 10 August: the night from 9 to 10 August is still running.
       const early = usage(rows, new Date("2026-08-10T03:30:00Z"));
       expect(early.lastNight).toMatchObject({ complete: true, label: "noc z 8 na 9 sierpnia" });
+    });
+
+    it("counts a night as ended at exactly 06:00", () => {
+      // 06:00 in Warsaw (CEST) is 04:00Z; the 05:00 hour ends at that instant, so the night 9→10 August has ended.
+      const rows = days("2026-08-10", 3).filter(
+        (r) => Date.parse(r.hour_start) + 3_600_000 <= Date.parse("2026-08-10T04:00:00Z"),
+      );
+      expect(usage(rows, new Date("2026-08-10T04:00:00Z")).lastNight).toMatchObject({
+        complete: true,
+        label: "noc z 9 na 10 sierpnia",
+      });
+    });
+
+    it("looks back from the last night that has ended, not from the one still running", () => {
+      // 05:30 on 10 August: the newest ended night is 8→9 August, so the lookback covers 8→9, 7→8 and 6→7.
+      // Break 8→9 and 7→8; the complete 6→7 is the only one inside the lookback.
+      let rows = days("2026-08-10", 6);
+      for (const iso of ["2026-08-08T23:00:00.000Z", "2026-08-07T23:00:00.000Z"]) rows = withSamples(rows, iso, 3);
+      const clock = new Date("2026-08-10T03:30:00Z");
+      const ended = rows.filter((r) => Date.parse(r.hour_start) + 3_600_000 <= clock.getTime());
+      expect(usage(ended, clock).lastNight).toMatchObject({ complete: true, label: "noc z 6 na 7 sierpnia" });
+    });
+
+    it("has no night average when no night is complete", () => {
+      // One day has neither the evening before nor the morning after, so no night has all its hours.
+      const v = usage(day("2026-08-09"));
+      expect(v.nightAverage).toBeNull();
+      expect(v.lastNight).toEqual({ complete: false, reason: INCOMPLETE_NIGHTS });
     });
 
     it("falls back to an earlier complete night among the last three", () => {
