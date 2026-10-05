@@ -2,6 +2,15 @@
 
 The main product and technical decisions, newest first, each with the reason. Detailed plans for each change are in `context/changes/` (active) and `context/archive/` (done); the product requirements are in `context/foundation/prd-v3.md` and the ordered work in `context/foundation/roadmap.md`.
 
+## 2026-10-05
+
+- **The app writes one JSON log line per failure with a request id, version and environment, and a sign-in provider outage is a 503 page, not a redirect (`context/changes/observability-capture-layer/`; owner's decisions from the 2026-10-03 observability audit).** _Why:_ before this, failed dashboard reads, a failed sign-in and an auth outage left nothing in the logs that said why, and an outage looked like a signed-out visitor.
+  - **No tracker vendor yet.** The logger (`src/lib/logger.ts`) is tracker-agnostic: JSON to stderr with `ts`, `level`, `event`, `version` (`APP_VERSION`), `env` (`APP_ENV`) and the request fields. Errors keep name, message, `code`, `status`, `details`, `hint`, stack and up to three levels of `cause`.
+  - **A request id on every request.** The middleware keeps an inbound `x-request-id` only if it is 8-64 characters of `A-Za-z0-9._-`, otherwise it makes one, and returns it as `X-Request-Id` and on the 503 page.
+  - **Loader errors keep their cause.** Loaders throw `queryError(what, error)`, so the Postgres code (for example `42501`, a missing grant) reaches the log; each dashboard and history section logs `section_load_failed` with its label and still degrades on its own.
+  - **An auth outage is a 503, not a redirect.** `getUser()` returns provider failures as `{ error }`; a network failure, a 5xx or a 429 on `/`, `/dashboard` or `POST /api/notes` answers 503 with `Retry-After: 30` and `Cache-Control: no-store`, and logs `auth_unavailable`. Sign-in routes keep working as anonymous. A missing session or an invalid token is still a silent redirect.
+  - **No personal data in logs.** Emails appear only as `emailHash` (first 8 hex of SHA-256 of the trimmed, lowercase address); logged paths carry no query string, because `/auth/confirm` carries one-time tokens there.
+
 ## 2026-10-01
 
 - **Three holes in the store's history rules are pinned by named known-gap tests and not fixed, and the push-to-page integration suite lives outside `src` with its own config (`context/changes/testing-push-to-page-integration/`; owner's decisions, test plan rollout Phase 2). No production code changed.** _Why:_ the store already guards replay, older pushes and narration in SQL, and a fix for each hole is a product decision, not a test fix.
