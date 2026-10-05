@@ -113,3 +113,6 @@ const weekday = new Intl.DateTimeFormat("pl-PL", { timeZone: "UTC", weekday: "lo
 export function formatWeekday(dayKey: string): string {
   return weekday.format(new Date(dayKeyToUtcMs(dayKey)));
 }
+
+// THROWAWAY: unused variable, lint must fail
+const unusedBreakProbe = 1;
