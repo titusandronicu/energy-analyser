@@ -306,10 +306,10 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [x] 1.1 Workflow and action files are formatted: `npx prettier --check .github`
-- [x] 1.2 Lint, unit and type checks still pass locally: `npm run lint && npm test && npx astro check`
-- [ ] 1.3 On this change's PR the checks `ci`, `smoke` and `integration` are present and all success: `gh pr checks <pr-number>`
-- [ ] 1.4 The `smoke` job has no integration step: `gh run view <run-id> --json jobs --jq '.jobs[]|select(.name=="smoke")|[.steps[].name]'`
+- [x] 1.1 Workflow and action files are formatted: `npx prettier --check .github` — fe31e1d
+- [x] 1.2 Lint, unit and type checks still pass locally: `npm run lint && npm test && npx astro check` — fe31e1d
+- [x] 1.3 On this change's PR the checks `ci`, `smoke` and `integration` are present and all success: `gh pr checks <pr-number>` — fe31e1d
+- [x] 1.4 The `smoke` job has no integration step: `gh run view <run-id> --json jobs --jq '.jobs[]|select(.name=="smoke")|[.steps[].name]'` — fe31e1d
 
 #### Manual
 
@@ -320,10 +320,10 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [ ] 2.1 Clean service file, hook exits 0
-- [ ] 2.2 With a deliberate break in that service (reverted afterwards), `related-tests.sh` exits 2 and stderr names a failing test file
-- [ ] 2.3 With the same break in the working tree, `end-of-turn.sh` exits 2 with "Unit tests fail"
-- [ ] 2.4 The break is gone afterwards: `git diff --stat -- src` is empty
+- [x] 2.1 Clean service file, hook exits 0
+- [x] 2.2 With a deliberate break in that service (reverted afterwards), `related-tests.sh` exits 2 and stderr names a failing test file
+- [x] 2.3 With the same break in the working tree, `end-of-turn.sh` exits 2 with "Unit tests fail"
+- [x] 2.4 The break is gone afterwards: `git diff --stat -- src` is empty
 
 #### Manual
 
