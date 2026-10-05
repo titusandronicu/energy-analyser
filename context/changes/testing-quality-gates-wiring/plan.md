@@ -362,10 +362,10 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [x] 5.1 Formatting and lint pass: `npx prettier --check context/foundation/test-plan.md docs/decisions.md CLAUDE.md && npm run lint`
-- [x] 5.2 Unit tests still pass: `npm test`
+- [x] 5.1 Formatting and lint pass: `npx prettier --check context/foundation/test-plan.md docs/decisions.md CLAUDE.md && npm run lint` — f8c7a8f
+- [x] 5.2 Unit tests still pass: `npm test` — f8c7a8f
 - [ ] 5.3 Phase 4 row reads `complete`: `grep -n "Quality-gates wiring" context/foundation/test-plan.md`
-- [x] 5.4 No stale wording left: `grep -n "recommended after" context/foundation/test-plan.md` returns nothing
+- [x] 5.4 No stale wording left: `grep -n "recommended after" context/foundation/test-plan.md` returns nothing — f8c7a8f
 
 #### Manual
 
