@@ -1,7 +1,7 @@
 ---
 change_id: testing-quality-gates-wiring
 title: Testing Phase 4 - quality-gates wiring
-status: implementing
+status: implemented
 created: 2026-10-05
 updated: 2026-10-05
 archived_at: null
