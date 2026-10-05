@@ -8,9 +8,10 @@ import { loadHourlyEnergy, toHourlyUsageView, type HourlyUsageView } from "@/lib
 import { loadLatestRecommendation, toRecommendationView, type RecommendationView } from "@/lib/services/recommendation";
 import { loadTodaySummary, toTodaySummaryView, type TodaySummaryView } from "@/lib/services/period-summary";
 import { loadDailyEnergy, toUsageInsightView, type UsageInsightView } from "@/lib/services/usage-insight";
-import { orLoadError, pageClient } from "@/lib/page-load";
+import { orLoadError } from "@/lib/or-load-error";
+import { pageClient } from "@/lib/page-load";
 
-const { user } = Astro.locals;
+const { user, log } = Astro.locals;
 
 // Each card loads on its own (orLoadError) through one lazily created Supabase client for the page.
 const getClient = pageClient(Astro.request.headers, Astro.cookies);
@@ -18,10 +19,14 @@ const getClient = pageClient(Astro.request.headers, Astro.cookies);
 const now = new Date();
 // The daily rows feed both the usage card and the live verdicts, so they load once; a failure (null) shows the usage
 // card's load error and leaves the live card's PV and consumption verdicts unrated.
-const dailyRowsPromise = orLoadError(async () => {
-  const supabase = getClient();
-  return supabase ? await loadDailyEnergy(supabase, now) : [];
-});
+const dailyRowsPromise = orLoadError(
+  "dashboard.daily-energy",
+  async () => {
+    const supabase = getClient();
+    return supabase ? await loadDailyEnergy(supabase, now) : [];
+  },
+  log,
+);
 const [liveView, billView, usageView, view, todaySummary, hourlyView]: [
   LiveStateView | null,
   BillForecastView | null,
@@ -30,36 +35,64 @@ const [liveView, billView, usageView, view, todaySummary, hourlyView]: [
   TodaySummaryView | null,
   HourlyUsageView | null,
 ] = await Promise.all([
-  orLoadError(async () => {
-    const supabase = getClient();
-    const liveRow = supabase ? await loadLiveState(supabase) : null;
-    // Own isolation: a failure (for example the column grant not applied yet) only leaves consumption unrated.
-    const rowCapturedAt =
-      supabase && liveRow
-        ? await orLoadError(() => loadDailyRowCapturedAt(supabase, warsawParts(new Date(liveRow.captured_at)).dayKey))
-        : null;
-    return toLiveStateView(liveRow, now, await dailyRowsPromise, rowCapturedAt);
-  }),
-  orLoadError(async () => {
-    const supabase = getClient();
-    return toBillForecastView(supabase ? await loadBillForecast(supabase) : null, now);
-  }),
-  orLoadError(async () => {
-    const dailyRows = await dailyRowsPromise;
-    return dailyRows === null ? null : toUsageInsightView(dailyRows, now);
-  }),
-  orLoadError(async () => {
-    const supabase = getClient();
-    return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
-  }),
-  orLoadError(async () => {
-    const supabase = getClient();
-    return toTodaySummaryView(supabase ? await loadTodaySummary(supabase, warsawParts(now).dayKey) : null, now);
-  }),
-  orLoadError(async () => {
-    const supabase = getClient();
-    return toHourlyUsageView(supabase ? await loadHourlyEnergy(supabase, now) : [], now);
-  }),
+  orLoadError(
+    "dashboard.live-state",
+    async () => {
+      const supabase = getClient();
+      const liveRow = supabase ? await loadLiveState(supabase) : null;
+      // Own isolation: a failure (for example the column grant not applied yet) only leaves consumption unrated.
+      const rowCapturedAt =
+        supabase && liveRow
+          ? await orLoadError(
+              "dashboard.daily-row-time",
+              () => loadDailyRowCapturedAt(supabase, warsawParts(new Date(liveRow.captured_at)).dayKey),
+              log,
+            )
+          : null;
+      return toLiveStateView(liveRow, now, await dailyRowsPromise, rowCapturedAt);
+    },
+    log,
+  ),
+  orLoadError(
+    "dashboard.bill-forecast",
+    async () => {
+      const supabase = getClient();
+      return toBillForecastView(supabase ? await loadBillForecast(supabase) : null, now);
+    },
+    log,
+  ),
+  orLoadError(
+    "dashboard.usage-insight",
+    async () => {
+      const dailyRows = await dailyRowsPromise;
+      return dailyRows === null ? null : toUsageInsightView(dailyRows, now);
+    },
+    log,
+  ),
+  orLoadError(
+    "dashboard.recommendation",
+    async () => {
+      const supabase = getClient();
+      return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
+    },
+    log,
+  ),
+  orLoadError(
+    "dashboard.today-summary",
+    async () => {
+      const supabase = getClient();
+      return toTodaySummaryView(supabase ? await loadTodaySummary(supabase, warsawParts(now).dayKey) : null, now);
+    },
+    log,
+  ),
+  orLoadError(
+    "dashboard.hourly-usage",
+    async () => {
+      const supabase = getClient();
+      return toHourlyUsageView(supabase ? await loadHourlyEnergy(supabase, now) : [], now);
+    },
+    log,
+  ),
 ]);
 ---
 

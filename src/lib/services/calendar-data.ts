@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DailyEnergyRow, DayNoteRow, RecommendationRow } from "@/types";
+import { queryError } from "@/lib/query-error";
 
 // Range loaders for the history calendar (S-15). Each reads only the chosen period's rows; RLS returns nothing for
 // non-owners. Errors are thrown so the page can show a load failure instead of pretending the period is empty.
@@ -18,7 +19,7 @@ export async function loadDailyRange(client: SupabaseClient, from: string, to: s
     .lte("day", to)
     .order("day", { ascending: true })
     .overrideTypes<DailyEnergyRow[], { merge: false }>();
-  if (error) throw new Error(`loading daily energy range failed: ${error.message}`);
+  if (error) throw queryError("loading daily energy range failed", error);
   return data;
 }
 
@@ -37,7 +38,7 @@ export async function loadRecommendationTimes(
     .order("generated_at", { ascending: true })
     .limit(RECOMMENDATION_TIMES_LIMIT)
     .overrideTypes<{ generated_at: string }[], { merge: false }>();
-  if (error) throw new Error(`loading recommendation times failed: ${error.message}`);
+  if (error) throw queryError("loading recommendation times failed", error);
   return { times: data.map((row) => row.generated_at), truncated: data.length >= RECOMMENDATION_TIMES_LIMIT };
 }
 
@@ -55,7 +56,7 @@ export async function loadRecommendationsForDay(
     .lt("generated_at", new Date(toMs).toISOString())
     .order("generated_at", { ascending: true })
     .overrideTypes<RecommendationRow[], { merge: false }>();
-  if (error) throw new Error(`loading recommendations for the day failed: ${error.message}`);
+  if (error) throw queryError("loading recommendations for the day failed", error);
   return data;
 }
 
@@ -68,7 +69,7 @@ export async function loadNoteForDay(client: SupabaseClient, day: string): Promi
     .eq("day", day)
     .maybeSingle()
     .overrideTypes<DayNoteRow | null, { merge: false }>();
-  if (error) throw new Error(`loading the day note failed: ${error.message}`);
+  if (error) throw queryError("loading the day note failed", error);
   return data;
 }
 
@@ -82,6 +83,6 @@ export async function loadNoteDays(client: SupabaseClient, from: string, to: str
     .lte("day", to)
     .order("day", { ascending: true })
     .overrideTypes<{ day: string }[], { merge: false }>();
-  if (error) throw new Error(`loading the note days failed: ${error.message}`);
+  if (error) throw queryError("loading the note days failed", error);
   return data.map((row) => row.day);
 }

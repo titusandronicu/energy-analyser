@@ -44,7 +44,7 @@ export async function requestMagicLink(form: FormData, deps: RequestMagicLinkDep
   if (!email.success) return { redirect: signinError(MESSAGES.invalidEmail) };
 
   const { error } = await deps.sendOtp(email.data, { shouldCreateUser: deps.signupEnabled });
-  if (error) deps.logError?.("magic link request failed", error.message);
+  if (error) deps.logError?.("magic link request failed", error);
   return { redirect: CHECK_EMAIL_PATH };
 }
 
@@ -65,7 +65,7 @@ export async function confirmMagicLink(url: URL, deps: ConfirmMagicLinkDeps): Pr
 
   const { error } = result;
   if (error) {
-    deps.logError?.("magic link verification failed", error.message);
+    deps.logError?.("magic link verification failed", error);
     return { redirect: signinError(MESSAGES.expiredLink) };
   }
   return { redirect: AFTER_SIGNIN_PATH };

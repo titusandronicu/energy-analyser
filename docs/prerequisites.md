@@ -74,6 +74,7 @@ Narration runs in the lab (`scripts/run-energy-advisory.py`), never in this app.
 | Solcast API key                     | HA UI (Solcast integration) and the owner's Solcast account                                                               | Forecast                                  |
 | PGE mBOK login                      | HA UI (PGE Sensor integration) and the owner's PGE account                                                                | Invoice, balance and energy-credit values |
 | Supabase URL and anon key           | app `.env` locally, `.env.runtime` on the VPS (not committed)                                                             | This app; service-role keys are forbidden |
+| `APP_ENV` (not a secret)            | `compose.yaml` sets `production`; `.env` locally (default `development`)                                                  | Environment name on every log line        |
 | Uptime Kuma push URL (optional)     | docker-core `.env.push`                                                                                                   | Push heartbeat                            |
 
 ## One-time production steps (app)

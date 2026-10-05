@@ -4,6 +4,7 @@ import { periodLabel } from "@/lib/calendar/period";
 import { LOAD_FAILED, type Status } from "@/lib/format/status";
 import { formatMonth, formatWarsawDateTime, warsawParts } from "@/lib/format/warsaw-time";
 import { FUTURE_SKEW_MS, STALE_AFTER_MS, ageStatus, earlierDayStatus } from "@/lib/services/recommendation";
+import { queryError } from "@/lib/query-error";
 
 // The lab's plain-language texts for today, a completed day and a completed month (S-18). Each loader reads only the
 // signed-in owner's rows; RLS returns nothing for non-owners. Errors are thrown so the page can show a load failure
@@ -28,7 +29,7 @@ export async function loadTodaySummary(client: SupabaseClient, today: string): P
     .order("period", { ascending: false })
     .limit(1)
     .overrideTypes<PeriodSummaryText[], { merge: false }>();
-  if (error) throw new Error(`loading today's summary failed: ${error.message}`);
+  if (error) throw queryError("loading today's summary failed", error);
   return data[0] ?? null;
 }
 
@@ -46,7 +47,7 @@ export async function loadPeriodSummary(
     .eq("period", period)
     .maybeSingle()
     .overrideTypes<PeriodSummaryText | null, { merge: false }>();
-  if (error) throw new Error(`loading the ${kind} summary failed: ${error.message}`);
+  if (error) throw queryError(`loading the ${kind} summary failed`, error);
   return data;
 }
 

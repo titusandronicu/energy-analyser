@@ -4,6 +4,7 @@ import type { Status, StatusTone } from "@/lib/format/status";
 import { asRecord, kwhLabel } from "@/lib/format/values";
 import { addDays, formatDayMonth, formatWarsawDateTime, warsawParts } from "@/lib/format/warsaw-time";
 import { formatAge } from "@/lib/services/live-state";
+import { queryError } from "@/lib/query-error";
 
 // The lab narrates roughly hourly; two missed runs make the advice stale.
 export const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
@@ -93,7 +94,7 @@ export async function loadLatestRecommendation(client: SupabaseClient): Promise<
     .order("generated_at", { ascending: false })
     .limit(1)
     .overrideTypes<RecommendationRow[], { merge: false }>();
-  if (error) throw new Error(`loading recommendation failed: ${error.message}`);
+  if (error) throw queryError("loading recommendation failed", error);
   return data[0] ?? null;
 }
 

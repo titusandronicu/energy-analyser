@@ -24,6 +24,7 @@ export default defineConfig({
       SUPABASE_ANON_KEY: envField.string({ context: "server", access: "secret", optional: true }),
       ALLOW_SIGNUP: envField.string({ context: "server", access: "secret", optional: true, default: "false" }),
       APP_VERSION: envField.string({ context: "server", access: "secret", optional: true, default: "development" }),
+      APP_ENV: envField.string({ context: "server", access: "secret", optional: true, default: "development" }),
       APP_ORIGIN: envField.string({ context: "server", access: "secret", optional: true }),
     },
   },

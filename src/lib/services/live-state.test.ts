@@ -821,6 +821,12 @@ describe("loaders", () => {
       const { client } = mockClient({ data: null, error: { message: "permission denied" } });
       await expect(loadLiveState(client)).rejects.toThrow("loading live state failed: permission denied");
     });
+
+    it("keeps the Postgres code and details as the error's cause", async () => {
+      const original = { message: "permission denied", code: "42501", details: "no grant" };
+      const { client } = mockClient({ data: null, error: original });
+      await expect(loadLiveState(client)).rejects.toMatchObject({ cause: original });
+    });
   });
 
   describe("loadDailyRowCapturedAt", () => {
