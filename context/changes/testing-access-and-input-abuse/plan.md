@@ -334,10 +334,10 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, with the new files collected: `npm test`
-- [x] 1.2 Type checking passes: `npx astro check`
-- [x] 1.3 Linting passes: `npm run lint`
-- [x] 1.4 A deliberate break turns the matching test red and is reverted: remove the `Origin` comparison; add `/api/notes` to `TOKEN_AUTH_ROUTES`; add `set:html` to a component; add an unlisted page file
+- [x] 1.1 Unit tests pass, with the new files collected: `npm test` — 236e7e5
+- [x] 1.2 Type checking passes: `npx astro check` — 236e7e5
+- [x] 1.3 Linting passes: `npm run lint` — 236e7e5
+- [x] 1.4 A deliberate break turns the matching test red and is reverted: remove the `Origin` comparison; add `/api/notes` to `TOKEN_AUTH_ROUTES`; add `set:html` to a component; add an unlisted page file — 236e7e5
 
 #### Manual
 
@@ -347,10 +347,10 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Automated
 
-- [ ] 2.1 Dependency installs cleanly: `npm ci`
-- [ ] 2.2 Integration tests pass against the local stack: `SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run test:integration`
-- [ ] 2.3 Unit tests, types, lint and build still pass: `npm test`, `npx astro check`, `npm run lint`, `npm run build`
-- [ ] 2.4 Deliberate breaks each turn a named test red and are reverted on the local stack only: grant `select` on `ingest_pushes` to `authenticated` without the owner policy; add a policy `using (true)` to `day_notes`; remove `revoked_at is null` from the token check in a scratch copy of the function
+- [x] 2.1 Dependency installs cleanly: `npm ci`
+- [x] 2.2 Integration tests pass against the local stack: `SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run test:integration`
+- [x] 2.3 Unit tests, types, lint and build still pass: `npm test`, `npx astro check`, `npm run lint`, `npm run build`
+- [x] 2.4 Deliberate breaks each turn a named test red and are reverted on the local stack only: grant `select` on `ingest_pushes` to `authenticated` without the owner policy; add a policy `using (true)` to `day_notes`; remove `revoked_at is null` from the token check in a scratch copy of the function
 
 #### Manual
 
