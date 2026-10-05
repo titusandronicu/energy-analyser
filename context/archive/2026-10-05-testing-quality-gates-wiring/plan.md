@@ -306,10 +306,10 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [x] 1.1 Workflow and action files are formatted: `npx prettier --check .github` — fe31e1d
-- [x] 1.2 Lint, unit and type checks still pass locally: `npm run lint && npm test && npx astro check` — fe31e1d
-- [x] 1.3 On this change's PR the checks `ci`, `smoke` and `integration` are present and all success: `gh pr checks <pr-number>` — fe31e1d
-- [x] 1.4 The `smoke` job has no integration step: `gh run view <run-id> --json jobs --jq '.jobs[]|select(.name=="smoke")|[.steps[].name]'` — fe31e1d
+- [x] 1.1 Workflow and action files are formatted: `npx prettier --check .github` — fb6a476
+- [x] 1.2 Lint, unit and type checks still pass locally: `npm run lint && npm test && npx astro check` — fb6a476
+- [x] 1.3 On this change's PR the checks `ci`, `smoke` and `integration` are present and all success: `gh pr checks <pr-number>` — fb6a476
+- [x] 1.4 The `smoke` job has no integration step: `gh run view <run-id> --json jobs --jq '.jobs[]|select(.name=="smoke")|[.steps[].name]'` — fb6a476
 
 #### Manual
 
@@ -320,22 +320,22 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [x] 2.1 Clean service file, hook exits 0 — 565db00
-- [x] 2.2 With a deliberate break in that service (reverted afterwards), `related-tests.sh` exits 2 and stderr names a failing test file — 565db00
-- [x] 2.3 With the same break in the working tree, `end-of-turn.sh` exits 2 with "Unit tests fail" — 565db00
-- [x] 2.4 The break is gone afterwards: `git diff --stat -- src` is empty — 565db00
+- [x] 2.1 Clean service file, hook exits 0 — fb6a476
+- [x] 2.2 With a deliberate break in that service (reverted afterwards), `related-tests.sh` exits 2 and stderr names a failing test file — fb6a476
+- [x] 2.3 With the same break in the working tree, `end-of-turn.sh` exits 2 with "Unit tests fail" — fb6a476
+- [x] 2.4 The break is gone afterwards: `git diff --stat -- src` is empty — fb6a476
 
 #### Manual
 
-- [ ] 2.5 In a live Claude Code session, editing a service so a test fails makes the agent see and react to the hook report
+- [x] 2.5 In a live Claude Code session, editing a service so a test fails makes the agent see and react to the hook report — owner ran it 2026-10-05: flipped a comparison in bill-forecast.ts, hook blocked with 21 failing tests in 2 files, agent reported it and reverted; exit code not observed
 
 ### Phase 3: Ruleset on `main`
 
 #### Automated
 
-- [x] 3.1 The ruleset exists, is active and has no bypass actors — c9f6c53
-- [x] 3.2 The branch rules list the three required checks `ci`, `smoke`, `integration` — c9f6c53
-- [x] 3.3 The committed ruleset JSON matches what GitHub reports for name, target, enforcement and the three contexts — c9f6c53
+- [x] 3.1 The ruleset exists, is active and has no bypass actors — fb6a476
+- [x] 3.2 The branch rules list the three required checks `ci`, `smoke`, `integration` — fb6a476
+- [x] 3.3 The committed ruleset JSON matches what GitHub reports for name, target, enforcement and the three contexts — fb6a476
 
 #### Manual
 
@@ -347,28 +347,28 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [x] 4.1 Every throwaway PR shows its expected check as failing: `gh pr checks <pr-number>` — 0fce69a
-- [x] 4.2 The failing log names the expected test or smoke step: `gh run view <run-id> --log-failed` — 0fce69a
-- [x] 4.3 Each throwaway PR is not mergeable: `gh pr view <pr-number> --json mergeStateStatus,mergeable` — 0fce69a
-- [x] 4.4 Nothing from a break is on `main`: `git diff origin/main -- src supabase` is empty after cleanup — 0fce69a
-- [x] 4.5 All throwaway PRs are closed and branches deleted: `gh pr list --state open --search "break/"` is empty — 0fce69a
+- [x] 4.1 Every throwaway PR shows its expected check as failing: `gh pr checks <pr-number>` — fb6a476
+- [x] 4.2 The failing log names the expected test or smoke step: `gh run view <run-id> --log-failed` — fb6a476
+- [x] 4.3 Each throwaway PR is not mergeable: `gh pr view <pr-number> --json mergeStateStatus,mergeable` — fb6a476
+- [x] 4.4 Nothing from a break is on `main`: `git diff origin/main -- src supabase` is empty after cleanup — fb6a476
+- [x] 4.5 All throwaway PRs are closed and branches deleted: `gh pr list --state open --search "break/"` is empty — fb6a476
 
 #### Manual
 
-- [ ] 4.6 The owner has read `breaks.md` and agrees each risk maps to a check that actually catches it
+- [x] 4.6 The owner has read `breaks.md` and agrees each risk maps to a check that actually catches it — owner read breaks.md and confirmed 2026-10-05
 - [x] 4.7 If a break did not turn its expected check red, the gap is logged in `breaks.md` and in `docs/decisions.md`, not hidden
 
 ### Phase 5: Docs say what is true
 
 #### Automated
 
-- [x] 5.1 Formatting and lint pass: `npx prettier --check context/foundation/test-plan.md docs/decisions.md CLAUDE.md && npm run lint` — f8c7a8f
-- [x] 5.2 Unit tests still pass: `npm test` — f8c7a8f
+- [x] 5.1 Formatting and lint pass: `npx prettier --check context/foundation/test-plan.md docs/decisions.md CLAUDE.md && npm run lint` — fb6a476
+- [x] 5.2 Unit tests still pass: `npm test` — fb6a476
 - [x] 5.3 Phase 4 row reads `complete`: `grep -n "Quality-gates wiring" context/foundation/test-plan.md` — this PR
-- [x] 5.4 No stale wording left: `grep -n "recommended after" context/foundation/test-plan.md` returns nothing — f8c7a8f
+- [x] 5.4 No stale wording left: `grep -n "recommended after" context/foundation/test-plan.md` returns nothing — fb6a476
 
 #### Manual
 
 - [x] 5.5 Reading test-plan sections 3-5 and the decisions entry gives the same picture as `gh api` shows
 
-Note (2026-10-05): manual checks 2.5 (live-session hook report) and 4.6 (owner reads `breaks.md`) were skipped by the owner and stay unticked; the Phase 4 row is `complete` on that explicit waiver. 3.4 was run by the owner: `gh pr merge` on the red PR #128 did not merge it.
+Note (2026-10-05): all manual checks were run or confirmed by the owner; 3.4 was run by the owner: `gh pr merge` on the red PR #128 did not merge it.
