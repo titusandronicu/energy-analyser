@@ -339,7 +339,7 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Manual
 
-- [ ] 3.4 On a draft PR with a red required check, the merge button is disabled and `gh pr merge` refuses, as the admin
+- [x] 3.4 On a draft PR with a red required check, the merge button is disabled and `gh pr merge` refuses, as the admin — owner ran `gh pr merge 128`; PR stayed open, merge state BLOCKED
 - [x] 3.5 This change's own PR (all green) can be merged normally afterwards — fb6a476 (#121 merged with all three checks green)
 - [x] 3.6 The recovery step (disable enforcement) is understood and works; re-enable afterwards — enforcement re-enabled 2026-10-05 (active)
 
@@ -364,9 +364,11 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 - [x] 5.1 Formatting and lint pass: `npx prettier --check context/foundation/test-plan.md docs/decisions.md CLAUDE.md && npm run lint` — f8c7a8f
 - [x] 5.2 Unit tests still pass: `npm test` — f8c7a8f
-- [ ] 5.3 Phase 4 row reads `complete`: `grep -n "Quality-gates wiring" context/foundation/test-plan.md`
+- [x] 5.3 Phase 4 row reads `complete`: `grep -n "Quality-gates wiring" context/foundation/test-plan.md` — this PR
 - [x] 5.4 No stale wording left: `grep -n "recommended after" context/foundation/test-plan.md` returns nothing — f8c7a8f
 
 #### Manual
 
 - [x] 5.5 Reading test-plan sections 3-5 and the decisions entry gives the same picture as `gh api` shows
+
+Note (2026-10-05): manual checks 2.5 (live-session hook report) and 4.6 (owner reads `breaks.md`) were skipped by the owner and stay unticked; the Phase 4 row is `complete` on that explicit waiver. 3.4 was run by the owner: `gh pr merge` on the red PR #128 did not merge it.
