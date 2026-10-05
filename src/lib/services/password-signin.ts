@@ -35,7 +35,7 @@ export async function signInWithPassword(form: FormData, deps: PasswordSignInDep
 
   const { error } = await deps.signIn(credentials.data);
   if (error) {
-    deps.logError?.("password sign-in failed", error.message);
+    deps.logError?.("password sign-in failed", error);
     return { redirect: signinError(PASSWORD_MESSAGES.rejected) };
   }
   return { redirect: AFTER_SIGNIN_PATH };

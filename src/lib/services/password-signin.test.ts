@@ -38,6 +38,9 @@ describe("signInWithPassword", () => {
     expect(await signInWithPassword(form({ email: "owner@example.com", password: "wrong" }), d)).toEqual({
       redirect: signinError(PASSWORD_MESSAGES.rejected),
     });
-    expect(d.logError).toHaveBeenCalledWith("password sign-in failed", "Invalid login credentials");
+    expect(d.logError).toHaveBeenCalledWith(
+      "password sign-in failed",
+      expect.objectContaining({ message: "Invalid login credentials" }),
+    );
   });
 });

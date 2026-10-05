@@ -53,7 +53,10 @@ describe("requestMagicLink", () => {
   it("still goes to check-email when Supabase rejects the address, and logs the reason", async () => {
     const deps = requestDeps({ message: "Signups not allowed for otp" });
     expect(await requestMagicLink(form("stranger@example.com"), deps)).toEqual({ redirect: "/auth/check-email" });
-    expect(deps.logError).toHaveBeenCalledWith("magic link request failed", "Signups not allowed for otp");
+    expect(deps.logError).toHaveBeenCalledWith(
+      "magic link request failed",
+      expect.objectContaining({ message: "Signups not allowed for otp" }),
+    );
   });
 });
 

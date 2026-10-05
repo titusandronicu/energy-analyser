@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createLogger, emailHash, serializeError } from "./logger";
+import { createLogger, emailHash, serializeError, withEmailHash } from "./logger";
 
 const NOW = new Date("2026-10-05T10:00:00.000Z");
 
@@ -105,6 +105,13 @@ describe("serializeError", () => {
     expect(out.cause.cause.cause.cause).toBeUndefined();
   });
 
+  it("keeps an object without any error keys as short JSON", () => {
+    expect(serializeError({ status: "weird" })).toEqual({ status: "weird" });
+    expect(serializeError({ result: "unexpected", n: 1 })).toEqual({ value: '{"result":"unexpected","n":1}' });
+    const big = serializeError({ blob: "x".repeat(2000) }) as { value: string };
+    expect(big.value.length).toBe(500);
+  });
+
   it("wraps a value that is not an object", () => {
     expect(serializeError("plain text")).toEqual({ value: "plain text" });
     expect(serializeError(null)).toEqual({ value: "null" });
@@ -122,5 +129,21 @@ describe("emailHash", () => {
   it("differs between addresses and never contains the address", () => {
     expect(emailHash("a@example.com")).not.toBe(emailHash("b@example.com"));
     expect(emailHash("owner@example.com")).not.toContain("owner");
+  });
+});
+
+describe("withEmailHash", () => {
+  it("tags the lines with the hash and never with the address", () => {
+    const { log, lines, parsed } = capture();
+    withEmailHash(log, "Owner@Example.com").error("password sign-in failed");
+    expect(parsed()[0]).toMatchObject({ emailHash: emailHash("owner@example.com") });
+    expect(lines[0]).not.toContain("example.com");
+  });
+
+  it("returns the same logger when there is no usable address", () => {
+    const { log } = capture();
+    expect(withEmailHash(log, undefined)).toBe(log);
+    expect(withEmailHash(log, "   ")).toBe(log);
+    expect(withEmailHash(log, 42)).toBe(log);
   });
 });

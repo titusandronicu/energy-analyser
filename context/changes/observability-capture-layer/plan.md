@@ -8,7 +8,7 @@ Give Energy Analyser a tracker-agnostic capture layer: one structured JSON logge
 
 - There is no error tracker. Logging is seven raw `console.error` calls into Docker `json-file` logs (10 MB x 3, read by hand): `src/lib/page-load.ts:13`, `src/pages/auth/confirm.ts:19`, `src/pages/api/auth/magic-link.ts:19`, `src/pages/api/auth/signin.ts:18`, `src/pages/api/notes.ts:27` and `:45`, `src/pages/api/ingest.ts:29`. No request id, release or environment on any line.
 - Services take an optional `logError?: (message: string, detail: unknown) => void` (`ingest.ts:13`, `magic-link.ts:25,33`, `password-signin.ts:19`, `day-notes.ts:42`). `detail` is `error.message` (a string) at `magic-link.ts:47,68`, `password-signin.ts:38`, `day-notes.ts:112`; a raw object at `ingest.ts:75,82` and `day-notes.ts:116`.
-- Thirteen loaders rethrow `new Error(\`<what>: ${error.message}\`)` with no `cause`, dropping the Supabase code, details and hint: `live-state.ts:130,143`, `calendar-data.ts:21,40,58,71,85`, `hourly-usage.ts:102`, `bill-forecast.ts:118`, `recommendation.ts:96`, `period-summary.ts:31,49`, `usage-insight.ts:71`.
+- Thirteen loaders rethrow ``new Error(`<what>: ${error.message}`)`` with no `cause`, dropping the Supabase code, details and hint: `live-state.ts:130,143`, `calendar-data.ts:21,40,58,71,85`, `hourly-usage.ts:102`, `bill-forecast.ts:118`, `recommendation.ts:96`, `period-summary.ts:31,49`, `usage-insight.ts:71`.
 - `orLoadError(load)` (`src/lib/page-load.ts:8-16`) logs the bare error and returns null; it has 18 call sites (`dashboard.astro:21,33,39,43,47,51,55,59`; `history.astro:49,102,106,111,118,138,143,148,153,169`) and no test.
 - `src/middleware.ts:27-36` reads only `data.user` from `getUser()`; the auth-js client returns `{ data: { user: null }, error }` for a network failure or 5xx (`AuthRetryableFetchError`), so a provider outage reads as signed out and `/dashboard` redirects to sign-in with no log. The Origin 403 (`:22-24`) is unlogged.
 - `astro:env/server` does not resolve under vitest (`vitest.config.ts` has only the `@` alias; no stubs). Services avoid it by taking dependencies as arguments; `src/lib/page-load.ts` imports `@/lib/supabase` and so cannot be imported by a test.
@@ -130,7 +130,7 @@ Every log site writes through `locals.log`; services pass the error object so `s
 #### Automated Verification:
 
 - Updated service tests pass: `npx vitest run src/lib/services/day-notes.test.ts src/lib/services/magic-link.test.ts src/lib/services/password-signin.test.ts src/lib/services/ingest.test.ts`
-- Only the logger itself writes to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts`
+- The routes no longer write to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts` and `src/lib/page-load.ts` (replaced in Phase 3)
 - Linting and type check pass: `npm run lint && npx astro check`
 
 #### Manual Verification:
@@ -156,13 +156,13 @@ Loaders keep the Postgres code and `cause`; `orLoadError` says which card failed
 
 **Intent**: One place that builds the rethrown error so the diagnosis survives.
 
-**Contract**: `queryError(what: string, error: { message: string; code?: string; details?: string; hint?: string }): Error` returns `new Error(\`${what}: ${error.message}\`, { cause: error })`. The message format is unchanged, which keeps the existing substring assertions passing. Confirm `Error` `cause` type-checks under the repo's TypeScript lib (ES2022); if not, raise `lib` rather than casting.
+**Contract**: `queryError(what: string, error: { message: string; code?: string; details?: string; hint?: string }): Error` returns ``new Error(`${what}: ${error.message}`, { cause: error })``. The message format is unchanged, which keeps the existing substring assertions passing. Confirm `Error` `cause` type-checks under the repo's TypeScript lib (ES2022); if not, raise `lib` rather than casting.
 
 #### 2. Use it at all 13 loader throws
 
 **File**: `src/lib/services/live-state.ts:130,143`, `calendar-data.ts:21,40,58,71,85`, `hourly-usage.ts:102`, `bill-forecast.ts:118`, `recommendation.ts:96`, `period-summary.ts:31,49`, `usage-insight.ts:71`
 
-**Intent**: Replace each `throw new Error(\`...: ${error.message}\`)` with `throw queryError("...", error)`.
+**Intent**: Replace each ``throw new Error(`...: ${error.message}`)`` with `throw queryError("...", error)`.
 
 **Contract**: the `what` strings stay exactly as today. Add one assertion in the loader tests that the thrown error's `cause` is the original object, in two loaders (for example `live-state.test.ts` and `calendar-data.test.ts`).
 
@@ -181,6 +181,7 @@ Loaders keep the Postgres code and `cause`; `orLoadError` says which card failed
 - New helper tests pass: `npx vitest run src/lib/query-error.test.ts src/lib/or-load-error.test.ts`
 - Loader tests still pass with the unchanged message format: `npx vitest run src/lib/services`
 - No message-only rethrow is left in the loaders: `grep -rnF 'failed: ${error.message}' src/lib/services` returns nothing
+- Only the logger itself writes to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts`
 - Linting and type check pass: `npm run lint && npx astro check`
 
 #### Manual Verification:
@@ -311,9 +312,9 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [x] 1.1 Logger and request-id tests pass: `npx vitest run src/lib/logger.test.ts src/lib/request-id.test.ts`
-- [x] 1.2 Linting passes: `npm run lint`
-- [x] 1.3 Type check passes: `npx astro check`
+- [x] 1.1 Logger and request-id tests pass: `npx vitest run src/lib/logger.test.ts src/lib/request-id.test.ts` — f046a52
+- [x] 1.2 Linting passes: `npm run lint` — f046a52
+- [x] 1.3 Type check passes: `npx astro check` — f046a52
 
 #### Manual
 
@@ -323,9 +324,9 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [ ] 2.1 Updated service tests pass: `npx vitest run src/lib/services/day-notes.test.ts src/lib/services/magic-link.test.ts src/lib/services/password-signin.test.ts src/lib/services/ingest.test.ts`
-- [ ] 2.2 Only the logger itself writes to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts`
-- [ ] 2.3 Linting and type check pass: `npm run lint && npx astro check`
+- [x] 2.1 Updated service tests pass: `npx vitest run src/lib/services/day-notes.test.ts src/lib/services/magic-link.test.ts src/lib/services/password-signin.test.ts src/lib/services/ingest.test.ts`
+- [x] 2.2 The routes no longer write to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts` and `src/lib/page-load.ts` (replaced in Phase 3)
+- [x] 2.3 Linting and type check pass: `npm run lint && npx astro check`
 
 #### Manual
 
@@ -340,6 +341,7 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 - [ ] 3.2 Loader tests still pass with the unchanged message format: `npx vitest run src/lib/services`
 - [ ] 3.3 No message-only rethrow is left in the loaders: `grep -rnF 'failed: ${error.message}' src/lib/services` returns nothing
 - [ ] 3.4 Linting and type check pass: `npm run lint && npx astro check`
+- [ ] 3.6 Only the logger itself writes to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts`
 
 #### Manual
 

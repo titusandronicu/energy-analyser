@@ -109,7 +109,7 @@ export async function handleNotePost(form: FormData, deps: NotePostDeps): Promis
     const { error } =
       parsed.intent === "save" ? await deps.save(parsed.day, parsed.text) : await deps.remove(parsed.day);
     if (error) {
-      deps.logError?.(`day note ${parsed.intent} failed`, error.message);
+      deps.logError?.(`day note ${parsed.intent} failed`, error);
       return outcomeRedirect(href, "failed");
     }
   } catch (cause) {

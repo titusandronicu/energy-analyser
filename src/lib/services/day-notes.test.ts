@@ -282,7 +282,10 @@ describe("handleNotePost", () => {
     expect(await handleNotePost(form({ day: "2026-09-14", intent: "save", text: "Synthetic note" }), d)).toEqual({
       redirect: dayRedirect("2026-09-14", "failed"),
     });
-    expect(d.logError).toHaveBeenCalledWith("day note save failed", "synthetic database error");
+    expect(d.logError).toHaveBeenCalledWith(
+      "day note save failed",
+      expect.objectContaining({ message: "synthetic database error" }),
+    );
   });
 
   it("logs a database error and reports the delete as failed", async () => {
@@ -290,7 +293,10 @@ describe("handleNotePost", () => {
     expect(await handleNotePost(form({ day: "2026-09-14", intent: "delete" }), d)).toEqual({
       redirect: dayRedirect("2026-09-14", "failed"),
     });
-    expect(d.logError).toHaveBeenCalledWith("day note delete failed", "synthetic database error");
+    expect(d.logError).toHaveBeenCalledWith(
+      "day note delete failed",
+      expect.objectContaining({ message: "synthetic database error" }),
+    );
   });
 
   it("reports a thrown write as failed", async () => {

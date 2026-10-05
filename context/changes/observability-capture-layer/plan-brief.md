@@ -17,19 +17,19 @@ Every log line is one JSON object with `requestId`, `version`, `env`, route (pat
 
 ## Key Decisions Made
 
-| Decision | Choice | Why (1 sentence) | Source |
-| --- | --- | --- | --- |
-| Scope | Audit fixes 1 to 3 only | Closes the most blindness per unit of effort without a vendor. | Plan (owner) |
-| Auth outage UX | A 503 "sign-in unavailable" page, not a redirect | A real 5xx is loggable and honest. | Plan (owner) |
-| Environment tag | New optional `APP_ENV`, `production` in `compose.yaml` | The CI smoke build and production are both production-mode, so the build mode cannot tell them apart. | Plan (owner) |
-| Sign-in failure identity | Hashed email (8 hex of SHA-256), no IP | Correlates repeated failures without personal data; proxy headers are undocumented. | Plan (owner) |
-| Vendor | None; the logger is tracker-agnostic | A tracker choice belongs to `/10x-infra-research`. | Plan (owner) |
-| Testability | Pure `src/lib` modules with injected version and environment | `astro:env/server` does not resolve under vitest. | Research |
-| 503 mechanism | Hand-built `Response`, not a rewrite | Rewrite status semantics are unverified and a rewrite re-enters the failing auth call. | Research |
-| 503 routes and testability | One pure `decideAuth` rule for `/`, `/dashboard*` and `POST /api/notes`; no Locals flag, no route guards | The middleware cannot be unit-tested under vitest, and `/` was the missed bookmark path. | Plan review |
-| Loader errors | `queryError(what, error)` with `cause`, same message format | Keeps the eight existing `toThrow` assertions passing. | Research |
-| Log format and request id | JSON lines; generated id, or a safe inbound `X-Request-Id` | Greppable with `jq`; a forged id only affects correlation. | Plan (default) |
-| Expired or invalid token | Signed out, not logged | Expected on stale cookies; logging it would drown real outages. | Plan (default) |
+| Decision                   | Choice                                                                                                   | Why (1 sentence)                                                                                      | Source         |
+| -------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------- |
+| Scope                      | Audit fixes 1 to 3 only                                                                                  | Closes the most blindness per unit of effort without a vendor.                                        | Plan (owner)   |
+| Auth outage UX             | A 503 "sign-in unavailable" page, not a redirect                                                         | A real 5xx is loggable and honest.                                                                    | Plan (owner)   |
+| Environment tag            | New optional `APP_ENV`, `production` in `compose.yaml`                                                   | The CI smoke build and production are both production-mode, so the build mode cannot tell them apart. | Plan (owner)   |
+| Sign-in failure identity   | Hashed email (8 hex of SHA-256), no IP                                                                   | Correlates repeated failures without personal data; proxy headers are undocumented.                   | Plan (owner)   |
+| Vendor                     | None; the logger is tracker-agnostic                                                                     | A tracker choice belongs to `/10x-infra-research`.                                                    | Plan (owner)   |
+| Testability                | Pure `src/lib` modules with injected version and environment                                             | `astro:env/server` does not resolve under vitest.                                                     | Research       |
+| 503 mechanism              | Hand-built `Response`, not a rewrite                                                                     | Rewrite status semantics are unverified and a rewrite re-enters the failing auth call.                | Research       |
+| 503 routes and testability | One pure `decideAuth` rule for `/`, `/dashboard*` and `POST /api/notes`; no Locals flag, no route guards | The middleware cannot be unit-tested under vitest, and `/` was the missed bookmark path.              | Plan review    |
+| Loader errors              | `queryError(what, error)` with `cause`, same message format                                              | Keeps the eight existing `toThrow` assertions passing.                                                | Research       |
+| Log format and request id  | JSON lines; generated id, or a safe inbound `X-Request-Id`                                               | Greppable with `jq`; a forged id only affects correlation.                                            | Plan (default) |
+| Expired or invalid token   | Signed out, not logged                                                                                   | Expected on stale cookies; logging it would drown real outages.                                       | Plan (default) |
 
 ## Scope
 
@@ -43,13 +43,13 @@ Pure modules in `src/lib` (`logger`, `request-id`, `query-error`, `or-load-error
 
 ## Phases at a Glance
 
-| Phase | What it delivers | Key risk |
-| --- | --- | --- |
-| 1. Logger core and request context | Logger, request id, `APP_ENV`, middleware wiring and boundary | Setting a header on a response Astro may treat as immutable |
-| 2. Replace the seven console.error sites | All logging through `locals.log`, error objects, `emailHash` | Five exact test assertions change; a query string must never reach the log |
-| 3. Loader cause and section labels | `queryError` at 13 loaders, labelled `orLoadError` at 18 call sites | `Error` `cause` must type-check under the repo's TS lib |
-| 4. Auth outage handling | Classifier, `decideAuth` rule, 503 page, outage log | A fabricated session cookie is needed to prove it by hand |
-| 5. Docs and verification | decisions, architecture, prerequisites, README, CLAUDE.md | Docs drifting from the code |
+| Phase                                    | What it delivers                                                    | Key risk                                                                   |
+| ---------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 1. Logger core and request context       | Logger, request id, `APP_ENV`, middleware wiring and boundary       | Setting a header on a response Astro may treat as immutable                |
+| 2. Replace the seven console.error sites | All logging through `locals.log`, error objects, `emailHash`        | Five exact test assertions change; a query string must never reach the log |
+| 3. Loader cause and section labels       | `queryError` at 13 loaders, labelled `orLoadError` at 18 call sites | `Error` `cause` must type-check under the repo's TS lib                    |
+| 4. Auth outage handling                  | Classifier, `decideAuth` rule, 503 page, outage log                 | A fabricated session cookie is needed to prove it by hand                  |
+| 5. Docs and verification                 | decisions, architecture, prerequisites, README, CLAUDE.md           | Docs drifting from the code                                                |
 
 **Prerequisites:** none outside the repo; the next deploy sets `APP_ENV=production` from `compose.yaml`.
 **Estimated effort:** about 2 to 3 sessions across 5 phases.

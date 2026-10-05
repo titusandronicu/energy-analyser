@@ -26,6 +26,16 @@ const MAX_CAUSE_DEPTH = 3;
 const STANDARD_KEYS = new Set(["ts", "level", "event", "version", "env"]);
 const ERROR_KEYS = ["name", "message", "code", "status", "details", "hint", "stack"] as const;
 
+const MAX_DESCRIBED_CHARS = 500;
+
+function describe(value: object): string {
+  try {
+    return JSON.stringify(value).slice(0, MAX_DESCRIBED_CHARS);
+  } catch {
+    return Object.prototype.toString.call(value);
+  }
+}
+
 // An Error, or the plain `{ message, code, details, hint }` object Supabase returns (it has no stack), as plain data.
 // `cause` is followed up to MAX_CAUSE_DEPTH levels; anything that is not an object becomes `{ value }`.
 export function serializeError(value: unknown, depth = 0): Record<string, unknown> {
@@ -37,6 +47,8 @@ export function serializeError(value: unknown, depth = 0): Record<string, unknow
     if (typeof field === "string" || typeof field === "number") out[key] = field;
   }
   if (source.cause !== undefined && depth < MAX_CAUSE_DEPTH) out.cause = serializeError(source.cause, depth + 1);
+  // An object with none of those keys (an unexpected RPC result, say) is kept as short JSON rather than lost.
+  if (Object.keys(out).length === 0) out.value = describe(value);
   return out;
 }
 
@@ -44,6 +56,11 @@ export function serializeError(value: unknown, depth = 0): Record<string, unknow
 // writing an address into the log.
 export function emailHash(email: string): string {
   return createHash("sha256").update(email.trim().toLowerCase()).digest("hex").slice(0, 8);
+}
+
+// A logger that tags its lines with the address's hash, or the same logger when there is no usable address.
+export function withEmailHash(log: Logger, email: unknown): Logger {
+  return typeof email === "string" && email.trim() !== "" ? log.child({ emailHash: emailHash(email) }) : log;
 }
 
 function defaultWrite(line: string): void {
