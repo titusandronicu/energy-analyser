@@ -334,62 +334,62 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, with the new files collected: `npm test` — 236e7e5
-- [x] 1.2 Type checking passes: `npx astro check` — 236e7e5
-- [x] 1.3 Linting passes: `npm run lint` — 236e7e5
-- [x] 1.4 A deliberate break turns the matching test red and is reverted: remove the `Origin` comparison; add `/api/notes` to `TOKEN_AUTH_ROUTES`; add `set:html` to a component; add an unlisted page file — 236e7e5
+- [x] 1.1 Unit tests pass, with the new files collected: `npm test` — 8aab53f
+- [x] 1.2 Type checking passes: `npx astro check` — 8aab53f
+- [x] 1.3 Linting passes: `npm run lint` — 8aab53f
+- [x] 1.4 A deliberate break turns the matching test red and is reverted: remove the `Origin` comparison; add `/api/notes` to `TOKEN_AUTH_ROUTES`; add `set:html` to a component; add an unlisted page file — 8aab53f
 
 #### Manual
 
-- [x] 1.5 Reviewer reads the middleware table and confirms each expected value matches the rule in `docs/architecture.md` or `CLAUDE.md` (Environment), not the code — 236e7e5
+- [x] 1.5 Reviewer reads the middleware table and confirms each expected value matches the rule in `docs/architecture.md` or `CLAUDE.md` (Environment), not the code — 8aab53f
 
 ### Phase 2: Privileged helper and access integration tests
 
 #### Automated
 
-- [x] 2.1 Dependency installs cleanly: `npm ci` — 32afb74
-- [x] 2.2 Integration tests pass against the local stack: `SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run test:integration` — 32afb74
-- [x] 2.3 Unit tests, types, lint and build still pass: `npm test`, `npx astro check`, `npm run lint`, `npm run build` — 32afb74
-- [x] 2.4 Deliberate breaks each turn a named test red and are reverted on the local stack only: grant `select` on `ingest_pushes` to `authenticated` without the owner policy; add a policy `using (true)` to `day_notes`; remove `revoked_at is null` from the token check in a scratch copy of the function — 32afb74
+- [x] 2.1 Dependency installs cleanly: `npm ci` — 8aab53f
+- [x] 2.2 Integration tests pass against the local stack: `SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run test:integration` — 8aab53f
+- [x] 2.3 Unit tests, types, lint and build still pass: `npm test`, `npx astro check`, `npm run lint`, `npm run build` — 8aab53f
+- [x] 2.4 Deliberate breaks each turn a named test red and are reverted on the local stack only: grant `select` on `ingest_pushes` to `authenticated` without the owner policy; add a policy `using (true)` to `day_notes`; remove `revoked_at is null` from the token check in a scratch copy of the function — 8aab53f
 
 #### Manual
 
-- [x] 2.5 CI: the `smoke` job runs the new file in its integration step and `pg` reaches `127.0.0.1:54322` there (confirm on the first PR run) — c4ea4d9
-- [x] 2.6 The test refuses to start with a `SUPABASE_DB_URL` host that is not local — 32afb74
+- [x] 2.5 CI: the `smoke` job runs the new file in its integration step and `pg` reaches `127.0.0.1:54322` there (confirm on the first PR run) — 8aab53f
+- [x] 2.6 The test refuses to start with a `SUPABASE_DB_URL` host that is not local — 8aab53f
 
 ### Phase 3: Notes limit parity
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test` — e9ca6e7
-- [x] 3.2 Integration tests pass: `npm run test:integration` (local stack) — e9ca6e7
-- [x] 3.3 Types and lint pass: `npx astro check`, `npm run lint` — e9ca6e7
-- [x] 3.4 Deliberate breaks: change `NOTE_MAX_LENGTH` to 499 in a scratch edit; remove the CRLF `replace` in `parseNoteForm`; each turns a named test red — e9ca6e7
+- [x] 3.1 Unit tests pass: `npm test` — 8aab53f
+- [x] 3.2 Integration tests pass: `npm run test:integration` (local stack) — 8aab53f
+- [x] 3.3 Types and lint pass: `npx astro check`, `npm run lint` — 8aab53f
+- [x] 3.4 Deliberate breaks: change `NOTE_MAX_LENGTH` to 499 in a scratch edit; remove the CRLF `replace` in `parseNoteForm`; each turns a named test red — 8aab53f
 
 #### Manual
 
-- [x] 3.5 The `KNOWN GAP` comments state what a fix would change, and each name starts with `KNOWN GAP` — e9ca6e7
+- [x] 3.5 The `KNOWN GAP` comments state what a fix would change, and each name starts with `KNOWN GAP` — 8aab53f
 
 ### Phase 4: Page-level escaping
 
 #### Automated
 
-- [x] 4.1 Smoke passes against the local stack: `BASE_URL=… MAILPIT_URL=… SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run smoke` — b5c7fc7
-- [x] 4.2 Lint and types pass: `npm run lint`, `npx astro check` — b5c7fc7
-- [x] 4.3 Deliberate break: add `set:html` to one text component in a scratch edit; both the static guard (Phase 1) and the matching smoke step turn red — b5c7fc7
+- [x] 4.1 Smoke passes against the local stack: `BASE_URL=… MAILPIT_URL=… SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run smoke` — 8aab53f
+- [x] 4.2 Lint and types pass: `npm run lint`, `npx astro check` — 8aab53f
+- [x] 4.3 Deliberate break: add `set:html` to one text component in a scratch edit; both the static guard (Phase 1) and the matching smoke step turn red — 8aab53f
 
 #### Manual
 
-- [x] 4.4 The survey table matches the components (spot check two) — b5c7fc7
+- [x] 4.4 The survey table matches the components (spot check two) — 8aab53f
 
 ### Phase 5: Docs and test-plan
 
 #### Automated
 
-- [x] 5.1 Docs formatting passes: `npx prettier --check docs context CLAUDE.md` — 20b5229
-- [x] 5.2 All suites still pass: `npm test`, `npm run test:integration`, `npm run smoke` (local stack) — 20b5229
+- [x] 5.1 Docs formatting passes: `npx prettier --check docs context CLAUDE.md` — 8aab53f
+- [x] 5.2 All suites still pass: `npm test`, `npm run test:integration`, `npm run smoke` (local stack) — 8aab53f
 
 #### Manual
 
-- [x] 5.3 A reader of `test-plan.md` can tell from §3, §5 and §6.4 which suites exist, where they live and how to add one — 20b5229
-- [x] 5.4 `docs/decisions.md` entry reads correctly and states what was not fixed — 20b5229
+- [x] 5.3 A reader of `test-plan.md` can tell from §3, §5 and §6.4 which suites exist, where they live and how to add one — 8aab53f
+- [x] 5.4 `docs/decisions.md` entry reads correctly and states what was not fixed — 8aab53f

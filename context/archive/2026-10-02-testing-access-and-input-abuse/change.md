@@ -1,10 +1,10 @@
 ---
 change_id: testing-access-and-input-abuse
 title: Tests for non-owner access, Origin and token rules, and lab-text handling
-status: implemented
+status: archived
 created: 2026-10-02
 updated: 2026-10-05
-archived_at: null
+archived_at: 2026-10-05T12:08:00Z
 ---
 
 ## Notes
