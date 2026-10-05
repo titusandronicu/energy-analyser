@@ -365,8 +365,8 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [x] 5.1 `APP_ENV` is named everywhere the env vars are listed: `grep -rl APP_ENV README.md CLAUDE.md .env.example compose.yaml docs/prerequisites.md astro.config.mjs` lists all six files
-- [x] 5.2 Prettier passes on the changed docs: `npx prettier --check README.md CLAUDE.md docs context/changes/observability-capture-layer` (the wider `docs context` also lists four files this change does not touch: two archived design HTML files, `test-plan.md`, and one unrelated research.md)
+- [x] 5.1 `APP_ENV` is named everywhere the env vars are listed: `grep -rl APP_ENV README.md CLAUDE.md .env.example compose.yaml docs/prerequisites.md astro.config.mjs` lists all six files — e3f502d
+- [x] 5.2 Prettier passes on the changed docs: `npx prettier --check README.md CLAUDE.md docs context/changes/observability-capture-layer` (the wider `docs context` also lists four files this change does not touch: two archived design HTML files, `test-plan.md`, and one unrelated research.md) — e3f502d
 
 #### Manual
 
