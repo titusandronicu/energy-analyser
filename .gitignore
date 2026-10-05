@@ -31,3 +31,7 @@ release.env
 # Stryker mutation testing
 .stryker-tmp/
 reports/
+
+# Written by the code-review workflow in its own checkout; never committed
+pr.diff
+claude-review.md

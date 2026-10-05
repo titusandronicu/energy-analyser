@@ -38,12 +38,34 @@ jobs:
 
       - name: Run Claude Code Review
         run: |
-          PR_DIFF=$(git diff "origin/${BASE_REF}...HEAD")
+          # The diff goes in on stdin, not as an argument: Linux caps one argument at 128 KB and a large PR exceeds that.
+          # The lockfile is left out (generated and noisy). A diff over 200 KB is cut so the review stays within context.
+          git diff "origin/${BASE_REF}...HEAD" -- . ':(exclude)package-lock.json' > pr.diff
+          if [ ! -s pr.diff ]; then
+            # Nothing to review, for example a label added after the PR was merged: say so without calling the model.
+            echo "Brak zmian do przeglądu: diff względem \`${BASE_REF}\` jest pusty (czy PR został już zmergowany?)." > claude-review.md
+            exit 0
+          fi
+          TRUNCATED=""
+          if [ "$(wc -c < pr.diff)" -gt 200000 ]; then
+            # Cut at a file boundary (the last "diff --git" header inside the first 200 KB), so no file is half-read and no
+            # multibyte character is split. If the first file alone is larger, fall back to the byte cut.
+            head -c 200000 pr.diff > pr.cut
+            LAST=$(grep -n '^diff --git' pr.cut | tail -n 1 | cut -d: -f1)
+            if [ -n "$LAST" ] && [ "$LAST" -gt 1 ]; then head -n $((LAST - 1)) pr.cut > pr.diff; else mv pr.cut pr.diff; fi
+            rm -f pr.cut
+            printf '\n\n[Diff skrócony: pliki od tego miejsca nie są widoczne]\n' >> pr.diff
+            TRUNCATED=1
+          fi
           CLAUDE_CR_PROMPT=$(cat .ai/prompts/code-review.md)
           if ! claude --append-system-prompt "$CLAUDE_CR_PROMPT" \
-            --print "Przeprowadź Code Review:\n\n $PR_DIFF" \
-            > claude-review.md 2>&1; then
+            --print "Przeprowadź Code Review zmian podanych na wejściu standardowym (diff):" \
+            < pr.diff > claude-review.md 2>&1; then
             echo "::error::Claude Code failed:"; cat claude-review.md; exit 1
+          fi
+          if [ -n "$TRUNCATED" ]; then
+            # Say so in the posted comment too, so a partial review is not read as a review of the whole PR.
+            printf '\n\n> ⚠️ Przegląd częściowy: diff przekroczył 200 KB, a pliki od miejsca cięcia nie zostały sprawdzone.\n' >> claude-review.md
           fi
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
