@@ -4,7 +4,7 @@ The main product and technical decisions, newest first, each with the reason. De
 
 ## 2026-10-05 (quality gates)
 
-- **The suites from the test rollout now gate merges: `ci`, `smoke` and `integration` are required on `main` by a ruleset that also binds the owner (`context/changes/testing-quality-gates-wiring/`; owner's decisions).** Before this, `main` had no protection and the checks were advisory.
+- **The suites from the test rollout now gate merges: `ci`, `smoke` and `integration` are required on `main` by a ruleset that also binds the owner (`context/archive/2026-10-05-testing-quality-gates-wiring/`; owner's decisions).** Before this, `main` had no protection and the checks were advisory.
   - **Ruleset `main-quality-gates`** (`.github/rulesets/main-quality-gates.json`): required checks `ci`, `smoke`, `integration`, no bypass actors, branches need not be up to date, no force push or deletion, so changes go through pull requests. Apply and recovery steps (disable enforcement if CI itself breaks) are in `docs/prerequisites.md`.
   - **The integration suite is its own CI job** with its own check name, so a red check names the suite and it still runs when smoke fails. The Supabase start is one shared composite action (`.github/actions/local-supabase`).
   - **Each gate was proven red by a deliberate break per risk** (#1 to #7, six throwaway PRs, none merged): `breaks.md` lists the check and test that caught each. The notes server limit is guarded by `ci` only; the integration suite guards the database limit.
