@@ -2,7 +2,17 @@
 
 A web app for the owner of a home solar system (PV panels, a battery, the grid, a Deye inverter, a PGE G11 tariff). It answers two everyday questions in plain Polish: _what should the battery do today?_ and _was recent usage normal?_ The home lab collects the data and runs the advisory logic; this app signs the owner in, stores what the lab pushes, applies its own season-aware rules and presents the result. It never controls any device.
 
-What works today: magic-link sign-in, live state with a staleness warning, a season-adjusted usage insight, and today's recommendation narrated by an LLM from verified facts. Next (PRD v3): every figure explained for a non-expert with its data period and colours, a history calendar with good / neutral / bad ratings, lab-written summaries, consumption trends and notes on days.
+## What it does
+
+- **Sign in** with an emailed one-time link or email and password. One owner account; there is no sign-up form.
+- **Live state** (PV, battery, grid, home load) with a staleness warning when the lab stops pushing.
+- **Today's recommendation**, narrated by an LLM from verified facts, with the PV forecast and the lab's findings.
+- **Usage insight:** yesterday's use against a season-adjusted baseline.
+- **Bill forecast** for the current month as a range, with the data it is based on.
+- **History calendar** (day, month and quarter views): production against forecast, advice, plain-language summaries of days and months, and good / neutral / bad ratings for completed days and months.
+- **Day notes:** add, view, edit and delete a note on any calendar day.
+
+Still to come (see [the roadmap](context/foundation/roadmap.md)): a year view, consumption trends, forecast accuracy and a usage profile.
 
 ## How it works
 
@@ -14,6 +24,36 @@ What works today: magic-link sign-in, live state with a staleness warning, a sea
 | [docs/prerequisites.md](docs/prerequisites.md)                                                            | Everything outside this repo: Home Assistant integrations, lab jobs, LLM configuration, secrets, one-time steps |
 | [docs/ingest/README.md](docs/ingest/README.md)                                                            | The push contract the home lab follows                                                                          |
 | [context/foundation/prd-v3.md](context/foundation/prd-v3.md), [roadmap.md](context/foundation/roadmap.md) | Product requirements and the ordered work                                                                       |
+
+## Access model
+
+The app has one owner. Signing in is not enough to see data: the owner's user id must be in `public.app_owners`, and every data table and view is closed to `anon` and `authenticated` by default and opened again only by an owner policy and column grants (a user can read only their own `app_owners` row). A signed-in user who is not an owner reads nothing and writes nothing. This is proven against a real non-owner and an anonymous client in [`tests/integration/access-abuse.test.ts`](tests/integration/access-abuse.test.ts), and the request guard (the `Origin` check on mutating routes and the bearer-token exemption for the lab's push) is pinned in [`src/middleware.test.ts`](src/middleware.test.ts). Details are in [docs/architecture.md](docs/architecture.md).
+
+## How it maps to the 10xBuilder requirements
+
+This project was built with the 10xDevs workflow: shape, PRD, roadmap, then per change research, plan, implement, review and archive, with every change kept under [`context/`](context/).
+
+| Requirement              | Where it lives                                                                                                                                                                                                                                      |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Access control           | Sign-in in `src/pages/auth/` and `src/middleware.ts`; owner-only reads through row-level security and `app_owners` (see Access model)                                                                                                               |
+| CRUD                     | Day notes: `src/pages/api/notes.ts`, `src/lib/services/day-notes.ts`, `supabase/migrations/20261001072438_day_notes.sql`. The calendar shows a note, and the owner creates, edits and deletes it                                                    |
+| Business logic           | Staleness rules, the seasonal baseline, the bill forecast and period ratings in `src/lib/services/`, written down in [docs/logic.md](docs/logic.md)                                                                                                 |
+| Context documents        | [`context/foundation/`](context/foundation/): `prd-v3.md`, `roadmap.md`, `tech-stack.md`, `infrastructure.md`, `test-plan.md`, `lessons.md`; one folder per change in `context/changes/` and `context/archive/` with its research, plan and reviews |
+| Tests for a defined risk | [`context/foundation/test-plan.md`](context/foundation/test-plan.md) ranks seven risks; see Testing below                                                                                                                                           |
+| Public URL               | https://neil170-20170.mikrus.cloud                                                                                                                                                                                                                  |
+
+## Testing
+
+The risks are ranked in [`context/foundation/test-plan.md`](context/foundation/test-plan.md) (stale data shown as current, wrong money figures, a broken push-to-page path, silent history loss, day and month boundaries, a non-owner getting in, and markup in lab text or notes). Each layer is the cheapest one that proves its risk:
+
+| Layer                          | Where                                                | Run                             |
+| ------------------------------ | ---------------------------------------------------- | ------------------------------- |
+| Unit and contract tests        | `src/**/*.test.ts`, including the request guard      | `npm test`                      |
+| Integration, real Postgres     | `tests/integration/`                                 | `npm run test:integration`      |
+| End to end over HTTP           | `scripts/smoke.mjs` against a built server           | `npm run smoke`                 |
+| Mutation testing (report only) | Stryker on the pure logic in `src/lib`, weekly in CI | the `Mutation testing` workflow |
+
+Differences between layers that were found and deliberately not fixed are pinned by tests whose names start with `KNOWN GAP`, so a later fix flips them knowingly (see [docs/decisions.md](docs/decisions.md)).
 
 ## Stack
 
@@ -101,9 +141,11 @@ The production service listens on the VPS's dedicated IPv6 address, port `20170`
 
 ## Delivery
 
-- `ci.yml` checks pushes and pull requests to `main`, including an auth smoke test and the integration tests using local Supabase.
+- `ci.yml` runs on pushes and pull requests to `main`: the `ci` job (lint, unit tests, type checks, build) and the `smoke` job (a local Supabase, then the smoke test, then the integration tests).
 - `publish-image.yml` publishes `ghcr.io/titusandronicu/energy-analyser:sha-<full-sha>` after successful push CI.
 - `deploy-production.yml` accepts a full SHA, uses the protected `production` environment, deploys over SSH and rolls back when health verification fails.
+- `code-review.yml` reviews a pull request's diff with Claude Code when the `claude-code-review` label is added, and posts the review as a comment; `code-review-fix.yml` applies the fixes from that review when the `claude-code-support` label is added. Both are driven by the prompts in `.ai/prompts/`. Add the label **before** the pull request is merged, or there is no diff to review.
+- `mutation.yml` runs Stryker weekly and on demand. It reports and never gates a merge or a release.
 
 Configure these GitHub environment secrets: `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_PRIVATE_KEY`, and a pre-verified `SSH_KNOWN_HOSTS` entry. The deploy user must own `/opt/energy-analyser` and be allowed to use Docker. Keep production approval enabled on the `production` environment.
 
