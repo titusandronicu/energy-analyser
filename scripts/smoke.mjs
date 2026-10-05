@@ -83,10 +83,37 @@ const freshSummaries = () => {
     }));
   return [...fromExample, ...own];
 };
+// The lab's free text reaches the page on four surfaces: the recommendation text, the recommendation's findings
+// (title, fact, and for the findings beyond the first five also meaning and suggested_check), the period summaries and
+// the owner's notes. The recommendation and its findings carry markup on purpose too: each must show as literal
+// characters, never as HTML (test-plan risk #7). The payload has a script tag, an attribute-breaking quote with an image
+// tag, and an ampersand.
+const markupPayload = `<script>alert(1)</script> "><img src=x onerror=alert(2)> Tom & Jerry`;
+const recommendationText = `${freshMarker} ${markupPayload}`;
+const findingMarker = `Smoke ustalenie ${Date.now()}`;
+const markupFindings = () => [
+  // Visible findings (the card shows the first five): title and fact.
+  { severity: "warn", title: `${findingMarker} A ${markupPayload}`, fact: `${findingMarker} fakt A ${markupPayload}` },
+  ...[1, 2, 3, 4].map((n) => ({ severity: "info", fact: `${findingMarker} plain ${String(n)}` })),
+  // Beyond the first five: also meaning and suggested_check, rendered under "Pozostałe ustalenia".
+  {
+    severity: "info",
+    title: `${findingMarker} B ${markupPayload}`,
+    fact: `${findingMarker} fakt B ${markupPayload}`,
+    meaning: `${findingMarker} znaczenie ${markupPayload}`,
+    suggested_check: `${findingMarker} sprawdz ${markupPayload}`,
+  },
+  ...example.recommendation.facts.local_findings,
+];
 const freshBody = () => ({
   ...example,
   captured_at: new Date(Date.now() - 60_000).toISOString(),
-  recommendation: { ...example.recommendation, generated_at: new Date().toISOString(), text: freshMarker },
+  recommendation: {
+    ...example.recommendation,
+    generated_at: new Date().toISOString(),
+    text: recommendationText,
+    facts: { ...example.recommendation.facts, local_findings: markupFindings() },
+  },
   bill_forecast: { ...example.bill_forecast, generated_at: new Date().toISOString() },
   period_summaries: freshSummaries(),
 });
@@ -253,6 +280,22 @@ const steps = [
     "dashboard shows the fresh recommendation",
     () => request("/dashboard", { readBody: true }),
     { status: 200, contains: freshMarker, notContains: "Nieaktualna" },
+  ],
+  [
+    "dashboard shows the recommendation text and its findings as text, not markup",
+    () => request("/dashboard", { readBody: true }),
+    {
+      status: 200,
+      contains: [
+        freshMarker,
+        findingMarker,
+        "&lt;script&gt;alert(1)&lt;/script&gt;",
+        "&lt;img src=x onerror=alert(2)&gt;",
+        `${findingMarker} znaczenie`,
+        `${findingMarker} sprawdz`,
+      ],
+      notContains: ["<script>alert(1)</script>", "<img src=x onerror=alert(2)>"],
+    },
   ],
   [
     "dashboard shows the fresh live state",

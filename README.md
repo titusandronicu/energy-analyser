@@ -56,7 +56,7 @@ Sign-in on `/auth/signin` offers an emailed one-time link (`POST /api/auth/magic
 - `npm run preview` — local production preview
 - `npm test` — Vitest unit tests
 - `npm run smoke` — smoke test of sign-in and push ingestion against `BASE_URL`
-- `npm run test:integration` — integration tests of push ingestion against a local Supabase (`SUPABASE_URL` and `SUPABASE_ANON_KEY`; refuses non-local URLs; not part of `npm test`)
+- `npm run test:integration` — integration tests of push ingestion, owner-only access and notes limits against a local Supabase (`SUPABASE_URL` and `SUPABASE_ANON_KEY`; the access tests also use the stack's Postgres on port 54322, optionally `SUPABASE_DB_URL`; refuses non-local URLs; not part of `npm test`)
 
 The smoke test creates a user and reads its sign-in email from Mailpit. Run it only against a disposable/local Supabase instance with `ALLOW_SIGNUP=true`, never against production.
 

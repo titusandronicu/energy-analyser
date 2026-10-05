@@ -1,177 +1,165 @@
 ---
-date: 2026-10-02T12:00:00+02:00
-researcher: Claude (Sonnet 5.5), three read-only Explore agents plus parent verification
-git_commit: 3a76d1e
+date: 2026-10-05T13:20:00+02:00
+researcher: Claude (Sonnet 5.5)
+git_commit: b6462668cae62abe7641b4eb1a1e40a3d9d8a454
 branch: main
-repository: titusandronicu/energy-analyser
-topic: "Rollout Phase 3 of test-plan.md: access and input abuse (risks #6 and #7)"
-tags: [research, codebase, access-control, middleware, rls, ingest-tokens, day-notes, rendering, seed]
+repository: energy-analyser
+topic: "Phase 3 access and input abuse: what guards exist for risks #6 and #7 and what a test needs to prove them"
+tags: [research, codebase, testing, middleware, origin-check, rls, app_owners, ingest-token, day-notes, rendering]
 status: complete
-last_updated: 2026-10-02
+last_updated: 2026-10-05
 last_updated_by: Claude (Sonnet 5.5)
+last_updated_note: "Corrected the emoji counting claim after a Phase 3 run (zod counts code points)"
 ---
 
-# Research: Rollout Phase 3, access and input abuse (risks #6 and #7)
+# Research: Phase 3 access and input abuse (risks #6 and #7)
 
-**Date**: 2026-10-02
-**Git Commit**: 3a76d1e (main)
-**Repository**: titusandronicu/energy-analyser
+**Date**: 2026-10-05T13:20:00+02:00
+**Researcher**: Claude (Sonnet 5.5)
+**Git Commit**: b6462668cae62abe7641b4eb1a1e40a3d9d8a454
+**Branch**: main
+**Repository**: energy-analyser
+
+Nothing was run: no Supabase, no tests, no server. Everything below is read from source by three read-only workers; the decisive anchors (middleware, seed trigger, notes constraint and schema, render grep) were re-read by the parent. Items marked _inferred_ rest on reading, not on a run.
 
 ## Research Question
 
-Ground rollout Phase 3 of `context/foundation/test-plan.md`. For risk #6 (a non-owner or forged client gets in) and risk #7 (lab text or notes render as markup, or the notes limit differs between form, server and database): verify the response guidance, locate existing tests, name the cheapest useful layer, flag speculative risks, and settle how a test obtains a real non-owner session and a second and a revoked ingest token without a service-role key.
+`context/foundation/test-plan.md` §3 Phase 3, "Access and input abuse" (integration + unit):
+
+- **#6** A signed-out or non-owner client reads and writes nothing; a foreign Origin is refused on every mutating route; the token exemption cannot cover a cookie-authenticated route; bad or revoked ingest tokens are refused.
+- **#7** Lab text and notes render as literal text; form, server and database limits agree, including line breaks; blank is rejected.
+
+What guards exist today, what is already tested, and what would a test have to do to prove each one?
 
 ## Summary
 
-- **#6 is mostly structurally protected; the gap is that nothing proves it.** On the inspected paths, every table and view is revoked from `anon` and `authenticated`, reads need an owner policy, and no client role can write `app_owners` or `ingest_tokens`. The seed trigger makes every local and CI user an owner, so no existing test at any layer uses a signed-in non-owner. That is the central finding.
-- **Two #6 claims in the plan need correction.** (1) "Logged in means owner" is true of the middleware: any signed-in user passes it, and ownership rests entirely on RLS and column grants. (2) The token exemption cannot cover a cookie route only by an explicit code edit of an exact-match Set, guarded by a comment; no test pins it.
-- **#7 markup injection is speculative and should not get a hunt-for-a-hole test.** The inspected tree (`src`, `public`, `astro.config.mjs`) has no `set:html`, `dangerouslySetInnerHTML`, `innerHTML` or `define:vars`. The real #7 risk is limit drift: the form, server and database count the notes limit in different units, and nothing pins the SQL literal 500 to `NOTE_MAX_LENGTH`.
-- **A non-owner session and extra tokens need a `supabase/seed.sql` change.** No test-only route exists: client roles have no write grant on `app_owners` or `ingest_tokens`, and no mint or revoke function exists. The change is local and CI only, with synthetic public values and no secret.
-- **The phase is feasible at low cost.** Cheapest layers: a middleware unit test, an integration suite with a non-owner client and seeded tokens, and a unit parity table plus a SQL-literal check for notes.
+1. **Most guards already exist in code; the gap is tests, plus one harness decision.** On this inspected path (the files listed under Code References), no table lacks RLS, no policy is `using (true)`, and both views are `security_invoker = true` (`supabase/migrations/*`). The Origin check and the token exemption are in one 46-line file (`src/middleware.ts`).
+2. **A real non-owner cannot be made with the anon key alone.** In local and CI Supabase, `seed.sql:8-22` adds a trigger that inserts every new `auth.users` row into `app_owners`. Every signup path fires it, and `authenticated` has no write grant on `app_owners`. A non-owner needs postgres or service-role access, or disabling the trigger. `docs/decisions.md:12` already defers non-owner and second-token tests to this phase for that reason. This is the one real design decision for the plan (Open Question 1).
+3. **`test-plan.md:90` contradicts the decisions file.** It says Phase 3 "needs a real non-owner session that Phase 2 establishes"; Phase 2 deliberately did not (`docs/decisions.md:12`, archived Phase 2 research.md:116, :169). The plan text is stale and the phase must establish the non-owner itself.
+4. **Origin and token rules have one smoke test between them and no unit test.** The single foreign-Origin test is in `scripts/smoke.mjs:313-317`, on `/api/notes`, with a live session. A missing Origin, `"null"`, a trailing-slash `/api/ingest/`, Origin on the auth routes, and a signed-in non-owner are untested.
+5. **Rendering has no unsafe sink in `src` or `scripts`, and is tested at two layers.** No `set:html`, `dangerouslySetInnerHTML` or `innerHTML` hit (parent grep over `src` and `scripts`). View-model tests pin that markup stays text; two smoke steps check escaped output on the page. Contract limits accept markup as text by design (`src/lib/ingest/contract.ts`).
+6. **Notes limit parity has unit coverage for the server but none for the form attribute or the database.** The server normalises CRLF and lone CR to LF before trim and length (`day-notes.ts:86`). Two parity differences remain, none pinned by a test before Phase 3: `btrim` vs `trim`, and trim-then-max ordering. A third candidate, code points vs UTF-16 units, is not a gap: zod 4.6.5 and Postgres both count code points (see §4 point 1, corrected during Phase 3).
 
 ## Detailed Findings
 
-### Middleware and Origin check (risk #6)
+### 1. Request guard (`src/middleware.ts`) — observed
 
-- `PROTECTED_ROUTES = ["/dashboard"]`, matched with `startsWith`; it covers pages only (`src/middleware.ts:5`, `:38`).
-- `SAFE_METHODS` is a denylist of `GET`, `HEAD`, `OPTIONS`, so every other method is treated as mutating (`src/middleware.ts:6`, `:18`).
-- The Origin check runs only when the method is not safe and the path starts with `/api/`. It compares `Origin` to `APP_ORIGIN ?? context.url.origin` by strict equality and returns 403 otherwise (`src/middleware.ts:18-24`). A missing Origin header reads as `null` and is refused (reasoned from the code, not run).
-- `TOKEN_AUTH_ROUTES = new Set(["/api/ingest"])` is an exact-path Set; a match sets `user = null` and skips both the session lookup and the Origin check (`src/middleware.ts:10`, `:13`). The route exports POST only (`src/pages/api/ingest.ts:18`).
-- Astro's own origin check is off (`astro.config.mjs:14`, `checkOrigin: false`), so the middleware is the only CSRF guard on the inspected paths.
-- Two narrow, real concerns, both unverified at runtime: with `APP_ORIGIN` unset the check silently falls back to the Host-derived origin (`src/middleware.ts:20`; whether production sets it is a deployment fact not checked here), and a mutating route added outside `/api/` would skip the check. No such route exists among the inspected routes.
-- Path variants (`/api/ingest/`, `/API/ingest`, `//api/ingest`, encoded forms) were reasoned from the code and Astro defaults only. `/api/ingest/` is not in the Set, so the Origin check would apply (fail closed). The others most likely return 404. None was run.
+- `PROTECTED_ROUTES = ["/dashboard"]` (:5), matched with `pathname.startsWith` (:38). It covers `/dashboard`, `/dashboard/history` and any path that starts with the string.
+- Mutating means any method outside `GET`, `HEAD`, `OPTIONS` (:6), and only under `/api/` (:18). The check compares the `Origin` header with `APP_ORIGIN ?? context.url.origin` and returns 403 on any difference (:19-24). A missing header reads as `null` and never equals the expected string, so it is refused (:22).
+- `TOKEN_AUTH_ROUTES = Set(["/api/ingest"])` (:10), matched on the exact path (:13). For it the middleware sets `locals.user = null` and calls `next()`, skipping Origin and session. `/api/ingest/` with a trailing slash is not in the set, so on this path it would reach the Origin check (inferred from :13 and :18; not run).
+- The Origin check runs before the session lookup (:18-25 before :27), so a foreign Origin gets 403 regardless of sign-in. Astro's own check is off (`astro.config.mjs:13-15`, per the worker), so this middleware is the only CSRF guard on this path.
+- A protected path without a user gets `redirect("/auth/signin")` (302, :40). The middleware never returns 401; its only non-redirect refusal is the 403.
+- A POST outside `/api/` is not Origin-checked, but no inspected non-API route exports POST (route table below).
 
-### Routes and their guards (risk #6)
+**Routes** (11 rows from `src/pages`, per the worker's read of every file; bodies of `dashboard.astro` and `dashboard/history.astro` were read to line ~40 only):
 
-- Inspected routes (all of `src/pages/api/**` and `src/pages/auth/**`, 10 files): `notes.ts` POST (cookie), `ingest.ts` POST (bearer), `health.ts` GET (none), `auth/magic-link.ts` POST and `auth/signin.ts` POST (pre-auth), `auth/signout.ts` POST (cookie, no guard needed), `auth/confirm.ts` GET (token hash or code), `index.ts` GET (redirect), and two `.astro` sign-in pages.
-- `src/pages/api/notes.ts:13` redirects an unauthenticated caller with 303. It has no explicit owner check; ownership is enforced only by RLS on `day_notes`. The comment at `:9-11` says never to add it to `TOKEN_AUTH_ROUTES`.
-- The hot-spot directories `src/pages/auth` and `src/components/auth` hold sign-in pages, one GET handler and five UI form components. On this inspection neither holds authorization logic or a mutating route, so they raised the likelihood but are not where the failure would live.
+| Route                                                                    | Methods | Guard                                                                                                                     | Mutating               |
+| ------------------------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `/dashboard`, `/dashboard/history`                                       | GET     | `PROTECTED_ROUTES`                                                                                                        | no                     |
+| `/`, `/auth/signin`, `/auth/check-email`, `/auth/confirm`, `/api/health` | GET     | none needed (public)                                                                                                      | `confirm` sets cookies |
+| `/api/auth/signin`, `/api/auth/magic-link`, `/api/auth/signout`          | POST    | Origin check                                                                                                              | yes                    |
+| `/api/notes`                                                             | POST    | Origin check plus `locals.user` check in the handler (`notes.ts:13`); not in `PROTECTED_ROUTES` (comment `notes.ts:9-11`) | yes                    |
+| `/api/ingest`                                                            | POST    | bearer token via `handleIngest`; exempt from Origin and session                                                           | yes                    |
 
-### Database access model (risk #6)
+No route that serves owner data sits outside the guards on this inspected set. The residual risk is structural: protection is a path prefix, so a future owner page outside `/dashboard` would be open and nothing flags it (_inferred_).
 
-- RLS is on and `revoke all ... from anon, authenticated` is applied per table; reads need a column or table grant plus an owner policy using membership in `public.app_owners` (reported from the migrations; the full list is in the table below).
-- `app_owners` has `select` for `authenticated` and one own-row policy, and no insert, update or delete grant or policy for any client role.
-- `ingest_tokens` stores a SHA-256 hash and has a `revoked_at` column and no expiry column. All client privileges are revoked.
-- `ingest_push` is `SECURITY DEFINER`, executable by `anon` only. The check is `t.token_hash = digest(coalesce(p_token,''),'sha256') and t.revoked_at is null`, and it raises `P0401` otherwise (`supabase/migrations/20261001113911*.sql:32-35`, verified). The app maps a missing, malformed or rejected token to the same 401 (`src/lib/services/ingest.ts:49-50`, `:72`).
-- `day_notes` is the only client-writable table (grants: `select (day,text,created_at,updated_at)`, `insert (day,text)`, `update (text)`, `delete`). Its policies require `user_id = auth.uid()` and owner membership (`supabase/migrations/20261001072438_day_notes.sql`, per the agent report).
-- `live_state` and `bill_forecast` are `security_invoker` views, so they inherit the owner policy on `ingest_pushes`.
+**Invoking the guard in a test.** The service functions are exported and pure with injected dependencies (`handleIngest` at `src/lib/services/ingest.ts:49`; `parseNoteForm`, `saveNote`, `handleNotePost` in `day-notes.ts`). The middleware is an exported `onRequest` (`middleware.ts:12`) but imports `astro:middleware` and `astro:env/server`, and `vitest.config.ts` (include `src/**/*.test.ts`) has no Astro plugin. A unit test needs `vi.mock` for those modules and for `@/lib/supabase`, or alias stubs. _Inferred, not tried._ The alternative is a running built server driven by `fetch`, as `scripts/smoke.mjs` does; the 403 and the signed-out redirect need no Supabase session, because the 403 returns before `getUser()` and a missing Supabase client leaves `locals.user` null (`middleware.ts:29-36`).
 
-Role matrix, derived from the migrations and not run against a live database:
+### 2. Database access (risk #6, owner-only reads) — observed from SQL
 
-| Role | Reads | Writes |
-| --- | --- | --- |
-| `anon` | none | none; may execute `ingest_push` only |
-| `authenticated`, not an owner | zero rows on every granted table and view; `app_owners` shows no own row | `day_notes` insert, update, delete fail on RLS; nothing else granted |
-| `authenticated`, owner | granted columns only; `push_id`, `token_id`, `payload_hash` and `ingest_tokens` unreadable | `day_notes` own rows only |
+- `app_owners` (`20260923150859_owner_read_recommendations.sql:6-20`): RLS on, `select` to `authenticated` limited by policy to the caller's own row, no insert/update/delete grant or policy. Production owner rows are inserted by hand (migration comment :3-4; `docs/prerequisites.md:81`).
+- Per-object summary from the migrations (anchors in the worker table): `ingest_tokens` readable by nobody; `ingest_pushes` owner-readable for `source, captured_at, received_at, payload` only (`20260925123751:6-12`); `daily_energy`, `hourly_energy`, `period_summaries` owner-readable by column list; `recommendations` owner-readable by table-level grant (`20260923150859:14`, so `push_id` is readable; the docs only say owners "may read recommendations"); `live_state` and `bill_forecast` are `security_invoker` views; `day_notes` has four policies, each requiring an `app_owners` row (`20261001072438:44-95`). Anon has no grant on any of these.
+- `ingest_push` is `security definer` with `search_path = ''`, executable by `anon` only (`20261001113911:148-149`). The token check is `token_hash = digest(coalesce(p_token,''),'sha256') and revoked_at is null`; an unknown, revoked or null token raises `P0401` before any insert. `ingest_tokens` has `revoked_at` and no expiry column. The payload is not schema-validated in SQL, so the token is the trust boundary (migration comment; consequence _inferred_).
+- **Seed trigger** (`supabase/seed.sql:8-24`): `seed_make_every_user_owner` after insert on `auth.users`, plus a backfill. `seed.sql:1-2` and `:6-7` say it runs on `supabase start` and `db reset` only and must never become a migration; no migration contains it (worker grep over `supabase/migrations`). `config.toml` has `enable_signup = true`, `enable_confirmations = false`, anonymous sign-ins off (worker, lines 169-209), so every local signup returns a session and fires the trigger.
+- Existing integration helpers (`tests/integration/support/stack.ts`): `anonClient`, `ownerClient` (signs up a user, an owner through the trigger), and `requireStack`, which refuses a non-local URL and any non-anon key (:27-63, :53-57 per worker). No existing test reads as anon or as a non-owner (`seed.test.ts`, `push-to-page.test.ts`, `history-safety.test.ts`, per worker).
 
-### Existing coverage of #6
+**What a real non-owner needs** (worker analysis, consistent with `docs/decisions.md:12` and archived Phase 2 research.md:116): `delete from public.app_owners where user_id = …` or `alter table auth.users disable trigger seed_make_every_user_owner` before signup. Both need postgres or service-role privilege. A second ingest token needs `insert into ingest_tokens`, the same privilege. Whether the Supabase CLI or a `pg` connection is usable from CI was not verified.
 
-Covered:
+### 3. Existing tests for risk #6
 
-- `scripts/smoke.mjs:204-211`: signed-out `/`, `/dashboard`, `/dashboard/history` redirect, and a signed-out note POST goes to sign-in.
-- `scripts/smoke.mjs:460-546` (only when `SUPABASE_URL` and `SUPABASE_ANON_KEY` are set): the anon role gets 401 on direct REST for `ingest_pushes`, `recommendations`, `live_state`, `daily_energy`, `day_notes` (read and write), `bill_forecast`, `period_summaries`. `hourly_energy` is not in that list.
-- `scripts/smoke.mjs:314-316`: a foreign Origin on `/api/notes` returns 403. This is the only Origin test.
-- `scripts/smoke.mjs:451-453`: a missing token and a wrong token return 401; a push with no Origin returns 201.
-- `src/lib/services/ingest.test.ts:32-36, :83`: token rejection against a mocked RPC.
-- `scripts/smoke.mjs:577-622`: an owner is refused `push_id`, `token_id`, `payload_hash`.
+- Unit: none touches `middleware.ts` or the Origin check (parent-confirmed grep for `middleware|Origin|onRequest` over `src`, `tests`, `scripts`, via the worker). `src/lib/services/ingest.test.ts:32` and `:41` cover `handleIngest` returning the same 401 for a missing, malformed or rejected token and not calling the RPC without a token; that is the handler, not the middleware exemption.
+- Smoke (`scripts/smoke.mjs`; `request()` always sends an Origin and does not follow redirects, :33-47): signed-out redirects for home, dashboard and history (:204, :210, :211); signed-out note post goes to sign-in (:205-209); foreign-origin note post is 403 (:313-317); ingest 401 for a missing and a wrong token (:451-452); ingest accepted without Origin (:453); anon-key direct table reads rejected (:465-546); signed-in owner cannot read push token columns (:578-596).
+- Not covered anywhere inspected: missing or `"null"` Origin; foreign Origin on the three auth routes; `/api/ingest/` with a trailing slash; `/api/ingest` with cookies or a foreign Origin; a revoked token; a second token; any signed-in non-owner (page or table); safe-method GET with a foreign Origin.
 
-Not covered (searched `src`, `tests/integration`, `scripts/smoke.mjs`):
+### 4. Notes limits and blank rule (risk #7) — observed
 
-- A signed-in non-owner at any layer (tables, views, `day_notes` writes).
-- A revoked token (no `revoked_at` assertion and no revoke step).
-- A middleware unit test (no `src/middleware.test.ts`): exact matching, missing or `"null"` Origin, `APP_ORIGIN` mismatch, path variants, verbs other than POST.
-- A foreign Origin on `/api/auth/magic-link`, `/api/auth/signin`, `/api/auth/signout`.
-- "The exemption cannot cover a cookie route": only the comment at `src/pages/api/notes.ts:9-11`.
-- A direct anon RPC call to `ingest_push` with a bad token (smoke goes through the app, which validates the payload first).
+| Layer    | Rule                                                                                                                                                                          | Anchor                                                |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Form     | `maxlength={NOTE_MAX_LENGTH}` and `required` on the textarea                                                                                                                  | `src/components/history/DayNotePanel.astro:71-73`     |
+| Constant | `NOTE_MAX_LENGTH = 500`                                                                                                                                                       | `src/lib/services/day-notes.ts:9`                     |
+| Server   | CRLF and lone CR become LF (`.replace(/\r\n?/g, "\n")`, :86), then `z.string().trim().min(1).max(NOTE_MAX_LENGTH)` (:80); failure is `"invalid"` and a 303 to `?note=invalid` | `day-notes.ts:74-95`                                  |
+| Database | `text not null check (char_length(text) <= 500 and btrim(text) <> '')`                                                                                                        | `supabase/migrations/20261001072438_day_notes.sql:15` |
 
-### How to obtain a non-owner session and extra tokens
+The recorded review finding (line breaks pushing a note over 500) is fixed by the normalisation: archive `2026-10-01-day-notes/reviews/impl-review.md:49-57`. Unit tests in `src/lib/services/day-notes.test.ts` (per worker line anchors): exactly 500 after trim (:50), 501 rejected (:60), 499 + CRLF accepted (:65), 250 + CRLF + 249 accepted (:75), 250 + CRLF + 250 rejected (:84), lone CR (:89), blank `" \n\t "` rejected (:97), missing text (:101). Smoke posts `"   "` and expects `?note=invalid` (:390-394).
 
-- Direct `supabase.auth.signUp` with the anon key works locally and in CI: `enable_signup = true`, `enable_confirmations = false` (`supabase/config.toml`), and `ownerClient()` already does it (`tests/integration/support/stack.ts:72-79`). It does not need `ALLOW_SIGNUP` or the Astro server.
-- A fresh sign-up is an owner. `supabase/seed.sql` defines `seed_make_every_user_owner` as an `after insert on auth.users` trigger that inserts the new user into `app_owners`, and a backfill for existing users (`supabase/seed.sql:8-24`, verified).
-- No test-only route exists. No client role can write `app_owners` or `ingest_tokens` and there is no mint or revoke function, so an owner session cannot demote itself or mint a token (migrations, per the agent report). `scripts/create-ingest-token.mjs` only prints SQL.
-- The seed holds one token, `local-dev-ingest-token-not-secret` (`supabase/seed.sql:3-4`). A random unknown token already gives a bad-token case with no seed change. A second valid token and a revoked token need new rows.
-- Seed scope: `supabase/seed.sql` runs on `supabase start` and `db reset` and not on a production `db push`; `CLAUDE.md` calls its token "public local/CI-only". Not confirmed from the repo: that nobody runs a seeded reset against production.
-- CI already runs `npm run test:integration` against the same fresh stack (`.github/workflows/ci.yml`, final step, per the agent report), keeping only `API_URL` and `ANON_KEY`. A seed change reaches CI automatically. A long-lived local or remote stack needs `supabase db reset` to pick it up.
-- `requireStack()` accepts only localhost over `http:` and rejects secret-style and `service_role` keys (`tests/integration/support/stack.ts`, per the agent report). That guard stays valid.
+**Parity differences that no test pins** (all derived by reading; the Postgres and browser behaviours are from documented semantics, not run here):
 
-Feasible options, ranked:
+1. **Code points vs UTF-16 units. _Corrected during Phase 3 (2026-10-05)._** The first draft said zod counts UTF-16 units like the browser. A run showed zod 4.6.5 `.max(500)` counts code points (500 emoji, 1000 UTF-16 units, are accepted; 501 are refused), the same as Postgres `char_length`. Only the browser `maxlength` counts UTF-16 units, so the textarea stops at 250 emoji: the form is stricter than the server and the database, which agree. This is not a gap; Phase 3 pins the agreement. The original claim is superseded.
+2. **`btrim` vs `trim`.** `btrim(text)` with no second argument strips spaces only; zod `.trim()` strips all Unicode whitespace. A tab-or-newline-only text passes the database check but not the server. The server is the effective gate; the database is looser. _Postgres `btrim` semantics are not verified against a live database._
+3. **Trim-then-max.** The server counts length after trimming, so 500 characters plus surrounding spaces is accepted by the server, while the browser stops at 500 including the spaces. The server is looser. The database receives the trimmed text.
 
-1. Non-owner: in `seed.sql`, make the trigger skip a reserved synthetic marker, preferably user metadata (`raw_user_meta_data ->> 'role' = 'non_owner'`) or a reserved email domain; add a `nonOwnerClient()` beside `ownerClient()`. The backfill insert needs the same exclusion. Check that smoke's users do not hit the marker.
-2. Tokens: add two synthetic public tokens to `seed.sql` in the existing style, one valid second token and one with `revoked_at = now()`, and expose them next to `SEED_TOKEN` in `tests/integration/support/push.ts`.
-3. Rejected: a seed-only anon-callable mint or revoke RPC (opens a token-minting RPC on every local and CI stack); a seeded user with a committed password (fragile, a known credential); running `create-ingest-token.mjs` SQL in CI (needs postgres access).
+### 5. Rendering of lab and user text (risk #7) — observed
 
-### Day notes limits (risk #7)
-
-The three limits, today:
-
-- Form: `maxlength={NOTE_MAX_LENGTH}` on the textarea (`src/components/history/DayNotePanel.astro:71`). A browser counts UTF-16 code units, and counts a newline as 1 while submitting CRLF.
-- Server: `NOTE_MAX_LENGTH = 500` (`src/lib/services/day-notes.ts:9`), CRLF and lone CR normalised to LF before validation (`:86`), then `z.string().trim().min(1).max(NOTE_MAX_LENGTH)` (`:80`). Order: normalise, trim, min, max. zod counts UTF-16 code units. Only the trimmed text is persisted.
-- Database: `text text not null check (char_length(text) <= 500 and btrim(text) <> '')` (`supabase/migrations/20261001072438_day_notes.sql:16`, verified). `char_length` counts code points; `btrim` with no argument strips only spaces.
-
-Agreement, from reading the text (not run against a live database): on this inspected path the three agree for ASCII at 500 and 501, and for 499 characters plus one line break (the review's F2 bug, fixed before this research: `context/archive/2026-10-01-day-notes/reviews/impl-review.md:49-57`). They differ in these cases, none of which lets the form overflow the database:
-
-| Case | Form and server | Database | Effect |
-| --- | --- | --- | --- |
-| 251 emoji (502 UTF-16 units, 251 code points) | refused | would accept | app stricter than DB; notice says "znaków" |
-| 500 characters plus 2 outer spaces | form blocks, server accepts after trim | accepts the trimmed text | server more lenient than the form |
-| a note of only `\n` or `\t` | server rejects | `btrim` does not strip it, so it passes | DB looser; reachable only by a direct owner write through PostgREST |
-
-The SQL literal 500 and `NOTE_MAX_LENGTH` are duplicated by hand, and no test pins them together (searched `src`, `tests/integration`, `scripts/smoke.mjs`).
-
-### Render paths for lab text and notes (risk #7)
-
-- Negative finding: no `set:html`, `dangerouslySetInnerHTML`, `innerHTML` or `define:vars` in `src`, `public` or `astro.config.mjs`, excluding test files (parent re-check). The agent's wider pattern also found no markdown library, no sanitiser and no `outerHTML`, `insertAdjacentHTML` or `document.write`. The one inline `<script>` (`src/pages/dashboard.astro:78`) is static, and `JSON.stringify` appears only in JSON response bodies (`src/pages/api/health.ts:11`, `src/pages/api/ingest.ts:8`).
-- Rendered through auto-escaped interpolation: user note (`DayNotePanel.astro:53`, and the textarea body at `:74`), advice text via the homegrown parser that returns a segment structure and never HTML (`src/lib/format/advice-markdown.ts`, rendered at `AdviceBlocks.astro:14-33`), summary narration (`SummaryText.astro:17`), findings (`RecommendationFindings.astro:33-34`).
-- Links and attributes: no `href` is built from lab text or a note; the `?note=` notice maps through `Object.hasOwn` to fixed Polish strings (`day-notes.ts:124`). Provenance of a few `aria-label` and `title` values (`FlowNode.tsx:116`, `MonthView.astro:102`) was not traced and is unverified, low risk.
-- Ingest contract limits: recommendation text 4000, summary narration 1500, `strictObject` rejects unknown keys (`src/lib/ingest/contract.ts:43, :192`). Not checked: whether the database columns for those texts have matching CHECK constraints.
-- Existing tests: `src/lib/services/day-notes.test.ts` covers 500, 501, 499 plus CRLF, 250 plus CRLF plus 249, 250 plus CRLF plus 250, lone CR, blank, and the notice text. `advice-markdown.test.ts:26-27` and `period-summary.test.ts:143-145` assert that markup stays plain text in the parsed structure, but neither renders a component, so neither proves escaping. `scripts/smoke.mjs:502-525` covers anon access to `day_notes`, not the limit.
+- The parent grep for `set:html|dangerouslySetInnerHTML|innerHTML` over `src` and `scripts` returned no hits. The worker found no markdown library; `src/lib/format/advice-markdown.ts` returns a structure and the component builds the elements (:1-3 per worker).
+- Text sinks found: recommendation narration through `parseAdviceMarkdown` in `RecommendationCard.astro:23` and `DayView.astro:39,164,177,238`, rendered by `AdviceBlocks.astro`; period summaries in `SummaryText.astro:17` (`{text}` in a `whitespace-pre-line` paragraph); notes at `DayNotePanel.astro:53` and in the textarea body (:74). All use Astro `{}` interpolation, which escapes by default.
+- Not verified: facts, `local_findings`, `sanity_checks`, pricing source, bill-forecast `message` and `published_values` have no render hit in the worker's grep, but the worker did not open every card (`BillForecast`, `LiveStateCard`, `UsageInsightCard`, `TotalsPanel`), and the worker's grep was weak (shell glob failure). Treat these as unchecked.
+- Contract accepts markup as text on purpose: only length limits (examples: narration text max 1500 at `contract.ts:192`, recommendation text max 4000 at :43, fact value max 500 at :16-17), no character-class rule.
+- Tests: view-model level `advice-markdown.test.ts:34` (script tag kept as text), `period-summary.test.ts:143-145`, `calendar-view.test.ts:414,418`; page level only in smoke: summary text `<b>pogrubione</b>` shows escaped (`smoke.mjs:318-329`) and a note with `<b>pogrubiona</b>` shows escaped (:366-373). Nothing renders markup in the recommendation narration, the live-state card or the bill forecast on a page.
+- Rendering an `.astro` file inside Vitest is not available: no Astro Container API use in `src`, `tests` or `package.json` (worker), and no Astro plugin in the Vitest config. Page-level escaping can be checked only through the running server today.
 
 ## Code References
 
-- `src/middleware.ts:5-24, :38` - protected routes, safe methods, token exemption, Origin check
-- `src/pages/api/notes.ts:9-13` - cookie-authenticated mutating route, comment forbidding the token exemption
-- `src/pages/api/ingest.ts:18`, `src/lib/services/ingest.ts:49-50, :72` - bearer route, 401 mapping
-- `supabase/migrations/20261001113911*.sql:32-35` - token check with `revoked_at is null`, `P0401`
-- `supabase/seed.sql:3-24` - public dev token, every-user-owner trigger and backfill
-- `tests/integration/support/stack.ts:70-79` - `ownerClient()`, local-only guard
-- `src/lib/services/day-notes.ts:9, :80, :86` - limit constant, validation, CRLF normalisation
-- `supabase/migrations/20261001072438_day_notes.sql:16` - database check
-- `src/components/history/DayNotePanel.astro:53, :71, :74` - note render and `maxlength`
-- `scripts/smoke.mjs:204-211, :314-316, :451-453, :460-546, :577-622` - existing access and Origin checks
+- `src/middleware.ts:5-45` - route list, token exemption, Origin check, session lookup, redirect
+- `src/pages/api/notes.ts:9-13` - in-handler user check; why `/api/notes` is not in `PROTECTED_ROUTES`
+- `src/lib/services/ingest.ts:49` - `handleIngest`, the exported ingest handler
+- `supabase/seed.sql:8-24` - the every-user-is-owner trigger and backfill (local and CI only)
+- `supabase/migrations/20260923150859_owner_read_recommendations.sql:6-26` - `app_owners`, owner reads
+- `supabase/migrations/20261001113911_period_summaries_keep_narration.sql:13-149` - `ingest_push`, token check, grants
+- `supabase/migrations/20261001072438_day_notes.sql:15,44-95` - note constraint and policies
+- `src/lib/services/day-notes.ts:9,74-95` - limit constant and `parseNoteForm`
+- `src/components/history/DayNotePanel.astro:53,71-74` - note render and form attributes
+- `tests/integration/support/stack.ts:27-82` - `requireStack`, `anonClient`, `ownerClient`
+- `scripts/smoke.mjs:204-211,313-317,366-373,451-453` - existing guard and render checks
+- `docs/decisions.md:12` - Phase 3 deferral and its reason
 
 ## Architecture Insights
 
-- The authorization model has three layers: the middleware (CSRF Origin check and a sign-in redirect), the application (only a signed-in check), and the database (RLS, owner policy, column grants). Only the database layer distinguishes an owner from any other signed-in user, so the strongest #6 tests run at that layer with a real non-owner.
-- Test fixtures for identity live in `seed.sql`, a local and CI-only file, so adding synthetic users and tokens there keeps secrets out of the repo.
-- The risk-map wording "owner-only reads or column grants wrong" is best proven by comparing an owner client and a non-owner client on the same queries, not by asserting the policy text.
+- The guard is one file plus Postgres RLS; tests so far prove the policy by reading as an owner, never as a non-owner, so a wrong policy would still pass the suite (the plan's "Logged in means owner" challenge).
+- Pure service functions with injected dependencies are the project's testing seam; the middleware and the `.astro` templates are the two places without one.
+- The suite's anon-key-only rule (`stack.ts:53-57`) is deliberate and also blocks the non-owner test, so the phase must either add a privileged test-only path or accept a different technique.
 
 ## Historical Context (from prior changes)
 
-- `context/archive/2026-10-01-day-notes/reviews/impl-review.md:49-57` - the CRLF-versus-limit bug (F2) and its fix; the hard-coded-500 notice (F5) is fixed in `day-notes.ts:17`.
-- `context/archive/2026-09-23-access-key-sign-in/` and the `2026-10-01-day-notes` change are the sources the test plan cited for #6; their anchors were not re-read beyond the review above.
-- `context/archive/2026-10-01-testing-push-to-page-integration/` - established `tests/integration/support/` (`stack.ts`, `push.ts`) that this phase extends.
+- `docs/decisions.md:12` - non-owner and second-token tests deferred to this phase because they need postgres or service-role access. Supported.
+- `context/archive/2026-10-01-testing-push-to-page-integration/research.md:116,169` - the mechanism (delete the `app_owners` row or disable the trigger) and the unverified question whether the CLI can run SQL. Supported; still open.
+- `context/foundation/test-plan.md:90` - "needs a real non-owner session that Phase 2 establishes". **Contradicted** by the two entries above; the other part of that sentence (Phase 3 follows Phase 2) holds.
+- `context/archive/2026-10-01-day-notes/reviews/impl-review.md:49-57` - line breaks over the limit, fixed by normalisation. Supported by `day-notes.ts:86` and the tests at `day-notes.test.ts:65-89`.
+- `context/archive/2026-10-01-day-notes/plan.md:145-149` - a manual check against a second, non-owner user. Partial: the method of creating that user is not recorded in the files the worker read.
+- Phase 2 test-plan note (`test-plan.md:202`): "non-owner and second-token tests stay in Phase 3". Supported.
 
 ## Related Research
 
-- `context/archive/2026-10-01-testing-push-to-page-integration/research.md` and `context/archive/2026-10-01-testing-time-and-number-guards/research.md` (not re-read for this pass).
+- `context/changes/testing-access-and-input-abuse/research-2026-10-02.md` - an earlier, independent research pass over the same question (landed on `main` in #115 before this one was written; found when the branch was merged on 2026-10-05). It agrees on the guards and on the missing proof; it proposed a `supabase/seed.sql` change to create a non-owner and extra tokens, where this research and the plan chose a test-only privileged `pg` connection instead (owner's decision), and it advised no hunt-for-a-hole markup test, which the static guard plus smoke steps follow. It was written before the Phase 3 run that corrected the emoji counting claim (zod counts code points), so check its notes-limit statements against `docs/decisions.md` 2026-10-05.
+- `context/archive/2026-10-01-testing-push-to-page-integration/research.md`
+- `context/archive/2026-10-01-testing-time-and-number-guards/research.md`
+- `context/archive/2026-10-01-day-notes/research.md`
 
 ## Open Questions
 
-For the owner to decide before planning:
+For the owner to decide before `/10x-plan` (per `lessons.md`: defaults only when the owner says so):
 
-1. **Seed change scope.** Approve changing `supabase/seed.sql` (local and CI only) to add a non-owner marker and two synthetic tokens (one valid second, one revoked)? Alternative: skip the non-owner and revoked-token tests, which leaves the central #6 gap open. Recommended: approve.
-2. **Non-owner marker.** User metadata (`role = non_owner`) or a reserved email domain? Metadata is cleaner; neither is checked against GoTrue validation yet.
-3. **Notes limit unit.** Should the limit mean 500 UTF-16 units (today's app behaviour, stricter than the database) or 500 code points (the database's)? The plan needs a stated oracle; independent of the code, the intended product rule decides it.
-4. **Direct owner write of `"\n"` to `day_notes`.** Pin the current looser database behaviour with a test, tighten `btrim` with a migration, or ignore (owner-only, low priority)?
-5. **Rendering regression guard for #7.** Include one low-priority component render test with hostile payloads, or omit since no raw-HTML sink exists?
-6. **Production `APP_ORIGIN`.** Is it set in the production `.env.runtime`? If not, the Origin check falls back to the Host-derived origin. Not verifiable from the repo.
+1. **How does the suite get a real non-owner and a second ingest token?** Options seen: (a) a test-only privileged SQL path against the local stack (psql or the Supabase CLI via `scripts/remote-docker.sh exec`, and in CI, `docker exec`), disabling the trigger or deleting the owner row; (b) a `pg` dev dependency with a local-only guard like `requireStack`; (c) the service-role key from `supabase status`, which the repo forbids in `.env`, logs and the suite (`stack.ts:53-57`, `CLAUDE.md`); (d) extend `scripts/smoke.mjs` instead, which can only reach the same privileges unless a SQL step is added. Whether the Supabase CLI runs SQL in this setup is unverified.
+2. **Middleware layer.** Unit-test `onRequest` with `vi.mock` stubs, or test the guard black-box through the built server (smoke or a new HTTP suite)? The second needs the server in the integration job.
+3. **Page-level escaping.** Extend smoke (works today), add the Astro Container API (new tooling), or accept view-model tests plus a static guard test for `set:html`, `dangerouslySetInnerHTML` and `innerHTML`?
+4. **Known gaps from the parity analysis.** Are the database looseness on tab-only text and the code-point difference defects to fix, or to pin as `KNOWN GAP` tests as in Phase 2? Same question for the table-level `recommendations` grant that exposes `push_id`.
+5. **Unchecked renderers.** The cards for bill forecast, live state, usage insight and totals were not read; the plan should include that read before claiming "everywhere".
+6. **Unverified semantics.** Postgres `btrim` on tabs, `char_length` on astral characters, and browser `maxlength` counting come from documented behaviour, not a run in this repo; the plan should pin them with a test rather than assume.
 
-Unverified in this research: path-variant routing (`/API/ingest`, `//api/ingest`, encoded forms), the role matrix against a live database, GoTrue acceptance of a reserved email domain, database CHECKs on ingest text columns, and the provenance of a few `aria-label` and `title` values. Nothing was run; no stack, sign-up or Docker command was executed.
+## Owner decisions (2026-10-05, after research)
 
-## Owner decisions (2026-10-02, put to the owner before planning)
+Answers to Open Questions 1 to 4, chosen by the owner from recommended options. Questions 5 and 6 stay open for the plan.
 
-1. Seed change: approved. `supabase/seed.sql` (local and CI only) gets a non-owner marker and two synthetic public tokens (one valid second token, one revoked). No secret, no service-role key.
-2. Marker: user metadata (`signUp` with `options.data` role `non_owner`); the seed trigger and its backfill skip those users. Smoke users must not carry the marker.
-3. Notes limit oracle: keep 500 UTF-16 code units (today's app behaviour, stricter than the database). Tests pin agreement in the safe direction and tie the SQL literal 500 to `NOTE_MAX_LENGTH`. No app code change.
-4. Extras in scope: one component render test with hostile payloads (guard only, low priority), and an integration test pinning that a direct owner write of a newline-only note currently passes the database check.
-5. Still open: Open Question 6 (production `APP_ORIGIN`), which cannot be verified from the repo. The plan records it as an external prerequisite to check by hand.
+1. **Non-owner and second token:** test-only SQL through a `pg` dev dependency, with a local-only guard like `requireStack`. No service-role key in the repo or the suite.
+2. **Middleware:** unit test of `onRequest` with `vi.mock` for `astro:middleware`, `astro:env/server` and the Supabase client; runs in `npm test`.
+3. **Escaping on the page:** extend `scripts/smoke.mjs` with markup payloads for more surfaces, plus a unit test that fails on `set:html`, `innerHTML` or `dangerouslySetInnerHTML` in `src`.
+4. **Known gaps:** pin the notes-limit differences (code points vs UTF-16, `btrim` vs `trim`, trim-then-max) and the `recommendations` `push_id` grant as `KNOWN GAP` tests, no production change.
