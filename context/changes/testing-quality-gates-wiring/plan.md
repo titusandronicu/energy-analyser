@@ -355,7 +355,7 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Manual
 
-- [ ] 4.6 The owner has read `breaks.md` and agrees each risk maps to a check that actually catches it
+- [x] 4.6 The owner has read `breaks.md` and agrees each risk maps to a check that actually catches it — owner read breaks.md and confirmed 2026-10-05
 - [x] 4.7 If a break did not turn its expected check red, the gap is logged in `breaks.md` and in `docs/decisions.md`, not hidden
 
 ### Phase 5: Docs say what is true
@@ -371,4 +371,4 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 - [x] 5.5 Reading test-plan sections 3-5 and the decisions entry gives the same picture as `gh api` shows
 
-Note (2026-10-05): manual checks 4.6 (owner reads `breaks.md`) was skipped by the owner and stays unticked; the Phase 4 row is `complete` on that explicit waiver. 2.5 was later run by the owner and ticked. 3.4 was run by the owner: `gh pr merge` on the red PR #128 did not merge it.
+Note (2026-10-05): all manual checks were run or confirmed by the owner; 3.4 was run by the owner: `gh pr merge` on the red PR #128 did not merge it.
