@@ -333,9 +333,9 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [x] 3.1 The ruleset exists, is active and has no bypass actors
-- [x] 3.2 The branch rules list the three required checks `ci`, `smoke`, `integration`
-- [x] 3.3 The committed ruleset JSON matches what GitHub reports for name, target, enforcement and the three contexts
+- [x] 3.1 The ruleset exists, is active and has no bypass actors — c9f6c53
+- [x] 3.2 The branch rules list the three required checks `ci`, `smoke`, `integration` — c9f6c53
+- [x] 3.3 The committed ruleset JSON matches what GitHub reports for name, target, enforcement and the three contexts — c9f6c53
 
 #### Manual
 
