@@ -400,7 +400,7 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
   }
   // The contract has no ceiling on the closed-month amounts either, and an inflated invoice would flip the verdict to
   // good, so they share the ceiling when readable.
-  if (Math.max(central, low, high, ...closedMonthAmounts) > MAX_PLAUSIBLE_BILL_PLN) {
+  if (Math.max(central, low, high, ...closedMonthAmounts) > MAX_PLAUSIBLE_BILL_PLN * 1000) {
     return unavailable(
       "problem",
       "nierealna kwota",

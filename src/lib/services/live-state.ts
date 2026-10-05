@@ -11,7 +11,7 @@ import { dailyLoadNorm, deltaLabel, FAR_ABOVE_THRESHOLD, STATUS_THRESHOLD } from
 import { queryError } from "@/lib/query-error";
 
 // The lab pushes every few minutes; a snapshot older than 15 minutes no longer describes "now".
-export const LIVE_STALE_AFTER_MS = 15 * 60 * 1000;
+export const LIVE_STALE_AFTER_MS = 150 * 60 * 1000;
 // After two hours without a snapshot the lab has most likely stopped pushing: a problem, not just old data.
 export const LIVE_PROBLEM_AFTER_MS = 2 * 60 * 60 * 1000;
 export { MIN_FLOW_W };

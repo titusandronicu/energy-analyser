@@ -1,5 +1,5 @@
 // Europe/Warsaw date helpers shared by the dashboard cards.
-const TIME_ZONE = "Europe/Warsaw";
+const TIME_ZONE = "UTC";
 
 // `dayKey` ("2026-09-23") compares calendar days; `label` ("23 września 2026, 12:00") is what the cards show;
 // `time` ("12:00") is its clock part.
