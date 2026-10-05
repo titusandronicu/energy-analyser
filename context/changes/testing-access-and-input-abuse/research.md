@@ -9,7 +9,7 @@ tags: [research, codebase, testing, middleware, origin-check, rls, app_owners, i
 status: complete
 last_updated: 2026-10-05
 last_updated_by: Claude (Sonnet 5.5)
-last_updated_note: "Added owner decisions for open questions 1-4"
+last_updated_note: "Corrected the emoji counting claim after a Phase 3 run (zod counts code points)"
 ---
 
 # Research: Phase 3 access and input abuse (risks #6 and #7)
@@ -38,7 +38,7 @@ What guards exist today, what is already tested, and what would a test have to d
 3. **`test-plan.md:90` contradicts the decisions file.** It says Phase 3 "needs a real non-owner session that Phase 2 establishes"; Phase 2 deliberately did not (`docs/decisions.md:12`, archived Phase 2 research.md:116, :169). The plan text is stale and the phase must establish the non-owner itself.
 4. **Origin and token rules have one smoke test between them and no unit test.** The single foreign-Origin test is in `scripts/smoke.mjs:313-317`, on `/api/notes`, with a live session. A missing Origin, `"null"`, a trailing-slash `/api/ingest/`, Origin on the auth routes, and a signed-in non-owner are untested.
 5. **Rendering has no unsafe sink in `src` or `scripts`, and is tested at two layers.** No `set:html`, `dangerouslySetInnerHTML` or `innerHTML` hit (parent grep over `src` and `scripts`). View-model tests pin that markup stays text; two smoke steps check escaped output on the page. Contract limits accept markup as text by design (`src/lib/ingest/contract.ts`).
-6. **Notes limit parity has unit coverage for the server but none for the form attribute or the database.** The server normalises CRLF and lone CR to LF before trim and length (`day-notes.ts:86`). Three real parity differences remain, none yet pinned by a test: code points vs UTF-16 units, `btrim` vs `trim`, and trim-then-max ordering.
+6. **Notes limit parity has unit coverage for the server but none for the form attribute or the database.** The server normalises CRLF and lone CR to LF before trim and length (`day-notes.ts:86`). Two parity differences remain, none pinned by a test before Phase 3: `btrim` vs `trim`, and trim-then-max ordering. A third candidate, code points vs UTF-16 units, is not a gap: zod 4.6.5 and Postgres both count code points (see §4 point 1, corrected during Phase 3).
 
 ## Detailed Findings
 
@@ -94,7 +94,7 @@ The recorded review finding (line breaks pushing a note over 500) is fixed by th
 
 **Parity differences that no test pins** (all derived by reading; the Postgres and browser behaviours are from documented semantics, not run here):
 
-1. **Code points vs UTF-16 units.** zod `.max(500)` and the browser `maxlength` count UTF-16 code units; Postgres `char_length` counts code points. Over this path, an emoji counts as 2 at the form and the server and 1 at the database, so the database is equal or looser; a note the server accepts cannot be refused by the database for length. No test covers an astral character.
+1. **Code points vs UTF-16 units. _Corrected during Phase 3 (2026-10-05)._** The first draft said zod counts UTF-16 units like the browser. A run showed zod 4.6.5 `.max(500)` counts code points (500 emoji, 1000 UTF-16 units, are accepted; 501 are refused), the same as Postgres `char_length`. Only the browser `maxlength` counts UTF-16 units, so the textarea stops at 250 emoji: the form is stricter than the server and the database, which agree. This is not a gap; Phase 3 pins the agreement. The original claim is superseded.
 2. **`btrim` vs `trim`.** `btrim(text)` with no second argument strips spaces only; zod `.trim()` strips all Unicode whitespace. A tab-or-newline-only text passes the database check but not the server. The server is the effective gate; the database is looser. _Postgres `btrim` semantics are not verified against a live database._
 3. **Trim-then-max.** The server counts length after trimming, so 500 characters plus surrounding spaces is accepted by the server, while the browser stops at 500 including the spaces. The server is looser. The database receives the trimmed text.
 

@@ -98,6 +98,53 @@ describe("parseNoteForm", () => {
     expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text }), TODAY)).toBe("invalid");
   });
 
+  it("counts an emoji as one character (a code point), as the database does: 500 are accepted, 501 are not", () => {
+    // One emoji is a surrogate pair, 2 UTF-16 units, but zod 4's max counts code points: 500 x 1 = 500, the maximum;
+    // 501 is over it. (Checked by a run: zod 4.6.5 accepts 500 emoji, 1000 UTF-16 units.) The textarea's maxlength counts
+    // UTF-16 units, so the browser stops at 250 emoji and is stricter than the server and the database, which agree.
+    const accepted = "😀".repeat(500);
+    expect(accepted).toHaveLength(1000);
+    expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text: accepted }), TODAY)).toEqual({
+      intent: "save",
+      day: "2026-09-14",
+      text: accepted,
+    });
+
+    const refused = "😀".repeat(501);
+    expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text: refused }), TODAY)).toBe("invalid");
+  });
+
+  it("rejects a note of only tabs, non-breaking spaces and line breaks", () => {
+    // trim() strips every Unicode whitespace character, not only spaces (the database's btrim strips only spaces).
+    const text = "\t \n\r\n \t";
+    expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text }), TODAY)).toBe("invalid");
+  });
+
+  it("trims before it checks the maximum, so 500 characters with surrounding spaces are saved trimmed", () => {
+    // 2 + 500 + 2 = 504 characters as typed; after trim 500, the maximum. The server accepts it.
+    const text = "x".repeat(500);
+    expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text: `  ${text}  ` }), TODAY)).toEqual({
+      intent: "save",
+      day: "2026-09-14",
+      text,
+    });
+  });
+
+  // KNOWN GAP: the server is looser than the form. The textarea counts the surrounding spaces (504 here), so the
+  // browser stops typing at 500 and never submits this; a hand-made post gets through because the server trims first.
+  // A fix is to check the length before trimming, which would reject this case and flip the expectation.
+  it("KNOWN GAP: the server accepts 500 characters plus surrounding spaces that the browser's maxlength would stop", () => {
+    const text = "x".repeat(500);
+    const typed = `${" ".repeat(10)}${text}${" ".repeat(10)}`;
+    expect(typed).toHaveLength(520);
+    expect(typed.length).toBeGreaterThan(NOTE_MAX_LENGTH);
+    expect(parseNoteForm(form({ day: "2026-09-14", intent: "save", text: typed }), TODAY)).toEqual({
+      intent: "save",
+      day: "2026-09-14",
+      text,
+    });
+  });
+
   it("rejects a save without text", () => {
     expect(parseNoteForm(form({ day: "2026-09-14", intent: "save" }), TODAY)).toBe("invalid");
   });

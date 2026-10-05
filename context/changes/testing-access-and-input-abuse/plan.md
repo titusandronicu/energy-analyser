@@ -347,10 +347,10 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Automated
 
-- [x] 2.1 Dependency installs cleanly: `npm ci`
-- [x] 2.2 Integration tests pass against the local stack: `SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run test:integration`
-- [x] 2.3 Unit tests, types, lint and build still pass: `npm test`, `npx astro check`, `npm run lint`, `npm run build`
-- [x] 2.4 Deliberate breaks each turn a named test red and are reverted on the local stack only: grant `select` on `ingest_pushes` to `authenticated` without the owner policy; add a policy `using (true)` to `day_notes`; remove `revoked_at is null` from the token check in a scratch copy of the function
+- [x] 2.1 Dependency installs cleanly: `npm ci` — 32afb74
+- [x] 2.2 Integration tests pass against the local stack: `SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run test:integration` — 32afb74
+- [x] 2.3 Unit tests, types, lint and build still pass: `npm test`, `npx astro check`, `npm run lint`, `npm run build` — 32afb74
+- [x] 2.4 Deliberate breaks each turn a named test red and are reverted on the local stack only: grant `select` on `ingest_pushes` to `authenticated` without the owner policy; add a policy `using (true)` to `day_notes`; remove `revoked_at is null` from the token check in a scratch copy of the function — 32afb74
 
 #### Manual
 
@@ -361,10 +361,10 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass: `npm test`
-- [ ] 3.2 Integration tests pass: `npm run test:integration` (local stack)
-- [ ] 3.3 Types and lint pass: `npx astro check`, `npm run lint`
-- [ ] 3.4 Deliberate breaks: change `NOTE_MAX_LENGTH` to 499 in a scratch edit; remove the CRLF `replace` in `parseNoteForm`; each turns a named test red
+- [x] 3.1 Unit tests pass: `npm test`
+- [x] 3.2 Integration tests pass: `npm run test:integration` (local stack)
+- [x] 3.3 Types and lint pass: `npx astro check`, `npm run lint`
+- [x] 3.4 Deliberate breaks: change `NOTE_MAX_LENGTH` to 499 in a scratch edit; remove the CRLF `replace` in `parseNoteForm`; each turns a named test red
 
 #### Manual
 
