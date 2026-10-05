@@ -13,7 +13,8 @@ import { HISTORY_PATH, periodNav } from "@/lib/calendar/nav";
 import { parsePeriod, periodBounds, periodInstants, periodLabel, type CalendarPeriod } from "@/lib/calendar/period";
 import { LOAD_FAILED } from "@/lib/format/status";
 import { warsawParts } from "@/lib/format/warsaw-time";
-import { orLoadError, pageClient } from "@/lib/page-load";
+import { orLoadError } from "@/lib/or-load-error";
+import { pageClient } from "@/lib/page-load";
 import {
   loadDailyRange,
   loadNoteDays,
@@ -39,17 +40,21 @@ import type { DailyEnergyRow } from "@/types";
 // The history calendar (S-15): the period comes from the URL (?day=, ?month=, ?quarter=), only its rows are loaded
 // (for a day or a month also the 14 days before it, which its rating's norm needs), and each section fails on its own. Past periods don't change every few minutes, so unlike the dashboard this page
 // has no reload script.
-const { user } = Astro.locals;
+const { user, log } = Astro.locals;
 
 // Each section loads on its own (orLoadError) through one lazily created Supabase client for the page, as on the
 // dashboard.
 const getClient = pageClient(Astro.request.headers, Astro.cookies);
 
 function dailyRange(from: string, to: string): Promise<DailyEnergyRow[] | null> {
-  return orLoadError(async () => {
-    const supabase = getClient();
-    return supabase ? await loadDailyRange(supabase, from, to) : [];
-  });
+  return orLoadError(
+    "history.daily-range",
+    async () => {
+      const supabase = getClient();
+      return supabase ? await loadDailyRange(supabase, from, to) : [];
+    },
+    log,
+  );
 }
 
 const now = new Date();
@@ -99,33 +104,48 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
     const rows = preloaded === undefined ? await dailyRange(range.first, range.last) : preloaded;
     if (rows === null) return { kind: "month", period, view: null, markersFailed: false, noteMarkersFailed: false };
     const [times, noteDays, summary] = await Promise.all([
-      orLoadError(async () => {
-        const supabase = getClient();
-        return supabase ? await loadRecommendationTimes(supabase, fromMs, toMs) : { times: [], truncated: false };
-      }),
-      orLoadError(async () => {
-        const supabase = getClient();
-        return supabase ? await loadNoteDays(supabase, first, last) : [];
-      }),
-      // Only a completed month has a text. A failed load shows no panel (the panel is decorative, so no error line).
-      orLoadError(async () => {
-        const supabase = getClient();
-        return {
-          row: supabase && month < today.slice(0, 7) ? await loadPeriodSummary(supabase, "month", month) : null,
-        };
-      }),
-    ]);
-    const view = await orLoadError(async () =>
-      Promise.resolve(
-        buildMonthView(
-          month,
-          rows,
-          times ?? { times: [], truncated: false },
-          today,
-          new Set(noteDays ?? []),
-          summary?.row ?? null,
-        ),
+      orLoadError(
+        "history.month.recommendation-times",
+        async () => {
+          const supabase = getClient();
+          return supabase ? await loadRecommendationTimes(supabase, fromMs, toMs) : { times: [], truncated: false };
+        },
+        log,
       ),
+      orLoadError(
+        "history.month.note-days",
+        async () => {
+          const supabase = getClient();
+          return supabase ? await loadNoteDays(supabase, first, last) : [];
+        },
+        log,
+      ),
+      // Only a completed month has a text. A failed load shows no panel (the panel is decorative, so no error line).
+      orLoadError(
+        "history.month.summary",
+        async () => {
+          const supabase = getClient();
+          return {
+            row: supabase && month < today.slice(0, 7) ? await loadPeriodSummary(supabase, "month", month) : null,
+          };
+        },
+        log,
+      ),
+    ]);
+    const view = await orLoadError(
+      "history.month.view",
+      async () =>
+        Promise.resolve(
+          buildMonthView(
+            month,
+            rows,
+            times ?? { times: [], truncated: false },
+            today,
+            new Set(noteDays ?? []),
+            summary?.row ?? null,
+          ),
+        ),
+      log,
     );
     return { kind: "month", period, view, markersFailed: times === null, noteMarkersFailed: noteDays === null };
   }
@@ -135,23 +155,38 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
     const range = ratedPeriodRange(period);
     const [rows, recs, note, summary] = await Promise.all([
       dailyRange(range.first, range.last),
-      orLoadError(async () => {
-        const supabase = getClient();
-        return supabase ? await loadRecommendationsForDay(supabase, fromMs, toMs) : [];
-      }),
+      orLoadError(
+        "history.day.recommendations",
+        async () => {
+          const supabase = getClient();
+          return supabase ? await loadRecommendationsForDay(supabase, fromMs, toMs) : [];
+        },
+        log,
+      ),
       // Wrapped, so orLoadError's null still means the note failed to load, not a day without one.
-      orLoadError(async () => {
-        const supabase = getClient();
-        return { row: supabase ? await loadNoteForDay(supabase, day) : null };
-      }),
+      orLoadError(
+        "history.day.note",
+        async () => {
+          const supabase = getClient();
+          return { row: supabase ? await loadNoteForDay(supabase, day) : null };
+        },
+        log,
+      ),
       // Only a completed day has a text. A failed load shows no panel (the panel is decorative, so no error line).
-      orLoadError(async () => {
-        const supabase = getClient();
-        return { row: supabase && day < today ? await loadPeriodSummary(supabase, "day", day) : null };
-      }),
+      orLoadError(
+        "history.day.summary",
+        async () => {
+          const supabase = getClient();
+          return { row: supabase && day < today ? await loadPeriodSummary(supabase, "day", day) : null };
+        },
+        log,
+      ),
     ]);
-    const view = await orLoadError(async () =>
-      Promise.resolve(buildDayView(day, rows ?? [], recs ?? [], today, now, note?.row ?? null, summary?.row ?? null)),
+    const view = await orLoadError(
+      "history.day.view",
+      async () =>
+        Promise.resolve(buildDayView(day, rows ?? [], recs ?? [], today, now, note?.row ?? null, summary?.row ?? null)),
+      log,
     );
     return {
       kind: "day",
@@ -166,7 +201,13 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
   const { year, quarter } = period;
   const rows = await dailyRange(first, last);
   const view =
-    rows === null ? null : await orLoadError(async () => Promise.resolve(buildQuarterView(year, quarter, rows, today)));
+    rows === null
+      ? null
+      : await orLoadError(
+          "history.quarter.view",
+          async () => Promise.resolve(buildQuarterView(year, quarter, rows, today)),
+          log,
+        );
   return { kind: "quarter", period, view };
 }
 

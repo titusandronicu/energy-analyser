@@ -50,6 +50,15 @@ describe("loadDailyRange", () => {
   it("throws on an error", async () => {
     await expect(loadDailyRange(mockClient(failure).client, "2026-09-01", "2026-09-30")).rejects.toThrow("boom");
   });
+
+  it("keeps the original error as the cause, with its code", async () => {
+    const original = { message: "boom", code: "57014" };
+    const { client } = mockClient({ data: null, error: original });
+    await expect(loadDailyRange(client, "2026-09-01", "2026-09-30")).rejects.toMatchObject({
+      message: "loading daily energy range failed: boom",
+      cause: original,
+    });
+  });
 });
 
 describe("loadRecommendationTimes", () => {

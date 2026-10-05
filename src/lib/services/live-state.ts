@@ -8,6 +8,7 @@ import { MIN_FLOW_W } from "@/lib/flow-constants";
 import { dailySeries, KPI_SERIES_DAYS } from "@/lib/services/daily-series";
 import type { DailySeries } from "@/lib/services/daily-series";
 import { dailyLoadNorm, deltaLabel, FAR_ABOVE_THRESHOLD, STATUS_THRESHOLD } from "@/lib/services/usage-insight";
+import { queryError } from "@/lib/query-error";
 
 // The lab pushes every few minutes; a snapshot older than 15 minutes no longer describes "now".
 export const LIVE_STALE_AFTER_MS = 15 * 60 * 1000;
@@ -127,7 +128,7 @@ export async function loadLiveState(client: SupabaseClient): Promise<LiveStateRo
     .select("captured_at, received_at, state")
     .limit(1)
     .overrideTypes<LiveStateRow[], { merge: false }>();
-  if (error) throw new Error(`loading live state failed: ${error.message}`);
+  if (error) throw queryError("loading live state failed", error);
   return data[0] ?? null;
 }
 
@@ -140,7 +141,7 @@ export async function loadDailyRowCapturedAt(client: SupabaseClient, dayKey: str
     .eq("day", dayKey)
     .limit(1)
     .overrideTypes<{ captured_at: string }[], { merge: false }>();
-  if (error) throw new Error(`loading daily row time failed: ${error.message}`);
+  if (error) throw queryError("loading daily row time failed", error);
   return data[0]?.captured_at ?? null;
 }
 
