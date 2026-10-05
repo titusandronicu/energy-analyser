@@ -347,11 +347,11 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [ ] 4.1 Every throwaway PR shows its expected check as failing: `gh pr checks <pr-number>`
-- [ ] 4.2 The failing log names the expected test or smoke step: `gh run view <run-id> --log-failed`
-- [ ] 4.3 Each throwaway PR is not mergeable: `gh pr view <pr-number> --json mergeStateStatus,mergeable`
-- [ ] 4.4 Nothing from a break is on `main`: `git diff origin/main -- src supabase` is empty after cleanup
-- [ ] 4.5 All throwaway PRs are closed and branches deleted: `gh pr list --state open --search "break/"` is empty
+- [x] 4.1 Every throwaway PR shows its expected check as failing: `gh pr checks <pr-number>`
+- [x] 4.2 The failing log names the expected test or smoke step: `gh run view <run-id> --log-failed`
+- [x] 4.3 Each throwaway PR is not mergeable: `gh pr view <pr-number> --json mergeStateStatus,mergeable`
+- [x] 4.4 Nothing from a break is on `main`: `git diff origin/main -- src supabase` is empty after cleanup
+- [x] 4.5 All throwaway PRs are closed and branches deleted: `gh pr list --state open --search "break/"` is empty
 
 #### Manual
 
