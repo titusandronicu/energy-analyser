@@ -337,11 +337,11 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [x] 3.1 New helper tests pass: `npx vitest run src/lib/query-error.test.ts src/lib/or-load-error.test.ts`
-- [x] 3.2 Loader tests still pass with the unchanged message format: `npx vitest run src/lib/services`
-- [x] 3.3 No message-only rethrow is left in the loaders: `grep -rnF 'failed: ${error.message}' src/lib/services` returns nothing
-- [x] 3.4 Linting and type check pass: `npm run lint && npx astro check`
-- [x] 3.6 Only the logger itself writes to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts`
+- [x] 3.1 New helper tests pass: `npx vitest run src/lib/query-error.test.ts src/lib/or-load-error.test.ts` — e7a54b3
+- [x] 3.2 Loader tests still pass with the unchanged message format: `npx vitest run src/lib/services` — e7a54b3
+- [x] 3.3 No message-only rethrow is left in the loaders: `grep -rnF 'failed: ${error.message}' src/lib/services` returns nothing — e7a54b3
+- [x] 3.4 Linting and type check pass: `npm run lint && npx astro check` — e7a54b3
+- [x] 3.6 Only the logger itself writes to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts` — e7a54b3
 
 #### Manual
 
@@ -351,8 +351,8 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [ ] 4.1 Classifier, decision and response tests pass: `npx vitest run src/lib/auth-outage.test.ts`
-- [ ] 4.2 Full unit suite, lint, type check and build pass: `npm test && npm run lint && npx astro check && npm run build`
+- [x] 4.1 Classifier, decision and response tests pass: `npx vitest run src/lib/auth-outage.test.ts`
+- [x] 4.2 Full unit suite, lint, type check and build pass: `npm test && npm run lint && npx astro check && npm run build`
 
 #### Manual
 

@@ -1,11 +1,11 @@
 import type { APIContext, MiddlewareNext } from "astro";
 import { defineMiddleware } from "astro:middleware";
 import { APP_ENV, APP_ORIGIN, APP_VERSION } from "astro:env/server";
+import { decideAuth, unavailableResponse } from "@/lib/auth-outage";
 import { createLogger, type Logger } from "@/lib/logger";
 import { requestIdFrom } from "@/lib/request-id";
 import { createClient } from "@/lib/supabase";
 
-const PROTECTED_ROUTES = ["/dashboard"];
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 // The received Origin header is attacker-controlled and unbounded, so only its start is logged.
 const MAX_LOGGED_ORIGIN_CHARS = 200;
@@ -37,20 +37,26 @@ async function handle(context: APIContext, next: MiddlewareNext, log: Logger): P
 
   const supabase = createClient(context.request.headers, context.cookies);
 
+  // getUser() returns a provider failure as `{ error }` instead of throwing, so the error has to be read: an outage
+  // must not look like a signed-out visitor.
+  let authError: { name?: string; status?: number } | null = null;
   if (supabase) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    context.locals.user = user ?? null;
+    const { data, error } = await supabase.auth.getUser();
+    context.locals.user = data.user ?? null;
+    authError = error;
   } else {
     context.locals.user = null;
   }
 
-  if (PROTECTED_ROUTES.some((route) => context.url.pathname.startsWith(route))) {
-    if (!context.locals.user) {
-      return context.redirect("/auth/signin");
-    }
-  }
+  const decision = decideAuth({
+    pathname: context.url.pathname,
+    method: context.request.method,
+    user: context.locals.user,
+    error: authError,
+  });
+  if (decision.logEvent) log.error(decision.logEvent, { err: authError });
+  if (decision.action === "unavailable") return unavailableResponse(context.locals.requestId);
+  if (decision.action === "redirect-signin") return context.redirect("/auth/signin");
 
   return next();
 }
