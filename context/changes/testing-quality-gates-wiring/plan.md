@@ -313,8 +313,8 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Manual
 
-- [ ] 1.5 The `integration` job log shows the suite's test files running and passing (not zero tests)
-- [ ] 1.6 PR wall-clock time for CI is acceptable (the two Supabase jobs run in parallel)
+- [x] 1.5 The `integration` job log shows the suite's test files running and passing (not zero tests)
+- [x] 1.6 PR wall-clock time for CI is acceptable (the two Supabase jobs run in parallel)
 
 ### Phase 2: Post-edit check proof
 
@@ -356,7 +356,7 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 #### Manual
 
 - [ ] 4.6 The owner has read `breaks.md` and agrees each risk maps to a check that actually catches it
-- [ ] 4.7 If a break did not turn its expected check red, the gap is logged in `breaks.md` and in `docs/decisions.md`, not hidden
+- [x] 4.7 If a break did not turn its expected check red, the gap is logged in `breaks.md` and in `docs/decisions.md`, not hidden
 
 ### Phase 5: Docs say what is true
 
@@ -369,4 +369,4 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Manual
 
-- [ ] 5.5 Reading test-plan sections 3-5 and the decisions entry gives the same picture as `gh api` shows
+- [x] 5.5 Reading test-plan sections 3-5 and the decisions entry gives the same picture as `gh api` shows
