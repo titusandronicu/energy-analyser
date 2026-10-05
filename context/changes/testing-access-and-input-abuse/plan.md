@@ -341,7 +341,7 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Manual
 
-- [ ] 1.5 Reviewer reads the middleware table and confirms each expected value matches the rule in `docs/architecture.md` or `CLAUDE.md` (Environment), not the code
+- [x] 1.5 Reviewer reads the middleware table and confirms each expected value matches the rule in `docs/architecture.md` or `CLAUDE.md` (Environment), not the code — 236e7e5
 
 ### Phase 2: Privileged helper and access integration tests
 
@@ -354,8 +354,8 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Manual
 
-- [ ] 2.5 CI: the `smoke` job runs the new file in its integration step and `pg` reaches `127.0.0.1:54322` there (confirm on the first PR run)
-- [ ] 2.6 The test refuses to start with a `SUPABASE_DB_URL` host that is not local
+- [x] 2.5 CI: the `smoke` job runs the new file in its integration step and `pg` reaches `127.0.0.1:54322` there (confirm on the first PR run) — c4ea4d9
+- [x] 2.6 The test refuses to start with a `SUPABASE_DB_URL` host that is not local — 32afb74
 
 ### Phase 3: Notes limit parity
 
@@ -368,7 +368,7 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Manual
 
-- [ ] 3.5 The `KNOWN GAP` comments state what a fix would change, and each name starts with `KNOWN GAP`
+- [x] 3.5 The `KNOWN GAP` comments state what a fix would change, and each name starts with `KNOWN GAP` — e9ca6e7
 
 ### Phase 4: Page-level escaping
 
@@ -380,16 +380,16 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Manual
 
-- [ ] 4.4 The survey table matches the components (spot check two)
+- [x] 4.4 The survey table matches the components (spot check two) — b5c7fc7
 
 ### Phase 5: Docs and test-plan
 
 #### Automated
 
-- [x] 5.1 Docs formatting passes: `npx prettier --check docs context CLAUDE.md`
-- [x] 5.2 All suites still pass: `npm test`, `npm run test:integration`, `npm run smoke` (local stack)
+- [x] 5.1 Docs formatting passes: `npx prettier --check docs context CLAUDE.md` — 20b5229
+- [x] 5.2 All suites still pass: `npm test`, `npm run test:integration`, `npm run smoke` (local stack) — 20b5229
 
 #### Manual
 
-- [ ] 5.3 A reader of `test-plan.md` can tell from §3, §5 and §6.4 which suites exist, where they live and how to add one
-- [ ] 5.4 `docs/decisions.md` entry reads correctly and states what was not fixed
+- [x] 5.3 A reader of `test-plan.md` can tell from §3, §5 and §6.4 which suites exist, where they live and how to add one — 20b5229
+- [x] 5.4 `docs/decisions.md` entry reads correctly and states what was not fixed — 20b5229

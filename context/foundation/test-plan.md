@@ -67,12 +67,12 @@ Each row is a discrete rollout phase that will open its own change folder
 via `/10x-new`. Status moves left-to-right through the values below; the
 orchestrator updates Status as artifacts appear on disk.
 
-| #   | Phase name               | Goal (one line)                                                                         | Risks covered | Test types         | Status       | Change folder                                                |
-| --- | ------------------------ | --------------------------------------------------------------------------------------- | ------------- | ------------------ | ------------ | ------------------------------------------------------------ |
-| 1   | Time and number guards   | Prove stale, money and boundary behaviour at the cheapest layer                         | #1, #2, #5    | unit + contract    | complete     | context/archive/2026-10-01-testing-time-and-number-guards/   |
-| 2   | Push-to-page integration | Prove a lab-shaped push reaches the right page and history survives replay and disorder | #3, #4        | integration        | complete     | context/archive/2026-10-01-testing-push-to-page-integration/ |
-| 3   | Access and input abuse   | Prove non-owner, Origin and token rules and notes and lab-text handling                 | #6, #7        | integration + unit | implementing | context/changes/testing-access-and-input-abuse/              |
-| 4   | Quality-gates wiring     | Make the new suites required in CI and add an optional post-edit check                  | cross-cutting | gates              | not started  | —                                                            |
+| #   | Phase name               | Goal (one line)                                                                         | Risks covered | Test types         | Status      | Change folder                                                |
+| --- | ------------------------ | --------------------------------------------------------------------------------------- | ------------- | ------------------ | ----------- | ------------------------------------------------------------ |
+| 1   | Time and number guards   | Prove stale, money and boundary behaviour at the cheapest layer                         | #1, #2, #5    | unit + contract    | complete    | context/archive/2026-10-01-testing-time-and-number-guards/   |
+| 2   | Push-to-page integration | Prove a lab-shaped push reaches the right page and history survives replay and disorder | #3, #4        | integration        | complete    | context/archive/2026-10-01-testing-push-to-page-integration/ |
+| 3   | Access and input abuse   | Prove non-owner, Origin and token rules and notes and lab-text handling                 | #6, #7        | integration + unit | complete    | context/changes/testing-access-and-input-abuse/              |
+| 4   | Quality-gates wiring     | Make the new suites required in CI and add an optional post-edit check                  | cross-cutting | gates              | not started | —                                                            |
 
 **Status vocabulary** (fixed — parser literals):
 
