@@ -331,7 +331,7 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 #### Manual
 
 - [x] 2.4 A failed password sign-in on the dev server writes one JSON line with the route, request id, `emailHash`, and the provider's `status` and `code`, and the line contains no email address — probed locally 2026-10-05, user said continue
-- [ ] 2.5 A failed `/auth/confirm?token_hash=x` writes a log line whose `path` is `/auth/confirm` with no query string
+- [x] 2.5 A failed `/auth/confirm?token_hash=x` writes a log line whose `path` is `/auth/confirm` with no query string — probed locally 2026-10-05 (type=email; path only, token absent from logs)
 
 ### Phase 3: Loader cause and section labels
 
