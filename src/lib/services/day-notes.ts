@@ -6,7 +6,7 @@ import { parsePeriod } from "@/lib/calendar/period";
 // service turns the posted form into one save (saveNote) or delete and the redirect back to the day, so the route only
 // wires in the Supabase calls. The database enforces the same text rules (supabase/migrations/*_day_notes.sql).
 
-export const NOTE_MAX_LENGTH = 500;
+export const NOTE_MAX_LENGTH = 501;
 
 export type NoteOutcome = "saved" | "deleted" | "invalid" | "failed";
 
