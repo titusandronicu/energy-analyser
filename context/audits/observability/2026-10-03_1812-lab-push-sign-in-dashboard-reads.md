@@ -1,0 +1,157 @@
+---
+type: observability-audit
+date: 2026-10-03 18:12
+mode: audit
+commit: b646266
+branch: main
+dirty_tree: true   # untracked .claude/launch.json only; origin/main is one docs-only commit ahead
+areas: [lab-push-to-dashboard, sign-in-and-access, dashboard-and-history-reads]
+area_source: user
+runtime_proof: not-run
+error_tracker: none
+previous_report: null
+findings: { critical: 3, high: 13, medium: 11, low: 6 }
+---
+
+# Observability audit: lab push to dashboard, sign-in and access, dashboard and history reads (2026-10-03)
+
+## 1. TL;DR
+
+- **Nothing in this system counts, groups or alerts on an error.** There is no error tracker. Seven `console.error` calls feed 30 MB of Docker `json-file` logs that nobody reads unless they go looking, and that are discarded with the container on every deploy.
+- **The code is deliberately tolerant, and the tolerance hides outages.** A Supabase failure becomes a redirect to sign-in, "no data yet", a generic "nie udało się wczytać" card, or "link sent". The page never 500s, so a total outage is a 200.
+- **Errors are reduced to strings before they are logged.** Loaders rethrow `error.message` without `cause` or the Postgres code; auth failures are logged as `error.message` only; the one common logging chokepoint, `orLoadError`, does not say which card failed.
+- **Health proves liveness, not function.** `/api/health` is static, so the container is "healthy" through a full Supabase outage, and the deploy gate (which polls the same endpoint) would pass a release that breaks every real request.
+- **Rejections are logged where nobody is looking.** The app logs nothing for 401, 400, 413, 422 and 409 on `/api/ingest`; the lab logs the status and the first 300 characters of the body to its own journal; the only alert is an optional Uptime Kuma heartbeat that fires on silence.
+- **Most important single consequence:** if Supabase auth is down, the owner's valid session reads as "signed out", `/dashboard` redirects to sign-in with no message, nothing is logged and `/api/health` stays green (S1, verified in the library source).
+
+## 2. Capture model
+
+How a failure travels from code to a person today:
+
+- **Runtime:** Astro 7.3.2 SSR with `@astrojs/node` standalone, one Node 22 process in one Docker container (`node ./dist/server/entry.mjs`, `Dockerfile:28`), compose service `app` on a Micr.us VPS with `restart: unless-stopped`, host networking, read-only filesystem, 384 MB (`compose.yaml:3-18`). No worker, cron or queue in the app. Data arrives by push from the home lab, which lives in another repo (`homelab-2`).
+- **Error tracker:** none. No SDK in `package.json`; no Sentry, Datadog, OpenTelemetry, Rollbar, Bugsnag, Honeybadger, New Relic, Logtail or Axiom anywhere in `src`, `scripts`, `.github`, the Dockerfile or `astro.config.mjs`.
+- **Capture boundaries:** none in the app. A throw in a route, page or middleware is caught by Astro's `handleRequest` (`node_modules/astro/dist/core/routing/handler.js:101-107`), which logs the stack through Astro's logger and renders the 500 page via `renderErrorFromState`. There is no custom `src/pages/500.astro` or `404.astro`. The adapter's bare "Internal Server Error" catch (`@astrojs/node/dist/serve-app.js:105-115`) is the last resort when `render` itself rejects.
+- **Middleware (`src/middleware.ts`)** runs before every request: token-auth routes skip everything (`:13-16`); mutating `/api/` requests get an Origin check returning a bare, unlogged 403 (`:18-25`); then `createClient` and `await supabase.auth.getUser()` with the result's `error` never read (`:27-36`); `/dashboard` redirects when the user is null (`:38-42`).
+- **Logging:** raw `console.error` at 7 sites: `src/lib/page-load.ts:13`, `src/pages/auth/confirm.ts:19`, `src/pages/api/auth/magic-link.ts:19`, `src/pages/api/auth/signin.ts:18`, `src/pages/api/notes.ts:27` and `:45`, `src/pages/api/ingest.ts:29`. Output goes to container stdout and stderr, Docker `json-file` with `max-size: 10m`, `max-file: 3` (`compose.yaml:31-35`), read by hand with `docker compose logs` (`context/foundation/infrastructure.md:120`). No log drain, no alert on log lines, no request id, no environment tag.
+- **Serialization:** only `page-load.ts:13` and the `cause` catch in `day-notes.ts:115` pass an `Error` object. The ingest route passes the Supabase error object (`code`, `message`, `details`, `hint`, no stack). Four sites pass `error.message` strings (`magic-link.ts:47` and `:68`, `password-signin.ts:38`, `day-notes.ts:13`).
+- **Scrubbing and sampling:** none.
+- **Deploy identity:** `APP_VERSION` is written to `release.env` by `deploy-production.yml:107` and read by `compose.yaml:9`; it appears only in `GET /api/health` (`health.ts:13`), never in a log line. No environment label. No source maps; the server bundle is not minified, so server stacks point at generated chunk files.
+- **Health and deploy gate:** compose healthcheck calls `/api/health` every 15 s (`compose.yaml:19-30`); the handler is static and never touches Supabase (`health.ts:6-24`). Docker does not restart an unhealthy container. The deploy workflow polls `/api/health` inside the container for up to 60 s until `version == RELEASE_SHA`, and rolls back otherwise (`deploy-production.yml:112-135`).
+- **External monitoring:** `infrastructure.md:126-132` plans an uptime monitor and freshness alerts; implementation not verified. The home lab can call an Uptime Kuma heartbeat after every 2xx push (optional, URL in the lab's `.env.push`).
+- **Client side:** no `window.onerror`, `unhandledrejection` listener or React error boundary. Two `client:load` islands (`RecommendationCard`, `LiveStateCard`). Astro's island runtime only calls `console.error` in the browser on a hydration failure.
+
+## 3. What reaches the tracker
+
+Static-only (no runtime proof was run). There is no tracker, so the column that matters is what a responder would actually have.
+
+| Failure shape | What the user gets | What the platform has | Tracker | Verdict |
+|---|---|---|---|---|
+| Throw in a page, route or middleware | Astro's default 500 page | Stack in container logs via Astro's logger, URL only | none | poor |
+| Supabase `{ error }` in a card loader | 200 page, that card shows "nie udało się wczytać" | `console.error(Error)` with message only, no card name, no code | none | poor |
+| Supabase auth down (`getUser` error) | Redirect to `/auth/signin`, no message | nothing | none | **missed** |
+| RLS, grant or owner-row change (zero rows) | "laboratorium jeszcze nic nie przesłało" | nothing | none | **missed** |
+| Supabase env missing | Empty states or a sign-in page | nothing (the forms redirect with text, no log) | none | **missed** |
+| Ingest 401, 400, 413, 422, 409 | Lab gets the status and a short body | nothing on the app side | none | poor (lab journal has it) |
+| Ingest RPC error (500) | Lab gets `ingest failed`, retries 3 times | `console.error` with the Postgres error, no push identity | none | poor |
+| Sign-in provider failure (send, verify, password) | "wrong password", "link sent" or "link expired" | `error.message` string only | none | poor |
+| Stale push (lab stopped) | Stale badge or blank forecast on an open tab | nothing server-side | none | poor (lab heartbeat covers silence) |
+| Client hydration error | Dead island | browser console only | none | missed |
+| Unhandled rejection outside a request | nothing visible (no crash) | nothing: `@astrojs/node` registers a listener that returns silently when no request is in flight (`serve-app.js:37-42`) | none | **missed** |
+
+## 4. Systemic root causes
+
+1. **No capture layer.** Logging is seven scattered `console.error` sites into 30 MB of rotating container logs, lost on every deploy, with no request id, release or environment. Nothing counts, groups or alerts. This is a reasonable choice for a single-owner app, and it is the reason most findings below are invisible rather than undiagnosable. Explains P1, P3, P4, D2.
+2. **Resilience by flattening.** The code is designed never to 500 and never to reveal account existence, so provider failure and "no rows" share an outcome with ordinary states: a redirect, an empty state, a generic card error, "link sent". The no-enumeration rule only requires hiding unknown-email versus wrong-password; it never required hiding infrastructure failure from the owner or the logs. Explains S1 to S6, D1, D4.
+3. **Errors reduced to strings at every boundary.** Loaders rethrow `error.message` without `cause` or the Postgres code; auth logs pass `error.message`; `orLoadError` logs a bare Error with no card, path or day. Explains D2, D3, S5, L3.
+4. **Health proves liveness, not function.** The static `/api/health` is trusted by the container healthcheck, the deploy gate and (presumably) any external monitor. A dependency or release that breaks every real request still looks healthy. Explains P2, L6, D1.
+5. **Rejections and failures are logged where nobody is looking.** The lab logs push rejections to its own journal and turns the failure into a warning; the app logs nothing for them; the only alert is silence from an optional heartbeat. Explains L1, L2, L5.
+
+## 5. Findings by area
+
+Severity follows the skill's rubric. Locations are in `energy-analyser` unless prefixed `lab:` (`homelab-2/infra/compose/energy-app/scripts/`).
+
+### Lab push to dashboard
+
+| # | Location | Category | Severity | What happens in production | Fix direction |
+|---|---|---|---|---|---|
+| L1 | lab:`push-energy-analyser.py:750-755`, `:887-892`; lab:`refresh-energy-agent-data.sh:163-165` | flattened-response | high | A 4xx (422 contract drift, 401 revoked token) returns 1 at once; after retries a 5xx also gives up. The refresh script turns the failure into `echo "warning..." >&2` and exits 0, and the heartbeat only fires on `result == 0`. The lab journal records `push: attempt N -> status body[:300]`; the only alert is Kuma's silence timeout, which is optional and whose existence was not verified. The owner sees a stale card with no reason. Becomes critical if no heartbeat monitor exists. | Send the heartbeat with `status=down&msg=<status+path>` on failure; alert on N consecutive failed pushes. |
+| L2 | `src/lib/services/ingest.ts:51,55,61,68,73`; `src/lib/ingest/contract.ts:256-259` | missing-context | high | The app logs nothing for 401, 400, 413, 422 and 409. A contract drift or lab clock skew (a 422 with the skew in a message) is invisible app-side; a 422 returns only the first zod issue (`ingest.ts:67-69`), so several drifting sections cost one full push cycle each. A revoked token and a missing header both give the same unlogged 401. | One structured line per rejection: stage, status, issue path and count, `captured_at`, contract version; log the 401 reason without the token; return up to N issues. |
+| L3 | `src/pages/api/ingest.ts:19-22,27-30`; `ingest.ts:75,83` | identity-lost | high | A 500 logs the Postgres error but not `captured_at`, contract version, payload size, `APP_VERSION` or attempt; the 503 for missing Supabase env logs nothing at all; an unexpected RPC result is logged but the lab gets a bare `ingest failed`. | Add push identity and `APP_VERSION` to the ingest log lines; log the 503 once with the missing variable names. |
+| L4 | `supabase/migrations/20261001113911_period_summaries_keep_narration.sql` (`ingest_push`) | missing-context | medium | `ingest_push` raises only `P0401` and `P0409`; any other SQL error is a generic 500, and rejected pushes leave no row anywhere, only successes are stored. | Log `sqlstate` and the failing section; consider a small rejection log. |
+| L5 | lab:`push-energy-analyser.py:749-750`; lab:`refresh-energy-agent-data.sh:15-27` | flattened-response | medium | A 200 `duplicate` counts as success, so the heartbeat stays green. This is reachable when `.env.ha` is missing or has a placeholder token ("keeping existing snapshot"): the same snapshot is re-pushed. A collector failure is not affected, because the collector is unguarded under `set -eu` and aborts the refresh before the push. | Send the heartbeat only on `created`, or `status=down` on `duplicate`; alert on the age of `captured_at`. |
+| L6 | `src/lib/services/live-state.ts:352,389`; recommendation and bill-forecast staleness mappers; `src/pages/dashboard.astro:78-91` | coverage-gap | high | A stopped lab shows "dane sprzed N" or a blank forecast only to whoever has a tab open (the page reloads every 5 minutes). Nothing server-side records "snapshot is N minutes old", and the mappers cannot tell "lab stopped" from "pushes rejected" from "app cannot read". | Expose the `live_state` age in a deep health check and alert on it; log the age on each render. |
+
+### Sign-in and access
+
+| # | Location | Category | Severity | What happens in production | Fix direction |
+|---|---|---|---|---|---|
+| S1 | `src/middleware.ts:29-36,38-42` | missing-throw | critical | When Supabase or GoTrue is down, `getUser()` returns `{ data: { user: null }, error }` (auth-js catches `AuthRetryableFetchError` for network failures and 5xx and returns it, `GoTrueClient.js:2693-2730`) and the code reads only `data.user`. The owner's valid session reads as signed out, `/dashboard` redirects to `/auth/signin` with no message, nothing is logged, `/api/health` stays green. | Read `error`. Keep `AuthSessionMissingError` silent (it fires on every anonymous request), log retryable and 5xx errors with route, status and `error.name`, and return a 503 "auth unavailable" page instead of a redirect. |
+| S2 | `src/lib/services/password-signin.ts:36-39` | flattened-response | high | Every `error` becomes "Nieprawidłowy e-mail lub hasło": an outage, a 429 rate limit, a 5xx or bad config tells the owner their password is wrong, and they retry or reset it. | Classify on `error.status` and `error.code`; `invalid_credentials` keeps the generic message, 5xx, 429 and network errors get a separate "service unavailable" message that is not account-specific. |
+| S3 | `src/lib/services/magic-link.ts:46-48`; `src/pages/auth/check-email.astro:17` | flattened-response | high | Any send failure (SMTP down, `over_email_send_rate_limit`, GoTrue 5xx, signups disabled) ends on `/auth/check-email`, which says the link was sent and tells the owner to wait up to an hour. | Keep the neutral page for 4xx account-related errors only; for 429 and 5xx redirect with a neutral "temporarily unavailable" message. |
+| S4 | `src/pages/auth/confirm.ts:14-22`; `magic-link.ts:66-70` | flattened-response | high | Any `verifyOtp` or `exchangeCode` error becomes "link expired or already used": GoTrue 5xx, a network failure, a missing PKCE verifier cookie (default-template link opened on another device), a mail scanner that burned the one-time link, and a true expiry all look the same. The owner requests new links in a loop, hitting the mailer limit. | Branch on `status` and `code` (`otp_expired` versus 5xx versus missing verifier) and say which; log the reason code. |
+| S5 | `magic-link.ts:47,68`; `password-signin.ts:38`; `day-notes.ts:13` | identity-lost | high | The log carries `error.message` only. `status`, `code` and `name` are dropped, so an outage, a rate limit, "signups not allowed" and bad credentials are one-line strings; with `ALLOW_SIGNUP` false, every unknown-email request logs the same line as a real outage. | Pass the error object and log `{ event, name, status, code }` as one structured line. |
+| S6 | `src/lib/supabase.ts:26-29,36-39`; `magic-link.ts:10-12`, `signin.ts:10-12`, `confirm.ts:10-12`; `src/pages/dashboard.astro:23,35,45,53,57,61`; `src/pages/dashboard/history.astro` | config | high | Missing `SUPABASE_URL` or anon key makes `createClient` return null with no log. The middleware treats everyone as signed out, the forms redirect with "Supabase nie jest skonfigurowany" in the URL (302, no log), and the page loaders (when reached) show empty states instead of an error. A bad deploy shows up only as the owner reporting it. | Validate env at startup (fail fast) and log once with `APP_VERSION`; answer 503 instead of a 302; make `/api/health` report config presence. |
+| S7 | `src/lib/supabase.ts:6-23,30,40`; `src/lib/page-load.ts:21-27` | config | medium | `assertAnonKey` throws on a mis-pasted `service_role` or secret key, on every non-token request, so every page including `/auth/signin` is a 500; on the dashboard the same stack is logged six times, once per card, with no marker saying "configuration". | Check the key at boot, log one labelled error, return a controlled 503. |
+| S8 | `src/middleware.ts:22-24` | missing-context | medium | A failed Origin check returns a bare, unlogged 403. A wrong `APP_ORIGIN` after a domain or proxy change (it falls back to `url.origin`, which behind a proxy may be http or an internal host) 403s every sign-in and note POST with nothing for a responder. | Log expected and received Origin and the path; render a friendly page. |
+| S9 | `src/pages/api/auth/signin.ts:14-21` | missing-context | medium | Failed sign-ins carry no hashed or truncated email, IP, route or request id, so brute force is indistinguishable from the owner's typos, and there is no lockout signal. | Add `{ route, emailHash, ip }` to the server-side log only. |
+| S10 | `src/pages/api/auth/signout.ts:7-9` | swallowed | low | `signOut()` returns `{ error }` and it is discarded; a failed sign-out looks like a no-op. | Read, log and show a message on failure. |
+| S11 | `src/pages/index.ts:12`, `src/pages/auth/signin.astro:6-15` | flattened-response | low | `?error=` text is rendered verbatim and travels in the URL, so it lands in proxy logs, and every failure is a 302 followed by a 200 page: access logs cannot tell failures from successes. | Use fixed error codes mapped to copy and distinct statuses for 5xx outcomes. |
+
+### Dashboard and history reads
+
+| # | Location | Category | Severity | What happens in production | Fix direction |
+|---|---|---|---|---|---|
+| D1 | `src/lib/services/live-state.ts:131`, `recommendation.ts:97`, `bill-forecast.ts:118`, `period-summary.ts:32,50`, `calendar-data.ts:22,59,72`, `usage-insight.ts:71`, `hourly-usage.ts:102`; mapper `live-state.ts:358-359` | missing-throw | critical | If `app_owners` loses the owner row, a policy or grant changes, or a `security_invoker` view is recreated, PostgREST answers 200 with `[]`. Every card shows its neutral "laboratorium jeszcze nic nie przesłało". Zero rows is by design indistinguishable from an outage (the comments say "RLS returns nothing for non-owners"). No log, and `/api/health` is static. | Add a cheap canary: an owner-check read or a count, so "owner sees nothing while the lab pushes" logs an error; or have a deep health check read the data. |
+| D2 | `src/lib/page-load.ts:8-16`; callers `dashboard.astro:21-59`, `history.astro:49-168` | missing-context | high | `orLoadError` logs the bare Error with no card, path, day or `APP_VERSION`; the page returns 200 with a generic card message. A mapper bug (`buildDayView` throw) and a query error look alike, and a Supabase outage prints up to six unlabelled stacks per page view. | Give `orLoadError` a `{ section, ...context }` argument and log one structured line; add `APP_VERSION`. |
+| D3 | `live-state.ts:130,143`; `calendar-data.ts:21,40,58,71,85`; `hourly-usage.ts:102`; `recommendation.ts:96`; `bill-forecast.ts:118`; `usage-insight.ts:71`; `period-summary.ts:31,49` (14 sites) | identity-lost | high | Every loader rethrows `new Error(\`loading X failed: ${error.message}\`)`: the Supabase `code` (42501 permission denied, 42703 schema drift, 57014 timeout, PGRST301 JWT), `details`, `hint` and status are dropped and no `cause` is set, so a grant error and a timeout look the same. | One shared `throwQueryError(what, error)` that builds `new Error(msg, { cause: error })`; have `orLoadError` log `code`, `details`, `hint`, `status`. |
+| D4 | `dashboard.astro:37-40`; `live-state.ts:259-261,298-300,313-314,380` | missing-throw | medium | A failed `loadDailyRowCapturedAt` is logged without the day and the verdict chip reads "brak czasu historii" or "bez oceny"; an empty `dailyRows` (grant or RLS) reads "brak danych historii", the same as a new install. Only `null` means "historia niedostępna". | Log the verdict reason as a warning with the day key. |
+| D5 | `calendar-data.ts:41`; `usage-insight.ts:62-72`; `hourly-usage.ts:95-102` | coverage-gap | medium | PostgREST `max_rows` is 1000 (`supabase/config.toml:18`); the hourly read is about 900 rows and the daily reads have no limit. A longer window would silently drop the oldest rows (descending order) and distort the norms; only a UI hint exists. | Warn when `data.length >= 1000` with the table and window. |
+| D6 | `src/pages/dashboard/history.astro:110-116,147-151` | swallowed | medium | When `period_summaries` is unreachable (for example a missing column grant) the owner sees no panel and no error; the log line says "loading the day summary failed" without which day. | Log the section name and the day or month. |
+| D7 | `src/lib/format/values.ts:9-18`; `live-state.ts:150,371-380`; `bill-forecast.ts:149-165`; `daily-series.ts:27`; `period-summary.ts:73-93` | swallowed | medium | Malformed jsonb is coerced to a dash or "bez oceny" without a log: a renamed key or a string where a number belongs turns every figure into "—" and the card still looks normal. Write-side validation covers new pushes, not older stored rows. | Count and warn when a card's fields are all missing. |
+| D8 | `history.astro:173-180` | flattened-response | low | A bad `?day=` is a silent 302 to the default month; an error inside `parsePeriod` hides behind the same path. | Log at debug level with the raw value. |
+
+### Platform and plumbing
+
+| # | Location | Category | Severity | What happens in production | Fix direction |
+|---|---|---|---|---|---|
+| P1 | no tracker; `src/middleware.ts`; `@astrojs/node/dist/serve-app.js` | coverage-gap | critical | Any 500 is visible only in 30 MB of container logs read by hand (Astro does log the full stack through its logger, verified). Nothing counts, groups, retains or alerts, and an unhandled rejection outside a request is dropped silently: the adapter's own `unhandledRejection` listener returns without logging when no request is in flight, so it neither logs nor crashes (inside a request it logs the stack). | Add structured logging with a request id, release and environment, plus a tracker (vendor choice: `/10x-infra-research`); wrap the middleware's `next()` in a try/catch that logs with context and rethrows. |
+| P2 | `src/pages/api/health.ts:6-24`; `compose.yaml:19-30`; `.github/workflows/deploy-production.yml:112-135` | coverage-gap | high | The container reports healthy with Supabase down; the deploy gate polls only the version from `/api/health` for about 60 s, so a release that boots but breaks login or ingest passes; Docker does not restart an unhealthy container; no verified external monitor exists. | Add a readiness probe that does a trivial Supabase read (and a live-state age field); use it in the deploy gate and the monitor. |
+| P3 | the 7 `console.error` sites | logged-not-captured | high | Lines carry no request id, `APP_VERSION` or environment; four of the seven flatten the error to a string; `notes.ts:27` logs a constant instead of the cause. A responder cannot tie a line to a release, a request or a user. | A small logger that adds request id, `APP_VERSION`, environment and the error object. |
+| P4 | `compose.yaml:31-35`; deploy `docker compose up -d` | config | medium | Logs live at most 30 MB and a deploy recreates the container, which discards the previous release's logs, exactly when a comparison is wanted. | Ship logs to a drain or raise retention; keep the previous container's logs on deploy. |
+| P5 | `RecommendationCard` (`client:load`), `LiveStateCard` (`client:load`); `src/components/auth/*.tsx` | coverage-gap | medium | No error boundary or global handler: a hydration failure leaves a dead island or a stuck "Wysyłanie…" form, visible only in the user's console. | An error boundary and `window.onerror` reporting to a server endpoint, or accept the risk for a single owner. |
+| P6 | `src/pages/` (no `500.astro`, `404.astro`) | flattened-response | low | A thrown error renders Astro's default 500 page with no request id; a custom `500.astro` would render through `renderErrorFromState`. | Add a minimal 500 page that shows a request id. |
+| P7 | `src/pages/api/notes.ts:19`; `src/lib/services/ingest.ts:60`; `src/lib/supabase.ts:20-22` | swallowed | low | A malformed form body, a JSON parse failure (400, correct, but a lab bug leaves no trace) and a garbled `SUPABASE_ANON_KEY` payload (the guard passes it) disappear silently. | Log at warn with context. |
+| P8 | `dist/` (no source maps) | config | low | Server stacks are readable but point at generated chunk files; fine until a tracker needs maps. | Publish maps to the tracker when one is added. |
+
+## 6. Recommended fix order
+
+Ordered by blindness removed per unit of effort. Privacy constraint throughout: the app must keep hiding whether an account exists (log server-side, hash or truncate identifiers, never put an email in a response).
+
+1. **One structured logger plus a middleware error boundary** (closes P1 in part, P3, D2, S5, S8, S9, L2, L3). A tiny function that writes one JSON line with request id, `APP_VERSION`, environment, route, and the error object (message, name, stack, `code`, `cause`). Wrap `next()` in the middleware. Pick a tracker afterwards; the logger is the part every tracker needs.
+2. **`throwQueryError` helper with `cause` and the Postgres code** (closes D3, helps D2, D4). One change, 14 call sites.
+3. **Read the `getUser` error in the middleware** (closes S1): keep `AuthSessionMissingError` silent, log and return a 503 for retryable and 5xx. Constraint: do not log on every anonymous request.
+4. **A real readiness check** (closes P2, L6, D1): a Supabase read plus the age of `live_state`; use it in the deploy gate and as the external monitor target; add the "owner sees zero rows while the lab pushes" canary.
+5. **Ingest rejection logging and push identity** (closes L2, L3, L4): one line per 401, 400, 413, 422, 409 and per 500, with `captured_at`, contract version and `APP_VERSION`.
+6. **Lab side: heartbeat down on failure and on `duplicate`** (closes L1, L5): lives in `homelab-2`; confirm the Kuma monitor exists first.
+7. **Classify provider failures in the auth messages** (closes S2, S3, S4) without leaking account existence.
+8. **Validate config at startup** (closes S6, S7): fail fast, log once.
+9. **Log retention** (closes P4), then the low-severity items (P5 to P8, S10, S11, D8).
+
+## 7. Changes since last audit
+
+Not applicable: this is the first audit.
+
+## 8. Method and limits
+
+- **Agents run (4, read-only):** one per area (lab push to dashboard, sign-in and access, dashboard and history reads) plus a plumbing auditor. Their reports were merged and deduplicated: 18 + 15 + 14 + 15 raw findings became 33.
+- **Spot-checked by hand (6 claims; one more correction after the first draft, see item 6):**
+  1. S1, `getUser` returns an error object instead of throwing: confirmed in `auth-js` `GoTrueClient.js:2693-2730` and `lib/fetch.js:38-53,130`.
+  2. L1, 4xx and heartbeat semantics: confirmed in `push-energy-analyser.py:740-755,887-892` and `refresh-energy-agent-data.sh:163-165`. Severity lowered from critical to high, because the lab prints the status and the first 300 characters of the body and a silence alert exists if the monitor does.
+  3. L5, duplicate-as-success: confirmed (`200 <= status < 300` returns 0), but the claim that a stalled snapshot produces silent duplicates was narrowed: the collector is unguarded under `set -eu` (`refresh-energy-agent-data.sh:2,19`), so only the `.env.ha`-missing path re-pushes. Lowered from critical to medium.
+  4. Uncaught exceptions: the plumbing auditor claimed a throw skips Astro's error-page machinery and yields a bare, unlogged 500. **Refuted for routes, pages and middleware:** `handleRequest` catches, logs the stack and renders the 500 page (`routing/handler.js:101-107`). Only a failure inside `render` itself reaches the adapter's bare 500 (`serve-app.js:105-115`). Findings P1 and P6 were rewritten accordingly.
+  5. Deploy gate: confirmed, `deploy-production.yml:112-135` polls only `version` from `/api/health`.
+  6. Unhandled rejections: the plumbing auditor said one outside a request crashes the process (Node's default). **Corrected:** `@astrojs/node` installs a `process.on("unhandledRejection")` listener (`serve-app.js:37-42`), which turns off Node's default; outside a request it returns silently, so the rejection is dropped without a log and without a crash.
+- **Repo-wide sweep (src and scripts, tests excluded):** 8 empty `catch {}`, 4 catches with a binding, 0 promise `.catch(() => default)`, 7 raw `console.error`, 14 `throw new Error(...${error.message})` without `cause`, 29 `?? []` or `?? null` on query results.
+- **Runtime proof:** not run (static-only for every finding). No tracker exists, so a tracker probe would be moot; the useful probes are response-and-log probes (for example Supabase unreachable, then `GET /dashboard` with a session cookie). They need an isolated build and boot of the app and were not run. The skill's probe harness (`scripts/fake-ingest.mjs`) was not needed.
+- **Not verifiable from the repo:** whether the Uptime Kuma push monitor exists in production; production log rendering and what Micr.us keeps; whether production sets `APP_ORIGIN`; the actual PostgREST `max_rows` in production.
+- **Audit anchor:** commit `b646266` on `main`; `origin/main` was one docs-only commit ahead. The tree had only the untracked `.claude/launch.json`.
