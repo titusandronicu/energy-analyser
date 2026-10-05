@@ -39,7 +39,10 @@ interface LoggedLine {
   bound: Record<string, unknown>;
 }
 const logged = vi.hoisted(() => ({ lines: [] as LoggedLine[] }));
-vi.mock("@/lib/logger", () => {
+vi.mock("@/lib/logger", async (importOriginal) => {
+  // Only createLogger is replaced; every other export of the module stays real, so a new import in the middleware does
+  // not break the mock.
+  const actual = await importOriginal<typeof import("@/lib/logger")>();
   interface FakeLogger {
     error: (event: string, fields?: Record<string, unknown>) => void;
     warn: (event: string, fields?: Record<string, unknown>) => void;
@@ -50,7 +53,7 @@ vi.mock("@/lib/logger", () => {
     warn: (event, fields) => logged.lines.push({ level: "warn", event, fields, bound }),
     child: (more) => make({ ...bound, ...more }),
   });
-  return { createLogger: () => make({}) };
+  return { ...actual, createLogger: () => make({}) };
 });
 
 const REQUEST_ORIGIN = "http://localhost:4321";
@@ -375,7 +378,10 @@ describe("onRequest", () => {
     const OUTAGES: [string, AuthError][] = [
       ["a network failure", { name: "AuthRetryableFetchError" }],
       ["a 500", { name: "AuthApiError", status: 500 }],
+      ["a 502", { name: "AuthApiError", status: 502 }],
       ["a 503", { name: "AuthApiError", status: 503 }],
+      ["a 504", { name: "AuthApiError", status: 504 }],
+      ["a 599", { name: "AuthApiError", status: 599 }],
       ["a 429", { name: "AuthApiError", status: 429 }],
     ];
     // A missing session or an invalid token is an ordinary signed-out visitor, and so is any other error.
