@@ -347,11 +347,11 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [x] 4.1 Every throwaway PR shows its expected check as failing: `gh pr checks <pr-number>`
-- [x] 4.2 The failing log names the expected test or smoke step: `gh run view <run-id> --log-failed`
-- [x] 4.3 Each throwaway PR is not mergeable: `gh pr view <pr-number> --json mergeStateStatus,mergeable`
-- [x] 4.4 Nothing from a break is on `main`: `git diff origin/main -- src supabase` is empty after cleanup
-- [x] 4.5 All throwaway PRs are closed and branches deleted: `gh pr list --state open --search "break/"` is empty
+- [x] 4.1 Every throwaway PR shows its expected check as failing: `gh pr checks <pr-number>` — 0fce69a
+- [x] 4.2 The failing log names the expected test or smoke step: `gh run view <run-id> --log-failed` — 0fce69a
+- [x] 4.3 Each throwaway PR is not mergeable: `gh pr view <pr-number> --json mergeStateStatus,mergeable` — 0fce69a
+- [x] 4.4 Nothing from a break is on `main`: `git diff origin/main -- src supabase` is empty after cleanup — 0fce69a
+- [x] 4.5 All throwaway PRs are closed and branches deleted: `gh pr list --state open --search "break/"` is empty — 0fce69a
 
 #### Manual
 
@@ -362,10 +362,10 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [ ] 5.1 Formatting and lint pass: `npx prettier --check context/foundation/test-plan.md docs/decisions.md CLAUDE.md && npm run lint`
-- [ ] 5.2 Unit tests still pass: `npm test`
+- [x] 5.1 Formatting and lint pass: `npx prettier --check context/foundation/test-plan.md docs/decisions.md CLAUDE.md && npm run lint`
+- [x] 5.2 Unit tests still pass: `npm test`
 - [ ] 5.3 Phase 4 row reads `complete`: `grep -n "Quality-gates wiring" context/foundation/test-plan.md`
-- [ ] 5.4 No stale wording left: `grep -n "recommended after" context/foundation/test-plan.md` returns nothing
+- [x] 5.4 No stale wording left: `grep -n "recommended after" context/foundation/test-plan.md` returns nothing
 
 #### Manual
 

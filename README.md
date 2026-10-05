@@ -141,7 +141,7 @@ The production service listens on the VPS's dedicated IPv6 address, port `20170`
 
 ## Delivery
 
-- `ci.yml` runs on pushes and pull requests to `main`: the `ci` job (lint, unit tests, type checks, build) and the `smoke` job (a local Supabase, then the smoke test, then the integration tests).
+- `ci.yml` runs on pushes and pull requests to `main`: the `ci` job (lint, unit tests, type checks, build), the `smoke` job (a local Supabase, then the smoke test) and the `integration` job (a local Supabase, then the integration tests). A ruleset requires all three on `main`, so a red or missing check blocks the merge.
 - `publish-image.yml` publishes `ghcr.io/titusandronicu/energy-analyser:sha-<full-sha>` after successful push CI.
 - `deploy-production.yml` accepts a full SHA, uses the protected `production` environment, deploys over SSH and rolls back when health verification fails.
 - `code-review.yml` reviews a pull request's diff with Claude Code when the `claude-code-review` label is added, and posts the review as a comment; `code-review-fix.yml` applies the fixes from that review when the `claude-code-support` label is added. Both are driven by the prompts in `.ai/prompts/`. Add the label **before** the pull request is merged, or there is no diff to review.
