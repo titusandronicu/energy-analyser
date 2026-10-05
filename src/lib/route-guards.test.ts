@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 //   handler-session    a mutating /api route that checks locals.user itself (and sits behind the middleware Origin check)
 //   token              a bearer-token endpoint exempt from the Origin check and the session (TOKEN_AUTH_ROUTES)
 //   public             needs no sign-in and serves no owner data
-// Hand-written from the route inventory in context/changes/testing-access-and-input-abuse/research.md section 1.
+// Hand-written from the route inventory in context/archive/2026-10-02-testing-access-and-input-abuse/research.md section 1.
 
 type Guard = "middleware-prefix" | "handler-session" | "token" | "public";
 

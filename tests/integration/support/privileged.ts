@@ -7,7 +7,7 @@ const DEFAULT_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
 // Resolves the connection string for privileged SQL on the local stack and refuses anything that is not local.
 // SUPABASE_DB_URL overrides the local default. Never skips and never echoes the string (it carries a password).
 // This is the one place the suite runs as postgres: it exists to make a non-owner and an extra ingest token, which the
-// anon-key-only stack.ts cannot do (context/changes/testing-access-and-input-abuse/plan.md, Phase 2). Local only.
+// anon-key-only stack.ts cannot do (context/archive/2026-10-02-testing-access-and-input-abuse/plan.md, Phase 2). Local only.
 export function requirePrivileged(): string {
   const fromEnv = process.env.SUPABASE_DB_URL?.trim();
   // An empty value means "unset", so it falls back to the default like a missing one.
