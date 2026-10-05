@@ -17,7 +17,7 @@ import { anonClient, ownerClient, requireStack } from "./support/stack";
 // that shows a denial also shows the control (the owner reads or writes what the other client cannot), so a stack that
 // denied everyone could not pass. Denied operations come back as an error or as no rows or zero rows affected,
 // depending on the grant and the policy; the assertions accept either form but always require that no data came back
-// and no row changed. The two gaps the owner chose not to fix are pinned by the test whose name starts with "KNOWN GAP".
+// and no row changed. The one gap the owner chose not to fix (the table-level recommendations grant) is pinned by the test whose name starts with "KNOWN GAP".
 
 type Client = ReturnType<typeof anonClient>;
 type Owner = Awaited<ReturnType<typeof ownerClient>>;

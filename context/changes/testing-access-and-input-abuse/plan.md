@@ -374,9 +374,9 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Automated
 
-- [x] 4.1 Smoke passes against the local stack: `BASE_URL=… MAILPIT_URL=… SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run smoke`
-- [x] 4.2 Lint and types pass: `npm run lint`, `npx astro check`
-- [x] 4.3 Deliberate break: add `set:html` to one text component in a scratch edit; both the static guard (Phase 1) and the matching smoke step turn red
+- [x] 4.1 Smoke passes against the local stack: `BASE_URL=… MAILPIT_URL=… SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run smoke` — b5c7fc7
+- [x] 4.2 Lint and types pass: `npm run lint`, `npx astro check` — b5c7fc7
+- [x] 4.3 Deliberate break: add `set:html` to one text component in a scratch edit; both the static guard (Phase 1) and the matching smoke step turn red — b5c7fc7
 
 #### Manual
 
@@ -386,8 +386,8 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Automated
 
-- [ ] 5.1 Docs formatting passes: `npx prettier --check docs context CLAUDE.md`
-- [ ] 5.2 All suites still pass: `npm test`, `npm run test:integration`, `npm run smoke` (local stack)
+- [x] 5.1 Docs formatting passes: `npx prettier --check docs context CLAUDE.md`
+- [x] 5.2 All suites still pass: `npm test`, `npm run test:integration`, `npm run smoke` (local stack)
 
 #### Manual
 

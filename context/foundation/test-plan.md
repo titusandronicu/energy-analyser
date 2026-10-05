@@ -6,7 +6,7 @@
 >
 > Refresh: re-run `/10x-test-plan --refresh` when stale (see §8).
 >
-> Last updated: 2026-10-01
+> Last updated: 2026-10-05
 
 ## 1. Strategy
 
@@ -67,12 +67,12 @@ Each row is a discrete rollout phase that will open its own change folder
 via `/10x-new`. Status moves left-to-right through the values below; the
 orchestrator updates Status as artifacts appear on disk.
 
-| #   | Phase name               | Goal (one line)                                                                         | Risks covered | Test types         | Status      | Change folder                                              |
-| --- | ------------------------ | --------------------------------------------------------------------------------------- | ------------- | ------------------ | ----------- | ---------------------------------------------------------- |
-| 1   | Time and number guards   | Prove stale, money and boundary behaviour at the cheapest layer                         | #1, #2, #5    | unit + contract    | complete    | context/archive/2026-10-01-testing-time-and-number-guards/ |
-| 2   | Push-to-page integration | Prove a lab-shaped push reaches the right page and history survives replay and disorder | #3, #4        | integration        | researched  | context/changes/testing-push-to-page-integration/          |
-| 3   | Access and input abuse   | Prove non-owner, Origin and token rules and notes and lab-text handling                 | #6, #7        | integration + unit | not started | —                                                          |
-| 4   | Quality-gates wiring     | Make the new suites required in CI and add an optional post-edit check                  | cross-cutting | gates              | not started | —                                                          |
+| #   | Phase name               | Goal (one line)                                                                         | Risks covered | Test types         | Status       | Change folder                                                |
+| --- | ------------------------ | --------------------------------------------------------------------------------------- | ------------- | ------------------ | ------------ | ------------------------------------------------------------ |
+| 1   | Time and number guards   | Prove stale, money and boundary behaviour at the cheapest layer                         | #1, #2, #5    | unit + contract    | complete     | context/archive/2026-10-01-testing-time-and-number-guards/   |
+| 2   | Push-to-page integration | Prove a lab-shaped push reaches the right page and history survives replay and disorder | #3, #4        | integration        | complete     | context/archive/2026-10-01-testing-push-to-page-integration/ |
+| 3   | Access and input abuse   | Prove non-owner, Origin and token rules and notes and lab-text handling                 | #6, #7        | integration + unit | implementing | context/changes/testing-access-and-input-abuse/              |
+| 4   | Quality-gates wiring     | Make the new suites required in CI and add an optional post-edit check                  | cross-cutting | gates              | not started  | —                                                            |
 
 **Status vocabulary** (fixed — parser literals):
 
@@ -87,8 +87,10 @@ orchestrator updates Status as artifacts appear on disk.
 
 Phase order follows cost × signal: Phase 1 is the cheapest layer and covers
 three of the four High × High risks; Phase 2 needs the local stack and reuses
-Phase 1's fixtures; Phase 3 needs a real non-owner session that Phase 2
-establishes; Phase 4 locks in what Phases 1–3 deliver. Browser end-to-end and
+Phase 1's fixtures; Phase 3 makes its own real non-owner session (Phase 2
+deliberately did not: the anon-key suite cannot, see `docs/decisions.md`
+2026-10-05) through a test-only privileged `pg` connection; Phase 4 locks in
+what Phases 1–3 deliver. Browser end-to-end and
 visual diffs are not in the rollout: no interview answer or PRD line makes
 them a risk. Revisit at the next refresh.
 
@@ -97,14 +99,14 @@ them a risk. Revisit at the next refresh.
 The classic test base for this project. AI-native tools (if any) carry a
 `checked:` date so future readers can see which lines need re-verification.
 
-| Layer                | Tool                               | Version | Notes                                                                                                                                                                                                                                                                                                      |
-| -------------------- | ---------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| unit + integration   | Vitest                             | 5.x     | `vitest.config.ts` includes `src/**/*.test.ts` only (34 files, all pure logic or mocked clients); node environment; no coverage config. `vitest.integration.config.ts` includes `tests/integration/**/*.test.ts` (`npm run test:integration`, local Supabase)                                              |
-| end-to-end over HTTP | the smoke script (`npm run smoke`) | n/a     | 70 steps (counted from a run, 51 without the Supabase env vars) against a built server, local Supabase and Mailpit, now including a complete-day hourly step for the hourly card; runs in one CI job, and the integration suite runs after it in the same job; not a browser run; never against production |
-| browser e2e          | none yet                           | n/a     | Not planned in this rollout (see §3); Playwright's setup project with `storageState` is the current pattern if it is added later                                                                                                                                                                           |
-| API mocking          | none yet                           | n/a     | Add only at the network edge if a phase needs it                                                                                                                                                                                                                                                           |
-| accessibility        | none yet                           | n/a     | The smoke script checks landmark and heading presence only                                                                                                                                                                                                                                                 |
-| lint, types, build   | ESLint, `astro check`, Astro build | n/a     | Already required in CI                                                                                                                                                                                                                                                                                     |
+| Layer                | Tool                               | Version | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| -------------------- | ---------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| unit + integration   | Vitest                             | 5.x     | `vitest.config.ts` includes `src/**/*.test.ts` only (44 files, all pure logic or mocked clients, including the request-guard tests); a small Vite plugin resolves `astro:middleware` and `astro:env/server` so the middleware can be imported, and tests mock their exports; node environment; no coverage config. `vitest.integration.config.ts` includes `tests/integration/**/*.test.ts` (`npm run test:integration`, local Supabase)           |
+| end-to-end over HTTP | the smoke script (`npm run smoke`) | n/a     | 71 steps (70 counted from a run plus the escaping step added in Phase 3; 52 without the Supabase env vars) against a built server, local Supabase and Mailpit, now including a complete-day hourly step for the hourly card and one step that checks markup in the recommendation text and its findings is shown as text; runs in one CI job, and the integration suite runs after it in the same job; not a browser run; never against production |
+| browser e2e          | none yet                           | n/a     | Not planned in this rollout (see §3); Playwright's setup project with `storageState` is the current pattern if it is added later                                                                                                                                                                                                                                                                                                                   |
+| API mocking          | none yet                           | n/a     | Add only at the network edge if a phase needs it                                                                                                                                                                                                                                                                                                                                                                                                   |
+| accessibility        | none yet                           | n/a     | The smoke script checks landmark and heading presence only                                                                                                                                                                                                                                                                                                                                                                                         |
+| lint, types, build   | ESLint, `astro check`, Astro build | n/a     | Already required in CI                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
 **Stack grounding tools (current session):**
 
@@ -124,15 +126,16 @@ The full set of gates that must pass before a change reaches production.
 "Required after §3 Phase <N>" means the gate is enforced once that rollout
 phase lands; before that, the gate is `planned`.
 
-| Gate                               | Where              | Required?                    | Catches                                                                  |
-| ---------------------------------- | ------------------ | ---------------------------- | ------------------------------------------------------------------------ |
-| lint + typecheck + build           | local + CI         | required                     | syntactic / type drift                                                   |
-| existing unit tests                | local + CI         | required                     | logic regressions in pure code                                           |
-| smoke against local Supabase       | CI                 | required                     | broken sign-in, ingest and page rendering end to end                     |
-| time and number guard tests        | local + CI         | required after §3 Phase 1    | stale-as-fresh, wrong figures, boundary errors                           |
-| push-to-page integration suite     | CI on PR           | required after §3 Phase 2    | broken real path, history downgrade on replay or disorder                |
-| access and input integration suite | CI on PR           | required after §3 Phase 3    | non-owner access, Origin and token rule drift, unsafe notes and lab text |
-| post-edit check on the services    | local (agent loop) | recommended after §3 Phase 4 | regressions at edit time                                                 |
+| Gate                               | Where              | Required?                    | Catches                                                                      |
+| ---------------------------------- | ------------------ | ---------------------------- | ---------------------------------------------------------------------------- |
+| lint + typecheck + build           | local + CI         | required                     | syntactic / type drift                                                       |
+| existing unit tests                | local + CI         | required                     | logic regressions in pure code                                               |
+| smoke against local Supabase       | CI                 | required                     | broken sign-in, ingest and page rendering end to end                         |
+| time and number guard tests        | local + CI         | required after §3 Phase 1    | stale-as-fresh, wrong figures, boundary errors                               |
+| push-to-page integration suite     | CI on PR           | required after §3 Phase 2    | broken real path, history downgrade on replay or disorder                    |
+| access and input integration suite | CI on PR           | required after §3 Phase 3    | non-owner access, Origin and token rule drift, unsafe notes and lab text     |
+| request-guard unit tests           | local + CI         | required (in `npm test`)     | Origin, token exemption, protected-route prefix, unlisted routes, HTML sinks |
+| post-edit check on the services    | local (agent loop) | recommended after §3 Phase 4 | regressions at edit time                                                     |
 
 ## 6. Cookbook Patterns
 
@@ -157,6 +160,7 @@ the relevant rollout phase ships; before that, the sub-section reads
   - `bodies.ts`: `baseBody`, `dailyRow`, `hourRow`, `summary`, `recommendation`, `billForecast`, with invented figures only; `billForecast` re-dates `generated_at` and `month` of `scripts/fixtures/bill-forecast/lab-shape.json`.
   - `keys.ts`: `freshDays`, `emptyWeek`, `emptySummaryDay`, `freshWindowHours`, `windowHours`, `nextCapturedAt`, `olderCapturedAt`.
   - `warsaw-day.ts`: the clock hours of a Warsaw day (23 to 25).
+  - `privileged.ts`: the one place the suite runs as postgres. `requirePrivileged` resolves `SUPABASE_DB_URL` or the local default `postgresql://postgres:postgres@127.0.0.1:54322/postgres` and refuses any host but 127.0.0.1 or localhost; `withPrivileged(fn)`; `nonOwnerClient()` signs up and then deletes that user's `app_owners` row (the seed trigger stays enabled, so no global state changes); `insertToken`, `revokeToken`, `deleteToken` for a second ingest token (label made unique); `removeUser`. Use it only for states the anon-key client cannot reach, and always remove what a test creates in `afterAll`.
 - **Isolation**: the database is never reset, and `live_state`, `bill_forecast` and the newest recommendation are global. So:
   - Use the real "now" with a strictly increasing `captured_at` (`nextCapturedAt`).
   - Each test seeds its own first state.
@@ -169,10 +173,11 @@ the relevant rollout phase ships; before that, the sub-section reads
 - **Known gaps**: pinned as in §6.5. The name starts with `KNOWN GAP` and the comment says what a fix would change. There are five: lower daily total, null daily total, fewer hourly samples, far-future `built_at`, repeated `generated_at`.
 - **Reading back**: use the owner's real loaders and view mappers. Some columns are not loaded or not readable (`loadPeriodSummary` omits `facts`; `hourly_energy.captured_at` is not readable by owners), so read those with a direct owner select. Owners can read `ingest_pushes` columns `source, captured_at, received_at, payload`, not `token_id` or `payload_hash`.
 - **Expected values**: invented literals, or hand arithmetic in a comment. Never read them from `docs/ingest/example-v1.json` or the live-flow and recommendation fixtures (provenance unconfirmed).
-- **Run locally**: the stack runs on the UGREEN. Start the relay (`scripts/remote-docker.sh relay-start`) and take only `API_URL` and `ANON_KEY`: `scripts/remote-docker.sh exec npx supabase status -o env | grep -E '^(API_URL|ANON_KEY)='` (as CI does; the unfiltered output also carries secret keys, which must not reach logs, `.env` or commits). Then `SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=<anon key> npm run test:integration`. The suite overwrites the newest live, bill and recommendation rows and prunes old rows (every push prunes raw pushes older than 14 days and hours older than 35 days), so run it only on a stack that receives no real lab pushes. Prerequisite details: `docs/prerequisites.md`.
+- **Run locally**: the stack runs on the UGREEN. Start the relay (`scripts/remote-docker.sh relay-start`) and take only `API_URL` and `ANON_KEY`: `scripts/remote-docker.sh exec npx supabase status -o env | grep -E '^(API_URL|ANON_KEY)='` (as CI does; the unfiltered output also carries secret keys, which must not reach logs, `.env` or commits). Then `SUPABASE_URL=http://127.0.0.1:54321 SUPABASE_ANON_KEY=<anon key> npm run test:integration` (the relay's default also carries 54322, which the access tests need). The suite overwrites the newest live, bill and recommendation rows and prunes old rows (every push prunes raw pushes older than 14 days and hours older than 35 days), so run it only on a stack that receives no real lab pushes. Prerequisite details: `docs/prerequisites.md`.
 - **Run in CI**: the step follows smoke in the `smoke` job and reuses its stack; a smoke failure skips it.
 - **Ordering with smoke**: both push the newest `live_state` and `bill_forecast`. The suite pushes `captured_at` = now, newer than smoke's `freshPush` (now minus 60 s), so smoke within about 60 s after the suite fails two steps: "dashboard shows the bill forecast card" and "dashboard shows the fresh live state" (as when smoke is rerun within a minute; the live state step can pass by coincidence when the last file's state push carries the same figure). Run smoke first or wait over a minute. In CI smoke runs first.
-- **Reference tests**: `tests/integration/history-safety.test.ts` (replay, order, gaps, prune, known gaps), `tests/integration/push-to-page.test.ts` (a lab-shaped push read back through the loaders and view mappers).
+- **Owner writes**: write to `day_notes` with `{ count: "exact" }` and no `.select()`, like the app; asking for the row back is refused for the owner too, because `user_id` is not readable.
+- **Reference tests**: `tests/integration/history-safety.test.ts` (replay, order, gaps, prune, known gaps), `tests/integration/push-to-page.test.ts` (a lab-shaped push read back through the loaders and view mappers), `tests/integration/access-abuse.test.ts` (anon and non-owner reads and writes with an owner control, ingest tokens, column grants), `tests/integration/notes-parity.test.ts` (the database check next to the server rule).
 
 ### 6.3 Adding an e2e test
 
@@ -180,7 +185,11 @@ the relevant rollout phase ships; before that, the sub-section reads
 
 ### 6.4 Adding a test for a new API endpoint
 
-- TBD — see §3 Phase 3 for the guard, Origin, token and non-owner pattern.
+- **Record the guard**: add the route to the table in `src/lib/route-guards.test.ts` (method, guard `middleware-prefix`, `handler-session`, `token` or `public`, mutates yes or no). The test fails on a page or route with no entry, so a new owner page outside `/dashboard` cannot ship unguarded.
+- **Origin and token rules**: add a row to the tables in `src/middleware.test.ts` (fake context, `next` spy, hand-written expected status and whether the session lookup ran). A new mutating `/api/*` route needs no row if it is cookie-authenticated: the table already proves a missing, `"null"`, foreign or differently shaped Origin is refused. Never add a cookie-authenticated route to the token exemption; the exact-set test turns red if you do.
+- **Reads and writes by a non-owner**: in `tests/integration/access-abuse.test.ts` seed a fresh row, read it as anon and as `nonOwnerClient()`, then as the owner as the control. Accept an error or no rows for a denial, but require that no data came back and no row changed.
+- **Ingest tokens**: `insertToken`, `revokeToken`, `deleteToken` from `privileged.ts`; call `ingest_push` directly with the anon client, expect `P0401` for an unknown, empty or revoked token and check through the owner that nothing was written.
+- **Run**: `npm test` for the unit tables; `npm run test:integration` against the local stack for the rest.
 
 ### 6.5 Adding a test for time, boundary or "enough data" logic
 
@@ -200,6 +209,7 @@ here capturing anything surprising the rollout phase taught.)
 - A "synthetic" example fixture can carry real household values; confirm provenance before copying one, and keep new fixtures fully invented.
 - **Phase 2 (push-to-page integration):** the store already guarded most of risk #4 in SQL (replay, order, narration), so the real finds were three unguarded holes, pinned and not fixed (a newer lower or empty total, a far-future `built_at`, a repeated `generated_at`), and that far-past hourly keys are pruned by every push, which makes an absence check on them meaningless.
 - The smoke gap for the hourly card is closed by a complete-day step in `scripts/smoke.mjs`; the non-owner and second-token tests stay in Phase 3.
+- **Phase 3 (access and input abuse):** the guards were right, and what was missing was proof. The finds were about assumptions, not code: the research said zod counts UTF-16 units (it counts code points, like Postgres, so emoji are not a gap); owners cannot ask for a written `day_notes` row back (`RETURNING` needs the unreadable `user_id`); and a non-owner needs a privileged connection that the anon-key suite deliberately lacks, so the phase added `privileged.ts`. Three differences are pinned as `KNOWN GAP` tests (database `btrim` vs server `trim`, trim-then-max, the table-level `recommendations` grant). Running smoke twice within a minute fails the bill-forecast step (an ordering effect already documented under §6.2), which looks like a regression when it is not.
 
 ## 7. What We Deliberately Don't Test
 
@@ -210,7 +220,7 @@ contributors should respect these unless the underlying assumption changes.
 
 ## 8. Freshness Ledger
 
-- Strategy (§1–§5) last reviewed: 2026-10-01
+- Strategy (§1–§5) last reviewed: 2026-10-05
 - Stack versions last verified: 2026-10-01
 - AI-native tool references last verified: 2026-10-01 (none referenced)
 
