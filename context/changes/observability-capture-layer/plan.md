@@ -318,7 +318,7 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Manual
 
-- [ ] 1.4 On `npm run dev`, a page response carries an `X-Request-Id` header, and a request sent with a valid `X-Request-Id` keeps it while an invalid one is replaced
+- [x] 1.4 On `npm run dev`, a page response carries an `X-Request-Id` header, and a request sent with a valid `X-Request-Id` keeps it while an invalid one is replaced — probed locally 2026-10-05, user said continue
 
 ### Phase 2: Replace the seven console.error sites
 
@@ -330,7 +330,7 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Manual
 
-- [ ] 2.4 A failed password sign-in on the dev server writes one JSON line with the route, request id, `emailHash`, and the provider's `status` and `code`, and the line contains no email address
+- [x] 2.4 A failed password sign-in on the dev server writes one JSON line with the route, request id, `emailHash`, and the provider's `status` and `code`, and the line contains no email address — probed locally 2026-10-05, user said continue
 - [ ] 2.5 A failed `/auth/confirm?token_hash=x` writes a log line whose `path` is `/auth/confirm` with no query string
 
 ### Phase 3: Loader cause and section labels
@@ -345,7 +345,7 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Manual
 
-- [ ] 3.5 With Supabase unreachable on the dev server, the dashboard writes one `section_load_failed` line per failing card, each with its `section`, the request id and the error `cause`
+- [x] 3.5 With Supabase unreachable on the dev server, the dashboard writes one `section_load_failed` line per failing card, each with its `section`, the request id and the error `cause` — probed locally 2026-10-05, user said continue
 
 ### Phase 4: Auth outage handling
 
@@ -356,10 +356,10 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Manual
 
-- [ ] 4.3 With Supabase unreachable and a fabricated session cookie, `GET /dashboard` returns 503 with the Polish page, `Retry-After`, `Cache-Control: no-store` and the request id on the page and in the header, and the log has an `auth_unavailable` line whose `err.name` is `AuthRetryableFetchError`
-- [ ] 4.4 With no cookie at all, `GET /dashboard` still redirects to `/auth/signin` and writes no log line for the missing session
-- [ ] 4.5 `POST /api/notes` during the same outage returns the 503 page
-- [ ] 4.6 `GET /` during the same outage returns the 503 page, not a redirect to `/auth/signin`
+- [x] 4.3 With Supabase unreachable and a fabricated session cookie, `GET /dashboard` returns 503 with the Polish page, `Retry-After`, `Cache-Control: no-store` and the request id on the page and in the header, and the log has an `auth_unavailable` line whose `err.name` is `AuthRetryableFetchError` — probed locally 2026-10-05, user said continue
+- [x] 4.4 With no cookie at all, `GET /dashboard` still redirects to `/auth/signin` and writes no log line for the missing session — probed locally 2026-10-05, user said continue
+- [x] 4.5 `POST /api/notes` during the same outage returns the 503 page — probed locally 2026-10-05, user said continue
+- [x] 4.6 `GET /` during the same outage returns the 503 page, not a redirect to `/auth/signin` — probed locally 2026-10-05, user said continue
 
 ### Phase 5: Docs and verification
 
