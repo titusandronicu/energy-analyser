@@ -371,4 +371,4 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 #### Manual
 
 - [x] 5.3 `docs/decisions.md` has the dated entry and `docs/architecture.md` describes the logger, the request id and the 503 rule — checked by grep 2026-10-05 (entry, logger, request id, 503 rule present)
-- [ ] 5.4 After the next production deploy, the first log lines on the VPS show `"env":"production"` and the release SHA as `version`
+- [ ] 5.4 After the next production deploy, the first log lines on the VPS show `"env":"production"` and the release SHA as `version` — deferred at close-out (2026-10-05); verify after the next production deploy
