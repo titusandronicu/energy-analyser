@@ -320,10 +320,10 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [x] 2.1 Clean service file, hook exits 0
-- [x] 2.2 With a deliberate break in that service (reverted afterwards), `related-tests.sh` exits 2 and stderr names a failing test file
-- [x] 2.3 With the same break in the working tree, `end-of-turn.sh` exits 2 with "Unit tests fail"
-- [x] 2.4 The break is gone afterwards: `git diff --stat -- src` is empty
+- [x] 2.1 Clean service file, hook exits 0 — 565db00
+- [x] 2.2 With a deliberate break in that service (reverted afterwards), `related-tests.sh` exits 2 and stderr names a failing test file — 565db00
+- [x] 2.3 With the same break in the working tree, `end-of-turn.sh` exits 2 with "Unit tests fail" — 565db00
+- [x] 2.4 The break is gone afterwards: `git diff --stat -- src` is empty — 565db00
 
 #### Manual
 
@@ -333,9 +333,9 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Automated
 
-- [ ] 3.1 The ruleset exists, is active and has no bypass actors
-- [ ] 3.2 The branch rules list the three required checks `ci`, `smoke`, `integration`
-- [ ] 3.3 The committed ruleset JSON matches what GitHub reports for name, target, enforcement and the three contexts
+- [x] 3.1 The ruleset exists, is active and has no bypass actors
+- [x] 3.2 The branch rules list the three required checks `ci`, `smoke`, `integration`
+- [x] 3.3 The committed ruleset JSON matches what GitHub reports for name, target, enforcement and the three contexts
 
 #### Manual
 
