@@ -139,6 +139,7 @@ The recorded review finding (line breaks pushing a note over 500) is fixed by th
 
 ## Related Research
 
+- `context/changes/testing-access-and-input-abuse/research-2026-10-02.md` - an earlier, independent research pass over the same question (landed on `main` in #115 before this one was written; found when the branch was merged on 2026-10-05). It agrees on the guards and on the missing proof; it proposed a `supabase/seed.sql` change to create a non-owner and extra tokens, where this research and the plan chose a test-only privileged `pg` connection instead (owner's decision), and it advised no hunt-for-a-hole markup test, which the static guard plus smoke steps follow. It was written before the Phase 3 run that corrected the emoji counting claim (zod counts code points), so check its notes-limit statements against `docs/decisions.md` 2026-10-05.
 - `context/archive/2026-10-01-testing-push-to-page-integration/research.md`
 - `context/archive/2026-10-01-testing-time-and-number-guards/research.md`
 - `context/archive/2026-10-01-day-notes/research.md`
