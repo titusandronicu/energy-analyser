@@ -35,14 +35,15 @@ npm run dev
 
 Configuration:
 
-| Variable            | Purpose                                                             | Default        |
-| ------------------- | ------------------------------------------------------------------- | -------------- |
-| `SUPABASE_URL`      | Supabase project URL                                                | unset          |
-| `SUPABASE_ANON_KEY` | Public/anon Supabase key; service-role and secret keys are rejected | unset          |
-| `ALLOW_SIGNUP`      | When exactly `true`, a sign-in link request may create a new user   | `false`        |
-| `APP_VERSION`       | Release identifier returned by `/api/health`                        | `development`  |
-| `APP_ORIGIN`        | Trusted public origin for CSRF checks on mutating API requests      | request origin |
-| `HOST`              | Address used by the standalone Node server                          | `::`           |
+| Variable            | Purpose                                                              | Default        |
+| ------------------- | -------------------------------------------------------------------- | -------------- |
+| `SUPABASE_URL`      | Supabase project URL                                                 | unset          |
+| `SUPABASE_ANON_KEY` | Public/anon Supabase key; service-role and secret keys are rejected  | unset          |
+| `ALLOW_SIGNUP`      | When exactly `true`, a sign-in link request may create a new user    | `false`        |
+| `APP_VERSION`       | Release identifier returned by `/api/health`                         | `development`  |
+| `APP_ORIGIN`        | Trusted public origin for CSRF checks on mutating API requests       | request origin |
+| `APP_ENV`           | Environment name written on every log line (`production` in compose) | `development`  |
+| `HOST`              | Address used by the standalone Node server                           | `::`           |
 
 Sign-in on `/auth/signin` offers an emailed one-time link (`POST /api/auth/magic-link` → email → `/auth/confirm`) or email + password (`POST /api/auth/signin`) for existing accounts; there is no sign-up form. The email template lives in `supabase/templates/magic-link.html`; production must use the same template for "Magic link" and "Confirm signup" (Supabase → Authentication → Emails), or links won't work. For local testing, start Supabase with `npx supabase start` (emails land in Mailpit on port 54324), copy its API URL and anon key to `.env`, and set `ALLOW_SIGNUP=true` so new addresses can sign in. Production keeps `ALLOW_SIGNUP=false` and the global `auth.enable_signup` option off, so only the existing owner account gets a link.
 

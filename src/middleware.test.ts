@@ -20,6 +20,9 @@ vi.mock("astro:env/server", () => ({
   get APP_ORIGIN() {
     return env.APP_ORIGIN;
   },
+  // Read once at import time by the middleware's logger (added with the observability capture layer).
+  APP_VERSION: "test",
+  APP_ENV: "test",
 }));
 vi.mock("@/lib/supabase", () => ({ createClient: supabase.createClient }));
 
@@ -44,7 +47,8 @@ interface Call {
 }
 
 async function call({ method = "GET", path, origin, user = null, client = "present" }: Call): Promise<Outcome> {
-  const getUser = vi.fn(() => Promise.resolve({ data: { user } }));
+  // The real client always returns `error` (null when there is none); the middleware now reads it to tell an outage from a signed-out visitor.
+  const getUser = vi.fn(() => Promise.resolve({ data: { user }, error: null }));
   supabase.createClient.mockReturnValue(client === "present" ? { auth: { getUser } } : null);
 
   const url = new URL(path, REQUEST_ORIGIN);

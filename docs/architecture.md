@@ -80,6 +80,15 @@ Both signed-in pages share `AppShell.astro`: the header with the brand `h1` and 
 
 Both only narrate numbers the deterministic rules computed; they never introduce facts of their own. The app never calls an LLM, so opening a page never waits for one.
 
+## Observability
+
+Failures are visible in the container's stderr as JSON lines, one per event (`src/lib/logger.ts`): `ts`, `level`, `event`, `version`, `env`, and, from the middleware's per-request child logger, `requestId`, `method` and `path` (no query string). There is no tracker yet; the lines are tracker-agnostic so one can read them later.
+
+- **Request id.** `src/middleware.ts` creates (or accepts a well-formed inbound) id, sets `locals.requestId` and `locals.log`, and returns it as `X-Request-Id`. Anything unhandled is logged as `unhandled_error` with the id and rethrown, so Astro still renders its 500.
+- **Section failures.** Loaders throw `queryError(...)` (keeps the Postgres code as `cause`); `orLoadError` on the dashboard and history pages logs `section_load_failed` with the section label and returns null, so a section fails alone.
+- **Auth outage.** The middleware reads the `getUser()` error; `src/lib/auth-outage.ts` decides. A provider outage on a page that needs the owner is a 503 with a request id; a missing session is a normal redirect.
+- **Privacy.** Emails are logged only as an 8-character hash; tokens and query strings never.
+
 ## Delivery
 
 GitHub Actions runs lint, unit tests, type checks, a build and a smoke test against a local Supabase on every push and pull request. Merges to `main` publish an immutable image to GHCR; production deploys are manual through a protected environment. Lab changes live in the separate homelab-2 repository and are installed on docker-core with its runbook.

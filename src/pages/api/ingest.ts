@@ -15,7 +15,7 @@ function json(status: number, body: Record<string, unknown>) {
 }
 
 // Home-lab push endpoint. Bearer-authenticated; see docs/ingest/README.md for the contract.
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   const supabase = createAnonClient();
   if (!supabase) {
     return json(503, { error: "Supabase is not configured" });
@@ -25,8 +25,8 @@ export const POST: APIRoute = async ({ request }) => {
     rpc: (token, payload) => supabase.rpc("ingest_push", { p_token: token, p_payload: payload }),
     now: () => new Date(),
     logError: (message, detail) => {
-      // eslint-disable-next-line no-console -- server-side detail for failed pushes; never echoed to the caller
-      console.error(message, detail);
+      // Server-side detail for failed pushes; never echoed to the caller.
+      locals.log.error(message, { err: detail });
     },
   });
   return json(status, body);

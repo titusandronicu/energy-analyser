@@ -6,6 +6,7 @@ import type { Status, StatusTone } from "@/lib/format/status";
 import { asNumber, asRecord, kwhLabel, MISSING, plnLabel } from "@/lib/format/values";
 import { formatDayMonth, formatMonth, warsawMonthKey, warsawParts } from "@/lib/format/warsaw-time";
 import { formatAge } from "@/lib/services/live-state";
+import { queryError } from "@/lib/query-error";
 
 // The lab recomputes the forecast with every 5-minute push, so anything older than half an hour means it has
 // stopped computing. Judged against the body's own `generated_at`, never the push's `captured_at`: on a write
@@ -115,7 +116,7 @@ export async function loadBillForecast(client: SupabaseClient): Promise<BillFore
     .select("captured_at, received_at, bill_forecast")
     .limit(1)
     .overrideTypes<BillForecastRow[], { merge: false }>();
-  if (error) throw new Error(`loading bill forecast failed: ${error.message}`);
+  if (error) throw queryError("loading bill forecast failed", error);
   return data[0] ?? null;
 }
 

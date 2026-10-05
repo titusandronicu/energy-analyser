@@ -15,8 +15,7 @@ export const GET: APIRoute = async (context) => {
     verifyOtp: (params) => supabase.auth.verifyOtp(params),
     exchangeCode: (code) => supabase.auth.exchangeCodeForSession(code),
     logError: (message, detail) => {
-      // eslint-disable-next-line no-console -- server-side reason; the caller sees a generic error
-      console.error(message, detail);
+      context.locals.log.error(message, { err: detail });
     },
   });
   return context.redirect(redirect);

@@ -12,6 +12,7 @@ import {
   warsawHour,
   warsawParts,
 } from "@/lib/format/warsaw-time";
+import { queryError } from "@/lib/query-error";
 
 // The app keeps 35 days of hourly figures (ingest_push prunes older hours); the card reads the same span.
 export const HOURLY_HISTORY_DAYS = 35;
@@ -99,7 +100,7 @@ export async function loadHourlyEnergy(client: SupabaseClient, now: Date = new D
     .lt("hour_start", now.toISOString())
     .order("hour_start", { ascending: false })
     .overrideTypes<HourlyEnergyRow[], { merge: false }>();
-  if (error) throw new Error(`loading hourly energy failed: ${error.message}`);
+  if (error) throw queryError("loading hourly energy failed", error);
   return data;
 }
 

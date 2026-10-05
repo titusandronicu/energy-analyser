@@ -23,8 +23,7 @@ export const POST: APIRoute = async (context) => {
 
   const supabase = createClient(context.request.headers, context.cookies);
   if (!supabase) {
-    // eslint-disable-next-line no-console -- server-side reason; the page shows a generic notice
-    console.error("day note post failed", "Supabase is not configured");
+    context.locals.log.error("day note post failed", { reason: "supabase_not_configured" });
     const day = form.get("day");
     return context.redirect(noteRedirect(typeof day === "string" ? day : undefined, today, "failed").redirect, 303);
   }
@@ -41,8 +40,7 @@ export const POST: APIRoute = async (context) => {
     // Deleting a day without a note is still "deleted": a second submit of the same form is harmless.
     remove: async (day) => await supabase.from("day_notes").delete().eq("day", day),
     logError: (message, detail) => {
-      // eslint-disable-next-line no-console -- server-side reason; the page shows a generic notice
-      console.error(message, detail);
+      context.locals.log.error(message, { err: detail });
     },
   });
   return context.redirect(redirect, 303);

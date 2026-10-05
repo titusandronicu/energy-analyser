@@ -1,4 +1,5 @@
 import type { APIRoute } from "astro";
+import { withEmailHash } from "@/lib/logger";
 import { signInWithPassword } from "@/lib/services/password-signin";
 import { createClient } from "@/lib/supabase";
 
@@ -11,11 +12,12 @@ export const POST: APIRoute = async (context) => {
     return context.redirect(`/auth/signin?error=${encodeURIComponent("Supabase nie jest skonfigurowany")}`);
   }
 
-  const { redirect } = await signInWithPassword(await context.request.formData(), {
+  const form = await context.request.formData();
+  const log = withEmailHash(context.locals.log, form.get("email"));
+  const { redirect } = await signInWithPassword(form, {
     signIn: (credentials) => supabase.auth.signInWithPassword(credentials),
     logError: (message, detail) => {
-      // eslint-disable-next-line no-console -- server-side reason; the caller sees a generic message
-      console.error(message, detail);
+      log.error(message, { err: detail });
     },
   });
   return context.redirect(redirect);

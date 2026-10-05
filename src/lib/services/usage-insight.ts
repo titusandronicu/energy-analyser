@@ -9,6 +9,7 @@ import { addDays, formatDayMonth, utcMsToDayKey, warsawParts } from "@/lib/forma
 import { dailySeries, USAGE_SERIES_DAYS } from "@/lib/services/daily-series";
 import type { DailySeries } from "@/lib/services/daily-series";
 import { crossesSensorChange } from "@/lib/services/grid-sensor";
+import { queryError } from "@/lib/query-error";
 
 // Enough history for a seasonal window a year back (365 days + 14 days + slack). The seasonal baseline therefore
 // only ever reaches one earlier year, even when older data exists.
@@ -68,7 +69,7 @@ export async function loadDailyEnergy(client: SupabaseClient, now: Date = new Da
     .gte("day", since)
     .order("day", { ascending: false })
     .overrideTypes<DailyEnergyRow[], { merge: false }>();
-  if (error) throw new Error(`loading daily energy failed: ${error.message}`);
+  if (error) throw queryError("loading daily energy failed", error);
   return data;
 }
 
