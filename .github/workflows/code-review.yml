@@ -38,11 +38,22 @@ jobs:
 
       - name: Run Claude Code Review
         run: |
-          PR_DIFF=$(git diff "origin/${BASE_REF}...HEAD")
+          # The diff goes in on stdin, not as an argument: Linux caps one argument at 128 KB and a large PR exceeds that.
+          # The lockfile is left out (generated and noisy). A diff over 200 KB is cut so the review stays within context.
+          git diff "origin/${BASE_REF}...HEAD" -- . ':(exclude)package-lock.json' > pr.diff
+          if [ ! -s pr.diff ]; then
+            # Nothing to review, for example a label added after the PR was merged: say so without calling the model.
+            echo "Brak zmian do przeglądu: diff względem \`${BASE_REF}\` jest pusty (czy PR został już zmergowany?)." > claude-review.md
+            exit 0
+          fi
+          if [ "$(wc -c < pr.diff)" -gt 200000 ]; then
+            head -c 200000 pr.diff > pr.cut && mv pr.cut pr.diff
+            printf '\n\n[Diff skrócony do 200 KB]\n' >> pr.diff
+          fi
           CLAUDE_CR_PROMPT=$(cat .ai/prompts/code-review.md)
           if ! claude --append-system-prompt "$CLAUDE_CR_PROMPT" \
-            --print "Przeprowadź Code Review:\n\n $PR_DIFF" \
-            > claude-review.md 2>&1; then
+            --print "Przeprowadź Code Review zmian podanych na wejściu standardowym (diff):" \
+            < pr.diff > claude-review.md 2>&1; then
             echo "::error::Claude Code failed:"; cat claude-review.md; exit 1
           fi
         env:
