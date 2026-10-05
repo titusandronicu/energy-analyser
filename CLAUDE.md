@@ -64,13 +64,13 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 
 ## CI
 
-GitHub Actions runs lint, unit tests, type checks, build and a local-Supabase smoke test on pushes and pull requests to `main`. A successful push publishes an immutable GHCR image; production deployment is manual through the protected `production` environment.
+GitHub Actions runs three jobs on pushes and pull requests to `main`: `ci` (lint, unit tests, type checks, build), `smoke` (local-Supabase smoke test) and `integration` (the integration suite). A ruleset requires all three on `main`, with no bypass (`docs/prerequisites.md`). A successful push publishes an immutable GHCR image; production deployment is manual through the protected `production` environment.
 
 ## Cursor Cloud specific instructions
 
 These notes are only for the Cursor cloud VM. On the owner's machine Docker runs on the UGREEN (`scripts/remote-docker.sh` in dev-hub); never start `dockerd` or Docker workloads locally there, and changing containers on the UGREEN needs the owner's explicit OK.
 
 - Install with `npm ci && npx astro sync`. Lint type-checks Astro locals, so `npx astro sync` has to run first; without the generated `.astro/` types, `npm run lint` reports unresolved Astro types.
-- Local Supabase needs Docker. This VM does not use systemd as PID 1, so start `containerd` and `dockerd` when `docker info` fails, then run the same reduced stack as CI (`npx supabase start -x <services>`; the exact exclusion list is in `.github/workflows/ci.yml`, keep it identical). Mailpit stays on `http://127.0.0.1:54324`. The excluded services keep the stack inside the VM memory budget.
+- Local Supabase needs Docker. This VM does not use systemd as PID 1, so start `containerd` and `dockerd` when `docker info` fails, then run the same reduced stack as CI (`npx supabase start -x <services>`; the exact exclusion list is in `.github/actions/local-supabase/action.yml`, keep it identical). Mailpit stays on `http://127.0.0.1:54324`. The excluded services keep the stack inside the VM memory budget.
 - Write the gitignored `.env` from `npx supabase status -o env`, reading only `API_URL` and `ANON_KEY` as CI does (`grep -E '^(API_URL|ANON_KEY)='`; the output also carries secret and service-role keys, which must not reach `.env`, logs or commits): map `API_URL` to `SUPABASE_URL` and `ANON_KEY` to `SUPABASE_ANON_KEY`, and set `ALLOW_SIGNUP=true` plus `APP_ORIGIN=http://127.0.0.1:4321`.
 - Dev server: `npm run dev -- --host 127.0.0.1 --port 4321`. `npm run lint`, `npm test`, `npx astro check`, and `npm run build` do not need Supabase. Sign-in and `npm run smoke` do. Run smoke only against this local stack: `BASE_URL=http://127.0.0.1:4321 MAILPIT_URL=http://127.0.0.1:54324 npm run smoke`.

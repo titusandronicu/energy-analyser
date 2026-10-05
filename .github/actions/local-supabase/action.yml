@@ -1,0 +1,11 @@
+name: Start local Supabase
+description: Start the reduced local Supabase stack and write only API_URL and ANON_KEY to supabase.env
+
+runs:
+  using: composite
+  steps:
+    - name: Start local Supabase
+      shell: bash
+      run: |
+        npx supabase start -x studio,imgproxy,edge-runtime,logflare,vector,realtime,storage-api,postgres-meta,supavisor
+        npx supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' > supabase.env

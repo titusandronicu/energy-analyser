@@ -2,6 +2,16 @@
 
 The main product and technical decisions, newest first, each with the reason. Detailed plans for each change are in `context/changes/` (active) and `context/archive/` (done); the product requirements are in `context/foundation/prd-v3.md` and the ordered work in `context/foundation/roadmap.md`.
 
+## 2026-10-05 (quality gates)
+
+- **The suites from the test rollout now gate merges: `ci`, `smoke` and `integration` are required on `main` by a ruleset that also binds the owner (`context/changes/testing-quality-gates-wiring/`; owner's decisions).** Before this, `main` had no protection and the checks were advisory.
+  - **Ruleset `main-quality-gates`** (`.github/rulesets/main-quality-gates.json`): required checks `ci`, `smoke`, `integration`, no bypass actors, branches need not be up to date, no force push or deletion, so changes go through pull requests. Apply and recovery steps (disable enforcement if CI itself breaks) are in `docs/prerequisites.md`.
+  - **The integration suite is its own CI job** with its own check name, so a red check names the suite and it still runs when smoke fails. The Supabase start is one shared composite action (`.github/actions/local-supabase`).
+  - **Each gate was proven red by a deliberate break per risk** (#1 to #7, six throwaway PRs, none merged): `breaks.md` lists the check and test that caught each. The notes server limit is guarded by `ci` only; the integration suite guards the database limit.
+  - **The post-edit check is the existing hooks** (`.claude/hooks/`, PR #106): proven by a break in `bill-forecast.ts`, recommended and not required.
+  - **The ruleset requires check names, not workflow contents.** A pull request that edits `ci.yml` runs its own version of the workflow; accepted for a single owner.
+  - **Not done: `deploy-production.yml` does not check that the SHA passed CI.** The manual deploy already needs the owner's approval on the `production` environment; a CI-green check on the SHA is a follow-up.
+
 ## 2026-10-05
 
 - **The access and input tests (risks #6 and #7) add no production code; two differences between layers and one wide grant are pinned by named known-gap tests and not fixed (`context/archive/2026-10-02-testing-access-and-input-abuse/`; owner's decisions, test plan rollout Phase 3).** _Why:_ the guards already exist and RLS looked right on reading; what was missing was proof, and each fix (a database check, a column grant, a changed trim rule) is a product or security decision on production data.

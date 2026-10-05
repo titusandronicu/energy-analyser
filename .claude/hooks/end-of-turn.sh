@@ -42,7 +42,7 @@ $OUT
 "
 fi
 
-# Whole unit suite: ~2 s for 34 files, so it also catches a red test in a module only imported.
+# Whole unit suite (a couple of seconds), so it also catches a red test in a module only imported.
 OUT=$(npx vitest run 2>&1) || REPORT="$REPORT
 Unit tests fail:
 $(printf '%s\n' "$OUT" | tail -n 80)
