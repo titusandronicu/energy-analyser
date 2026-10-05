@@ -327,7 +327,7 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 #### Manual
 
-- [ ] 2.5 In a live Claude Code session, editing a service so a test fails makes the agent see and react to the hook report
+- [x] 2.5 In a live Claude Code session, editing a service so a test fails makes the agent see and react to the hook report — owner ran it 2026-10-05: flipped a comparison in bill-forecast.ts, hook blocked with 21 failing tests in 2 files, agent reported it and reverted; exit code not observed
 
 ### Phase 3: Ruleset on `main`
 
@@ -371,4 +371,4 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 
 - [x] 5.5 Reading test-plan sections 3-5 and the decisions entry gives the same picture as `gh api` shows
 
-Note (2026-10-05): manual checks 2.5 (live-session hook report) and 4.6 (owner reads `breaks.md`) were skipped by the owner and stay unticked; the Phase 4 row is `complete` on that explicit waiver. 3.4 was run by the owner: `gh pr merge` on the red PR #128 did not merge it.
+Note (2026-10-05): manual checks 4.6 (owner reads `breaks.md`) was skipped by the owner and stays unticked; the Phase 4 row is `complete` on that explicit waiver. 2.5 was later run by the owner and ticked. 3.4 was run by the owner: `gh pr merge` on the red PR #128 did not merge it.
