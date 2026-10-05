@@ -361,10 +361,10 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Automated
 
-- [x] 3.1 Unit tests pass: `npm test`
-- [x] 3.2 Integration tests pass: `npm run test:integration` (local stack)
-- [x] 3.3 Types and lint pass: `npx astro check`, `npm run lint`
-- [x] 3.4 Deliberate breaks: change `NOTE_MAX_LENGTH` to 499 in a scratch edit; remove the CRLF `replace` in `parseNoteForm`; each turns a named test red
+- [x] 3.1 Unit tests pass: `npm test` — e9ca6e7
+- [x] 3.2 Integration tests pass: `npm run test:integration` (local stack) — e9ca6e7
+- [x] 3.3 Types and lint pass: `npx astro check`, `npm run lint` — e9ca6e7
+- [x] 3.4 Deliberate breaks: change `NOTE_MAX_LENGTH` to 499 in a scratch edit; remove the CRLF `replace` in `parseNoteForm`; each turns a named test red — e9ca6e7
 
 #### Manual
 
@@ -374,9 +374,9 @@ None: no schema, grant or production change. A new dev dependency (`pg`) is adde
 
 #### Automated
 
-- [ ] 4.1 Smoke passes against the local stack: `BASE_URL=… MAILPIT_URL=… SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run smoke`
-- [ ] 4.2 Lint and types pass: `npm run lint`, `npx astro check`
-- [ ] 4.3 Deliberate break: add `set:html` to one text component in a scratch edit; both the static guard (Phase 1) and the matching smoke step turn red
+- [x] 4.1 Smoke passes against the local stack: `BASE_URL=… MAILPIT_URL=… SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run smoke`
+- [x] 4.2 Lint and types pass: `npm run lint`, `npx astro check`
+- [x] 4.3 Deliberate break: add `set:html` to one text component in a scratch edit; both the static guard (Phase 1) and the matching smoke step turn red
 
 #### Manual
 
