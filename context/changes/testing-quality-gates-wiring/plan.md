@@ -340,8 +340,8 @@ No data or schema changes. Rollout order matters: the `integration` job must hav
 #### Manual
 
 - [ ] 3.4 On a draft PR with a red required check, the merge button is disabled and `gh pr merge` refuses, as the admin
-- [ ] 3.5 This change's own PR (all green) can be merged normally afterwards
-- [ ] 3.6 The recovery step (disable enforcement) is understood and works; re-enable afterwards
+- [x] 3.5 This change's own PR (all green) can be merged normally afterwards — fb6a476 (#121 merged with all three checks green)
+- [x] 3.6 The recovery step (disable enforcement) is understood and works; re-enable afterwards — enforcement re-enabled 2026-10-05 (active)
 
 ### Phase 4: Break proof, one per risk
 
