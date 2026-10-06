@@ -425,10 +425,10 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Automated
 
-- [x] 5.1 Formatting and lint pass: `npx prettier --check docs context CLAUDE.md && npm run lint`
-- [x] 5.2 The new function and order are documented: `command grep -n "ingest_token_ok" docs/ingest/README.md docs/decisions.md docs/prerequisites.md` returns a match in each file
-- [x] 5.3 Unit tests still pass: `npm test`
-- [x] 5.5 The stale migration count is gone: `command grep -n "all 12 migrations" docs/prerequisites.md` returns nothing
+- [x] 5.1 Formatting and lint pass: `npx prettier --check docs context CLAUDE.md && npm run lint` — 5196ac4
+- [x] 5.2 The new function and order are documented: `command grep -n "ingest_token_ok" docs/ingest/README.md docs/decisions.md docs/prerequisites.md` returns a match in each file — 5196ac4
+- [x] 5.3 Unit tests still pass: `npm test` — 5196ac4
+- [x] 5.5 The stale migration count is gone: `command grep -n "all 12 migrations" docs/prerequisites.md` returns nothing — 5196ac4
 
 #### Manual
 
