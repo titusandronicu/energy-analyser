@@ -35,8 +35,7 @@ begin
     pv_forecast_kwh = coalesce(excluded.pv_forecast_kwh, public.daily_energy.pv_forecast_kwh),
     captured_at = excluded.captured_at,
     updated_at = now(),
-    push_id = excluded.push_id
-  where public.daily_energy.captured_at <= excluded.captured_at;
+    push_id = excluded.push_id;
 end;
 $$;
 
