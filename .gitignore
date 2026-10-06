@@ -35,3 +35,9 @@ reports/
 # Written by the code-review workflow in its own checkout; never committed
 pr.diff
 claude-review.md
+
+# Playwright (browser e2e): reports, traces and the signed-in session
+test-results/
+playwright-report/
+blob-report/
+tests/e2e/.auth/
