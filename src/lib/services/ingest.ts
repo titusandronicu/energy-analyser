@@ -8,6 +8,7 @@ export interface IngestRpcResult {
 }
 
 export interface IngestDeps {
+  tokenOk: (token: string) => PromiseLike<IngestRpcResult>;
   rpc: (token: string, payload: IngestPayloadV1) => PromiseLike<IngestRpcResult>;
   now: () => Date;
   logError?: (message: string, detail: unknown) => void;
@@ -62,6 +63,17 @@ function requireToken(request: Request): Step<string> {
   return token ? proceed(token) : stop(UNAUTHORIZED);
 }
 
+// A cheap check before the body is read, so an unknown token gets 401 whatever the body holds. The store checks the
+// token again: it may have been revoked in between.
+async function checkToken(token: string, deps: IngestDeps): Promise<Step<string>> {
+  const { data, error } = await deps.tokenOk(token);
+  if (error) {
+    deps.logError?.("ingest_token_ok failed", error);
+    return stop({ status: 500, body: { error: "ingest failed" } });
+  }
+  return data === true ? proceed(token) : stop(UNAUTHORIZED);
+}
+
 // Content-Length is only a hint, so the streamed read below enforces the cap too.
 async function readBody(request: Request): Promise<Step<string>> {
   if (Number(request.headers.get("Content-Length") ?? 0) > MAX_INGEST_BODY_BYTES) return stop(TOO_LARGE);
@@ -104,6 +116,9 @@ async function store(token: string, payload: IngestPayloadV1, deps: IngestDeps):
 export async function handleIngest(request: Request, deps: IngestDeps): Promise<IngestResponse> {
   const token = requireToken(request);
   if (!token.ok) return token.response;
+
+  const live = await checkToken(token.value, deps);
+  if (!live.ok) return live.response;
 
   const raw = await readBody(request);
   if (!raw.ok) return raw.response;

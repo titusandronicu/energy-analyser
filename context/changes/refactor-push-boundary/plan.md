@@ -395,10 +395,10 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Automated
 
-- [x] 3.1 Unit tests pass without edits to `ingest.test.ts` or `contract.test.ts`: `npm test`
-- [x] 3.2 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json`
-- [ ] 3.3 The integration suite, including the golden replay and retention parity tests, passes: `npm run test:integration`
-- [x] 3.4 Type check, lint and build pass: `npx astro check && npm run lint && npm run build`
+- [x] 3.1 Unit tests pass without edits to `ingest.test.ts` or `contract.test.ts`: `npm test` — 177f010
+- [x] 3.2 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json` — 177f010
+- [x] 3.3 The integration suite, including the golden replay and retention parity tests, passes: `npm run test:integration` — 177f010
+- [x] 3.4 Type check, lint and build pass: `npx astro check && npm run lint && npm run build` — 177f010
 
 #### Manual
 
@@ -408,12 +408,12 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Automated
 
-- [ ] 4.1 Unit tests cover the new order: `npm test`
+- [x] 4.1 Unit tests cover the new order: `npm test`
 - [ ] 4.2 Integration tests prove bad token plus bad body is 401, good token plus bad body is 422, and a normal push is still 201: `npm run test:integration`
 - [ ] 4.3 `ingest_token_ok` is executable by anon and returns only a boolean: `npx vitest run --config vitest.integration.config.ts tests/integration/access-abuse.test.ts`
 - [ ] 4.4 The smoke test passes against a built server: `npm run smoke` (the `smoke` CI job)
-- [ ] 4.5 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json`
-- [ ] 4.6 Type check, lint and build pass: `npx astro check && npm run lint && npm run build`
+- [x] 4.5 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json`
+- [x] 4.6 Type check, lint and build pass: `npx astro check && npm run lint && npm run build`
 
 #### Manual
 

@@ -7,11 +7,17 @@ const examplePath = fileURLToPath(new URL("../../../docs/ingest/example-v1.json"
 const example = readFileSync(examplePath, "utf8");
 const now = new Date("2026-09-23T12:01:00+02:00");
 
-function deps(result: IngestRpcResult = { data: { status: "created" }, error: null }) {
+function deps(
+  result: IngestRpcResult = { data: { status: "created" }, error: null },
+  tokenResult: IngestRpcResult = { data: true, error: null },
+) {
+  const tokenOk = vi.fn<IngestDeps["tokenOk"]>(() => Promise.resolve(tokenResult));
   const rpc = vi.fn<IngestDeps["rpc"]>(() => Promise.resolve(result));
   const logError = vi.fn();
-  return { rpc, logError, now: () => now };
+  return { tokenOk, rpc, logError, now: () => now };
 }
+
+const UNAUTHORIZED = { status: 401, body: { error: "unauthorized" } };
 
 function push(body: string, headers: Record<string, string> = { Authorization: "Bearer test-token" }) {
   return new Request("http://localhost/api/ingest", { method: "POST", headers, body });
@@ -87,5 +93,67 @@ describe("handleIngest", () => {
 
   it("returns 500 on an unexpected RPC result", async () => {
     expect((await handleIngest(push(example), deps({ data: { status: "weird" }, error: null }))).status).toBe(500);
+  });
+
+  describe("token before body", () => {
+    const rejected: IngestRpcResult = { data: false, error: null };
+
+    function contractBreakingBody() {
+      const payload = JSON.parse(example) as { state: Record<string, unknown> };
+      payload.state.battery_soc_pct = 101;
+      return JSON.stringify(payload);
+    }
+
+    it("checks and stores nothing without an Authorization header", async () => {
+      const d = deps();
+      expect(await handleIngest(push(example, {}), d)).toEqual(UNAUTHORIZED);
+      expect(d.tokenOk).not.toHaveBeenCalled();
+      expect(d.rpc).not.toHaveBeenCalled();
+    });
+
+    it("answers 401, not 400, for a rejected token with a body that is not JSON", async () => {
+      const d = deps(undefined, rejected);
+      expect(await handleIngest(push("{not json"), d)).toEqual(UNAUTHORIZED);
+      expect(d.rpc).not.toHaveBeenCalled();
+    });
+
+    it("answers 401, not 422, for a rejected token with a contract-breaking body", async () => {
+      const d = deps(undefined, rejected);
+      expect(await handleIngest(push(contractBreakingBody()), d)).toEqual(UNAUTHORIZED);
+      expect(d.rpc).not.toHaveBeenCalled();
+    });
+
+    it("answers 401, not 413, for a rejected token with an oversized Content-Length", async () => {
+      const d = deps(undefined, rejected);
+      const request = push(example, {
+        Authorization: "Bearer test-token",
+        "Content-Length": String(MAX_INGEST_BODY_BYTES + 1),
+      });
+      expect(await handleIngest(request, d)).toEqual(UNAUTHORIZED);
+      expect(d.rpc).not.toHaveBeenCalled();
+    });
+
+    it("answers 422 for a live token with a contract-breaking body", async () => {
+      const d = deps();
+      const response = await handleIngest(push(contractBreakingBody()), d);
+      expect(response.status).toBe(422);
+      expect(response.body.path).toBe("state.battery_soc_pct");
+      expect(d.tokenOk).toHaveBeenCalledTimes(1);
+      expect(d.tokenOk).toHaveBeenCalledWith("test-token");
+      expect(d.rpc).not.toHaveBeenCalled();
+    });
+
+    it("returns a generic 500 and logs when the token check fails", async () => {
+      const d = deps(undefined, { data: null, error: { code: "42501", message: "permission denied" } });
+      expect(await handleIngest(push(example), d)).toEqual({ status: 500, body: { error: "ingest failed" } });
+      expect(d.logError).toHaveBeenCalled();
+      expect(d.rpc).not.toHaveBeenCalled();
+    });
+
+    it("treats a check that answers null without an error as not live", async () => {
+      const d = deps(undefined, { data: null, error: null });
+      expect(await handleIngest(push(example), d)).toEqual(UNAUTHORIZED);
+      expect(d.rpc).not.toHaveBeenCalled();
+    });
   });
 });

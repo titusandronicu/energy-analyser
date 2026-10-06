@@ -499,5 +499,37 @@ describe("access abuse: signed-out and non-owner clients read and write nothing"
       );
       expect(entry.rows).toEqual([{ anon: true, authenticated: false, public_execute: false }]);
     });
+
+    // The token check POST /api/ingest makes before it reads the body (20261006130000_ingest_token_ok.sql): executable
+    // by anon only, and it answers a bare boolean, so it never tells an unknown token from a revoked one.
+    it("ingest_token_ok is executable by anon only and answers only true or false", async () => {
+      const grants = await withPrivileged((db) =>
+        db.query<{ anon: boolean; authenticated: boolean; public_execute: boolean }>(
+          `select has_function_privilege('anon', p.oid, 'execute') as anon,
+                  has_function_privilege('authenticated', p.oid, 'execute') as authenticated,
+                  exists (select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a where a.grantee = 0 and a.privilege_type = 'EXECUTE') as public_execute
+           from pg_proc p
+           where p.oid = 'public.ingest_token_ok(text)'::regprocedure`,
+        ),
+      );
+      expect(grants.rows).toEqual([{ anon: true, authenticated: false, public_execute: false }]);
+
+      const live = await anon.rpc("ingest_token_ok", { p_token: SEED_TOKEN });
+      expect(live.error).toBeNull();
+      expect(live.data).toBe(true);
+
+      const unknown = await anon.rpc("ingest_token_ok", { p_token: `unknown-token-${String(Date.now())}` });
+      expect(unknown.error).toBeNull();
+      expect(unknown.data).toBe(false);
+
+      const revocable = await insertToken("token-ok");
+      tokenLabels.push(revocable.label);
+      expect((await anon.rpc("ingest_token_ok", { p_token: revocable.token })).data).toBe(true);
+      await revokeToken(revocable.label);
+      const revoked = await anon.rpc("ingest_token_ok", { p_token: revocable.token });
+      expect(revoked.error).toBeNull();
+      expect(revoked.data).toBe(false);
+      await deleteToken(revocable.label);
+    });
   });
 });

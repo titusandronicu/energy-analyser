@@ -7,8 +7,8 @@ import { requirePrivileged, withPrivileged } from "./support/privileged";
 import { anonClient, ownerClient, requireStack } from "./support/stack";
 
 // Two interactions of the push boundary that no other test pins: which answer a request gets when its token is unknown
-// AND its body breaks the contract, and what the store does with a payload that never went through the contract. Both
-// pin today's behaviour; the names say what would flip them.
+// AND its body breaks the contract (the token is checked before the body, so 401), and what the store does with a
+// payload that never went through the contract (stored today; the name says what would flip it).
 
 type Owner = Awaited<ReturnType<typeof ownerClient>>;
 
@@ -37,7 +37,8 @@ describe("ingest boundary: token order and the contract bypass", () => {
     }
   });
 
-  // The route's wiring (src/pages/api/ingest.ts): the real handleIngest with the real ingest_push behind an anon client.
+  // The route's wiring (src/pages/api/ingest.ts): the real handleIngest with the real ingest_token_ok and ingest_push
+  // behind an anon client.
   // Unlike support/push.ts it does not check the body first, so an invalid body reaches the handler as sent.
   function call(token: string, body: unknown): Promise<IngestResponse> {
     return handleIngest(
@@ -47,6 +48,7 @@ describe("ingest boundary: token order and the contract bypass", () => {
         body: JSON.stringify(body),
       }),
       {
+        tokenOk: (rpcToken) => anon.rpc("ingest_token_ok", { p_token: rpcToken }),
         rpc: (rpcToken, payload) => anon.rpc("ingest_push", { p_token: rpcToken, p_payload: payload }),
         now: () => new Date(),
       },
@@ -59,18 +61,16 @@ describe("ingest boundary: token order and the contract bypass", () => {
     return { ...valid, state: { ...valid.state, battery_soc_pct: 101 } };
   }
 
-  // The handler validates the body before it looks at the token (the store checks the token), so a request with both
-  // faults answers 422 and the unknown token is never tested. Checking the token first would flip the first
-  // expectation to 401.
-  it("an unknown token with an invalid body answers 422 today (flips to 401 when the token is checked first)", async () => {
+  // The handler checks the token (ingest_token_ok) before it reads or validates the body, so a request with both faults
+  // answers 401 and the body is never looked at.
+  it("an unknown token with an invalid body answers 401: the token is checked before the body", async () => {
     const unknownToken = `not-a-real-token-${String(Date.now())}`;
 
     const response = await call(unknownToken, invalidBody(nextCapturedAt()));
-    expect(response.status).toBe(422);
-    expect(response.body).toMatchObject({ error: "invalid payload", path: "state.battery_soc_pct" });
+    expect(response).toEqual({ status: 401, body: { error: "unauthorized" } });
   });
 
-  it("controls: the same invalid body with the seed token is 422 too, and a valid body with an unknown token is 401", async () => {
+  it("controls: a valid token with an invalid body is 422, and a valid body with an unknown token is 401", async () => {
     const invalid = await call(SEED_TOKEN, invalidBody(nextCapturedAt()));
     expect(invalid.status).toBe(422);
     expect(invalid.body).toMatchObject({ error: "invalid payload", path: "state.battery_soc_pct" });

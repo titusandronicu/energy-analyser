@@ -22,6 +22,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const { status, body } = await handleIngest(request, {
+    tokenOk: (token) => supabase.rpc("ingest_token_ok", { p_token: token }),
     rpc: (token, payload) => supabase.rpc("ingest_push", { p_token: token, p_payload: payload }),
     now: () => new Date(),
     logError: (message, detail) => {

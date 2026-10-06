@@ -7,8 +7,8 @@ const SEED_TOKEN = "local-dev-ingest-token-not-secret";
 
 let anon: ReturnType<typeof anonClient> | undefined;
 
-// Pushes a body the way src/pages/api/ingest.ts:25-27 does: the real handleIngest with the real ingest_push
-// function behind an anon client. The body is checked against the contract first, so a builder that drifts
+// Pushes a body the way src/pages/api/ingest.ts:25-28 does: the real handleIngest with the real ingest_token_ok
+// and ingest_push functions behind an anon client. The body is checked against the contract first, so a builder that drifts
 // from it fails here instead of as a 422 that looks like a store problem.
 export async function push(body: unknown): Promise<IngestResponse> {
   const checked = validateIngestPayload(body, new Date());
@@ -25,6 +25,7 @@ export async function push(body: unknown): Promise<IngestResponse> {
       body: JSON.stringify(body),
     }),
     {
+      tokenOk: (token) => client.rpc("ingest_token_ok", { p_token: token }),
       rpc: (token, payload) => client.rpc("ingest_push", { p_token: token, p_payload: payload }),
       now: () => new Date(),
     },
