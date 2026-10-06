@@ -80,6 +80,9 @@ export type BillForecastView =
       // The headline: "od 155 zł do 360 zł". US-03 asks for a range rather than a single exact figure.
       rangeLabel: string;
       centralLabel: string;
+      // The same central figure as a number (gross PLN), for the alert evaluator. It exists only on this variant, so
+      // every refusal guard above has already passed when a caller can read it.
+      centralPln: number;
       dayLabel: string;
       confidence: Status;
       // Set only when banked credit covers the whole month's import, which is why the figure is then just the
@@ -474,6 +477,7 @@ export function toBillForecastView(row: BillForecastRow | null, now: Date): Bill
     isOtherMonth,
     rangeLabel: `od ${plnLabel(low)} do ${plnLabel(high)}`,
     centralLabel: `ok. ${plnLabel(central)}`,
+    centralPln: central,
     dayLabel: dayLabelOf(observedDays, completedDays, now),
     confidence: confidenceStatus(body.confidence, settlement.reference_period, lagMonths),
     creditLeftLabel: creditLeft > 0 ? kwhLabel(creditLeft) : null,

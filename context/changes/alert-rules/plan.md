@@ -32,7 +32,7 @@ The owner manages alert rules in the app (list, create, edit, enable/disable, de
 
 - Playwright e2e: a separate follow-up change through `/10x-e2e-setup` and `/10x-e2e`.
 - Email delivery, other channels, other rule kinds (recommendation staleness, battery level, daily digest), per-rule destinations.
-- Any homelab-2 change: no lab timer, no lab bot change, no Uptime Kuma change. The app's bot is a dedicated one, separate from the lab's `telegram-home` bot and its token.
+- Any homelab-2 change: no lab timer, no lab bot change, no Uptime Kuma change. The app reuses the lab's existing bot (owner's decision, 2026-10-06) but only ever calls `sendMessage`: it never polls `getUpdates`, sets a webhook or runs commands, so the lab bot keeps working unchanged.
 - A client-side (React) rules UI, or alert history/log tables.
 - Alerting on a forecast that is `unavailable`, `no_data` or stale: it is "cannot evaluate", never an alarm.
 - Multi-owner support: the evaluator assumes the single owner and one Telegram chat id.
@@ -40,7 +40,7 @@ The owner manages alert rules in the app (list, create, edit, enable/disable, de
 
 ## Implementation Approach
 
-Four phases, each testable alone: (1) data layer and token, (2) owner CRUD in the app, (3) evaluator and Telegram, (4) scheduling, docs and production steps. Defaults I chose without asking, recorded here for review: a dedicated Telegram bot (not the lab bot's token); reminder default 6 h, range 1-72; unique `(user_id, kind, threshold)` so duplicate rules are refused; strict `>` comparisons (exactly on the line is not an alarm, matching `live-state.ts`); a forecast flagged `isOtherMonth` is "cannot evaluate"; `live_stale` accepts 15-1440 minutes (the app's own stale line is 15); `live_stale` with no push on record is an alarm and a `captured_at` more than 5 minutes in the future is "cannot evaluate"; send first, then record state, so a failed send is retried on the next run instead of being marked as notified; if the Telegram secrets are missing the route answers 503 and records nothing.
+Four phases, each testable alone: (1) data layer and token, (2) owner CRUD in the app, (3) evaluator and Telegram, (4) scheduling, docs and production steps. Defaults I chose without asking, recorded here for review: the existing lab bot is reused for delivery (owner's decision, 2026-10-06: one bot for everything; the owner copies its `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` from `/srv/homelab/telegram-home/.env` on docker-core (the same two keys `homelab-2/infra/compose/monitoring/kuma-apply.sh` reads over SSH) into the app's `.env.runtime`, nothing is written to the repo); accepted risk: the same token then lives on the public Mikrus VPS as well as docker-core, and rotating it means updating the lab bot, Uptime Kuma and the app together; reminder default 6 h, range 1-72; unique `(user_id, kind, threshold)` so duplicate rules are refused; strict `>` comparisons (exactly on the line is not an alarm, matching `live-state.ts`); a forecast flagged `isOtherMonth` is "cannot evaluate"; `live_stale` accepts 15-1440 minutes (the app's own stale line is 15); `live_stale` with no push on record is an alarm and a `captured_at` more than 5 minutes in the future is "cannot evaluate"; send first, then record state, so a failed send is retried on the next run instead of being marked as notified; if the Telegram secrets are missing the route answers 503 and records nothing.
 
 ## Phase 1: Data layer and alerts token
 
@@ -274,9 +274,9 @@ A scheduled workflow calls the route, the documentation catches up with the code
 
 **Contract**:
 
-- `prerequisites.md`: secrets table rows for `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` (`.env.runtime` on the VPS), the alerts token (GitHub repository secret; its hash in production `alert_tokens`) and the repository variable; one-time production steps in order — apply the migration before deploying, mint and insert the token, create the dedicated bot with BotFather and note the chat id, set the `.env.runtime` secrets, add the repo secret and the `APP_ORIGIN`-style base-URL variable, verify Mikrus reaches `api.telegram.org`, and only then set `ALERTS_ENABLED=true`.
+- `prerequisites.md`: secrets table rows for `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` (`.env.runtime` on the VPS), the alerts token (GitHub repository secret; its hash in production `alert_tokens`) and the repository variable; one-time production steps in order — apply the migration before deploying, mint and insert the token, copy the lab bot's `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` from `/srv/homelab/telegram-home/.env` on docker-core into `.env.runtime` under the same names, and record the app as a new consumer of that token in homelab-2 (docs only; its AGENTS.md asks for documented secret locations) (the secrets table notes that the token is shared with the lab bot and Uptime Kuma, so a rotation touches all three), add the repo secret and the `APP_ORIGIN`-style base-URL variable, verify Mikrus reaches `api.telegram.org`, and only then set `ALERTS_ENABLED=true`.
 - `logic.md`: the alert rules section (kinds, strict comparisons, no-push alarm, unknown handling, transitions, reminder, send-then-record).
-- `decisions.md`: dated entries — app sends (not the lab), dedicated token table, GitHub Actions cron, unknown keeps state.
+- `decisions.md`: dated entries — app sends (not the lab), dedicated alerts-token table, GitHub Actions cron, unknown keeps state, the lab bot reused for delivery with its accepted risk.
 - `architecture.md`: the new outbound Telegram boundary, the second token route and the alerts token's scope; `CLAUDE.md`: `TOKEN_AUTH_ROUTES` now lists two paths.
 - `README.md` env table and `.env.example`: the two new variables.
 
@@ -360,29 +360,29 @@ Additive migration only (two new tables, two functions); no change to `ingest_to
 
 #### Automated
 
-- [x] 2.1 Unit tests pass, including form parsing, outcomes and guards: `npm test`
-- [x] 2.2 Lint, type checks and build pass: `npm run lint`, `npx astro check` and `npm run build`
-- [x] 2.3 Integration suite still passes: `npm run test:integration`
+- [x] 2.1 Unit tests pass, including form parsing, outcomes and guards: `npm test` — 03ecca7
+- [x] 2.2 Lint, type checks and build pass: `npm run lint`, `npx astro check` and `npm run build` — 03ecca7
+- [x] 2.3 Integration suite still passes: `npm run test:integration` — 03ecca7
 
 #### Manual
 
-- [x] 2.4 On the local stack, signed in as the owner: create one rule of each kind, edit a threshold, disable one, delete one with the confirmation, and see the matching notice each time
-- [x] 2.5 Signed out, a visit to `/dashboard/alerts` redirects to sign-in and a direct POST to `/api/alert-rules` is refused
-- [x] 2.6 The page has one `h1`, labelled form controls and a visible keyboard focus on every action
+- [x] 2.4 On the local stack, signed in as the owner: create one rule of each kind, edit a threshold, disable one, delete one with the confirmation, and see the matching notice each time — 03ecca7
+- [x] 2.5 Signed out, a visit to `/dashboard/alerts` redirects to sign-in and a direct POST to `/api/alert-rules` is refused — 03ecca7
+- [x] 2.6 The page has one `h1`, labelled form controls and a visible keyboard focus on every action — 03ecca7
 
 ### Phase 3: Evaluator and Telegram
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass, including the full action table and sender: `npm test`
-- [ ] 3.2 Integration tests pass, including alarm, reminder, recovery and unknown: `npm run test:integration`
-- [ ] 3.3 Lint, type checks and build pass: `npm run lint`, `npx astro check` and `npm run build`
-- [ ] 3.4 Smoke refuses a missing and a wrong token on the evaluate route: `npm run smoke`
+- [x] 3.1 Unit tests pass, including the full action table and sender: `npm test`
+- [x] 3.2 Integration tests pass, including alarm, reminder, recovery and unknown: `npm run test:integration`
+- [x] 3.3 Lint, type checks and build pass: `npm run lint`, `npx astro check` and `npm run build`
+- [x] 3.4 Smoke refuses a missing and a wrong token on the evaluate route: `npm run smoke`
 
 #### Manual
 
-- [ ] 3.5 With a real bot token and chat id in a local `.env`, a rule below the current forecast produces one Telegram message and raising it produces one recovery message
-- [ ] 3.6 The local server log for that run contains no bot token, chat id or message text
+- [x] 3.5 With a real bot token and chat id in a local `.env`, a rule below the current forecast produces one Telegram message and raising it produces one recovery message
+- [x] 3.6 The local server log for that run contains no bot token, chat id or message text
 
 ### Phase 4: Scheduling, docs and production steps
 

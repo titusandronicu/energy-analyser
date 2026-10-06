@@ -151,6 +151,7 @@ describe("toBillForecastView", () => {
       isOtherMonth: false,
       rangeLabel: "od 155 zł do 360 zł",
       centralLabel: "ok. 258 zł",
+      centralPln: 257.73,
       dayLabel: "15 dni: 1–15 września",
       confidence: { tone: "good", label: "wysoka pewność" },
       creditLeftLabel: null,
@@ -307,6 +308,10 @@ describe("toBillForecastView", () => {
     const view = forecast(okRow({ projected_bill_gross_pln: 214.9 }));
     expect(view.centralLabel).toBe("ok. 215 zł");
     expect(view.status).toEqual({ tone: "good", label: "nie więcej niż ostatni rachunek (215 zł)" });
+  });
+
+  it("exposes the unrounded central figure as a number", () => {
+    expect(forecast(okRow({ projected_bill_gross_pln: 214.9 })).centralPln).toBe(214.9);
   });
 
   it("gives no verdict and no check line without a closed month to compare with", () => {

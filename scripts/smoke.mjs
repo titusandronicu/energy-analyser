@@ -490,6 +490,21 @@ const examplePeriodSummaries = example.period_summaries.map((entry) =>
 const payload = { ...example, period_summaries: examplePeriodSummaries, captured_at: new Date().toISOString() };
 const changed = { ...payload, state: { ...payload.state, pv_w: (payload.state.pv_w ?? 0) + 1 } };
 
+// Alerts evaluator: bearer token only, no cookies and no Origin header, like the scheduled workflow. Only the refusals
+// are smoked: a valid token would send a real Telegram message when the server has the bot configured.
+async function alertsEvaluate(token) {
+  const response = await fetch(`${BASE_URL}/api/alerts/evaluate`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  return { status: response.status, location: "" };
+}
+
+steps.push(
+  ["alerts evaluate rejects a missing token", () => alertsEvaluate(null), { status: 401 }],
+  ["alerts evaluate rejects a wrong token", () => alertsEvaluate("wrong-token"), { status: 401 }],
+);
+
 steps.push(
   ["ingest rejects a missing token", () => ingest(payload, null), { status: 401 }],
   ["ingest rejects a wrong token", () => ingest(payload, "wrong-token"), { status: 401 }],

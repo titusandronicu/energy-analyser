@@ -5,7 +5,7 @@ import { onRequest } from "./middleware";
 //
 // Expected outcomes are written from the rules in CLAUDE.md (Environment) and docs/architecture.md, not read off the
 // middleware: a mutating /api/* request must carry an Origin equal to APP_ORIGIN (or the request origin when it is
-// unset), only the exact path /api/ingest skips that check and the session lookup, and a signed-out request to a
+// unset), only the exact paths /api/ingest and /api/alerts/evaluate skip that check and the session lookup, and a signed-out request to a
 // /dashboard path goes to /auth/signin. The auth-outage, request-id and logging cases are written from the
 // 2026-10-05 entry in docs/decisions.md (observability capture layer): an inbound x-request-id is kept only when it is
 // 8-64 characters of A-Za-z0-9._-, a network failure, a 5xx or a 429 from the auth provider answers 503 with
@@ -244,7 +244,7 @@ describe("onRequest", () => {
       },
     );
 
-    it("the exempt set is exactly /api/ingest", async () => {
+    it("the exempt set is exactly /api/ingest and /api/alerts/evaluate", async () => {
       env.APP_ORIGIN = APP_ORIGIN;
       // Every path the app serves or could plausibly add, plus near misses of the exempt one. A path is exempt when a
       // POST with a foreign Origin still reaches next without a session lookup.
@@ -266,6 +266,13 @@ describe("onRequest", () => {
         "/api/ingest/",
         "/api/ingest/x",
         "/api/ingestx",
+        "/api/alerts",
+        "/api/alerts/",
+        "/api/alerts/evaluate",
+        "/api/alerts/evaluate/",
+        "/api/alerts/evaluate/x",
+        "/api/alerts/evaluatex",
+        "/api/alert-rules",
         "/api/anything-new",
       ];
 
@@ -276,7 +283,7 @@ describe("onRequest", () => {
       }
 
       // Pages outside /api/ are not Origin-checked, but they still do the session lookup, so they never count as exempt.
-      expect(exempt).toEqual(["/api/ingest"]);
+      expect(exempt).toEqual(["/api/ingest", "/api/alerts/evaluate"]);
     });
   });
 

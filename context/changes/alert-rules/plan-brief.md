@@ -26,7 +26,7 @@ The app has no alerting; Uptime Kuma already alerts on lab push silence from the
 | UI                       | Page `/dashboard/alerts`, no client JS                                                                                                             | Follows the `day_notes` pattern                                              | Plan   |
 | Cannot evaluate          | Skip and keep state; show the reason                                                                                                               | No false alarm and no false "ok"                                             | Plan   |
 | e2e                      | Separate follow-up change                                                                                                                          | Keeps this change focused; Playwright setup has its own workflow             | Plan   |
-| Defaults (not asked)     | Dedicated bot; reminder 1-72 h; `live_stale` 15-1440 min; unique (kind, threshold); strict `>`; no push on record is an alarm; send then record    | Safe, consistent with existing code                                          | Plan   |
+| Defaults (not asked)     | Reminder 1-72 h; `live_stale` 15-1440 min; unique (kind, threshold); strict `>`; no push on record is an alarm; send then record                   | Safe, consistent with existing code                                          | Plan   |
 | Plan review (2026-10-06) | Snapshot reads `ingest_pushes` directly; `ALERTS_ENABLED` gates the cron; state resets on enable/threshold change; own tokens in integration tests | Fixes from the 10 review findings                                            | Review |
 
 ## Scope
@@ -48,7 +48,7 @@ Cron → `POST /api/alerts/evaluate` (bearer alerts token, in `TOKEN_AUTH_ROUTES
 | 3. Evaluator and Telegram | Pure evaluator, sender, evaluate route, smoke                 | Duplicate or lost messages around failed sends           |
 | 4. Scheduling and docs    | Workflow (gated by `ALERTS_ENABLED`), docs, production steps  | Mikrus may not reach Telegram; manual steps and ordering |
 
-**Prerequisites:** a local Supabase on the UGREEN (`scripts/remote-docker.sh`), a Telegram bot from BotFather, access to the VPS `.env.runtime` and the GitHub repository secrets.
+**Prerequisites:** a local Supabase on the UGREEN (`scripts/remote-docker.sh`), the lab bot's token and chat id (from `/srv/homelab/telegram-home/.env` on docker-core), access to the VPS `.env.runtime` and the GitHub repository secrets.
 **Estimated effort:** about 4-6 sessions across 4 phases.
 
 ## Open Risks & Assumptions
@@ -58,6 +58,7 @@ Cron → `POST /api/alerts/evaluate` (bearer alerts token, in `TOKEN_AUTH_ROUTES
 - GitHub cron can be delayed by several minutes and the workflow's secrets are repository-scoped, unlike the existing environment-scoped ones.
 - The forecast view variant has no numeric figure today; Phase 3 adds `centralPln` after the existing guards, and a forecast flagged `isOtherMonth` is treated as "cannot evaluate".
 - Single-owner assumption: one chat id, all enabled rules evaluated for it.
+- The existing lab bot is reused (owner's decision, 2026-10-06). Its token will also live on the public Mikrus VPS, and rotating it means updating the lab bot, Uptime Kuma and the app together. The app only calls `sendMessage`.
 
 ## Success Criteria (Summary)
 
