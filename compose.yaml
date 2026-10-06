@@ -34,3 +34,26 @@ services:
       options:
         max-size: 10m
         max-file: "3"
+
+  # Calls the alert evaluator every few minutes (docs/decisions.md, 2026-10-06 "alert trigger"). Same image as the app,
+  # but it sees only .env.alerts (the alerts token and the app's local address), never .env.runtime. The file is
+  # optional so a missing one cannot stop the app from starting; the service then logs why and restarts.
+  alerts-trigger:
+    image: ${IMAGE}
+    command: ["node", "scripts/alerts-trigger.mjs"]
+    network_mode: host
+    restart: unless-stopped
+    env_file:
+      - path: .env.alerts
+        required: false
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 64m
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"

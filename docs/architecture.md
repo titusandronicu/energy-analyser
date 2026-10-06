@@ -34,7 +34,7 @@ flowchart LR
     App["Energy Analyser<br/>(Astro SSR on a VPS)"] <--> DB[(Supabase Postgres<br/>+ Auth)]
   end
   Owner((Owner)) -- "magic link / password" --> App
-  Cron["GitHub Actions cron<br/>every 10 min"] -- "HTTPS POST /api/alerts/evaluate<br/>alerts token" --> App
+  Cron["alerts-trigger service<br/>on the VPS, every 5 min"] -- "HTTP POST /api/alerts/evaluate<br/>alerts token, local address" --> App
   App -- "outbound HTTPS sendMessage" --> TG["Telegram Bot API"]
 ```
 
@@ -77,7 +77,7 @@ Both signed-in pages share `AppShell.astro`: the header with the brand `h1` and 
 
 ## Alert notifications
 
-The one outbound call the app makes, and its second token route. A GitHub Actions workflow (`.github/workflows/alerts-evaluate.yml`, every 10 minutes, gated by the repository variable `ALERTS_ENABLED`) POSTs to `/api/alerts/evaluate` with the alerts token. The rules and transitions are in [logic.md](logic.md#alert-rules).
+The one outbound call the app makes, and its second token route. A small `alerts-trigger` service next to the app on the production host (`compose.yaml`, `scripts/alerts-trigger.mjs`, every 5 minutes, its own token `alerts-vps` and the app's local address from `.env.alerts`) POSTs to `/api/alerts/evaluate`; the GitHub workflow `.github/workflows/alerts-evaluate.yml` is only a manual trigger, with the token `alerts-prod`. The rules and transitions are in [logic.md](logic.md#alert-rules).
 
 - **Second token route.** `/api/alerts/evaluate` is an exact-path member of `TOKEN_AUTH_ROUTES` beside `/api/ingest`, so it skips the `Origin` check and the session lookup; it is bearer-authenticated and never uses cookies. A missing, unknown or revoked token gets one uniform 401 before any work. With a valid token but no Telegram configuration the route answers 503 `telegram_not_configured` and records nothing.
 - **Flow.** `alerts_snapshot` returns the rules and the two pushes in the shape the loaders produce, so the app's own view mappers apply; a pure evaluator decides each rule; the route sends one `sendMessage` per due message and then calls `alerts_record` for what actually went out. A failed send is left unrecorded and retried by the next run. A rule that cannot be evaluated is recorded with its reason and its old state.
