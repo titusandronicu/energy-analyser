@@ -379,11 +379,11 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Automated
 
-- [ ] 2.1 The migration applies on a fresh stack in the CI `integration` job (a local apply needs the relay, the `scripts/remote-docker.sh exec` wrapper and the owner's OK)
-- [ ] 2.2 Golden replay, boundary and every existing integration test pass unchanged: `npm run test:integration`
-- [ ] 2.3 Retention parity test passes: `npx vitest run --config vitest.integration.config.ts tests/integration/ingest-retention.test.ts`
-- [ ] 2.4 A test using `has_function_privilege` proves no client role can execute any `ingest` helper and `ingest_push` stays anon-only: `npx vitest run --config vitest.integration.config.ts tests/integration/access-abuse.test.ts`
-- [x] 2.5 Unit tests, lint and type check pass: `npm test && npm run lint && npx astro check`
+- [x] 2.1 The migration applies on a fresh stack in the CI `integration` job (a local apply needs the relay, the `scripts/remote-docker.sh exec` wrapper and the owner's OK) — c64d4d1
+- [x] 2.2 Golden replay, boundary and every existing integration test pass unchanged: `npm run test:integration` — c64d4d1
+- [x] 2.3 Retention parity test passes: `npx vitest run --config vitest.integration.config.ts tests/integration/ingest-retention.test.ts` — c64d4d1
+- [x] 2.4 A test using `has_function_privilege` proves no client role can execute any `ingest` helper and `ingest_push` stays anon-only: `npx vitest run --config vitest.integration.config.ts tests/integration/access-abuse.test.ts` — c64d4d1
+- [x] 2.5 Unit tests, lint and type check pass: `npm test && npm run lint && npx astro check` — c64d4d1
 
 #### Manual
 
@@ -395,10 +395,10 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass without edits to `ingest.test.ts` or `contract.test.ts`: `npm test`
-- [ ] 3.2 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json`
+- [x] 3.1 Unit tests pass without edits to `ingest.test.ts` or `contract.test.ts`: `npm test`
+- [x] 3.2 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json`
 - [ ] 3.3 The integration suite, including the golden replay and retention parity tests, passes: `npm run test:integration`
-- [ ] 3.4 Type check, lint and build pass: `npx astro check && npm run lint && npm run build`
+- [x] 3.4 Type check, lint and build pass: `npx astro check && npm run lint && npm run build`
 
 #### Manual
 

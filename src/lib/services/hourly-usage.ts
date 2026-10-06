@@ -12,10 +12,12 @@ import {
   warsawHour,
   warsawParts,
 } from "@/lib/format/warsaw-time";
+import { HOURLY_RETENTION_DAYS } from "@/lib/ingest/retention";
 import { queryError } from "@/lib/query-error";
 
-// The app keeps 35 days of hourly figures (ingest_push prunes older hours); the card reads the same span.
-export const HOURLY_HISTORY_DAYS = 35;
+// The app keeps HOURLY_RETENTION_DAYS of hourly figures (ingest_push prunes older hours, see src/lib/ingest/retention.ts);
+// the card reads the same span.
+export const HOURLY_HISTORY_DAYS = HOURLY_RETENTION_DAYS;
 // A full hour rests on 12 five-minute readings; with 10 or more it is complete. Fewer is a gap in the lab's history
 // and the hour is left out of every figure.
 export const MIN_HOUR_SAMPLES = 10;
