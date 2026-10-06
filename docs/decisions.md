@@ -2,6 +2,16 @@
 
 The main product and technical decisions, newest first, each with the reason. Detailed plans for each change are in `context/changes/` (active) and `context/archive/` (done); the product requirements are in `context/foundation/prd-v3.md` and the ordered work in `context/foundation/roadmap.md`.
 
+## 2026-10-06 (push boundary)
+
+- **The ingest token is checked before the body is read or validated, the store function is split into one helper per section, and the retention windows are named once in SQL and once in TypeScript (`context/changes/refactor-push-boundary/`).** _Why:_ `ingest_push` had grown into one long function that was hard to read and review, and an unknown token could make the route read and validate a 256 KB body before it got a 401.
+  - **Token first.** `POST /api/ingest` calls `public.ingest_token_ok(token)`, a cheap boolean function with the same hash and revoke rules as the store, before it reads the body, so an unknown or revoked token gets 401 whatever the body holds. The store still checks the token again, for a token revoked in between.
+  - **One helper per section, behaviour unchanged.** `ingest_push` keeps its signature, grants and error codes and now calls `ingest.store_daily`, `ingest.store_hourly`, `ingest.store_period_summaries`, `ingest.store_recommendation` and `ingest.prune` in the non-exposed `ingest` schema. A golden replay test, written first, proves the stored rows did not change.
+  - **Retention named twice, with a drift test.** The windows (14 days for raw pushes, 35 days for hourly rows) are written once in `ingest.prune()` and once in `src/lib/ingest/retention.ts`; `tests/integration/ingest-retention.test.ts` fails if they drift.
+  - **Rejected:** SQL guards for a direct RPC call (out of scope, see the open follow-up below); a limits table in the database (the two constants are enough, and the test catches drift); folding validation into the RPC (the contract stays in zod, in one place).
+  - **`ingest_token_ok` is an unmetered check callable with the anon key.** It is safe only because tokens are 32 random bytes (`scripts/create-ingest-token.mjs`), so guessing one is not feasible. No rate limit exists; whether the proxy in front of the app limits requests is an open question.
+  - **OPEN follow-up:** a direct RPC call with a valid token and an out-of-contract payload (for example a negative daily total) is still stored. This change closes only the token-order half of the exposure. The five pinned `KNOWN GAP` behaviours (see 2026-10-01) are unchanged.
+
 ## 2026-10-05 (quality gates)
 
 - **The suites from the test rollout now gate merges: `ci`, `smoke` and `integration` are required on `main` by a ruleset that also binds the owner (`context/archive/2026-10-05-testing-quality-gates-wiring/`; owner's decisions).** Before this, `main` had no protection and the checks were advisory.

@@ -38,7 +38,7 @@ flowchart LR
 
 - **Push, never pull.** The home network is LAN-only. The lab sends public-safe data outbound; the app never connects into the home.
 - **The lab computes, the app presents.** Telemetry collection, PGE bill math and LLM narration stay in the lab. The app adds access control, storage, its own season-aware rules and the user interface.
-- **Stored by the push.** `public.ingest_push` keeps each raw push for 14 days and upserts what it carries: `daily_energy` from `daily_history`, `hourly_energy` from `hourly_history` (per clock hour, kept 35 days), `period_summaries` from `period_summaries` (one row per today/day/month period, kept), and `recommendations`. The newer capture wins for days and hours; the newer `built_at` wins for period summaries.
+- **Stored by the push.** `POST /api/ingest` first calls `public.ingest_token_ok`, which answers whether the token is live, and reads the body only after that. `public.ingest_push` then checks the token again, with one helper per section in the non-exposed `ingest` schema (`store_daily`, `store_hourly`, `store_period_summaries`, `store_recommendation`, `prune`). It keeps each raw push for 14 days and upserts what it carries: `daily_energy` from `daily_history`, `hourly_energy` from `hourly_history` (per clock hour, kept 35 days), `period_summaries` from `period_summaries` (one row per today/day/month period, kept), and `recommendations`. The newer capture wins for days and hours; the newer `built_at` wins for period summaries.
 - **Advisory only.** Nothing in the app or the push path writes to Home Assistant or the inverter.
 
 ## Inside the app
@@ -57,7 +57,7 @@ Both signed-in pages share `AppShell.astro`: the header with the brand `h1` and 
 
 ## Security model
 
-- **No service-role key.** The app only has the public anon key. Writes from the lab go through `public.ingest_push`, a `SECURITY DEFINER` function that checks the bearer token against SHA-256 hashes; clients have no privileges on the ingest tables at all.
+- **No service-role key.** The app only has the public anon key. Writes from the lab go through `public.ingest_push`, a `SECURITY DEFINER` function that checks the bearer token against SHA-256 hashes; clients have no privileges on the ingest tables at all. The only other public function on this path is `public.ingest_token_ok`, a boolean token check that the route calls before it reads the body; the `ingest` helper schema is not exposed to clients.
 - **Owner-only reads.** Every readable table or view needs both an explicit grant and a row-level-security policy that checks `public.app_owners`. Anyone else, signed in or not, reads nothing.
 - **One owner-written table: `day_notes`.** Day notes (S-19, migration `20261001072438_day_notes.sql`) are the only rows a signed-in client creates, changes or deletes. The table is locked down like the others (RLS on, `revoke all` from `anon` and `authenticated`) and then opened per operation, by column:
   - **Grants to `authenticated`:** `select (day, text, created_at, updated_at)`, `insert (day, text)`, `update (text)` and `delete`. `anon` gets nothing.
