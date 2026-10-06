@@ -374,23 +374,23 @@ Additive migration only (two new tables, two functions); no change to `ingest_to
 
 #### Automated
 
-- [x] 3.1 Unit tests pass, including the full action table and sender: `npm test`
-- [x] 3.2 Integration tests pass, including alarm, reminder, recovery and unknown: `npm run test:integration`
-- [x] 3.3 Lint, type checks and build pass: `npm run lint`, `npx astro check` and `npm run build`
-- [x] 3.4 Smoke refuses a missing and a wrong token on the evaluate route: `npm run smoke`
+- [x] 3.1 Unit tests pass, including the full action table and sender: `npm test` — 128e6c7
+- [x] 3.2 Integration tests pass, including alarm, reminder, recovery and unknown: `npm run test:integration` — 128e6c7
+- [x] 3.3 Lint, type checks and build pass: `npm run lint`, `npx astro check` and `npm run build` — 128e6c7
+- [x] 3.4 Smoke refuses a missing and a wrong token on the evaluate route: `npm run smoke` — 128e6c7
 
 #### Manual
 
-- [x] 3.5 With a real bot token and chat id in a local `.env`, a rule below the current forecast produces one Telegram message and raising it produces one recovery message
-- [x] 3.6 The local server log for that run contains no bot token, chat id or message text
+- [x] 3.5 With a real bot token and chat id in a local `.env`, a rule below the current forecast produces one Telegram message and raising it produces one recovery message — 128e6c7
+- [x] 3.6 The local server log for that run contains no bot token, chat id or message text — 128e6c7
 
 ### Phase 4: Scheduling, docs and production steps
 
 #### Automated
 
-- [ ] 4.1 Formatting is clean on the changed docs and workflow: `npx prettier --check docs README.md .github`
-- [ ] 4.2 Lint and unit tests still pass: `npm run lint` and `npm test`
-- [ ] 4.3 The docs name the new secrets: `grep -c "TELEGRAM_BOT_TOKEN" docs/prerequisites.md README.md .env.example`
+- [x] 4.1 Formatting is clean on the changed docs and workflow: `npx prettier --check docs README.md .github`
+- [x] 4.2 Lint and unit tests still pass: `npm run lint` and `npm test`
+- [x] 4.3 The docs name the new secrets: `grep -c "TELEGRAM_BOT_TOKEN" docs/prerequisites.md README.md .env.example`
 
 #### Manual
 

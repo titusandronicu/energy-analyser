@@ -11,6 +11,7 @@ A web app for the owner of a home solar system (PV panels, a battery, the grid, 
 - **Bill forecast** for the current month as a range, with the data it is based on.
 - **History calendar** (day, month and quarter views): production against forecast, advice, plain-language summaries of days and months, and good / neutral / bad ratings for completed days and months.
 - **Day notes:** add, view, edit and delete a note on any calendar day.
+- **Alert rules:** keep rules on `/dashboard/alerts` (lab data older than N minutes, projected bill above X PLN) and get a Telegram message when one fires, again as a reminder, and when it clears.
 
 Still to come (see [the roadmap](context/foundation/roadmap.md)): a year view, consumption trends, forecast accuracy and a usage profile.
 
@@ -75,15 +76,17 @@ npm run dev
 
 Configuration:
 
-| Variable            | Purpose                                                              | Default        |
-| ------------------- | -------------------------------------------------------------------- | -------------- |
-| `SUPABASE_URL`      | Supabase project URL                                                 | unset          |
-| `SUPABASE_ANON_KEY` | Public/anon Supabase key; service-role and secret keys are rejected  | unset          |
-| `ALLOW_SIGNUP`      | When exactly `true`, a sign-in link request may create a new user    | `false`        |
-| `APP_VERSION`       | Release identifier returned by `/api/health`                         | `development`  |
-| `APP_ORIGIN`        | Trusted public origin for CSRF checks on mutating API requests       | request origin |
-| `APP_ENV`           | Environment name written on every log line (`production` in compose) | `development`  |
-| `HOST`              | Address used by the standalone Node server                           | `::`           |
+| Variable             | Purpose                                                                                                                           | Default        |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `SUPABASE_URL`       | Supabase project URL                                                                                                              | unset          |
+| `SUPABASE_ANON_KEY`  | Public/anon Supabase key; service-role and secret keys are rejected                                                               | unset          |
+| `ALLOW_SIGNUP`       | When exactly `true`, a sign-in link request may create a new user                                                                 | `false`        |
+| `APP_VERSION`        | Release identifier returned by `/api/health`                                                                                      | `development`  |
+| `APP_ORIGIN`         | Trusted public origin for CSRF checks on mutating API requests                                                                    | request origin |
+| `APP_ENV`            | Environment name written on every log line (`production` in compose)                                                              | `development`  |
+| `TELEGRAM_BOT_TOKEN` | Bot token for alert messages (the lab's bot, shared; secret). Without it and the chat id, `POST /api/alerts/evaluate` answers 503 | unset          |
+| `TELEGRAM_CHAT_ID`   | Telegram chat the alert messages go to (secret)                                                                                   | unset          |
+| `HOST`               | Address used by the standalone Node server                                                                                        | `::`           |
 
 Sign-in on `/auth/signin` offers an emailed one-time link (`POST /api/auth/magic-link` → email → `/auth/confirm`) or email + password (`POST /api/auth/signin`) for existing accounts; there is no sign-up form. The email template lives in `supabase/templates/magic-link.html`; production must use the same template for "Magic link" and "Confirm signup" (Supabase → Authentication → Emails), or links won't work. For local testing, start Supabase with `npx supabase start` (emails land in Mailpit on port 54324), copy its API URL and anon key to `.env`, and set `ALLOW_SIGNUP=true` so new addresses can sign in. Production keeps `ALLOW_SIGNUP=false` and the global `auth.enable_signup` option off, so only the existing owner account gets a link.
 
@@ -131,6 +134,8 @@ SUPABASE_ANON_KEY=<anon-key>
 ALLOW_SIGNUP=false
 APP_ORIGIN=https://neil170-20170.mikrus.cloud
 HOST=2a01:4f9:6b:4f6b::170
+TELEGRAM_BOT_TOKEN=<copied from the lab bot, see docs/prerequisites.md>
+TELEGRAM_CHAT_ID=<chat id>
 ```
 
 The production service listens on the VPS's dedicated IPv6 address, port `20170`. Binding the specific IPv6 address avoids the IPv4 `rathole` listener that Micr.us uses on the same port. Micr.us terminates TLS and forwards `https://neil170-20170.mikrus.cloud` to that port.
@@ -145,6 +150,7 @@ The production service listens on the VPS's dedicated IPv6 address, port `20170`
 - `publish-image.yml` publishes `ghcr.io/titusandronicu/energy-analyser:sha-<full-sha>` after successful push CI.
 - `deploy-production.yml` accepts a full SHA, uses the protected `production` environment, deploys over SSH and rolls back when health verification fails.
 - `code-review.yml` reviews a pull request's diff with Claude Code when the `claude-code-review` label is added, and posts the review as a comment; `code-review-fix.yml` applies the fixes from that review when the `claude-code-support` label is added. Both are driven by the prompts in `.ai/prompts/`. Add the label **before** the pull request is merged, or there is no diff to review.
+- `alerts-evaluate.yml` calls `POST /api/alerts/evaluate` every 10 minutes and on demand, with the repository secret `ALERTS_TOKEN` and the repository variable `ALERTS_BASE_URL`. It runs only when the repository variable `ALERTS_ENABLED` is `true`, the last step of the production steps in [docs/prerequisites.md](docs/prerequisites.md); a failed call shows red in Actions.
 - `mutation.yml` runs Stryker weekly and on demand. It reports and never gates a merge or a release.
 
 Configure these GitHub environment secrets: `SSH_HOST`, `SSH_PORT`, `SSH_USER`, `SSH_PRIVATE_KEY`, and a pre-verified `SSH_KNOWN_HOSTS` entry. The deploy user must own `/opt/energy-analyser` and be allowed to use Docker. Keep production approval enabled on the `production` environment.
