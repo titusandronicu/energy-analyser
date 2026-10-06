@@ -252,28 +252,28 @@ None: no schema, no data and no production change. The new dev dependency only a
 
 #### Automated
 
-- [x] 1.1 The seed spec passes against the local stack: `npm run test:e2e`
-- [x] 1.2 Lint, type checks and formatting pass: `npm run lint`, `npx astro check` and `npx prettier --check tests playwright.config.ts package.json`
-- [x] 1.3 The existing unit suite is unaffected: `npm test`
-- [x] 1.4 The teardown removed the test user: `node -e 'const {Client}=require("pg");(async()=>{const c=new Client({connectionString:process.env.SUPABASE_DB_URL??"postgresql://postgres:postgres@127.0.0.1:54322/postgres"});await c.connect();const r=await c.query("select count(*)::int as n from auth.users where email like $1",["e2e-%"]);console.log(r.rows[0].n);await c.end()})()'` prints 0 after the run
+- [x] 1.1 The seed spec passes against the local stack: `npm run test:e2e` — 00f2b14
+- [x] 1.2 Lint, type checks and formatting pass: `npm run lint`, `npx astro check` and `npx prettier --check tests playwright.config.ts package.json` — 00f2b14
+- [x] 1.3 The existing unit suite is unaffected: `npm test` — 00f2b14
+- [x] 1.4 The teardown removed the test user: `node -e 'const {Client}=require("pg");(async()=>{const c=new Client({connectionString:process.env.SUPABASE_DB_URL??"postgresql://postgres:postgres@127.0.0.1:54322/postgres"});await c.connect();const r=await c.query("select count(*)::int as n from auth.users where email like $1",["e2e-%"]);console.log(r.rows[0].n);await c.end()})()'` prints 0 after the run — 00f2b14
 
 #### Manual
 
-- [x] 1.5 Open the report with `npx playwright show-report`: the two seed checks read as user actions (open the page, see the sign-in heading, see the alerts heading)
+- [x] 1.5 Open the report with `npx playwright show-report`: the two seed checks read as user actions (open the page, see the sign-in heading, see the alerts heading) — 00f2b14
 
 ### Phase 2: The alert-rules tests and the deliberate break
 
 #### Automated
 
-- [ ] 2.1 The three alert-rules tests pass: `npm run test:e2e`
-- [ ] 2.2 They stay green when repeated: `npx playwright test --repeat-each=5`
-- [ ] 2.3 Lint and type checks pass: `npm run lint` and `npx astro check`
-- [ ] 2.4 The other suites still pass: `npm test` and `npm run test:integration`
-- [ ] 2.5 The forbidden patterns are absent from the specs: `grep -rnE "waitForTimeout|page\.locator\(|xpath" tests/e2e` prints nothing
+- [x] 2.1 The three alert-rules tests pass: `npm run test:e2e`
+- [x] 2.2 They stay green when repeated: `npx playwright test --repeat-each=5`
+- [x] 2.3 Lint and type checks pass: `npm run lint` and `npx astro check`
+- [x] 2.4 The other suites still pass: `npm test` and `npm run test:integration`
+- [x] 2.5 The forbidden patterns are absent from the specs: `grep -rnE "waitForTimeout|page\.locator\(|xpath" tests/e2e` prints nothing
 
 #### Manual
 
-- [ ] 2.6 Run once headed with `npx playwright test --headed alert-rules`: the page is driven the way an owner would, and no test rule is left on `/dashboard/alerts` afterwards
+- [x] 2.6 Run once headed with `npx playwright test --headed alert-rules`: the page is driven the way an owner would, and no test rule is left on `/dashboard/alerts` afterwards
 
 ### Phase 3: CI job and docs
 
