@@ -265,23 +265,23 @@ None: no schema, no data and no production change. The new dev dependency only a
 
 #### Automated
 
-- [x] 2.1 The three alert-rules tests pass: `npm run test:e2e`
-- [x] 2.2 They stay green when repeated: `npx playwright test --repeat-each=5`
-- [x] 2.3 Lint and type checks pass: `npm run lint` and `npx astro check`
-- [x] 2.4 The other suites still pass: `npm test` and `npm run test:integration`
-- [x] 2.5 The forbidden patterns are absent from the specs: `grep -rnE "waitForTimeout|page\.locator\(|xpath" tests/e2e` prints nothing
+- [x] 2.1 The three alert-rules tests pass: `npm run test:e2e` — 1c0971f
+- [x] 2.2 They stay green when repeated: `npx playwright test --repeat-each=5` — 1c0971f
+- [x] 2.3 Lint and type checks pass: `npm run lint` and `npx astro check` — 1c0971f
+- [x] 2.4 The other suites still pass: `npm test` and `npm run test:integration` — 1c0971f
+- [x] 2.5 The forbidden patterns are absent from the specs: `grep -rnE "waitForTimeout|page\.locator\(|xpath" tests/e2e` prints nothing — 1c0971f
 
 #### Manual
 
-- [x] 2.6 Run once headed with `npx playwright test --headed alert-rules`: the page is driven the way an owner would, and no test rule is left on `/dashboard/alerts` afterwards
+- [x] 2.6 Run once headed with `npx playwright test --headed alert-rules`: the page is driven the way an owner would, and no test rule is left on `/dashboard/alerts` afterwards — 1c0971f
 
 ### Phase 3: CI job and docs
 
 #### Automated
 
-- [ ] 3.1 Formatting is clean on the workflow and docs: `npx prettier --check .github docs README.md context/foundation`
-- [ ] 3.2 Lint and unit tests pass: `npm run lint` and `npm test`
-- [ ] 3.3 The docs name the command: `grep -c "test:e2e" README.md CLAUDE.md docs/prerequisites.md context/foundation/test-stack.md` is at least 1 for each file
+- [x] 3.1 Formatting is clean on the workflow and docs: `npx prettier --check .github docs README.md context/foundation`
+- [x] 3.2 Lint and unit tests pass: `npm run lint` and `npm test`
+- [x] 3.3 The docs name the command: `grep -c "test:e2e" README.md CLAUDE.md docs/prerequisites.md context/foundation/test-stack.md` is at least 1 for each file
 
 #### Manual
 

@@ -2,6 +2,14 @@
 
 The main product and technical decisions, newest first, each with the reason. Detailed plans for each change are in `context/changes/` (active) and `context/archive/` (done); the product requirements are in `context/foundation/prd-v3.md` and the ordered work in `context/foundation/roadmap.md`.
 
+## 2026-10-06 (browser e2e)
+
+- **One browser e2e layer is added, for the alert-rules page (`context/changes/e2e-alert-rules/`; the owner's decisions on the sign-in route and the job).** _Why:_ the one risk no other test can see is the page's forms and the route's expected fields drifting apart; the unit and integration tests never render the page, and such a drift was found only by reading the rendered HTML by hand. That is a browser-only risk, which the strategy accepts as a reason for e2e (`context/foundation/test-plan.md`, risk #8); a rule or a calculation still belongs in a cheaper layer.
+  - **Sign-in through the route, not the form.** A setup project signs a fresh user up through Supabase and signs in with `POST /api/auth/signin` (with the `Origin` header), then saves the cookies as `storageState`. The sign-in page has two React islands with the same "Adres e-mail" label, so a test that fills them can race hydration; the form itself is not tested here.
+  - **A non-required `e2e` job first.** It runs next to `ci`, `smoke` and `integration` in `ci.yml` with no `needs:`, but the ruleset is unchanged: a new browser test cannot block merges while it proves stable. Promoting it is a later ruleset edit after several green pull requests. No retries, so a flake shows.
+  - **Test-only.** No product markup changed (no new `aria-label`s); rules are found by their unique label inside the list item, so a copy change is a reviewed diff. The test server is the production build on `127.0.0.1:4321` with `APP_ORIGIN` equal to the base URL and an existing server is never reused, so a leftover one cannot serve a stale build. Chromium only.
+  - **Rejected:** testing the sign-in form or the magic link (hydration races, Mailpit, outside the risk); a day-notes flow and seeded history (not the risk); Firefox and WebKit (cost and flakes for no extra signal); CI retries (they would hide flakes); making `e2e` required now (no track record yet); `data-testid` or `aria-label` additions (a markup change in a test-only change).
+
 ## 2026-10-06 (alert trigger)
 
 - **The evaluator is triggered by a small `alerts-trigger` service on the production host, not by GitHub's scheduler (`context/changes/alert-rules/`; owner's decision).** _Why:_ after the production deploy the scheduled workflow produced no run in about 80 minutes (not even a skipped one), and the repository's only other scheduled workflow (the weekly mutation run) had started almost 7 hours after its slot. GitHub treats schedules as best effort, which is too weak for alerts.

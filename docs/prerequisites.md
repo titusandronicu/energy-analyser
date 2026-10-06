@@ -28,6 +28,8 @@ The integration suite (`npm run test:integration`, `tests/integration/`) needs a
 - **CI:** the `smoke` job's own stack is used, with its database on 127.0.0.1:54322 (the CLI's published default); the suite runs after smoke in that job.
 - **Order with smoke:** smoke's steps "dashboard shows the bill forecast card" and "dashboard shows the fresh live state" fail when smoke runs within about a minute after the suite (the suite's pushes are newer than smoke's). Run smoke first, or wait over a minute after the suite (`context/foundation/test-plan.md` §6.2).
 
+- **Browser e2e (`npm run test:e2e`, `tests/e2e/`):** needs the same reachable stack (on this setup the relay to the UGREEN, ports 54321 and 54322; the teardown deletes its test user through the stack's Postgres, local hosts only) and the same two env values (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, the anon key only; Playwright does not load `.env`), plus a one-time `npx playwright install chromium` (about 170 MB, outside `npm ci`). It builds and starts the app itself on 127.0.0.1:4321, so that port must be free. Details: `context/foundation/test-stack.md`. **CI:** the `e2e` job starts its own stack and installs its own browser (`npx playwright install --with-deps chromium`); it is not a required check.
+
 ## Home Assistant integrations
 
 The lab's collector reads these entities (homelab-2 `infra/compose/energy-app/scripts/collect-ha-snapshot.py`, `ENTITY_MAP`). Any missing mapped entity marks the snapshot `degraded`.
@@ -109,11 +111,11 @@ Narration runs in the lab (`scripts/run-energy-advisory.py`), never in this app.
 
 ## Merge gate on `main` (GitHub ruleset)
 
-The checks `ci`, `smoke` and `integration` (jobs of `.github/workflows/ci.yml`) are required on `main` by a repository ruleset, with no bypass for anyone including the owner; branches do not have to be up to date. The definition is `.github/rulesets/main-quality-gates.json`. It also blocks direct pushes, force pushes and deletion of `main`, so every change goes through a pull request.
+The checks `ci`, `smoke` and `integration` (jobs of `.github/workflows/ci.yml`) are required on `main` by a repository ruleset (the fourth job of that file, `e2e`, is not required), with no bypass for anyone including the owner; branches do not have to be up to date. The definition is `.github/rulesets/main-quality-gates.json`. It also blocks direct pushes, force pushes and deletion of `main`, so every change goes through a pull request.
 
 - **Apply or restore** (owner, needs repo admin): `gh api -X POST repos/titusandronicu/energy-analyser/rulesets --input .github/rulesets/main-quality-gates.json`. To change it, `gh api -X PUT repos/titusandronicu/energy-analyser/rulesets/<id> --input ...` (list ids with `gh api repos/titusandronicu/energy-analyser/rulesets`).
 - **If CI itself is broken and blocks every merge**: set the ruleset's enforcement to `disabled` (repository Settings, Rules, Rulesets, `main-quality-gates`), merge the fix, then set it back to `active`. Owner only; do it deliberately.
-- **Renaming a job** (`ci`, `smoke`, `integration`) leaves the old check name pending forever; update the ruleset JSON and the live ruleset in the same change.
+- **Renaming a job** (`ci`, `smoke`, `integration`; and `e2e` once it is required) leaves the old check name pending forever; update the ruleset JSON and the live ruleset in the same change.
 - The ruleset requires check names, not workflow contents: a pull request that edits `ci.yml` runs its own version of the workflow. Accepted for a single owner (`docs/decisions.md`).
 
 ## Prerequisites by roadmap item

@@ -13,6 +13,7 @@ This file provides guidance to AI Agent when working with code in this repositor
 - `npm test` — Vitest unit tests (`src/**/*.test.ts`)
 - `npm run contract:export` — regenerate `docs/ingest/contract-v1.schema.json` from the zod contract; `npm test` fails if the committed schema drifts
 - `npm run smoke` — dependency-free smoke test (`scripts/smoke.mjs`) of the auth flow and push ingestion against a running server, `BASE_URL` env (default `http://localhost:4321`). It creates a user and uses the local seed ingest token, so it requires `ALLOW_SIGNUP=true` and local Supabase; never run it against production. `SUPABASE_URL` + `SUPABASE_ANON_KEY` enable its direct-table access check.
+- `npm run test:e2e` — Playwright browser tests (`tests/e2e/`, Chromium, config `playwright.config.ts`) of the alert-rules page: builds and starts the app itself on 127.0.0.1:4321 (the port must be free), signs in a fresh owner through `POST /api/auth/signin`, and deletes that user in the teardown. Needs a reachable local Supabase plus `SUPABASE_URL` and `SUPABASE_ANON_KEY` (anon key only; Playwright does not load `.env`), a one-time `npx playwright install chromium`, and Postgres on port 54322 for the teardown (`SUPABASE_DB_URL` overrides; local hosts only). Refuses non-local URLs and is not part of `npm test`. Rules and recipe: `context/foundation/test-stack.md`.
 - `npm run test:integration` — Vitest integration suite (`tests/integration/**/*.test.ts`, config `vitest.integration.config.ts`): pushes through `handleIngest` and the real `ingest_push` and reads back with an owner session. Needs a reachable local Supabase plus `SUPABASE_URL` and `SUPABASE_ANON_KEY` (anon key only), refuses non-local URLs, and is not part of `npm test`. The access tests also connect to the stack's Postgres on port 54322 (`SUPABASE_DB_URL` overrides the local default; local hosts only) to create a non-owner and a second ingest token.
 
 Pre-commit hooks: husky + lint-staged runs `eslint --fix` on `*.{ts,tsx,astro}` and `prettier --write` on `*.{json,css,md}`.
@@ -64,7 +65,7 @@ Full server-side rendering (`output: "server"` in astro.config.mjs). All pages a
 
 ## CI
 
-GitHub Actions runs three jobs on pushes and pull requests to `main`: `ci` (lint, unit tests, type checks, build), `smoke` (local-Supabase smoke test) and `integration` (the integration suite). A ruleset requires all three on `main`, with no bypass (`docs/prerequisites.md`). A successful push publishes an immutable GHCR image; production deployment is manual through the protected `production` environment.
+GitHub Actions runs four jobs on pushes and pull requests to `main`: `ci` (lint, unit tests, type checks, build), `smoke` (local-Supabase smoke test), `integration` (the integration suite) and `e2e` (the Playwright browser tests). A ruleset requires the first three on `main`, with no bypass (`docs/prerequisites.md`); `e2e` is not a required check. A successful push publishes an immutable GHCR image; production deployment is manual through the protected `production` environment.
 
 ## Cursor Cloud specific instructions
 
