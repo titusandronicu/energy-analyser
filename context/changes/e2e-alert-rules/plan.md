@@ -279,9 +279,9 @@ None: no schema, no data and no production change. The new dev dependency only a
 
 #### Automated
 
-- [x] 3.1 Formatting is clean on the workflow and docs: `npx prettier --check .github docs README.md context/foundation`
-- [x] 3.2 Lint and unit tests pass: `npm run lint` and `npm test`
-- [x] 3.3 The docs name the command: `grep -c "test:e2e" README.md CLAUDE.md docs/prerequisites.md context/foundation/test-stack.md` is at least 1 for each file
+- [x] 3.1 Formatting is clean on the workflow and docs: `npx prettier --check .github docs README.md context/foundation` — 1729601
+- [x] 3.2 Lint and unit tests pass: `npm run lint` and `npm test` — 1729601
+- [x] 3.3 The docs name the command: `grep -c "test:e2e" README.md CLAUDE.md docs/prerequisites.md context/foundation/test-stack.md` is at least 1 for each file — 1729601
 
 #### Manual
 
