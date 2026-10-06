@@ -367,9 +367,9 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Automated
 
-- [x] 1.1 The new tests pass against the unchanged database: `npm run test:integration` — 566ea8b
-- [x] 1.2 Unit tests and type checks still pass: `npm test && npx astro check` — 566ea8b
-- [x] 1.3 Lint and format pass on the new files: `npm run lint && npx prettier --check tests/integration` — 566ea8b
+- [x] 1.1 The new tests pass against the unchanged database: `npm run test:integration` — 11fc526
+- [x] 1.2 Unit tests and type checks still pass: `npm test && npx astro check` — 11fc526
+- [x] 1.3 Lint and format pass on the new files: `npm run lint && npx prettier --check tests/integration` — 11fc526
 
 #### Manual
 
@@ -379,26 +379,26 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Automated
 
-- [x] 2.1 The migration applies on a fresh stack in the CI `integration` job (a local apply needs the relay, the `scripts/remote-docker.sh exec` wrapper and the owner's OK) — c64d4d1
-- [x] 2.2 Golden replay, boundary and every existing integration test pass unchanged: `npm run test:integration` — c64d4d1
-- [x] 2.3 Retention parity test passes: `npx vitest run --config vitest.integration.config.ts tests/integration/ingest-retention.test.ts` — c64d4d1
-- [x] 2.4 A test using `has_function_privilege` proves no client role can execute any `ingest` helper and `ingest_push` stays anon-only: `npx vitest run --config vitest.integration.config.ts tests/integration/access-abuse.test.ts` — c64d4d1
-- [x] 2.5 Unit tests, lint and type check pass: `npm test && npm run lint && npx astro check` — c64d4d1
+- [x] 2.1 The migration applies on a fresh stack in the CI `integration` job (a local apply needs the relay, the `scripts/remote-docker.sh exec` wrapper and the owner's OK) — 11fc526
+- [x] 2.2 Golden replay, boundary and every existing integration test pass unchanged: `npm run test:integration` — 11fc526
+- [x] 2.3 Retention parity test passes: `npx vitest run --config vitest.integration.config.ts tests/integration/ingest-retention.test.ts` — 11fc526
+- [x] 2.4 A test using `has_function_privilege` proves no client role can execute any `ingest` helper and `ingest_push` stays anon-only: `npx vitest run --config vitest.integration.config.ts tests/integration/access-abuse.test.ts` — 11fc526
+- [x] 2.5 Unit tests, lint and type check pass: `npm test && npm run lint && npx astro check` — 11fc526
 
 #### Manual
 
 - [x] 2.6 Production's current `ingest_push` body matches the repo's latest, checked through the Supabase connector before the migration is applied — owner confirmed 2026-10-06; read-only check through the Supabase connector: production ingest_push body identical to 20261001113911 (126 of 126 lines), 12 migrations recorded with the repo's versions, neither new migration applied yet
-- [ ] 2.7 The migration is applied in production through the Supabase connector and confirmed in `list_migrations`; the lab's next push still returns 201
+- [x] 2.7 The migration is applied in production through the Supabase connector and confirmed in `list_migrations`; the lab's next push still returns 201 — owner applied both migrations with the Supabase CLI (db push) on 2026-10-06; verified read-only through the connector: 14 migrations recorded with the repo's versions, ingest schema and 5 helpers not executable by anon, authenticated or PUBLIC, ingest_push thin and anon-only; pushes 3033 to 3037 (newest 10:25:57 UTC) were stored after the replacement (transaction ids above 6291) and wrote 27 daily, 48 hourly and 10 summary rows, so the lab's pushes still succeed
 - [x] 2.8 The rollback is understood: re-running the previous body restores the old function and the helper schema can stay unused — owner confirmed 2026-10-06; rollback understood (re-run the 20261001113911 body through the connector; the ingest helper schema can stay unused)
 
 ### Phase 3: Restructure the service (pure refactor, TypeScript)
 
 #### Automated
 
-- [x] 3.1 Unit tests pass without edits to `ingest.test.ts` or `contract.test.ts`: `npm test` — 177f010
-- [x] 3.2 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json` — 177f010
-- [x] 3.3 The integration suite, including the golden replay and retention parity tests, passes: `npm run test:integration` — 177f010
-- [x] 3.4 Type check, lint and build pass: `npx astro check && npm run lint && npm run build` — 177f010
+- [x] 3.1 Unit tests pass without edits to `ingest.test.ts` or `contract.test.ts`: `npm test` — 11fc526
+- [x] 3.2 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json` — 11fc526
+- [x] 3.3 The integration suite, including the golden replay and retention parity tests, passes: `npm run test:integration` — 11fc526
+- [x] 3.4 Type check, lint and build pass: `npx astro check && npm run lint && npm run build` — 11fc526
 
 #### Manual
 
@@ -408,27 +408,27 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Automated
 
-- [x] 4.1 Unit tests cover the new order: `npm test` — 14ee144
-- [x] 4.2 Integration tests prove bad token plus bad body is 401, good token plus bad body is 422, and a normal push is still 201: `npm run test:integration` — 14ee144
-- [x] 4.3 `ingest_token_ok` is executable by anon and returns only a boolean: `npx vitest run --config vitest.integration.config.ts tests/integration/access-abuse.test.ts` — 14ee144
-- [x] 4.4 The smoke test passes against a built server: `npm run smoke` (the `smoke` CI job) — 14ee144
-- [x] 4.5 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json` — 14ee144
-- [x] 4.6 Type check, lint and build pass: `npx astro check && npm run lint && npm run build` — 14ee144
+- [x] 4.1 Unit tests cover the new order: `npm test` — 11fc526
+- [x] 4.2 Integration tests prove bad token plus bad body is 401, good token plus bad body is 422, and a normal push is still 201: `npm run test:integration` — 11fc526
+- [x] 4.3 `ingest_token_ok` is executable by anon and returns only a boolean: `npx vitest run --config vitest.integration.config.ts tests/integration/access-abuse.test.ts` — 11fc526
+- [x] 4.4 The smoke test passes against a built server: `npm run smoke` (the `smoke` CI job) — 11fc526
+- [x] 4.5 The committed JSON Schema is unchanged: `npm run contract:export && git diff --exit-code docs/ingest/contract-v1.schema.json` — 11fc526
+- [x] 4.6 Type check, lint and build pass: `npx astro check && npm run lint && npm run build` — 11fc526
 
 #### Manual
 
 - [x] 4.7 The flipped test is renamed to describe the new behaviour and the diff shows no other Phase 1 test edited — owner confirmed 2026-10-06; the only Phase 1 test edited since is tests/integration/ingest-boundary.test.ts (flipped and renamed test, call wiring, comments), the golden test is untouched
-- [ ] 4.8 In production the migration is applied before the app is deployed; after the deploy the lab's next push returns 201
+- [x] 4.8 In production the migration is applied before the app is deployed; after the deploy the lab's next push returns 201 — owner approved the deploy and I dispatched it on 2026-10-06 (workflow run 37450011236, sha 11fc526, completed/success at 10:30 UTC); both migrations were applied first (14 recorded); /api/health reports 11fc526168c24044003d781c77800c50e9d3815d; the first lab push after the new app, id 3038 received 10:31:12 UTC with daily, hourly, summary and recommendation sections, was stored (201)
 - [x] 4.9 Locally, `scripts/push-fixture.mjs` with a wrong token and an invalid body prints 401 — WAIVED by owner 2026-10-06, not run locally; the behaviour is proven in CI by the flipped integration test "an unknown token with an invalid body answers 401: the token is checked before the body" and by the unit cases for a rejected token with a non-JSON body, a contract-breaking body and an oversized Content-Length
 
 ### Phase 5: Docs and close-out
 
 #### Automated
 
-- [x] 5.1 Formatting and lint pass: `npx prettier --check docs context CLAUDE.md && npm run lint` — 5196ac4
-- [x] 5.2 The new function and order are documented: `command grep -n "ingest_token_ok" docs/ingest/README.md docs/decisions.md docs/prerequisites.md` returns a match in each file — 5196ac4
-- [x] 5.3 Unit tests still pass: `npm test` — 5196ac4
-- [x] 5.5 The stale migration count is gone: `command grep -n "all 12 migrations" docs/prerequisites.md` returns nothing — 5196ac4
+- [x] 5.1 Formatting and lint pass: `npx prettier --check docs context CLAUDE.md && npm run lint` — 11fc526
+- [x] 5.2 The new function and order are documented: `command grep -n "ingest_token_ok" docs/ingest/README.md docs/decisions.md docs/prerequisites.md` returns a match in each file — 11fc526
+- [x] 5.3 Unit tests still pass: `npm test` — 11fc526
+- [x] 5.5 The stale migration count is gone: `command grep -n "all 12 migrations" docs/prerequisites.md` returns nothing — 11fc526
 
 #### Manual
 
