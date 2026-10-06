@@ -399,4 +399,4 @@ Additive migration only (two new tables, two functions); no change to `ingest_to
 - [x] 4.4 Mikrus reaches Telegram: from the VPS, `curl -sS -o /dev/null -w '%{http_code}' https://api.telegram.org` answers an HTTP status (read-only check, done by the owner)
 - [x] 4.5 Production steps done in the documented order: migration applied, token minted and inserted, `.env.runtime` secrets set, repository secret and variable added, app deployed, then `ALERTS_ENABLED=true` set last
 - [ ] 4.6 A manual `workflow_dispatch` run is green, and a temporary low `bill_above` rule produces an alarm message and, once raised, a recovery message
-- [ ] 4.7 A scheduled run appears in the Actions list within about 15 minutes of the first manual run
+- [x] 4.7 A scheduled run appears in the Actions list within about 15 minutes of the first manual run
