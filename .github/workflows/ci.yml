@@ -90,5 +90,7 @@ jobs:
             playwright-report/
             test-results/
           if-no-files-found: ignore
+          # The traces can hold the throwaway user's sign-up body and cookies; a few days is enough to open a failure.
+          retention-days: 3
       - if: always()
         run: npx supabase stop --no-backup

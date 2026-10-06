@@ -22,3 +22,17 @@
 - **Problem:** After `/10x-research`, an "implement" request went straight to code. The research's open questions were settled by the agent's defaults instead of the owner, there was no plan review, no Progress or manual-check list, and the review later found edge-case issues (rounded kWh against range edges, +40% wording) a plan review would likely have caught.
 - **Rule:** An "implement" request after research goes through `/10x-plan` (a short plan is fine), `/10x-plan-review` and `/10x-implement`. Before planning, the open questions in research.md are put to the owner; a default is used only when the owner explicitly says so, and the plan records which were defaults.
 - **Applies to:** every change in this repository, including small, single-card changes.
+
+## A safety guard that exists as copies is fixed in all copies at once
+
+- **Context:** `tests/e2e/support/env.ts`, `tests/integration/support/stack.ts` and `privileged.ts`; implementation review of `e2e-alert-rules`, findings F1 and F7 (2026-10-06).
+- **Problem:** The guard that keeps a test run from touching a non-local database exists in more than one copy. A flaw (the pg driver lets a `?host=` query parameter override the host the guard had checked) sat in two copies unnoticed until a review of the newest one.
+- **Rule:** A safety guard that is copied is changed in every copy in the same change and covered by one shared test table; when a further copy is about to be written, extract a shared pure module instead.
+- **Applies to:** every guard that stops a test run or script from reaching a non-local database or a secret key.
+
+## Do not rely on GitHub's scheduler for anything that must be regular
+
+- **Context:** alert-rules Phase 4 (2026-10-06); `docs/decisions.md`, "alert trigger".
+- **Problem:** The `*/10` alerts workflow produced no run in about 80 minutes after the deploy, and the weekly mutation run had started almost 7 hours after its slot. The plan had assumed delays of a few minutes.
+- **Rule:** A trigger that must be regular (alerts, health pings) runs on a host we control (a compose service or cron). GitHub's schedule is for non-urgent work, and a plan that uses it names the first scheduled run as a verification step.
+- **Applies to:** every change that adds a scheduled workflow or depends on one for timeliness.

@@ -41,7 +41,7 @@ async function createRule(page: Page, label: string, threshold: number) {
   await expect(ruleItem(page, label)).toBeVisible();
 }
 
-// Starts from a freshly loaded page, so it also works as cleanup after a failure in the middle of a test.
+// Starts from a freshly loaded page, so it works from any state a test left the page in.
 async function deleteRule(page: Page, label: string) {
   await openAlertsPage(page);
   const item = ruleItem(page, label);
@@ -52,12 +52,19 @@ async function deleteRule(page: Page, label: string) {
   await expect(ruleItem(page, label)).toHaveCount(0);
 }
 
+// Best-effort cleanup for a test that may already have failed: an error here must not replace the real failure. The
+// global teardown deletes the whole user, and its rules with it, anyway.
+async function removeQuietly(page: Page, label: string) {
+  await deleteRule(page, label).catch(() => undefined);
+}
+
 test("the owner creates, edits, disables and deletes a rule", async ({ page }) => {
   const label = uniqueLabel();
   const threshold = randomMinutes(15, 299);
   const newThreshold = randomMinutes(300, 599);
 
   await createRule(page, label, threshold);
+  let deleted = false;
   try {
     const item = ruleItem(page, label);
     await expect(item).toContainText(`starsze niż ${threshold} min`);
@@ -75,8 +82,12 @@ test("the owner creates, edits, disables and deletes a rule", async ({ page }) =
     await expect(page.getByRole("status")).toHaveText("Stan reguły zmieniony.");
     await expect(item).toContainText("wyłączona");
     await expect(item.getByRole("button", { name: "Włącz", exact: true })).toBeVisible();
-  } finally {
+
+    // The delete is a step the test asserts, not only cleanup; the finally block runs only if it did not complete.
     await deleteRule(page, label);
+    deleted = true;
+  } finally {
+    if (!deleted) await removeQuietly(page, label);
   }
 });
 
@@ -107,6 +118,6 @@ test("the owner cannot create the same rule twice", async ({ page }) => {
     await expect(ruleItem(page, label)).toBeVisible();
     await expect(ruleItem(page, secondLabel)).toHaveCount(0);
   } finally {
-    await deleteRule(page, label);
+    await removeQuietly(page, label);
   }
 });

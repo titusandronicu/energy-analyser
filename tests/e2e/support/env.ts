@@ -3,6 +3,7 @@
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
 const DEFAULT_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+const OVERRIDING_PARAMS = new Set(["host", "hostaddr", "port"]);
 const RECIPE =
   "scripts/remote-docker.sh exec npx supabase status -o env | grep -E '^(API_URL|ANON_KEY)=' " +
   "(map API_URL to SUPABASE_URL and ANON_KEY to SUPABASE_ANON_KEY; context/foundation/test-plan.md §6.2)";
@@ -82,6 +83,15 @@ export function requireDbUrl(): string {
     throw new Error(
       `Refusing to run privileged SQL against database host "${parsed.hostname}": the e2e teardown only runs against a local stack (127.0.0.1 or localhost).`,
     );
+  }
+  // The pg driver lets these query parameters override the host or port in the URL (`?host=db.example.com` connects
+  // to that host while `hostname` above still reads 127.0.0.1), which would walk around the check. Refuse them.
+  for (const key of parsed.searchParams.keys()) {
+    if (OVERRIDING_PARAMS.has(key.toLowerCase())) {
+      throw new Error(
+        `Refusing SUPABASE_DB_URL with a "${key}" query parameter: it can redirect the connection away from the host checked here.`,
+      );
+    }
   }
   return raw;
 }
