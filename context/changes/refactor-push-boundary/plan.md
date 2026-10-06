@@ -402,7 +402,7 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Manual
 
-- [ ] 3.5 Reading the diff confirms the stage order is unchanged: header, Content-Length, streamed read, JSON parse, validate, RPC
+- [x] 3.5 Reading the diff confirms the stage order is unchanged: header, Content-Length, streamed read, JSON parse, validate, RPC — owner confirmed 2026-10-06; Phase 3 diff keeps the order header, Content-Length, streamed read, JSON parse, validate, RPC
 
 ### Phase 4: Token before body (behaviour change)
 
@@ -417,7 +417,7 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Manual
 
-- [ ] 4.7 The flipped test is renamed to describe the new behaviour and the diff shows no other Phase 1 test edited
+- [x] 4.7 The flipped test is renamed to describe the new behaviour and the diff shows no other Phase 1 test edited — owner confirmed 2026-10-06; the only Phase 1 test edited since is tests/integration/ingest-boundary.test.ts (flipped and renamed test, call wiring, comments), the golden test is untouched
 - [ ] 4.8 In production the migration is applied before the app is deployed; after the deploy the lab's next push returns 201
 - [ ] 4.9 Locally, `scripts/push-fixture.mjs` with a wrong token and an invalid body prints 401
 
@@ -432,6 +432,6 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Manual
 
-- [ ] 5.4 The owner reads the ingest section of `docs/ingest/README.md` and confirms the order and statuses match the code
+- [x] 5.4 The owner reads the ingest section of `docs/ingest/README.md` and confirms the order and statuses match the code — owner confirmed 2026-10-06; ingest section of docs/ingest/README.md read against the code
 
 Note (2026-10-06): row 5.1 runs `npx prettier --check docs context CLAUDE.md`, which also fails on two archived HTML design files (`context/archive/2026-09-29-dashboard-refresh-icons-sparklines/design/Main.dc.html` and `Mobile.dc.html`). They were already failing before this change and this change does not touch them (archives are read-only by convention), so 5.1 was judged on every other file, which passes, together with `npm run lint`.
