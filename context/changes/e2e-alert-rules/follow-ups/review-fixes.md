@@ -1,0 +1,3 @@
+# Follow-ups from the implementation review
+
+- **Shared database guard module (F7).** `tests/e2e/support/env.ts` (`requireStackEnv`, `requireDbUrl`), `tests/integration/support/stack.ts` (`requireStack`) and `privileged.ts` (`requirePrivileged`) are three copies of one guard, kept in step by hand and now by one shared test table (`tests/integration/db-url-guard.test.ts`). The structural fix is one pure module (no supabase-js import, for example `tests/support/local-guards.ts`) imported by both suites. Not done in this change: it touches the integration helpers beyond the e2e scope. Trigger: the next time a guard rule changes, or a fourth copy is needed.

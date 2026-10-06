@@ -285,5 +285,5 @@ None: no schema, no data and no production change. The new dev dependency only a
 
 #### Manual
 
-- [ ] 3.4 After the pull request is open, the `e2e` job passes next to the three required checks: `gh pr checks`
-- [ ] 3.5 On a throwaway branch that is never merged, renaming a form field in `AlertRulesPanel.astro` makes the `e2e` job fail and upload the `playwright-report` artifact
+- [x] 3.4 After the pull request is open, the `e2e` job passes next to the three required checks: `gh pr checks`
+- [x] 3.5 On a throwaway branch that is never merged, renaming a form field in `AlertRulesPanel.astro` makes the `e2e` job fail and upload the `playwright-report` artifact
