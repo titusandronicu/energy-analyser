@@ -297,6 +297,8 @@ A scheduled workflow calls the route, the documentation catches up with the code
 
 **Implementation Note**: After completing this phase and all automated verification passes, pause here for manual confirmation from the human that the manual testing was successful before proceeding to the next phase. Phase blocks use plain bullets — the corresponding `- [ ]` checkboxes for these items live in the `## Progress` section at the bottom of the plan.
 
+**Addendum (2026-10-06, after the production deploy):** GitHub's scheduler did not start the `*/10` workflow at all in about 80 minutes (the repository's weekly mutation run had started almost 7 hours late), so step 4.7 as written, "a scheduled run appears in the Actions list", cannot be the verification. By the owner's decision the regular trigger became the `alerts-trigger` compose service on the production host (`scripts/alerts-trigger.mjs`, every 5 minutes, token `alerts-vps` in `.env.alerts`), and `alerts-evaluate.yml` is manual only; `ALERTS_ENABLED` is gone. Step 4.7 is therefore verified by the service's log lines (`alerts_trigger`, status 200, about every 5 minutes). The reasons and the rejected options are in `docs/decisions.md` ("alert trigger"). Step 4.6 additionally needs the October forecast to reach 7 complete days (about 8-9 October) before a `bill_above` rule can alarm.
+
 ---
 
 ## Testing Strategy
@@ -394,7 +396,7 @@ Additive migration only (two new tables, two functions); no change to `ingest_to
 
 #### Manual
 
-- [ ] 4.4 Mikrus reaches Telegram: from the VPS, `curl -sS -o /dev/null -w '%{http_code}' https://api.telegram.org` answers an HTTP status (read-only check, done by the owner)
-- [ ] 4.5 Production steps done in the documented order: migration applied, token minted and inserted, `.env.runtime` secrets set, repository secret and variable added, app deployed, then `ALERTS_ENABLED=true` set last
+- [x] 4.4 Mikrus reaches Telegram: from the VPS, `curl -sS -o /dev/null -w '%{http_code}' https://api.telegram.org` answers an HTTP status (read-only check, done by the owner)
+- [x] 4.5 Production steps done in the documented order: migration applied, token minted and inserted, `.env.runtime` secrets set, repository secret and variable added, app deployed, then `ALERTS_ENABLED=true` set last
 - [ ] 4.6 A manual `workflow_dispatch` run is green, and a temporary low `bill_above` rule produces an alarm message and, once raised, a recovery message
 - [ ] 4.7 A scheduled run appears in the Actions list within about 15 minutes of the first manual run

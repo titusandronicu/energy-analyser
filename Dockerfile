@@ -22,6 +22,8 @@ ENV NODE_ENV=production \
 WORKDIR /app
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/package.json ./package.json
+# The loop the `alerts-trigger` compose service runs from this same image (compose.yaml); it needs nothing but Node.
+COPY --from=build --chown=node:node /app/scripts/alerts-trigger.mjs ./scripts/alerts-trigger.mjs
 COPY --from=production-dependencies --chown=node:node /app/node_modules ./node_modules
 USER node
 EXPOSE 20170

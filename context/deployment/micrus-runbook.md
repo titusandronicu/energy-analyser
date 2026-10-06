@@ -61,6 +61,8 @@ Restrict it immediately:
 chmod 600 /opt/energy-analyser/.env.runtime
 ```
 
+The alert trigger reads its own small file, `/opt/energy-analyser/.env.alerts` (created the same way, `chmod 600`): `ALERTS_TOKEN=` with the `alerts-vps` token and `ALERTS_URL=http://[<the HOST value above>]:20170`. Its steps, and why the `alerts-trigger` compose service exists, are in `docs/prerequisites.md` ("One-time production steps (app)", alert rules) and `docs/decisions.md` (2026-10-06, alert trigger).
+
 In Supabase, set global `auth.enable_signup=false`, keep `auth.email.enable_signup=true` so the existing owner can still sign in, create the single owner account, and set the Site URL to `https://neil170-20170.mikrus.cloud`.
 
 Sign-in is an emailed one-time link. Under Authentication → Emails, set **both** the "Magic link" and "Confirm signup" templates to the body of `supabase/templates/magic-link.html` (subject: `Twój link do logowania — Energy Analyser`). Do this **before** deploying a release that includes `/auth/confirm`: Supabase's default template links to a flow the app doesn't accept, so sign-in fails until the template is changed. The owner's sign-in email must be a member of the Supabase organisation while the built-in mailer is used.
