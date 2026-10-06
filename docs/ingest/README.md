@@ -38,16 +38,18 @@ PGE CSV rows, customer or POD identifiers, readings finer than the hourly totals
 
 ## Responses
 
-| Status    | Body                                                   | Meaning                                                 | Retry?                                     |
-| --------- | ------------------------------------------------------ | ------------------------------------------------------- | ------------------------------------------ |
-| 201       | `{"status":"created"}`                                 | Stored                                                  | —                                          |
-| 200       | `{"status":"duplicate"}`                               | Same `captured_at` and identical content already stored | —                                          |
-| 400       | `{"error":"invalid JSON"}`                             | Body isn't JSON                                         | No — fix the sender                        |
-| 401       | `{"error":"unauthorized"}`                             | Missing, unknown or revoked token                       | No — check the token                       |
-| 409       | `{"error":"capture time conflict"}`                    | Same `captured_at`, different content                   | No — a lab bug; never reuse a capture time |
-| 413       | `{"error":"payload too large"}`                        | Over 256 KB                                             | No                                         |
-| 422       | `{"error":"invalid payload","path":"…","message":"…"}` | Schema violation (`path` names the first bad field)     | No — fix the sender                        |
-| 500 / 503 | `{"error":…}`                                          | App or database problem                                 | Yes, with the same payload                 |
+| Status    | Body                                                   | Meaning                                                     | Retry?                                     |
+| --------- | ------------------------------------------------------ | ----------------------------------------------------------- | ------------------------------------------ |
+| 201       | `{"status":"created"}`                                 | Stored                                                      | —                                          |
+| 200       | `{"status":"duplicate"}`                               | Same `captured_at` and identical content already stored     | —                                          |
+| 400       | `{"error":"invalid JSON"}`                             | Body isn't JSON                                             | No — fix the sender                        |
+| 401       | `{"error":"unauthorized"}`                             | Missing, unknown or revoked token (checked before the body) | No — check the token                       |
+| 409       | `{"error":"capture time conflict"}`                    | Same `captured_at`, different content                       | No — a lab bug; never reuse a capture time |
+| 413       | `{"error":"payload too large"}`                        | Over 256 KB                                                 | No                                         |
+| 422       | `{"error":"invalid payload","path":"…","message":"…"}` | Schema violation (`path` names the first bad field)         | No — fix the sender                        |
+| 500 / 503 | `{"error":…}`                                          | App or database problem                                     | Yes, with the same payload                 |
+
+The checks run in this order: the `Authorization` header, the token (the database function `ingest_token_ok`), the body size, JSON parsing, the schema, then the store. A bad token therefore always gets 401, whatever the body holds, and an oversized or malformed body is answered only for a valid token.
 
 Retry network errors and 5xx with the **same** payload; the duplicate rule makes that safe. Never retry 4xx.
 
@@ -57,7 +59,7 @@ What gets stored: raw pushes for 14 days, daily totals per day and hourly totals
 
 Tokens are stored only as SHA-256 hashes in `public.ingest_tokens`, and there is no service-role key anywhere.
 
-Payload validation (strict keys, size cap, capture-time window) happens in the app, not in the database. The `ingest_push` function checks only the token, so someone holding both an ingest token and the app's Supabase anon key could bypass validation by calling it directly. That's accepted for v1 because the home lab never receives the anon key. Keep it that way: give pushers only the ingest token, and never both secrets.
+Payload validation (strict keys, size cap, capture-time window) happens in the app, not in the database. The token is checked before the body is read, and `ingest_push` checks it again for a token revoked in between; neither function validates the payload, so someone holding both an ingest token and the app's Supabase anon key could bypass validation by calling `ingest_push` directly. That's accepted for v1 because the home lab never receives the anon key. Keep it that way: give pushers only the ingest token, and never both secrets.
 
 1. **Create:** `node scripts/create-ingest-token.mjs <label>` prints the token once, plus an `insert` statement. Run the statement in the Supabase SQL editor and put the token in the home lab's push config (never in either repo).
 2. **Verify:** `BASE_URL=<app origin> INGEST_TOKEN=<token> node scripts/push-fixture.mjs` should print `201`. It sends only the live `state` section, which the next real push supersedes. `--full` also sends the example's made-up recommendation, daily history, bill forecast, hourly history and period summaries; use it only against a local database, because recommendations and period summaries are never pruned. Against a non-local `BASE_URL` a whole body is refused unless `--allow-remote` is passed, which exists for a deliberate staging push.

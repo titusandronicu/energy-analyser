@@ -161,7 +161,7 @@ the relevant rollout phase ships; before that, the sub-section reads
 - **Location**: `tests/integration/<topic>.test.ts`, outside `src`, with its own config `vitest.integration.config.ts`. `npm test` and Stryker never collect it. Files run one after another, not in parallel.
 - **Helpers** (`tests/integration/support/`):
   - `stack.ts`: `requireStack` refuses a missing env, a non-local or non-`http:` URL and any key that is not an anon key (`sb_publishable_` or a JWT with role `anon`), and never skips; `anonClient`; `ownerClient` signs up a user (every local user is an owner through the seed trigger).
-  - `push.ts`: `push()` mirrors the route (`handleIngest` plus `rpc("ingest_push")`) with the public seed token.
+  - `push.ts`: `push()` mirrors the route (`handleIngest` with the token check `ingest_token_ok`, plus `rpc("ingest_push")`) with the public seed token.
   - `bodies.ts`: `baseBody`, `dailyRow`, `hourRow`, `summary`, `recommendation`, `billForecast`, with invented figures only; `billForecast` re-dates `generated_at` and `month` of `scripts/fixtures/bill-forecast/lab-shape.json`.
   - `keys.ts`: `freshDays`, `emptyWeek`, `emptySummaryDay`, `freshWindowHours`, `windowHours`, `nextCapturedAt`, `olderCapturedAt`.
   - `warsaw-day.ts`: the clock hours of a Warsaw day (23 to 25).

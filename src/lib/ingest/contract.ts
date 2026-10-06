@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { RAW_PUSH_RETENTION_DAYS } from "./retention";
 
 // Push contract v1: the only shape the home lab may send to POST /api/ingest.
 // Objects are strict on purpose — an unknown key is rejected, so private fields can't slip in
@@ -6,7 +7,7 @@ import { z } from "zod";
 
 export const INGEST_CONTRACT_VERSION = 1;
 export const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000;
-export const MAX_CAPTURE_AGE_MS = 14 * 24 * 60 * 60 * 1000;
+export const MAX_CAPTURE_AGE_MS = RAW_PUSH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
 const reading = z.number().nullable();
 const energyKwh = z.number().nonnegative().nullable();
@@ -256,7 +257,11 @@ export function validateIngestPayload(input: unknown, now: Date = new Date()) {
       if (capturedAt - now.getTime() > MAX_FUTURE_SKEW_MS) {
         ctx.addIssue({ code: "custom", path: ["captured_at"], message: "captured_at is in the future" });
       } else if (now.getTime() - capturedAt > MAX_CAPTURE_AGE_MS) {
-        ctx.addIssue({ code: "custom", path: ["captured_at"], message: "captured_at is older than 14 days" });
+        ctx.addIssue({
+          code: "custom",
+          path: ["captured_at"],
+          message: `captured_at is older than ${String(RAW_PUSH_RETENTION_DAYS)} days`,
+        });
       }
     })
     .safeParse(input);

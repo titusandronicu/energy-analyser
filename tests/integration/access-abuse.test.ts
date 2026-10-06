@@ -440,5 +440,96 @@ describe("access abuse: signed-out and non-owner clients read and write nothing"
       expect(await push(baseBody(capturedAt))).toEqual(CREATED);
       expect(instant((await storedPushes(capturedAt))[0].captured_at)).toBe(capturedAt.getTime());
     });
+
+    // The privilege layer, not an API probe: a call through the API would only show that the ingest schema is not
+    // exposed, not that the revokes in 20261006120000_ingest_push_sections.sql took effect.
+    it("the ingest helpers are executable by no client role and ingest_push by anon only", async () => {
+      const publicExecute =
+        "exists (select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a where a.grantee = 0 and a.privilege_type = 'EXECUTE')";
+
+      const helpers = await withPrivileged((db) =>
+        db.query<{ name: string; anon: boolean; authenticated: boolean; public_execute: boolean }>(
+          `select p.proname as name,
+                  has_function_privilege('anon', p.oid, 'execute') as anon,
+                  has_function_privilege('authenticated', p.oid, 'execute') as authenticated,
+                  ${publicExecute} as public_execute
+           from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'ingest'
+           order by p.proname`,
+        ),
+      );
+      // Not vacuous: the five helpers exist.
+      expect(helpers.rows.map((row) => row.name)).toEqual([
+        "prune",
+        "store_daily",
+        "store_hourly",
+        "store_period_summaries",
+        "store_recommendation",
+      ]);
+      for (const row of helpers.rows) {
+        expect({
+          name: row.name,
+          anon: row.anon,
+          authenticated: row.authenticated,
+          public_execute: row.public_execute,
+        }).toEqual({
+          name: row.name,
+          anon: false,
+          authenticated: false,
+          public_execute: false,
+        });
+      }
+
+      const schema = await withPrivileged((db) =>
+        db.query<{ anon: boolean; authenticated: boolean }>(
+          "select has_schema_privilege('anon', 'ingest', 'usage') as anon, has_schema_privilege('authenticated', 'ingest', 'usage') as authenticated",
+        ),
+      );
+      expect(schema.rows).toEqual([{ anon: false, authenticated: false }]);
+
+      // Control: the one public entry point is executable by anon and nobody else.
+      const entry = await withPrivileged((db) =>
+        db.query<{ anon: boolean; authenticated: boolean; public_execute: boolean }>(
+          `select has_function_privilege('anon', p.oid, 'execute') as anon,
+                  has_function_privilege('authenticated', p.oid, 'execute') as authenticated,
+                  ${publicExecute} as public_execute
+           from pg_proc p
+           where p.oid = 'public.ingest_push(text, jsonb)'::regprocedure`,
+        ),
+      );
+      expect(entry.rows).toEqual([{ anon: true, authenticated: false, public_execute: false }]);
+    });
+
+    // The token check POST /api/ingest makes before it reads the body (20261006130000_ingest_token_ok.sql): executable
+    // by anon only, and it answers a bare boolean, so it never tells an unknown token from a revoked one.
+    it("ingest_token_ok is executable by anon only and answers only true or false", async () => {
+      const grants = await withPrivileged((db) =>
+        db.query<{ anon: boolean; authenticated: boolean; public_execute: boolean }>(
+          `select has_function_privilege('anon', p.oid, 'execute') as anon,
+                  has_function_privilege('authenticated', p.oid, 'execute') as authenticated,
+                  exists (select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a where a.grantee = 0 and a.privilege_type = 'EXECUTE') as public_execute
+           from pg_proc p
+           where p.oid = 'public.ingest_token_ok(text)'::regprocedure`,
+        ),
+      );
+      expect(grants.rows).toEqual([{ anon: true, authenticated: false, public_execute: false }]);
+
+      const live = await anon.rpc("ingest_token_ok", { p_token: SEED_TOKEN });
+      expect(live.error).toBeNull();
+      expect(live.data).toBe(true);
+
+      const unknown = await anon.rpc("ingest_token_ok", { p_token: `unknown-token-${String(Date.now())}` });
+      expect(unknown.error).toBeNull();
+      expect(unknown.data).toBe(false);
+
+      const revocable = await insertToken("token-ok");
+      tokenLabels.push(revocable.label);
+      expect((await anon.rpc("ingest_token_ok", { p_token: revocable.token })).data).toBe(true);
+      await revokeToken(revocable.label);
+      const revoked = await anon.rpc("ingest_token_ok", { p_token: revocable.token });
+      expect(revoked.error).toBeNull();
+      expect(revoked.data).toBe(false);
+      await deleteToken(revocable.label);
+    });
   });
 });
