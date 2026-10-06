@@ -5,13 +5,16 @@
 // or a response body.
 //
 // Env (from /opt/energy-analyser/.env.alerts on the host): ALERTS_URL (the app's local address, no trailing slash),
-// ALERTS_TOKEN, and optionally ALERTS_INTERVAL_SECONDS (whole seconds, 60-3600, default 300).
+// ALERTS_TOKEN, and optionally ALERTS_INTERVAL_SECONDS (whole seconds, 60-3600, default 300) and ALERTS_HEARTBEAT_URL (an
+// Uptime Kuma push address: it is called after every call the route answered with 2xx, so a silent trigger or a failing
+// route shows up as a missed heartbeat; like the token it is never logged).
 import { pathToFileURL } from "node:url";
 
 export const DEFAULT_INTERVAL_SECONDS = 300;
 const MIN_INTERVAL_SECONDS = 60;
 const MAX_INTERVAL_SECONDS = 3600;
 const REQUEST_TIMEOUT_MS = 60_000;
+const HEARTBEAT_TIMEOUT_MS = 10_000;
 // Gives the app a moment to come up after a deploy before the first call.
 const START_DELAY_MS = 20_000;
 
@@ -19,6 +22,7 @@ const START_DELAY_MS = 20_000;
 export function parseConfig(env) {
   const url = (env.ALERTS_URL ?? "").trim().replace(/\/+$/, "");
   const token = (env.ALERTS_TOKEN ?? "").trim();
+  const heartbeatUrl = (env.ALERTS_HEARTBEAT_URL ?? "").trim();
   const rawInterval = (env.ALERTS_INTERVAL_SECONDS ?? "").trim();
   const seconds = rawInterval === "" ? DEFAULT_INTERVAL_SECONDS : Number(rawInterval);
 
@@ -29,7 +33,12 @@ export function parseConfig(env) {
       error: `ALERTS_INTERVAL_SECONDS must be a whole number from ${MIN_INTERVAL_SECONDS} to ${MAX_INTERVAL_SECONDS}`,
     };
   }
-  return { config: { url, token, intervalMs: seconds * 1000 } };
+  if (heartbeatUrl !== "" && !/^https?:\/\/\S+$/.test(heartbeatUrl)) {
+    return { error: "ALERTS_HEARTBEAT_URL must be an http:// or https:// address" };
+  }
+  return {
+    config: { url, token, intervalMs: seconds * 1000, heartbeatUrl: heartbeatUrl === "" ? null : heartbeatUrl },
+  };
 }
 
 const countOrUndefined = (value) => (typeof value === "number" && Number.isFinite(value) ? value : undefined);
@@ -63,6 +72,17 @@ export async function runOnce({ url, token }, { fetchImpl = fetch, timeoutMs = R
   }
 }
 
+// One GET to the heartbeat address. Only whether it worked comes back: the address carries a secret.
+export async function pingHeartbeat(url, { fetchImpl = fetch, timeoutMs = HEARTBEAT_TIMEOUT_MS } = {}) {
+  try {
+    const response = await fetchImpl(url, { signal: AbortSignal.timeout(timeoutMs) });
+    await response.body?.cancel();
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 // One JSON line per event, like the app's logger (`ts`, `level`, `event`), so `docker compose logs` reads the same way.
 function log(level, event, fields = {}) {
   process.stdout.write(`${JSON.stringify({ ts: new Date().toISOString(), level, event, ...fields })}\n`);
@@ -86,6 +106,9 @@ export async function main(env = process.env) {
   for (;;) {
     const result = await runOnce(config);
     log(result.ok ? "info" : "warn", "alerts_trigger", result);
+    if (result.ok && config.heartbeatUrl !== null) {
+      if (!(await pingHeartbeat(config.heartbeatUrl))) log("warn", "alerts_heartbeat_failed");
+    }
     await sleep(config.intervalMs);
   }
 }

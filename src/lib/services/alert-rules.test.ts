@@ -214,6 +214,13 @@ describe("handleAlertPost", () => {
     expect(d.logError).not.toHaveBeenCalled();
   });
 
+  it("maps the rule cap to limit, for a create and a re-enable, without logging", async () => {
+    const d = deps({ message: "synthetic cap", code: "P0429" });
+    expect(await handleAlertPost(bill("500"), d)).toEqual(redirectTo("limit"));
+    expect(await handleAlertPost(form({ intent: "toggle", id: "7", enabled: "true" }), d)).toEqual(redirectTo("limit"));
+    expect(d.logError).not.toHaveBeenCalled();
+  });
+
   it("logs any other database error and reports failed", async () => {
     const error = { message: "synthetic check violation", code: "23514" };
     const d = deps(error);
@@ -255,6 +262,7 @@ describe("alertNotice", () => {
     ["toggled", "good"],
     ["deleted", "good"],
     ["duplicate", "problem"],
+    ["limit", "problem"],
     ["invalid", "problem"],
     ["failed", "problem"],
   ] as const)("maps %s to its %s notice", (param, tone) => {
@@ -268,6 +276,7 @@ describe("alertNotice", () => {
       toggled: "Stan reguły zmieniony.",
       deleted: "Reguła usunięta.",
       duplicate: "Taka reguła już istnieje: ten sam rodzaj i próg.",
+      limit: "Masz już 20 włączonych reguł. Wyłącz albo usuń którąś, zanim włączysz kolejną.",
       invalid: "Reguła ma niepoprawne dane. Sprawdź próg, nazwę i odstęp między przypomnieniami.",
       failed: "Nie udało się zapisać reguły. Spróbuj ponownie.",
     });

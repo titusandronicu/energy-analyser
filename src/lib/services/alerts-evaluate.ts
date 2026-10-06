@@ -5,7 +5,7 @@ import { ALERT_KINDS } from "@/lib/services/alert-rules";
 import { sendTelegramMessage } from "@/lib/services/telegram";
 
 // POST /api/alerts/evaluate: bearer-authenticated like /api/ingest (the alerts token is checked inside the two database
-// functions). Reads the snapshot, evaluates, sends to Telegram, then records what actually went out. The token, the chat
+// functions). Reads the snapshot, evaluates, sends to Telegram and records what actually went out, each sent rule right after its own message (at-least-once delivery). The token, the chat
 // id and the message text are never logged or returned.
 
 export interface AlertsRpcResult {
@@ -45,7 +45,7 @@ function bearerToken(request: Request) {
 }
 
 // The shape alerts_snapshot returns (supabase/migrations/20261007090000_alert_rules.sql). The pushed jsonb inside
-// `state` and `bill_forecast` stays untrusted: the view mappers read it defensively.
+// `bill_forecast` stays untrusted: the view mapper reads it defensively.
 const snapshotSchema = z.object({
   rules: z.array(
     z.object({
@@ -58,7 +58,7 @@ const snapshotSchema = z.object({
       last_notified_at: z.string().nullable(),
     }),
   ),
-  live: z.object({ captured_at: z.string(), received_at: z.string(), state: z.unknown() }).nullable(),
+  live: z.object({ captured_at: z.string(), received_at: z.string() }).nullable(),
   forecast: z.object({ captured_at: z.string(), received_at: z.string(), bill_forecast: z.unknown() }).nullable(),
 });
 
@@ -88,41 +88,55 @@ export async function handleAlertsEvaluate(
   const snapshot: AlertSnapshot = parsed.data;
 
   const decisions = evaluateAlerts(snapshot, deps.now());
-  const records: AlertRecord[] = [];
+  // Rules with nothing to send are recorded together at the end. A rule that sent a message is recorded at once, so a
+  // later failure cannot make the next run send the same message again.
+  const quiet: AlertRecord[] = [];
   let sent = 0;
   let unknown = 0;
   let failed = 0;
+  // Telegram answered 429: it is asking for fewer messages, so nothing more is sent this run.
+  let throttled = false;
 
   for (const { rule, outcome, notification } of decisions) {
     if (outcome.status === "unknown") {
       // Cannot be decided: the stored state stays and only the reason is recorded.
       unknown += 1;
-      records.push({ id: rule.id, state: rule.state, notified: false, reason: outcome.reason });
+      quiet.push({ id: rule.id, state: rule.state, notified: false, reason: outcome.reason });
       continue;
     }
     if (!notification) {
-      records.push({ id: rule.id, state: outcome.status, notified: false, reason: null });
+      quiet.push({ id: rule.id, state: outcome.status, notified: false, reason: null });
+      continue;
+    }
+    if (throttled) {
+      failed += 1;
       continue;
     }
     const result = await sendTelegramMessage(
       { fetch: deps.fetch },
       { token: botToken, chatId, text: notification.text },
     );
-    if (result.ok) {
-      sent += 1;
-      records.push({ id: rule.id, state: outcome.status, notified: true, reason: null });
-    } else {
+    if (!result.ok) {
       // Nothing is recorded for this rule, so the next run decides and sends again.
       failed += 1;
+      if (result.code === "429") throttled = true;
       deps.log?.warn("alert_send_failed", { ruleId: rule.id, type: notification.type, code: result.code });
+      continue;
+    }
+    sent += 1;
+    const written = await deps.record(token, [{ id: rule.id, state: outcome.status, notified: true, reason: null }]);
+    if (written.error) {
+      if (written.error.code === "P0401") return UNAUTHORIZED;
+      // This message is not on record, so the next run sends it again: delivery is at-least-once.
+      deps.log?.error("alerts_record_failed", { err: written.error, sent });
+      return FAILED;
     }
   }
 
-  if (records.length > 0) {
-    const written = await deps.record(token, records);
+  if (quiet.length > 0) {
+    const written = await deps.record(token, quiet);
     if (written.error) {
       if (written.error.code === "P0401") return UNAUTHORIZED;
-      // Messages that went out are not on record, so the next run sends them again.
       deps.log?.error("alerts_record_failed", { err: written.error, sent });
       return FAILED;
     }

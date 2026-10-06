@@ -28,6 +28,8 @@ export async function sendTelegramMessage(deps: TelegramDeps, message: TelegramM
       body: JSON.stringify({ chat_id: message.chatId, text: message.text }),
       signal: AbortSignal.timeout(deps.timeoutMs ?? TELEGRAM_TIMEOUT_MS),
     });
+    // The answer is never read; closing it frees the connection.
+    await response.body?.cancel();
     return response.ok ? { ok: true } : { ok: false, code: String(response.status) };
   } catch (error) {
     // The error's message can quote the URL, so only its kind is kept.

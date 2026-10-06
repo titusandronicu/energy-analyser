@@ -24,6 +24,15 @@ describe("sendTelegramMessage", () => {
     expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
+  it("closes the response body", async () => {
+    const response = new Response("{}", { status: 200 });
+    const cancel = vi.spyOn(response.body as ReadableStream, "cancel");
+
+    await sendTelegramMessage({ fetch: vi.fn<typeof fetch>(() => Promise.resolve(response)) }, message);
+
+    expect(cancel).toHaveBeenCalledTimes(1);
+  });
+
   it.each([400, 401, 429, 500])("reduces a %i answer to its status code", async (status) => {
     const result = await sendTelegramMessage({ fetch: reply(status, `{"description":"${SECRET}"}`) }, message);
 

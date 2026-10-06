@@ -12,7 +12,9 @@ if (!label || !/^[a-z0-9][a-z0-9-]{0,62}$/.test(label)) {
 const token = randomBytes(32).toString("base64url");
 const hash = createHash("sha256").update(token).digest("hex");
 
-console.log(`Token (store it as the workflow's repository secret; it is not shown again):\n\n  ${token}\n`);
+console.log(
+  `Token (store it where the caller reads it, ALERTS_TOKEN in .env.alerts on the host or the workflow's repository secret; it is not shown again):\n\n  ${token}\n`,
+);
 console.log("SQL to run in the Supabase SQL editor:\n");
 console.log(`  insert into public.alert_tokens (label, token_hash) values ('${label}', decode('${hash}', 'hex'));\n`);
 console.log(`Revoke later with:\n\n  update public.alert_tokens set revoked_at = now() where label = '${label}';`);

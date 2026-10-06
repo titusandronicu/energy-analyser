@@ -2,6 +2,14 @@
 
 The main product and technical decisions, newest first, each with the reason. Detailed plans for each change are in `context/changes/` (active) and `context/archive/` (done); the product requirements are in `context/foundation/prd-v3.md` and the ordered work in `context/foundation/roadmap.md`.
 
+## 2026-10-06 (alert-rules review fixes)
+
+- **Fixes after the implementation review (`context/changes/alert-rules/reviews/impl-review.md`), applied with a new migration `20261007120000_alert_rules_review_fixes.sql`.** _Why:_ a review of the live alerting found eight things worth fixing and two worth accepting.
+  - **At-least-once, stated.** Each sent rule is recorded right after its message, and `alerts_record` skips disabled rules, so a failure late in a run cannot repeat earlier messages and a rule switched off mid-run is not revived. Rejected: exactly-once delivery (Telegram gives no idempotency key, so it cannot be had).
+  - **A heartbeat from the trigger** (`ALERTS_HEARTBEAT_URL`, optional) instead of reading the trigger's logs: silence of the whole alert path, including a trigger that stopped, shows up in Uptime Kuma.
+  - **Smaller surface.** `alerts_snapshot` returns only the live push's two timestamps (the home's power figures stay in the database) and only rules of users in `app_owners`; at most 20 enabled rules per owner and a 429 from Telegram stops the run's sending, so one run cannot flood the chat.
+  - **Accepted as they are:** the shared lab bot (the owner's decision, rotation note stays) and no debounce on messages (added only if they become noisy).
+
 ## 2026-10-06 (browser e2e)
 
 - **One browser e2e layer is added, for the alert-rules page (`context/changes/e2e-alert-rules/`; the owner's decisions on the sign-in route and the job).** _Why:_ the one risk no other test can see is the page's forms and the route's expected fields drifting apart; the unit and integration tests never render the page, and such a drift was found only by reading the rendered HTML by hand. That is a browser-only risk, which the strategy accepts as a reason for e2e (`context/foundation/test-plan.md`, risk #8); a rule or a calculation still belongs in a cheaper layer.
