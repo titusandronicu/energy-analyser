@@ -388,9 +388,9 @@ Additive migration only (two new tables, two functions); no change to `ingest_to
 
 #### Automated
 
-- [x] 4.1 Formatting is clean on the changed docs and workflow: `npx prettier --check docs README.md .github`
-- [x] 4.2 Lint and unit tests still pass: `npm run lint` and `npm test`
-- [x] 4.3 The docs name the new secrets: `grep -c "TELEGRAM_BOT_TOKEN" docs/prerequisites.md README.md .env.example`
+- [x] 4.1 Formatting is clean on the changed docs and workflow: `npx prettier --check docs README.md .github` — 9a592c6
+- [x] 4.2 Lint and unit tests still pass: `npm run lint` and `npm test` — 9a592c6
+- [x] 4.3 The docs name the new secrets: `grep -c "TELEGRAM_BOT_TOKEN" docs/prerequisites.md README.md .env.example` — 9a592c6
 
 #### Manual
 
