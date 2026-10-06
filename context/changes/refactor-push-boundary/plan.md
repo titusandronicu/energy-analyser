@@ -418,7 +418,7 @@ Two migrations, each applied in production by hand through the Supabase connecto
 #### Manual
 
 - [x] 4.7 The flipped test is renamed to describe the new behaviour and the diff shows no other Phase 1 test edited — owner confirmed 2026-10-06; the only Phase 1 test edited since is tests/integration/ingest-boundary.test.ts (flipped and renamed test, call wiring, comments), the golden test is untouched
-- [ ] 4.8 In production the migration is applied before the app is deployed; after the deploy the lab's next push returns 201
+- [x] 4.8 In production the migration is applied before the app is deployed; after the deploy the lab's next push returns 201 — owner approved the deploy and I dispatched it on 2026-10-06 (workflow run 37450011236, sha 11fc526, completed/success at 10:30 UTC); both migrations were applied first (14 recorded); /api/health reports 11fc526168c24044003d781c77800c50e9d3815d; the first lab push after the new app, id 3038 received 10:31:12 UTC with daily, hourly, summary and recommendation sections, was stored (201)
 - [x] 4.9 Locally, `scripts/push-fixture.mjs` with a wrong token and an invalid body prints 401 — WAIVED by owner 2026-10-06, not run locally; the behaviour is proven in CI by the flipped integration test "an unknown token with an invalid body answers 401: the token is checked before the body" and by the unit cases for a rejected token with a non-JSON body, a contract-breaking body and an oversized Content-Length
 
 ### Phase 5: Docs and close-out
