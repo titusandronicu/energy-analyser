@@ -21,6 +21,9 @@ export const ALERT_BILL_MIN_PLN = 1;
 export const ALERT_BILL_MAX_PLN = 7000;
 
 export const ALERT_LABEL_MAX_LENGTH = 60;
+// Enabled rules per owner; the database refuses a 21st (alert_rules_enforce_limit) so one run stays a bounded number of
+// Telegram messages.
+export const ALERT_ENABLED_RULES_MAX = 20;
 
 // Hours between reminders while an alarm lasts.
 export const ALERT_RENOTIFY_MIN_HOURS = 1;
@@ -34,7 +37,7 @@ export const ALERT_KIND_LABELS: Record<AlertKind, string> = {
   bill_above: "Prognozowany rachunek jest wysoki",
 };
 
-export type AlertOutcome = "created" | "updated" | "toggled" | "deleted" | "duplicate" | "invalid" | "failed";
+export type AlertOutcome = "created" | "updated" | "toggled" | "deleted" | "duplicate" | "limit" | "invalid" | "failed";
 
 // What the alerts page shows after a post, read back from `?alert=`.
 export const ALERT_NOTICES: Record<AlertOutcome, string> = {
@@ -43,6 +46,7 @@ export const ALERT_NOTICES: Record<AlertOutcome, string> = {
   toggled: "Stan reguły zmieniony.",
   deleted: "Reguła usunięta.",
   duplicate: "Taka reguła już istnieje: ten sam rodzaj i próg.",
+  limit: `Masz już ${String(ALERT_ENABLED_RULES_MAX)} włączonych reguł. Wyłącz albo usuń którąś, zanim włączysz kolejną.`,
   invalid: "Reguła ma niepoprawne dane. Sprawdź próg, nazwę i odstęp między przypomnieniami.",
   failed: "Nie udało się zapisać reguły. Spróbuj ponownie.",
 };
@@ -78,6 +82,8 @@ export interface AlertPostDeps {
 }
 
 const UNIQUE_VIOLATION = "23505";
+// Raised by alert_rules_enforce_limit (supabase/migrations/20261007120000_alert_rules_review_fixes.sql).
+const RULE_LIMIT = "P0429";
 
 function field(form: FormData, name: string): string | undefined {
   const value = form.get(name);
@@ -155,8 +161,8 @@ export function alertRedirect(outcome: AlertOutcome): { redirect: string } {
   return { redirect: `${ALERTS_PATH}?alert=${outcome}` };
 }
 
-// Back to the alerts page with ?alert=created|updated|toggled|deleted|duplicate|invalid|failed. A unique violation
-// (same kind and threshold) is `duplicate`. Changing or deleting an id that no longer exists changes no row and is not
+// Back to the alerts page with ?alert=created|updated|toggled|deleted|duplicate|limit|invalid|failed. A unique violation
+// (same kind and threshold) is `duplicate`, the cap of enabled rules is `limit`. Changing or deleting an id that no longer exists changes no row and is not
 // an error, so a second submit of the same form is harmless.
 export async function handleAlertPost(form: FormData, deps: AlertPostDeps): Promise<{ redirect: string }> {
   const parsed = parseAlertForm(form);
@@ -189,6 +195,7 @@ export async function handleAlertPost(form: FormData, deps: AlertPostDeps): Prom
     }
     if (result.error) {
       if (result.error.code === UNIQUE_VIOLATION) return alertRedirect("duplicate");
+      if (result.error.code === RULE_LIMIT) return alertRedirect("limit");
       deps.logError?.(`alert rule ${parsed.intent} failed`, result.error);
       return alertRedirect("failed");
     }

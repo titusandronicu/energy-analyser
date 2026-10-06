@@ -15,7 +15,7 @@ function json(status: number, body: Record<string, unknown>) {
   });
 }
 
-// Scheduled evaluator (GitHub Actions). Bearer-authenticated with the alerts token, which only the two database
+// Scheduled evaluator (the `alerts-trigger` service on the production host; GitHub Actions only by hand). Bearer-authenticated with the alerts token, which only the two database
 // functions know how to check; it lives in TOKEN_AUTH_ROUTES, so there is no Origin check and no session.
 export const POST: APIRoute = async ({ request, locals }) => {
   const supabase = createAnonClient();

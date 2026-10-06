@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_INTERVAL_SECONDS, parseConfig, runOnce } from "../../scripts/alerts-trigger.mjs";
+import { DEFAULT_INTERVAL_SECONDS, parseConfig, pingHeartbeat, runOnce } from "../../scripts/alerts-trigger.mjs";
 
 // scripts/alerts-trigger.mjs is the loop the `alerts-trigger` compose service runs on the production host. Everything
 // here is invented: the token and the address are placeholders, and the answers are literals written in the test.
@@ -15,13 +15,15 @@ describe("parseConfig", () => {
   const valid = { ALERTS_URL: URL_BASE, ALERTS_TOKEN: TOKEN };
 
   it("accepts the address and the token and defaults the interval to five minutes", () => {
-    expect(parseConfig(valid)).toEqual({ config: { url: URL_BASE, token: TOKEN, intervalMs: 300_000 } });
+    expect(parseConfig(valid)).toEqual({
+      config: { url: URL_BASE, token: TOKEN, intervalMs: 300_000, heartbeatUrl: null },
+    });
     expect(DEFAULT_INTERVAL_SECONDS).toBe(300);
   });
 
   it("drops a trailing slash and surrounding spaces", () => {
     expect(parseConfig({ ALERTS_URL: ` ${URL_BASE}/ `, ALERTS_TOKEN: ` ${TOKEN} ` })).toEqual({
-      config: { url: URL_BASE, token: TOKEN, intervalMs: 300_000 },
+      config: { url: URL_BASE, token: TOKEN, intervalMs: 300_000, heartbeatUrl: null },
     });
   });
 
@@ -50,6 +52,16 @@ describe("parseConfig", () => {
 
   it.each([undefined, "", "   "])("refuses the token %j", (value) => {
     expect(parseConfig({ ...valid, ALERTS_TOKEN: value })).toEqual({ error: "ALERTS_TOKEN is missing" });
+  });
+
+  it("reads an optional heartbeat address, refuses a malformed one and never echoes it", () => {
+    const beat = "https://kuma.example/api/push/SYNTHETIC-secret?status=up";
+    expect(parseConfig({ ...valid, ALERTS_HEARTBEAT_URL: ` ${beat} ` })).toMatchObject({
+      config: { heartbeatUrl: beat },
+    });
+    expect(parseConfig({ ...valid, ALERTS_HEARTBEAT_URL: "" })).toMatchObject({ config: { heartbeatUrl: null } });
+    const refused = parseConfig({ ...valid, ALERTS_HEARTBEAT_URL: "kuma/SYNTHETIC-secret" });
+    expect(refused).toEqual({ error: "ALERTS_HEARTBEAT_URL must be an http:// or https:// address" });
   });
 
   it("never puts the token or the address into an error message", () => {
@@ -148,5 +160,19 @@ describe("runOnce", () => {
     const result = await runOnce(config, { fetchImpl: fetchImpl as unknown as typeof fetch, timeoutMs: 30 });
 
     expect(result).toEqual({ ok: false, status: null, error: "timeout" });
+  });
+});
+
+describe("pingHeartbeat", () => {
+  it("answers true for a 2xx and false for anything else, without carrying the address into the result", async () => {
+    const url = "https://kuma.example/api/push/SYNTHETIC-secret";
+    const ok = vi.fn(() => Promise.resolve(new Response("{}", { status: 200 })));
+    const bad = vi.fn(() => Promise.resolve(new Response("{}", { status: 404 })));
+    const down = vi.fn(() => Promise.reject(new TypeError(`fetch failed ${url}`)));
+
+    expect(await pingHeartbeat(url, { fetchImpl: ok as unknown as typeof fetch })).toBe(true);
+    expect(ok).toHaveBeenCalledWith(url, { signal: expect.any(AbortSignal) as AbortSignal });
+    expect(await pingHeartbeat(url, { fetchImpl: bad as unknown as typeof fetch })).toBe(false);
+    expect(await pingHeartbeat(url, { fetchImpl: down as unknown as typeof fetch })).toBe(false);
   });
 });

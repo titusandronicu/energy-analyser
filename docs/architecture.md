@@ -105,4 +105,4 @@ Failures are visible in the container's stderr as JSON lines, one per event (`sr
 
 ## Delivery
 
-GitHub Actions runs lint, unit tests, type checks, a build and a smoke test against a local Supabase on every push and pull request. Merges to `main` publish an immutable image to GHCR; production deploys are manual through a protected environment. A separate scheduled workflow, `alerts-evaluate.yml`, calls the alert route every 10 minutes once the owner switches it on. Lab changes live in the separate homelab-2 repository and are installed on docker-core with its runbook.
+GitHub Actions runs lint, unit tests, type checks, a build and a smoke test against a local Supabase on every push and pull request. Merges to `main` publish an immutable image to GHCR; production deploys are manual through a protected environment. The alert route is called every 5 minutes by the `alerts-trigger` service on the production host; `alerts-evaluate.yml` is only a manual trigger. Lab changes live in the separate homelab-2 repository and are installed on docker-core with its runbook.

@@ -32,7 +32,7 @@ function rule(overrides: Partial<SnapshotRule> = {}): SnapshotRule {
 }
 
 function live(ageMs: number): AlertSnapshot["live"] {
-  return { captured_at: ago(ageMs), received_at: ago(ageMs), state: {} };
+  return { captured_at: ago(ageMs), received_at: ago(ageMs) };
 }
 
 // A body the bill view accepts: 15 complete days, central 257.73 inside 155.08-360.4, generated 5 minutes ago.
@@ -106,11 +106,7 @@ describe("evaluateRule: live_stale", () => {
   });
 
   it("is unknown for an unreadable captured_at", () => {
-    const outcome = evaluateRule(
-      rule(),
-      snapshot({ live: { captured_at: "never", received_at: "never", state: {} } }),
-      now,
-    );
+    const outcome = evaluateRule(rule(), snapshot({ live: { captured_at: "never", received_at: "never" } }), now);
     expect(outcome.status).toBe("unknown");
   });
 
@@ -286,5 +282,20 @@ describe("buildMessage", () => {
 
   it("uses the reminder heading", () => {
     expect(buildMessage("reminder", billRule(), "ok. 258 zł")).toMatch(/^PRZYPOMNIENIE: /);
+  });
+
+  it("reports a rule that breaks the evaluation as unknown and still decides the others", () => {
+    const broken = rule({ id: 1 });
+    Object.defineProperty(broken, "threshold", {
+      get() {
+        throw new Error("odd data");
+      },
+    });
+
+    const decisions = evaluateAlerts(snapshot({ rules: [broken, rule({ id: 2 })], live: live(2 * HOUR) }), now);
+
+    expect(decisions[0].outcome).toEqual({ status: "unknown", reason: "Nie udało się ocenić tej reguły." });
+    expect(decisions[0].notification).toBeNull();
+    expect(decisions[1].outcome.status).toBe("alarm");
   });
 });

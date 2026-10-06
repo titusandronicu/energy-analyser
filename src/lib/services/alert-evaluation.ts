@@ -28,10 +28,11 @@ export interface SnapshotRule {
   last_notified_at: string | null;
 }
 
-// The two pushes the loaders would produce; `live` is the newest push, `forecast` the newest one with a forecast.
+// The two pushes the loaders would produce; `live` is the newest push (its two timestamps are all a rule reads, the
+// state itself never leaves the database), `forecast` the newest one with a forecast.
 export interface AlertSnapshot {
   rules: SnapshotRule[];
-  live: { captured_at: string; received_at: string; state: unknown } | null;
+  live: { captured_at: string; received_at: string } | null;
   forecast: BillForecastRow | null;
 }
 
@@ -125,7 +126,12 @@ function notificationFor(
 
 export function evaluateAlerts(snapshot: AlertSnapshot, now: Date): RuleDecision[] {
   return snapshot.rules.map((rule) => {
-    const outcome = evaluateRule(rule, snapshot, now);
-    return { rule, outcome, notification: notificationFor(rule, outcome, now) };
+    // One rule's odd data must not stop the others: it is reported as one that cannot be judged.
+    try {
+      const outcome = evaluateRule(rule, snapshot, now);
+      return { rule, outcome, notification: notificationFor(rule, outcome, now) };
+    } catch {
+      return { rule, outcome: unknown("Nie udało się ocenić tej reguły."), notification: null };
+    }
   });
 }

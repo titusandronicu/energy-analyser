@@ -21,8 +21,8 @@ const rule = (overrides: Record<string, unknown> = {}) => ({
   last_notified_at: null,
   ...overrides,
 });
-const staleLive = { captured_at: new Date(now.getTime() - 2 * HOUR).toISOString(), received_at: "x", state: {} };
-const freshLive = { captured_at: new Date(now.getTime() - 60_000).toISOString(), received_at: "x", state: {} };
+const staleLive = { captured_at: new Date(now.getTime() - 2 * HOUR).toISOString(), received_at: "x" };
+const freshLive = { captured_at: new Date(now.getTime() - 60_000).toISOString(), received_at: "x" };
 
 function snapshotOf(rules: unknown[], liveRow: unknown = staleLive) {
   return { data: { rules, live: liveRow, forecast: null }, error: null };
@@ -174,6 +174,45 @@ describe("handleAlertsEvaluate", () => {
 
     expect(response.body).toEqual({ evaluated: 2, sent: 1, unknown: 0, failed: 1 });
     expect(stale.deps.record).toHaveBeenCalledWith(TOKEN, [{ id: 2, state: "alarm", notified: true, reason: null }]);
+  });
+
+  it("records each sent rule right after its own message, before the next send", async () => {
+    const d = build({ snapshot: snapshotOf([rule({ id: 1 }), rule({ id: 2, threshold: 40 })]) });
+    const order: string[] = [];
+    d.send.mockImplementation(() => {
+      order.push("send");
+      return Promise.resolve(new Response("{}"));
+    });
+    d.deps.record.mockImplementation((_token, results) => {
+      order.push(`record:${String((results as { id: number }[]).map((r) => r.id))}`);
+      return Promise.resolve({ data: null, error: null });
+    });
+
+    await handleAlertsEvaluate(call(), d.deps);
+
+    expect(order).toEqual(["send", "record:1", "send", "record:2"]);
+  });
+
+  it("stops sending when a record fails, so an earlier message is not repeated and a later one is not sent", async () => {
+    const d = build({ snapshot: snapshotOf([rule({ id: 1 }), rule({ id: 2, threshold: 40 })]) });
+    d.deps.record.mockResolvedValueOnce({ data: null, error: { code: "XX000", message: "down" } });
+
+    expect((await handleAlertsEvaluate(call(), d.deps)).status).toBe(500);
+    expect(d.send).toHaveBeenCalledTimes(1);
+    expect(d.deps.record).toHaveBeenCalledTimes(1);
+  });
+
+  it("sends nothing more after Telegram answers 429, but still records the quiet rules", async () => {
+    const d = build({
+      snapshot: snapshotOf([rule({ id: 1 }), rule({ id: 2, threshold: 40 }), rule({ id: 3, threshold: 300 })]),
+      sendStatus: 429,
+    });
+
+    const response = await handleAlertsEvaluate(call(), d.deps);
+
+    expect(response).toEqual({ status: 200, body: { evaluated: 3, sent: 0, unknown: 0, failed: 2 } });
+    expect(d.send).toHaveBeenCalledTimes(1);
+    expect(d.deps.record).toHaveBeenCalledWith(TOKEN, [{ id: 3, state: "ok", notified: false, reason: null }]);
   });
 
   it("does not call record for a snapshot without rules", async () => {

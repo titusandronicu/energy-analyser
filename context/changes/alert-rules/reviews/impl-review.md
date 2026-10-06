@@ -41,7 +41,7 @@ Re-run on main at 21f9a15: unit 54 files / 1767 tests, integration 10 files / 11
   - Tradeoff: A new table and function, and expiry logic for a stuck lease.
   - Confidence: MEDIUM — correct in principle, unmeasured here.
   - Blind spot: Lease expiry after a crashed run.
-- **Decision**: FIXED-QUEUED via Fix A (record per rule after each send, `where r.enabled`, at-least-once documented): follow-ups/review-fixes.md
+- **Decision**: FIXED (Fix A: recorded per rule after each send, alerts_record skips disabled rules, at-least-once documented)
 
 ### F2 — Nothing watches the alerter
 
@@ -60,7 +60,7 @@ Re-run on main at 21f9a15: unit 54 files / 1767 tests, integration 10 files / 11
   - Tradeoff: Only helps when someone looks.
   - Confidence: HIGH.
   - Blind spot: None significant.
-- **Decision**: FIXED-QUEUED via Fix A (optional ALERTS_HEARTBEAT_URL in the trigger): follow-ups/review-fixes.md
+- **Decision**: FIXED (Fix A: optional ALERTS_HEARTBEAT_URL in the trigger; the Kuma monitor is a separate homelab-2 step)
 
 ### F3 — Stale text from the retired GitHub-cron design
 
@@ -70,7 +70,7 @@ Re-run on main at 21f9a15: unit 54 files / 1767 tests, integration 10 files / 11
 - **Location**: src/components/alerts/AlertRulesPanel.astro:70, docs/architecture.md:108, docs/logic.md:245, src/pages/api/alerts/evaluate.ts:18, scripts/create-alert-token.mjs:15, scripts/smoke.mjs:493
 - **Detail**: The page says rules are checked "mniej więcej co 10 minut" but the trigger runs every 5 minutes; architecture.md:108 still describes a scheduled workflow every 10 minutes; four comments and strings still mention the workflow or "scheduled". The applied migration's comment is left alone on purpose.
 - **Fix**: Correct the user-facing copy to 5 minutes and reword the others to the VPS service; leave the applied migration untouched.
-- **Decision**: FIXED-QUEUED: follow-ups/review-fixes.md
+- **Decision**: FIXED
 
 ### F4 — The snapshot returns more household data than the evaluator needs
 
@@ -80,7 +80,7 @@ Re-run on main at 21f9a15: unit 54 files / 1767 tests, integration 10 files / 11
 - **Location**: alerts_snapshot, supabase/migrations/20261007090000_alert_rules.sql:197-217
 - **Detail**: It ships the full live state payload while the evaluator only uses captured_at; a leaked alerts token would read household telemetry it never needed. A leaked token can also silence alerts by writing notified: true, so rotation matters. The alerts-prod token is also a repository-level secret.
 - **Fix**: Return only captured_at and received_at for the live row, in a new migration, with the route's schema adjusted.
-- **Decision**: FIXED-QUEUED: follow-ups/review-fixes.md
+- **Decision**: FIXED
 
 ### F5 — No cap on rules, and sends are sequential
 
@@ -90,7 +90,7 @@ Re-run on main at 21f9a15: unit 54 files / 1767 tests, integration 10 files / 11
 - **Location**: migration lines 9-36, src/lib/services/alerts-evaluate.ts:96
 - **Detail**: Nothing limits the number of rules (about 1400 live_stale rules are possible); one stale-data event would send one message per rule, serially with 10 s timeouts, and Telegram's 429 is not handled.
 - **Fix**: Cap enabled rules per owner (say 20) in a new migration and treat a 429 as "stop and retry next run".
-- **Decision**: FIXED-QUEUED: follow-ups/review-fixes.md
+- **Decision**: FIXED
 
 ### F6 — One odd forecast payload could block all alerts
 
@@ -100,7 +100,7 @@ Re-run on main at 21f9a15: unit 54 files / 1767 tests, integration 10 files / 11
 - **Location**: src/lib/services/alerts-evaluate.ts:90
 - **Detail**: evaluateAlerts has no try/catch, so a throw returns 500 and also blocks live_stale.
 - **Fix**: Map a per-rule failure to unknown with a fixed reason.
-- **Decision**: FIXED-QUEUED: follow-ups/review-fixes.md
+- **Decision**: FIXED
 
 ### F7 — The Telegram response body is never consumed
 
@@ -110,7 +110,7 @@ Re-run on main at 21f9a15: unit 54 files / 1767 tests, integration 10 files / 11
 - **Location**: src/lib/services/telegram.ts:31
 - **Detail**: The function returns on response.ok without reading or cancelling the body, which can hold sockets or memory until GC.
 - **Fix**: `await response.body?.cancel()` (never log the body).
-- **Decision**: FIXED-QUEUED: follow-ups/review-fixes.md
+- **Decision**: FIXED
 
 ### F8 — Migration hygiene in alerts_snapshot and alerts_record
 
@@ -120,7 +120,7 @@ Re-run on main at 21f9a15: unit 54 files / 1767 tests, integration 10 files / 11
 - **Location**: migration lines 194-196, 242-260
 - **Detail**: alerts_snapshot does not join app_owners, so a removed owner's rules keep firing; malformed p_results raise codes other than the 22023 the comment promises.
 - **Fix**: Join app_owners and correct the comment, in the new migration.
-- **Decision**: FIXED-QUEUED: follow-ups/review-fixes.md
+- **Decision**: FIXED
 
 ### F9 — The lab bot's token is on the public VPS
 
@@ -144,6 +144,6 @@ Re-run on main at 21f9a15: unit 54 files / 1767 tests, integration 10 files / 11
 
 ## Triage summary
 
-- Queued to fix: F1 (Fix A), F2 (Fix A), F3, F4, F5, F6, F7, F8 (8), tracked in follow-ups/review-fixes.md
+- Fixed: F1 (Fix A), F2 (Fix A), F3, F4, F5, F6, F7, F8 (8)
 - Accepted: F9, F10
 - Skipped / Dismissed: none

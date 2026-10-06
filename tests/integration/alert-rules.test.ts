@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
   ALERT_BILL_MAX_PLN,
@@ -26,7 +26,7 @@ import { anonClient, ownerClient, requireStack } from "./support/stack";
 
 // Phase 1 of the alert rules (context/changes/alert-rules/plan.md): the owner-only table, the client column grants,
 // the DB limits against the shared constants, the alerts token and the two anon-callable functions
-// (supabase/migrations/20261007090000_alert_rules.sql). Nothing here relies on seed rows or an empty table: the owner
+// (supabase/migrations/20261007090000_alert_rules.sql, 20261007120000_alert_rules_review_fixes.sql). Nothing here relies on seed rows or an empty table: the owner
 // is a fresh user, every token is made by the test, and every rule is removed afterwards.
 
 type Client = ReturnType<typeof anonClient>;
@@ -36,6 +36,7 @@ const CHECK_VIOLATION = "23514";
 const UNIQUE_VIOLATION = "23505";
 const INVALID_TOKEN = "P0401";
 const INVALID_PARAMETER = "22023";
+const RULE_CAP = "P0429";
 
 // The public local/CI token from supabase/seed.sql; it belongs to ingest and must not open the alerts functions.
 const INGEST_SEED_TOKEN = "local-dev-ingest-token-not-secret";
@@ -53,9 +54,8 @@ const snapshotSchema = z.object({
       last_notified_at: z.string().nullable(),
     }),
   ),
-  live: z
-    .object({ captured_at: z.string(), received_at: z.string(), state: z.record(z.string(), z.unknown()) })
-    .nullable(),
+  // Only the two timestamps: the pushed state never leaves the database (F4 of the implementation review).
+  live: z.object({ captured_at: z.string(), received_at: z.string() }).strict().nullable(),
   forecast: z
     .object({ captured_at: z.string(), received_at: z.string(), bill_forecast: z.record(z.string(), z.unknown()) })
     .nullable(),
@@ -87,6 +87,11 @@ describe("alert rules: access, column grants, limits and the alerts token", () =
     ownerId = data.user.id;
     anon = anonClient();
     stranger = await nonOwnerClient();
+  });
+
+  // The owner may hold 20 enabled rules at most, so each case starts without the previous cases' rules.
+  afterEach(async () => {
+    await withPrivileged((db) => db.query("delete from public.alert_rules where user_id = $1", [ownerId]));
   });
 
   afterAll(async () => {
@@ -344,9 +349,84 @@ describe("alert rules: access, column grants, limits and the alerts token", () =
         last_notified_at: null,
       });
       expect(snapshot.live).not.toBeNull();
-      expect(snapshot.live?.state).toHaveProperty("pv_w");
       expect(snapshot.forecast).not.toBeNull();
       expect(snapshot.forecast?.bill_forecast).toHaveProperty("generated_at");
+    });
+
+    it("the snapshot leaves out the rules of a user who is not an owner", async () => {
+      const { token } = await newToken("snapshot-owners");
+      const threshold = takeBill();
+      const inserted = await withPrivileged((db) =>
+        db.query<{ id: string }>(
+          "insert into public.alert_rules (user_id, kind, threshold) values ($1, 'bill_above', $2) returning id",
+          [stranger.userId, threshold],
+        ),
+      );
+      const strangerRuleId = Number(inserted.rows[0].id);
+      const own = await createRule();
+
+      const result = await anon.rpc("alerts_snapshot", { p_token: token });
+      expect(result.error).toBeNull();
+      const ids = snapshotSchema.parse(result.data).rules.map((rule) => rule.id);
+
+      expect(ids).toContain(own.id);
+      expect(ids).not.toContain(strangerRuleId);
+    });
+
+    it("alerts_record leaves a disabled rule untouched", async () => {
+      const { token } = await newToken("record-disabled");
+      const row = await createRule({ enabled: false });
+
+      const recorded = await anon.rpc("alerts_record", {
+        p_token: token,
+        p_results: [{ id: row.id, state: "alarm", notified: true, reason: "stale" }],
+      });
+
+      expect(recorded.error).toBeNull();
+      expect(await ruleById(row.id)).toEqual(row);
+    });
+
+    describe("the cap of 20 enabled rules per owner", () => {
+      let capOwner: Owner;
+      let capUserId: string;
+
+      beforeAll(async () => {
+        capOwner = await ownerClient();
+        const { data, error } = await capOwner.auth.getUser();
+        if (error) throw new Error(`reading the cap owner failed: ${error.message}`);
+        capUserId = data.user.id;
+      });
+
+      afterAll(async () => {
+        await removeUser(capUserId);
+      });
+
+      it("refuses the 21st enabled rule and a re-enable over the cap, and frees a place when one is deleted", async () => {
+        for (let threshold = 1; threshold <= 20; threshold++) {
+          const { error } = await capOwner.from("alert_rules").insert({ kind: "bill_above", threshold });
+          expect(error).toBeNull();
+        }
+
+        const twenty_first = await capOwner.from("alert_rules").insert({ kind: "bill_above", threshold: 21 });
+        expect(twenty_first.error?.code).toBe(RULE_CAP);
+
+        // A disabled rule is not counted, but switching it on is.
+        const disabled = await capOwner
+          .from("alert_rules")
+          .insert({ kind: "bill_above", threshold: 22, enabled: false });
+        expect(disabled.error).toBeNull();
+        const reEnabled = await capOwner.from("alert_rules").update({ enabled: true }).eq("threshold", 22);
+        expect(reEnabled.error?.code).toBe(RULE_CAP);
+
+        // Editing a rule that is already enabled is not a new place.
+        const edited = await capOwner.from("alert_rules").update({ label: "Invented edit" }).eq("threshold", 1);
+        expect(edited.error).toBeNull();
+
+        const removed = await capOwner.from("alert_rules").delete().eq("threshold", 1);
+        expect(removed.error).toBeNull();
+        const afterDelete = await capOwner.from("alert_rules").update({ enabled: true }).eq("threshold", 22);
+        expect(afterDelete.error).toBeNull();
+      });
     });
 
     it.each([
@@ -511,10 +591,13 @@ describe("alert rules: access, column grants, limits and the alerts token", () =
       expect(await ruleById(row.id)).toMatchObject({ state: "ok", unevaluable_reason: null });
     });
 
-    it("re-enabling a disabled rule that the evaluator left in alarm also resets it", async () => {
-      const { token } = await newToken("reenable");
+    it("re-enabling a disabled rule that still carries an old alarm also resets it", async () => {
+      // alerts_record no longer writes disabled rules, so the leftover is set the way an older run left it.
       const row = await createRule({ enabled: false });
-      await putInAlarm(token, row.id);
+      await withPrivileged((db) =>
+        db.query("update public.alert_rules set state = 'alarm', unevaluable_reason = 'old' where id = $1", [row.id]),
+      );
+      expect(await ruleById(row.id)).toMatchObject({ state: "alarm" });
 
       const { error } = await owner.from("alert_rules").update({ enabled: true }).eq("id", row.id);
       expect(error).toBeNull();
