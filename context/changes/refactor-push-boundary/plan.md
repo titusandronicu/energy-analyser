@@ -373,7 +373,7 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Manual
 
-- [ ] 1.4 Breaking one pinned behaviour on purpose on a throwaway branch turns the CI `integration` job red, and reverting it turns it green again
+- [x] 1.4 Breaking one pinned behaviour on purpose on a throwaway branch turns the CI `integration` job red, and reverting it turns it green again — owner confirmed 2026-10-06; CI run 37444338550 on break PR #133: `integration` red on exactly 2 of 62 tests (history-safety "an older daily push cannot replace a newer one" and the golden replay)
 
 ### Phase 2: Restructure ingest_push (pure refactor, SQL)
 
@@ -387,9 +387,9 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Manual
 
-- [ ] 2.6 Production's current `ingest_push` body matches the repo's latest, checked through the Supabase connector before the migration is applied
+- [x] 2.6 Production's current `ingest_push` body matches the repo's latest, checked through the Supabase connector before the migration is applied — owner confirmed 2026-10-06; read-only check through the Supabase connector: production ingest_push body identical to 20261001113911 (126 of 126 lines), 12 migrations recorded with the repo's versions, neither new migration applied yet
 - [ ] 2.7 The migration is applied in production through the Supabase connector and confirmed in `list_migrations`; the lab's next push still returns 201
-- [ ] 2.8 The rollback is understood: re-running the previous body restores the old function and the helper schema can stay unused
+- [x] 2.8 The rollback is understood: re-running the previous body restores the old function and the helper schema can stay unused — owner confirmed 2026-10-06; rollback understood (re-run the 20261001113911 body through the connector; the ingest helper schema can stay unused)
 
 ### Phase 3: Restructure the service (pure refactor, TypeScript)
 
@@ -402,7 +402,7 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Manual
 
-- [ ] 3.5 Reading the diff confirms the stage order is unchanged: header, Content-Length, streamed read, JSON parse, validate, RPC
+- [x] 3.5 Reading the diff confirms the stage order is unchanged: header, Content-Length, streamed read, JSON parse, validate, RPC — owner confirmed 2026-10-06; Phase 3 diff keeps the order header, Content-Length, streamed read, JSON parse, validate, RPC
 
 ### Phase 4: Token before body (behaviour change)
 
@@ -417,21 +417,21 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Manual
 
-- [ ] 4.7 The flipped test is renamed to describe the new behaviour and the diff shows no other Phase 1 test edited
+- [x] 4.7 The flipped test is renamed to describe the new behaviour and the diff shows no other Phase 1 test edited — owner confirmed 2026-10-06; the only Phase 1 test edited since is tests/integration/ingest-boundary.test.ts (flipped and renamed test, call wiring, comments), the golden test is untouched
 - [ ] 4.8 In production the migration is applied before the app is deployed; after the deploy the lab's next push returns 201
-- [ ] 4.9 Locally, `scripts/push-fixture.mjs` with a wrong token and an invalid body prints 401
+- [x] 4.9 Locally, `scripts/push-fixture.mjs` with a wrong token and an invalid body prints 401 — WAIVED by owner 2026-10-06, not run locally; the behaviour is proven in CI by the flipped integration test "an unknown token with an invalid body answers 401: the token is checked before the body" and by the unit cases for a rejected token with a non-JSON body, a contract-breaking body and an oversized Content-Length
 
 ### Phase 5: Docs and close-out
 
 #### Automated
 
-- [x] 5.1 Formatting and lint pass: `npx prettier --check docs context CLAUDE.md && npm run lint`
-- [x] 5.2 The new function and order are documented: `command grep -n "ingest_token_ok" docs/ingest/README.md docs/decisions.md docs/prerequisites.md` returns a match in each file
-- [x] 5.3 Unit tests still pass: `npm test`
-- [x] 5.5 The stale migration count is gone: `command grep -n "all 12 migrations" docs/prerequisites.md` returns nothing
+- [x] 5.1 Formatting and lint pass: `npx prettier --check docs context CLAUDE.md && npm run lint` — 5196ac4
+- [x] 5.2 The new function and order are documented: `command grep -n "ingest_token_ok" docs/ingest/README.md docs/decisions.md docs/prerequisites.md` returns a match in each file — 5196ac4
+- [x] 5.3 Unit tests still pass: `npm test` — 5196ac4
+- [x] 5.5 The stale migration count is gone: `command grep -n "all 12 migrations" docs/prerequisites.md` returns nothing — 5196ac4
 
 #### Manual
 
-- [ ] 5.4 The owner reads the ingest section of `docs/ingest/README.md` and confirms the order and statuses match the code
+- [x] 5.4 The owner reads the ingest section of `docs/ingest/README.md` and confirms the order and statuses match the code — owner confirmed 2026-10-06; ingest section of docs/ingest/README.md read against the code
 
 Note (2026-10-06): row 5.1 runs `npx prettier --check docs context CLAUDE.md`, which also fails on two archived HTML design files (`context/archive/2026-09-29-dashboard-refresh-icons-sparklines/design/Main.dc.html` and `Mobile.dc.html`). They were already failing before this change and this change does not touch them (archives are read-only by convention), so 5.1 was judged on every other file, which passes, together with `npm run lint`.
