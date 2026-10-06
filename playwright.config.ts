@@ -38,6 +38,10 @@ export default defineConfig({
     // Never reuse a running server: a leftover one could serve a stale build, and a deliberate break in the markup would
     // then prove nothing. A taken port fails loudly instead.
     reuseExistingServer: false,
+    // Show the build and server output (it is ignored by default), so a failed build or start says why instead of only
+    // "Timed out waiting for webServer".
+    stdout: "pipe",
+    stderr: "pipe",
     // The Origin check of the middleware compares against APP_ORIGIN, so it must equal the browser's base URL.
     env: { ...inherited, HOST, PORT, APP_ORIGIN: BASE_URL, APP_VERSION: "e2e" },
   },

@@ -3,6 +3,7 @@ import { anonClient } from "./stack";
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
 const DEFAULT_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+const OVERRIDING_PARAMS = new Set(["host", "hostaddr", "port"]);
 
 // Resolves the connection string for privileged SQL on the local stack and refuses anything that is not local.
 // SUPABASE_DB_URL overrides the local default. Never skips and never echoes the string (it carries a password).
@@ -25,6 +26,15 @@ export function requirePrivileged(): string {
     throw new Error(
       `Refusing to run privileged SQL against database host "${parsed.hostname}": the integration suite writes data and only runs against a local stack (127.0.0.1 or localhost).`,
     );
+  }
+  // The pg driver lets these query parameters override the host or port in the URL (`?host=db.example.com` connects
+  // to that host while `hostname` above still reads 127.0.0.1), which would walk around the check. Refuse them.
+  for (const key of parsed.searchParams.keys()) {
+    if (OVERRIDING_PARAMS.has(key.toLowerCase())) {
+      throw new Error(
+        `Refusing SUPABASE_DB_URL with a "${key}" query parameter: it can redirect the connection away from the host checked here.`,
+      );
+    }
   }
   return raw;
 }
