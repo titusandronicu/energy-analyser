@@ -367,9 +367,9 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Automated
 
-- [x] 1.1 The new tests pass against the unchanged database: `npm run test:integration`
-- [x] 1.2 Unit tests and type checks still pass: `npm test && npx astro check`
-- [x] 1.3 Lint and format pass on the new files: `npm run lint && npx prettier --check tests/integration`
+- [x] 1.1 The new tests pass against the unchanged database: `npm run test:integration` — 566ea8b
+- [x] 1.2 Unit tests and type checks still pass: `npm test && npx astro check` — 566ea8b
+- [x] 1.3 Lint and format pass on the new files: `npm run lint && npx prettier --check tests/integration` — 566ea8b
 
 #### Manual
 
@@ -383,7 +383,7 @@ Two migrations, each applied in production by hand through the Supabase connecto
 - [ ] 2.2 Golden replay, boundary and every existing integration test pass unchanged: `npm run test:integration`
 - [ ] 2.3 Retention parity test passes: `npx vitest run --config vitest.integration.config.ts tests/integration/ingest-retention.test.ts`
 - [ ] 2.4 A test using `has_function_privilege` proves no client role can execute any `ingest` helper and `ingest_push` stays anon-only: `npx vitest run --config vitest.integration.config.ts tests/integration/access-abuse.test.ts`
-- [ ] 2.5 Unit tests, lint and type check pass: `npm test && npm run lint && npx astro check`
+- [x] 2.5 Unit tests, lint and type check pass: `npm test && npm run lint && npx astro check`
 
 #### Manual
 
