@@ -2,7 +2,9 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { baseBody, billForecast, dailyRow, hourRow, recommendation, summary } from "./support/bodies";
 import { emptySummaryDay, freshDays, freshWindowHours, nextCapturedAt } from "./support/keys";
 import {
+  deleteAlertToken,
   deleteToken,
+  insertAlertToken,
   insertToken,
   nonOwnerClient,
   removeUser,
@@ -55,6 +57,8 @@ interface Seed {
   generatedAt: string;
   pushCapturedAt: string;
   noteDay: string;
+  // The threshold of the owner's seeded bill_above rule; unique within the owner's rules.
+  alertThreshold: string;
 }
 
 interface Probe {
@@ -102,6 +106,12 @@ const PROBES: Probe[] = [
     columns: "day, text",
     filter: (seed) => ({ column: "day", value: seed.noteDay }),
   },
+  {
+    name: "alert_rules",
+    table: "alert_rules",
+    columns: "kind, threshold",
+    filter: (seed) => ({ column: "threshold", value: seed.alertThreshold }),
+  },
   { name: "live_state", table: "live_state", columns: "captured_at", filter: () => undefined },
   { name: "bill_forecast", table: "bill_forecast", columns: "captured_at", filter: () => undefined },
 ];
@@ -117,6 +127,9 @@ describe("access abuse: signed-out and non-owner clients read and write nothing"
   let writeDays: string[];
   const noteDays: string[] = [];
   const tokenLabels: string[] = [];
+  const alertTokenLabels: string[] = [];
+  // Thresholds of the rules the write tests create, each unique within the fresh owner's rules.
+  const ALERT_SEED_THRESHOLD = 4242;
 
   beforeAll(async () => {
     requireStack();
@@ -150,6 +163,10 @@ describe("access abuse: signed-out and non-owner clients read and write nothing"
     const noted = await owner.from("day_notes").insert({ day: noteDay, text: `Invented seed note ${noteDay}` });
     if (noted.error) throw new Error(`seeding a day note failed: ${noted.error.message}`);
 
+    // The owner's rule, so "no rows" for a stranger on alert_rules means hidden, not empty.
+    const ruled = await owner.from("alert_rules").insert({ kind: "bill_above", threshold: ALERT_SEED_THRESHOLD });
+    if (ruled.error) throw new Error(`seeding an alert rule failed: ${ruled.error.message}`);
+
     seed = {
       dailyDay,
       hourStart,
@@ -157,6 +174,7 @@ describe("access abuse: signed-out and non-owner clients read and write nothing"
       generatedAt: generatedAt.toISOString(),
       pushCapturedAt: dailyAt.toISOString(),
       noteDay,
+      alertThreshold: String(ALERT_SEED_THRESHOLD),
     };
   });
 
@@ -168,6 +186,8 @@ describe("access abuse: signed-out and non-owner clients read and write nothing"
         db.query("delete from public.day_notes where user_id = $1 and day = any($2::date[])", [ownerId, noteDays]),
       );
     }
+    await withPrivileged((db) => db.query("delete from public.alert_rules where user_id = $1", [ownerId]));
+    for (const label of alertTokenLabels) await deleteAlertToken(label);
     for (const label of tokenLabels) await deleteToken(label);
     if (strangerId !== undefined) await removeUser(strangerId);
   });
@@ -207,6 +227,26 @@ describe("access abuse: signed-out and non-owner clients read and write nothing"
         ["non-owner", stranger.client],
       ] as const) {
         const result = await readRows(client, "ingest_tokens", "label", { column: "label", value: label });
+        expect({ who, rows: result.rows }).toEqual({ who, rows: [] });
+      }
+    });
+
+    it("alert_tokens: nobody reads a token row, though it exists", async () => {
+      const { label } = await insertAlertToken("probe");
+      alertTokenLabels.push(label);
+
+      // Control: the row is there (privileged read).
+      const count = await withPrivileged((db) =>
+        db.query<{ n: string }>("select count(*)::text as n from public.alert_tokens where label = $1", [label]),
+      );
+      expect(count.rows[0].n).toBe("1");
+
+      for (const [who, client] of [
+        ["owner", owner],
+        ["anon", anon],
+        ["non-owner", stranger.client],
+      ] as const) {
+        const result = await readRows(client, "alert_tokens", "label", { column: "label", value: label });
         expect({ who, rows: result.rows }).toEqual({ who, rows: [] });
       }
     });
@@ -310,6 +350,81 @@ describe("access abuse: signed-out and non-owner clients read and write nothing"
       expect(error).toBeNull();
       expect(count).toBe(1);
       expect(await noteText(day)).toEqual([]);
+    });
+  });
+
+  describe("alert rules cannot be written by anon or a non-owner", () => {
+    const ruleRows = async (threshold: number) =>
+      (await readRows(owner, "alert_rules", "kind, threshold", { column: "threshold", value: String(threshold) })).rows;
+
+    it("insert", async () => {
+      const threshold = 4301;
+
+      // Each attempt is denied as an error or zero rows; either way the owner's read shows no rule.
+      await anon.from("alert_rules").insert({ kind: "bill_above", threshold });
+      await stranger.client.from("alert_rules").insert({ kind: "bill_above", threshold });
+      expect(await ruleRows(threshold)).toEqual([]);
+
+      // Control: the owner can insert the same rule.
+      const { error } = await owner.from("alert_rules").insert({ kind: "bill_above", threshold });
+      expect(error).toBeNull();
+      expect(await ruleRows(threshold)).toHaveLength(1);
+    });
+
+    it("update", async () => {
+      const threshold = 4302;
+      expect((await owner.from("alert_rules").insert({ kind: "bill_above", threshold })).error).toBeNull();
+
+      for (const [who, client] of [
+        ["anon", anon],
+        ["non-owner", stranger.client],
+      ] as const) {
+        const { data } = await client
+          .from("alert_rules")
+          .update({ enabled: false })
+          .eq("threshold", threshold)
+          .select("threshold")
+          .overrideTypes<Record<string, unknown>[], { merge: false }>();
+        expect({ who, changed: data ?? [] }).toEqual({ who, changed: [] });
+      }
+      const untouched = await readRows(owner, "alert_rules", "enabled", {
+        column: "threshold",
+        value: String(threshold),
+      });
+      expect(untouched.rows).toEqual([{ enabled: true }]);
+
+      // Control: the owner can change it (no .select(), as in the app: user_id is unreadable).
+      const { error, count } = await owner
+        .from("alert_rules")
+        .update({ enabled: false }, { count: "exact" })
+        .eq("threshold", threshold);
+      expect(error).toBeNull();
+      expect(count).toBe(1);
+    });
+
+    it("delete", async () => {
+      const threshold = 4303;
+      expect((await owner.from("alert_rules").insert({ kind: "bill_above", threshold })).error).toBeNull();
+
+      for (const [who, client] of [
+        ["anon", anon],
+        ["non-owner", stranger.client],
+      ] as const) {
+        const { data } = await client
+          .from("alert_rules")
+          .delete()
+          .eq("threshold", threshold)
+          .select("threshold")
+          .overrideTypes<Record<string, unknown>[], { merge: false }>();
+        expect({ who, removed: data ?? [] }).toEqual({ who, removed: [] });
+      }
+      expect(await ruleRows(threshold)).toHaveLength(1);
+
+      // Control: the owner can delete it.
+      const { error, count } = await owner.from("alert_rules").delete({ count: "exact" }).eq("threshold", threshold);
+      expect(error).toBeNull();
+      expect(count).toBe(1);
+      expect(await ruleRows(threshold)).toEqual([]);
     });
   });
 
