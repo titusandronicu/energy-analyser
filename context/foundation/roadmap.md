@@ -3,7 +3,7 @@ project: energy-analyser
 version: 2
 status: draft
 created: 2026-09-23
-updated: 2026-10-01
+updated: 2026-10-06
 prd_version: 3
 main_goal: speed
 top_blocker: time
@@ -25,7 +25,7 @@ milestone_status: open
 - **Intent:** The owner opens the app with an access key and sees near-live state, a season-aware insight and today's battery recommendation, all from data the home lab pushes. Extended 2026-09-25 (PRD v2): the cost, usage and context features of the lab's old analyser page move into the app. Extended 2026-09-26 (PRD v3): every figure states the period behind it and nothing is guessed from too little data; a calendar shows days, months and years with good / neutral / bad ratings, lab-written summaries and the owner's notes; everything is written for someone without energy knowledge, with colours and remarks on consumption trends; recommendation feedback is dropped. Corrected 2026-09-26 (PRD v3.1): the lab's history starts on 2026-07-16, so ratings use a disclosed recent norm until a year of history exists, the backfill covers ten days, the year view is parked, the bill forecast moves up, and the recommendation's context cards (S-09, S-12, S-13) are stretch.
 - **Source materials:** `context/foundation/prd-v3.md` (v3; v2 is `prd-v2.md`, v1 is `prd.md`), with `context/foundation/existing-system.md` for what the home lab already provides.
 - **Done when:** every F-NN and S-NN below is `done`.
-- **Scope anchors:** FR-001–FR-006, FR-011–FR-031, US-01, US-03–US-07 (the full v3.1 PRD; FR-007–FR-010 and US-02 were removed in v3; the year view is deferred, see Parked). Stretch for the 2026-11-04 deadline: US-07 (S-09, S-12, S-13). S-08 is blocked on the lab; S-10 stays must-have but is sequenced last.
+- **Scope anchors:** FR-001–FR-006, FR-011–FR-036, US-01, US-03–US-08 (the full v3.1 PRD; FR-007–FR-010 and US-02 were removed in v3; the year view is deferred, see Parked). Stretch for the 2026-11-04 deadline: US-07 (S-09, S-12, S-13). S-08 is blocked on the lab; S-10 stays must-have but is sequenced last.
 
 ## Vision recap
 
@@ -44,6 +44,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | F-03 | history-backfill          | (foundation) the ten lab days before the first push are in the app                          | F-02          | FR-024                                | done        |
 | F-04 | lab-period-summaries      | (foundation) the lab writes plain-language texts for today, days and months                 | F-02          | FR-023, FR-030                        | in-progress |
 | F-05 | solar-forecast-source     | (foundation) Home Assistant has a solar forecast again and the lab pushes it                | F-02          | FR-006, FR-015, FR-020                | done        |
+| F-07 | e2e-alert-rules           | (foundation) a browser test drives the alert-rules page against a real local stack in CI    | S-21          | test-plan risk #8                     | done        |
 | F-06 | history-gap-fill          | (foundation) the missing and empty days are re-sent from Home Assistant's hourly statistics | F-03          | FR-021, FR-024                        | proposed    |
 | S-01 | access-key-sign-in        | open the app from an access-key link and land in their own session                          | —             | FR-001                                | done        |
 | S-02 | live-state-with-staleness | see current PV/battery/grid state, marked stale when pushes stop                            | F-01, S-01    | US-01, FR-002, FR-004                 | done        |
@@ -63,6 +64,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-10 | usage-profile             | see how consumption spreads across the day, week and unusual hours                          | F-01, S-01    | US-04, FR-014                         | proposed    |
 | S-12 | inverter-schedule-view    | see the inverter's current schedule next to the recommendation                              | S-03          | US-07, FR-016                         | proposed    |
 | S-13 | pipeline-health           | see why advice or live data is missing or degraded                                          | S-02, S-03    | US-07, FR-017, FR-004                 | proposed    |
+| S-21 | alert-rules               | set alert rules and get a Telegram message when one fires, reminds or recovers              | S-02, S-07    | US-08, FR-032–036                     | in-progress |
 
 ## Streams
 
@@ -74,6 +76,7 @@ Navigation aid — groups items that share a Prerequisites chain. Canonical orde
 | B      | Trust in the numbers and cost | `S-14` → `S-07` → `F-05` → `S-11`                   | The owner's first priority. S-07 (cost before the bill) is the PRD's first problem and cheap, so it follows S-14 (v3.1). S-11 needs a week or two of forecasts after F-05 before certainty means anything. |
 | C      | History calendar              | `S-15` → `S-17` → `S-20` → `S-19`                   | The main v3 surface; S-16 (year view) is no longer parked — it ships as a partial-year view; only year-over-year comparison still waits for a second year of history.                                      |
 | D      | Lab history and summaries     | `F-03` → `F-04` → `S-18`                            | homelab-2 work that runs alongside Streams B and C; S-18 joins Stream C at S-15.                                                                                                                           |
+| F      | Alerts and verification       | `S-21` → `F-07`                                     | Added 2026-10-06 (PRD v3.2): the second CRUD surface with Telegram messages, built on the owner's request, and the first browser e2e test of it. S-21 waits only for the real production alarm (row 4.6).  |
 | E      | v2 cost and context           | `S-08` → `S-09` → `S-10` → `S-12` → `S-13`          | Sequenced after the v3 work by the owner's decision (2026-09-26). S-09, S-12 and S-13 are stretch (US-07); S-08 is blocked on the lab; S-10 is must-have but last. S-07 moved to Stream B.                 |
 
 ## Baseline
@@ -305,6 +308,31 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** —
 - **Risk:** Display only; like the recommendation card, the summary is shown as narrated, with its generation time and the period it covers.
+- **Status:** done
+
+### S-21: Alert rules
+
+- **Outcome:** user can keep alert rules on a page and get a Telegram message when a rule starts to hold, still holds after its reminder interval, or stops holding.
+- **Change ID:** alert-rules
+- **PRD refs:** US-08, FR-032, FR-033, FR-034, FR-035, FR-036
+- **Prerequisites:** S-02, S-07
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:** whether a real alarm reaches the owner's Telegram in production (plan row 4.6; the forecast must reach 7 days first, about 8–9 October).
+- **Risk:** The second client-written table and the first outbound call; the evaluator runs without a session through two anon-callable database functions guarded by their own token. Built before this entry existed (PRD v3.2 records it); live in production with a VPS trigger every 5 minutes. Implementation review 2026-10-06: eight fixes applied.
+- **Status:** in-progress
+
+### F-07: Browser e2e for alert rules
+
+- **Outcome:** (foundation) a Playwright test drives the alert-rules page (create, edit, switch off, delete, invalid and duplicate) against a local Supabase stack and runs in CI as a non-required job.
+- **Change ID:** e2e-alert-rules
+- **PRD refs:** — (verification; `context/foundation/test-plan.md` risk #8)
+- **Unlocks:** the pattern for any later browser test (`context/foundation/test-stack.md`)
+- **Prerequisites:** S-21
+- **Parallel with:** —
+- **Blockers:** —
+- **Unknowns:** —
+- **Risk:** Browser tests flake; no retries so a flake shows, and the CI job stays non-required until it has a track record.
 - **Status:** done
 
 ### S-11: Forecast accuracy and certainty

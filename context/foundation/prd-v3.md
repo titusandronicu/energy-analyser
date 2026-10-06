@@ -127,6 +127,19 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
 - Ratings and summaries describe what happened; they never give advice or suggest changes
 - Days the home lab recorded before the app started receiving pushes (from 2026-07-16) are available through a one-time backfill
 
+### US-08: User is told when something needs attention
+
+- **Given** a signed-in owner who keeps alert rules ("the lab data is older than 30 minutes", "the projected bill is above 250 PLN")
+- **When** a rule starts to hold, still holds after its reminder interval, or stops holding
+- **Then** the owner gets a short plain-Polish Telegram message (alarm, reminder or "back to normal") without opening the app
+
+#### Acceptance Criteria
+
+- Rules are created, edited, switched on and off and deleted on a page of the app; they belong to the signed-in owner only
+- A rule that cannot be judged (no usable bill forecast, an unreadable timestamp) sends nothing and keeps its state; the reason is shown on the page
+- Messages are deterministic text built from the rule and the observed value, never written by an LLM, and carry no data beyond the figure and the line
+- Changing a rule's line or switching it on never leaves a stale alarm; at most 20 rules can be on at once
+
 ### US-06: User keeps notes on days
 
 - **Given** a user viewing a day in the calendar
@@ -253,10 +266,19 @@ Recording accept/dismiss feedback on recommendations was dropped on 2026-09-26: 
   > days keep a full create/read/update/delete surface, and they explain the outliers the
   > ratings surface.
 
+### Alert rules and notifications (CRUD, v3.2)
+
+- FR-032: Owner can add an alert rule of a kind (lab data older than N minutes; projected bill above N PLN) with a line, an optional label and a reminder interval. Priority: must-have
+- FR-033: Owner can view the rules with their state (ok, alarm, cannot be judged and why) and when they last fired. Priority: must-have
+- FR-034: Owner can edit a rule's line, label and reminder interval, switch it on or off, and delete it. Priority: must-have
+- FR-035: A scheduled evaluation sends a Telegram message on a change to alarm, a reminder while it lasts, and a recovery message; a message is retried on the next run when sending failed. Priority: must-have
+- FR-036: A rule that cannot be judged sends nothing and keeps its state, and the evaluation is trigger-secured so it cannot be called by anyone but the scheduler. Priority: must-have
+  > Added in v3.2 (2026-10-06) after the fact: the feature (change `alert-rules`) was built on the owner's request to add an automated notification, a second CRUD surface and a way to learn about problems without opening the app. Uptime Kuma already alerts on lab push silence; these rules cover stale or degraded data that keeps arriving, and the bill.
+
 ## Non-Functional Requirements
 
 - Raw telemetry and billing data (PGE CSVs, customer/POD identifiers, hourly private readings, HA tokens) never leave the home lab. Only public-safe aggregates, the facts bundle and the narrated recommendation are pushed to the app, plus the minimum data required for the weather-forecast lookup. Cost figures and the usage profile arrive as aggregates computed in the home lab; inverter setting values stay in the lab. The inverter schedule leaves the lab only as a slot summary (times, grid charging on/off, target state of charge), and pipeline status only as fixed status codes, never raw error text, device names or addresses.
-- Credentials (the app's push-ingestion token, Supabase keys, and the home lab's own HA/LLM credentials) are never committed to source control. The app holds no Home Assistant or LLM credentials.
+- Credentials (the app's push-ingestion token, Supabase keys, and the home lab's own HA/LLM credentials) are never committed to source control. The app holds no Home Assistant or LLM credentials. The one outbound credential it holds is the Telegram bot token and chat id for alert messages (server environment only, never logged or returned); the evaluation is authenticated by its own hashed token, separate from the ingest token.
 - The user sees continuous visible feedback (not a frozen screen) during any operation that takes longer than 2 seconds.
 - All user-facing text is plain Polish for someone without energy knowledge; each technical term (PV, kW, kWh, battery %, grid import/export) is explained where it first appears on a screen.
 - The historical dataset used for the baseline and recommendation is refreshed at least once per day (met by the home lab's 5-minute refresh and push), so "yesterday's usage" is never based on a static, aging snapshot.
@@ -274,7 +296,7 @@ Cost and usage views (FR-011–014) present figures the home lab has already com
 
 ## Access Control
 
-Access key (magic link) — no account-creation form, no roles, but opening the link **establishes an authenticated session** (an email + password sign-in for the same single account is kept as an alternative; see docs/decisions.md, 2026-09-23): the user is logged in for that session and sees only their own resources (current state, insight, recommendations, history, notes). This is a real login mechanism, not just an anonymous page gate — it satisfies "access tied to a logged-in user" without the overhead of a username/password flow. Single user by design.
+Access key (magic link) — no account-creation form, no roles, but opening the link **establishes an authenticated session** (an email + password sign-in for the same single account is kept as an alternative; see docs/decisions.md, 2026-09-23): the user is logged in for that session and sees only their own resources (current state, insight, recommendations, history, notes, alert rules). This is a real login mechanism, not just an anonymous page gate — it satisfies "access tied to a logged-in user" without the overhead of a username/password flow. Single user by design.
 
 ## Non-Goals
 
@@ -286,6 +308,7 @@ Access key (magic link) — no account-creation form, no roles, but opening the 
 - **No advice from ratings or summaries** — day and month ratings and the lab's summaries describe what happened; they never suggest changes, and they do not feed back into the recommendation logic.
 - **No accept/dismiss feedback on recommendations** — removed in v3 (see FR-025–028 for notes on days).
 - **Notes never alter anything** — notes on days are for the user's own reference only.
+- **No email, push or multi-recipient alerts** — alert rules (FR-032–036) message one Telegram chat; messages are fixed text, not LLM-written, and the rules never act on the system.
 
 ## Open Questions
 
@@ -296,6 +319,8 @@ None open. Five questions raised on 2026-09-23 by reviewing this PRD against the
 3. **Where does the app run relative to the data?** The app stays on the public VPS. The home lab pushes public-safe data outbound, and no v1 feature connects into the home network (FR-002, FR-004). Tailscale via Micr.us is kept as an optional private channel for flexibility, not as a data dependency.
 4. **Bill reconciliation?** Stays a non-goal. Superseded in part on 2026-09-25: PRD v2 moves the current-month projection and closed-period cost into scope (FR-011, FR-012); predicted-vs-actual reconciliation stays out.
 5. **Brownfield?** No. This repo is new code; the home lab is an external data source that pushes in. `context_type` stays `greenfield`.
+
+v3.2 (2026-10-06): alert rules and Telegram notifications added as US-08 and FR-032–036 (the feature was built first, as change `alert-rules`; this records it), with the Telegram credential in the NFRs and two Non-Goals. A browser e2e layer for the alert-rules page (change `e2e-alert-rules`, strategy in `context/foundation/test-plan.md`) is verification, not product scope, and has no requirement.
 
 v3.1 (2026-09-26): a review against the goal and the lab's real data found that no same-season history from a year before exists (the lab's history starts on 2026-07-16). Ratings use a disclosed recent norm until it does, the backfill shrinks to ten days, and the year view is deferred. US-01 lost the criteria that depend on stretch slices (moved to US-07, FR-013/016/017 now nice-to-have), and FR-006 became must-have, consistent with the success criteria. Decisions taken with the owner.
 
