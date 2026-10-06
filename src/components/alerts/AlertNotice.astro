@@ -1,0 +1,17 @@
+---
+import StatusBadge from "@/components/StatusBadge.astro";
+import type { alertNotice } from "@/lib/services/alert-rules";
+
+interface Props {
+  // The outcome of the last rule post, read back from ?alert=.
+  notice: NonNullable<ReturnType<typeof alertNotice>>;
+  class?: string;
+}
+
+// The alert rule post's outcome notice, at the top of the alerts page.
+const { notice, class: className } = Astro.props;
+---
+
+<div role="status" class:list={className} data-testid="alert-notice">
+  <StatusBadge status={{ tone: notice.tone, label: "" }} text={notice.text} />
+</div>

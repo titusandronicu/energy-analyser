@@ -2,12 +2,13 @@
 import { ChartLine, LogOut } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { HISTORY_PATH } from "@/lib/calendar/nav";
+import { ALERTS_PATH } from "@/lib/services/alert-rules";
 import { cn } from "@/lib/utils";
 
 interface Props {
   email: string | undefined;
   // The page the navigation marks with aria-current.
-  current: "dashboard" | "history";
+  current: "dashboard" | "history" | "alerts";
 }
 
 const { email, current } = Astro.props;
@@ -15,6 +16,7 @@ const { email, current } = Astro.props;
 const LINKS = [
   { key: "dashboard", href: "/dashboard", word: "Pulpit" },
   { key: "history", href: HISTORY_PATH, word: "Historia" },
+  { key: "alerts", href: ALERTS_PATH, word: "Alerty" },
 ] as const;
 ---
 

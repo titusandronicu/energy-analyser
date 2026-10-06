@@ -4,6 +4,7 @@
 export const PROTECTED_ROUTES = ["/dashboard"];
 
 const NOTES_PATH = "/api/notes";
+const ALERT_RULES_PATH = "/api/alert-rules";
 const RETRY_AFTER_SECONDS = 30;
 
 export type AuthErrorKind = "outage" | "session-missing" | "other";
@@ -25,12 +26,12 @@ export function classifyAuthError(error: AuthErrorLike | null): AuthErrorKind | 
 }
 
 // Requests whose answer depends on a signed-in owner: the home page (it forwards to the dashboard or the sign-in page),
-// the dashboard, and posting a note.
+// the dashboard, and posting a note or an alert rule.
 function needsUser(pathname: string, method: string): boolean {
   return (
     pathname === "/" ||
     PROTECTED_ROUTES.some((route) => pathname.startsWith(route)) ||
-    (method === "POST" && pathname === NOTES_PATH)
+    (method === "POST" && (pathname === NOTES_PATH || pathname === ALERT_RULES_PATH))
   );
 }
 

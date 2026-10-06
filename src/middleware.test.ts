@@ -190,14 +190,18 @@ describe("onRequest", () => {
   });
 
   describe("every mutating /api route needs the Origin", () => {
-    it.each(["/api/auth/signin", "/api/auth/magic-link", "/api/auth/signout", "/api/notes", "/api/anything-new"])(
-      "POST %s with a foreign Origin is refused before the session lookup",
-      async (path) => {
-        env.APP_ORIGIN = APP_ORIGIN;
+    it.each([
+      "/api/auth/signin",
+      "/api/auth/magic-link",
+      "/api/auth/signout",
+      "/api/notes",
+      "/api/alert-rules",
+      "/api/anything-new",
+    ])("POST %s with a foreign Origin is refused before the session lookup", async (path) => {
+      env.APP_ORIGIN = APP_ORIGIN;
 
-        expect(await call({ method: "POST", path, origin: "https://evil.example.test" })).toMatchObject(REFUSED);
-      },
-    );
+      expect(await call({ method: "POST", path, origin: "https://evil.example.test" })).toMatchObject(REFUSED);
+    });
   });
 
   describe("safe methods", () => {
@@ -277,7 +281,7 @@ describe("onRequest", () => {
   });
 
   describe("protected pages", () => {
-    it.each(["/dashboard", "/dashboard/history", "/dashboardX"])(
+    it.each(["/dashboard", "/dashboard/history", "/dashboard/alerts", "/dashboardX"])(
       "%s without a user redirects to /auth/signin with 302",
       async (path) => {
         const outcome = await call({ path });
@@ -286,11 +290,14 @@ describe("onRequest", () => {
       },
     );
 
-    it.each(["/dashboard", "/dashboard/history", "/dashboardX"])("%s with a user passes", async (path) => {
-      const outcome = await call({ path, user: { id: "user-1" } });
+    it.each(["/dashboard", "/dashboard/history", "/dashboard/alerts", "/dashboardX"])(
+      "%s with a user passes",
+      async (path) => {
+        const outcome = await call({ path, user: { id: "user-1" } });
 
-      expect(outcome).toMatchObject({ ...PASSED, user: { id: "user-1" } });
-    });
+        expect(outcome).toMatchObject({ ...PASSED, user: { id: "user-1" } });
+      },
+    );
 
     it.each(["/auth/signin", "/api/health", "/"])("%s needs no user", async (path) => {
       const outcome = await call({ path });
@@ -397,7 +404,9 @@ describe("onRequest", () => {
       ["GET", "/"],
       ["GET", "/dashboard"],
       ["GET", "/dashboard/history"],
+      ["GET", "/dashboard/alerts"],
       ["POST", "/api/notes"],
+      ["POST", "/api/alert-rules"],
     ];
     // Everything else keeps working as anonymous, so the owner can still reach the sign-in routes.
     const KEEP_WORKING: [string, string][] = [

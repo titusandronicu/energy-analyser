@@ -1,0 +1,271 @@
+---
+import { BellRing } from "lucide-react";
+import CardHeading from "@/components/CardHeading.astro";
+import StatusBadge from "@/components/StatusBadge.astro";
+import AlertNotice from "@/components/alerts/AlertNotice.astro";
+import { buttonVariants } from "@/components/ui/button";
+import Panel from "@/components/ui/Panel.astro";
+import { LOAD_FAILED, type Status } from "@/lib/format/status";
+import { formatWarsawDateTime } from "@/lib/format/warsaw-time";
+import {
+  ALERT_BILL_MAX_PLN,
+  ALERT_BILL_MIN_PLN,
+  ALERT_KIND_LABELS,
+  ALERT_KINDS,
+  ALERT_LABEL_MAX_LENGTH,
+  ALERT_RENOTIFY_DEFAULT_HOURS,
+  ALERT_RENOTIFY_MAX_HOURS,
+  ALERT_RENOTIFY_MIN_HOURS,
+  ALERT_STALE_MAX_MINUTES,
+  ALERT_STALE_MIN_MINUTES,
+  formatAlertThreshold,
+  type alertNotice,
+} from "@/lib/services/alert-rules";
+import { cn } from "@/lib/utils";
+import type { AlertRuleRow } from "@/types";
+
+interface Props {
+  // The owner's rules, or null when they failed to load: the panel says so and offers no form, since it can't tell what
+  // exists.
+  rules: AlertRuleRow[] | null;
+  // The outcome of the last post, read back from ?alert=.
+  notice: ReturnType<typeof alertNotice>;
+}
+
+// The owner's alert rules. No client JavaScript: the forms post to /api/alert-rules, which redirects back here with
+// ?alert=, and native <details> open the forms and the delete confirmation. The label and the evaluator's reason are
+// text, rendered escaped, never as HTML.
+const { rules, notice } = Astro.props;
+
+const SUMMARY_CLASS = cn(
+  buttonVariants({ variant: "outline" }),
+  "border-border-strong h-11 cursor-pointer list-none rounded-xl bg-transparent px-4 [&::-webkit-details-marker]:hidden",
+);
+const SUBMIT_CLASS = cn(buttonVariants(), "h-11 rounded-xl px-4");
+const OUTLINE_CLASS = cn(
+  buttonVariants({ variant: "outline" }),
+  "border-border-strong h-11 rounded-xl bg-transparent px-4",
+);
+const DELETE_CLASS = cn(buttonVariants({ variant: "destructive" }), "h-11 rounded-xl px-4");
+const INPUT_CLASS =
+  "bg-inset border-border-strong text-card-foreground focus-visible:border-ring focus-visible:ring-ring/50 block h-11 w-full rounded-xl border px-3 text-sm outline-none focus-visible:ring-[3px]";
+const LABEL_CLASS = "text-card-foreground block text-sm font-medium";
+
+function stateStatus(rule: AlertRuleRow): Status {
+  if (!rule.enabled) return { tone: "insufficient", label: "wyłączona" };
+  return rule.state === "alarm" ? { tone: "problem", label: "alarm" } : { tone: "good", label: "w normie" };
+}
+
+function thresholdAttrs(kind: AlertRuleRow["kind"]) {
+  return kind === "live_stale"
+    ? { min: ALERT_STALE_MIN_MINUTES, max: ALERT_STALE_MAX_MINUTES, step: 1, unit: "minuty" }
+    : { min: ALERT_BILL_MIN_PLN, max: ALERT_BILL_MAX_PLN, step: "any" as const, unit: "zł" };
+}
+---
+
+<Panel>
+  <div data-testid="alert-rules">
+    <CardHeading class="mb-2" title="Reguły alertów" icon={BellRing} iconClass="text-primary" />
+    <p class="text-muted-foreground mb-4 text-sm">
+      Gdy reguła zadziała, dostaniesz wiadomość na Telegramie. Reguły sprawdzamy mniej więcej co 10 minut.
+    </p>
+
+    {notice !== null && <AlertNotice notice={notice} class="mb-3" />}
+
+    {rules === null ? (
+      <div class="space-y-2">
+        <StatusBadge status={LOAD_FAILED} testId="alert-rules-status" />
+        <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      </div>
+    ) : (
+      <div class="space-y-6">
+        {rules.length === 0 ? (
+          <p class="text-muted-foreground text-sm">Nie masz jeszcze żadnych reguł.</p>
+        ) : (
+          <ul class="divide-hairline divide-y">
+            {rules.map((rule) => {
+              const attrs = thresholdAttrs(rule.kind);
+              return (
+                <li class="space-y-3 py-4 first:pt-0" data-testid="alert-rule">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <p class="text-card-foreground font-medium [overflow-wrap:anywhere]">
+                      {rule.label ?? ALERT_KIND_LABELS[rule.kind]}
+                    </p>
+                    <StatusBadge status={stateStatus(rule)} />
+                  </div>
+                  <p class="text-muted-foreground text-sm">
+                    {ALERT_KIND_LABELS[rule.kind]}: {formatAlertThreshold(rule.kind, rule.threshold)}. Przypomnienie co{" "}
+                    {rule.renotify_hours} h.
+                  </p>
+                  <p class="text-muted-foreground text-xs">
+                    {rule.last_evaluated_at === null
+                      ? "Jeszcze nie sprawdzana."
+                      : `Ostatnio sprawdzona ${formatWarsawDateTime(new Date(rule.last_evaluated_at))}.`}
+                  </p>
+                  {rule.unevaluable_reason !== null && (
+                    <p class="text-muted-foreground text-sm [overflow-wrap:anywhere]">
+                      Nie można teraz ocenić tej reguły: {rule.unevaluable_reason}
+                    </p>
+                  )}
+
+                  <div class="flex flex-col gap-3">
+                    <form method="POST" action="/api/alert-rules">
+                      <input type="hidden" name="intent" value="toggle" />
+                      <input type="hidden" name="id" value={rule.id} />
+                      <input type="hidden" name="enabled" value={rule.enabled ? "false" : "true"} />
+                      <button type="submit" class:list={OUTLINE_CLASS}>
+                        {rule.enabled ? "Wyłącz" : "Włącz"}
+                      </button>
+                    </form>
+
+                    <details>
+                      <summary class:list={SUMMARY_CLASS}>Edytuj</summary>
+                      <form method="POST" action="/api/alert-rules" class="mt-3 space-y-3">
+                        <input type="hidden" name="intent" value="update" />
+                        <input type="hidden" name="id" value={rule.id} />
+                        <input type="hidden" name="kind" value={rule.kind} />
+                        <div class="space-y-1">
+                          <label for={`alert-${rule.id}-threshold`} class:list={LABEL_CLASS}>
+                            Próg ({attrs.unit}, od {attrs.min} do {attrs.max})
+                          </label>
+                          <input
+                            id={`alert-${rule.id}-threshold`}
+                            name="threshold"
+                            type="number"
+                            inputmode="decimal"
+                            min={attrs.min}
+                            max={attrs.max}
+                            step={attrs.step}
+                            required
+                            value={rule.threshold}
+                            class:list={INPUT_CLASS}
+                          />
+                        </div>
+                        <div class="space-y-1">
+                          <label for={`alert-${rule.id}-label`} class:list={LABEL_CLASS}>
+                            Nazwa (opcjonalnie, do {ALERT_LABEL_MAX_LENGTH} znaków)
+                          </label>
+                          <input
+                            id={`alert-${rule.id}-label`}
+                            name="label"
+                            type="text"
+                            maxlength={ALERT_LABEL_MAX_LENGTH}
+                            value={rule.label ?? ""}
+                            class:list={INPUT_CLASS}
+                          />
+                        </div>
+                        <div class="space-y-1">
+                          <label for={`alert-${rule.id}-renotify`} class:list={LABEL_CLASS}>
+                            Przypomnienie co ile godzin ({ALERT_RENOTIFY_MIN_HOURS} do {ALERT_RENOTIFY_MAX_HOURS})
+                          </label>
+                          <input
+                            id={`alert-${rule.id}-renotify`}
+                            name="renotify_hours"
+                            type="number"
+                            inputmode="numeric"
+                            min={ALERT_RENOTIFY_MIN_HOURS}
+                            max={ALERT_RENOTIFY_MAX_HOURS}
+                            step="1"
+                            required
+                            value={rule.renotify_hours}
+                            class:list={INPUT_CLASS}
+                          />
+                        </div>
+                        <p class="text-muted-foreground text-xs">
+                          Zmiana progu zeruje stan reguły: zostanie sprawdzona od nowa.
+                        </p>
+                        <button type="submit" class:list={SUBMIT_CLASS}>
+                          Zapisz
+                        </button>
+                      </form>
+                    </details>
+
+                    <details>
+                      <summary class:list={SUMMARY_CLASS}>Usuń</summary>
+                      <form method="POST" action="/api/alert-rules" class="mt-3 space-y-3">
+                        <input type="hidden" name="intent" value="delete" />
+                        <input type="hidden" name="id" value={rule.id} />
+                        <p class="text-muted-foreground text-sm">Reguły nie da się potem przywrócić.</p>
+                        <button type="submit" class:list={DELETE_CLASS}>
+                          Na pewno usuń
+                        </button>
+                      </form>
+                    </details>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        <details>
+          <summary class:list={SUMMARY_CLASS}>Dodaj regułę</summary>
+          <form method="POST" action="/api/alert-rules" class="mt-3 space-y-3">
+            <input type="hidden" name="intent" value="create" />
+            <div class="space-y-1">
+              <label for="alert-new-kind" class:list={LABEL_CLASS}>
+                Rodzaj reguły
+              </label>
+              <select id="alert-new-kind" name="kind" required class:list={INPUT_CLASS}>
+                {ALERT_KINDS.map((kind) => (
+                  <option value={kind}>{ALERT_KIND_LABELS[kind]}</option>
+                ))}
+              </select>
+            </div>
+            <div class="space-y-1">
+              <label for="alert-new-threshold" class:list={LABEL_CLASS}>
+                Próg
+              </label>
+              <input
+                id="alert-new-threshold"
+                name="threshold"
+                type="number"
+                inputmode="decimal"
+                step="any"
+                required
+                aria-describedby="alert-new-threshold-hint"
+                class:list={INPUT_CLASS}
+              />
+              <p id="alert-new-threshold-hint" class="text-muted-foreground text-xs">
+                Dane nieaktualne: pełne minuty, od {ALERT_STALE_MIN_MINUTES} do {ALERT_STALE_MAX_MINUTES}. Rachunek: w
+                złotych, od {ALERT_BILL_MIN_PLN} do {ALERT_BILL_MAX_PLN}.
+              </p>
+            </div>
+            <div class="space-y-1">
+              <label for="alert-new-label" class:list={LABEL_CLASS}>
+                Nazwa (opcjonalnie, do {ALERT_LABEL_MAX_LENGTH} znaków)
+              </label>
+              <input
+                id="alert-new-label"
+                name="label"
+                type="text"
+                maxlength={ALERT_LABEL_MAX_LENGTH}
+                class:list={INPUT_CLASS}
+              />
+            </div>
+            <div class="space-y-1">
+              <label for="alert-new-renotify" class:list={LABEL_CLASS}>
+                Przypomnienie co ile godzin ({ALERT_RENOTIFY_MIN_HOURS} do {ALERT_RENOTIFY_MAX_HOURS})
+              </label>
+              <input
+                id="alert-new-renotify"
+                name="renotify_hours"
+                type="number"
+                inputmode="numeric"
+                min={ALERT_RENOTIFY_MIN_HOURS}
+                max={ALERT_RENOTIFY_MAX_HOURS}
+                step="1"
+                required
+                value={ALERT_RENOTIFY_DEFAULT_HOURS}
+                class:list={INPUT_CLASS}
+              />
+            </div>
+            <button type="submit" class:list={SUBMIT_CLASS}>
+              Dodaj
+            </button>
+          </form>
+        </details>
+      </div>
+    )}
+  </div>
+</Panel>

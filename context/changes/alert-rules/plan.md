@@ -346,29 +346,29 @@ Additive migration only (two new tables, two functions); no change to `ingest_to
 
 #### Automated
 
-- [x] 1.1 Migration applies cleanly to the local Supabase: `scripts/remote-docker.sh exec npx supabase migration up`
-- [x] 1.2 Integration suite passes including the new alert tests: `npm run test:integration`
-- [x] 1.3 Unit tests pass: `npm test`
-- [x] 1.4 Lint and type checks pass: `npm run lint` and `npx astro check`
-- [x] 1.5 The mint script prints a token once and a hash-only `insert`: `node scripts/create-alert-token.mjs alerts-local`
+- [x] 1.1 Migration applies cleanly to the local Supabase: `scripts/remote-docker.sh exec npx supabase migration up` — 70d571a
+- [x] 1.2 Integration suite passes including the new alert tests: `npm run test:integration` — 70d571a
+- [x] 1.3 Unit tests pass: `npm test` — 70d571a
+- [x] 1.4 Lint and type checks pass: `npm run lint` and `npx astro check` — 70d571a
+- [x] 1.5 The mint script prints a token once and a hash-only `insert`: `node scripts/create-alert-token.mjs alerts-local` — 70d571a
 
 #### Manual
 
-- [x] 1.6 Read the migration beside the `day_notes` migration: no grant to anon on either table, `search_path = ''`, and the EXECUTE grants restated on both functions
+- [x] 1.6 Read the migration beside the `day_notes` migration: no grant to anon on either table, `search_path = ''`, and the EXECUTE grants restated on both functions — 70d571a
 
 ### Phase 2: Owner CRUD in the app
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass, including form parsing, outcomes and guards: `npm test`
-- [ ] 2.2 Lint, type checks and build pass: `npm run lint`, `npx astro check` and `npm run build`
-- [ ] 2.3 Integration suite still passes: `npm run test:integration`
+- [x] 2.1 Unit tests pass, including form parsing, outcomes and guards: `npm test`
+- [x] 2.2 Lint, type checks and build pass: `npm run lint`, `npx astro check` and `npm run build`
+- [x] 2.3 Integration suite still passes: `npm run test:integration`
 
 #### Manual
 
-- [ ] 2.4 On the local stack, signed in as the owner: create one rule of each kind, edit a threshold, disable one, delete one with the confirmation, and see the matching notice each time
-- [ ] 2.5 Signed out, a visit to `/dashboard/alerts` redirects to sign-in and a direct POST to `/api/alert-rules` is refused
-- [ ] 2.6 The page has one `h1`, labelled form controls and a visible keyboard focus on every action
+- [x] 2.4 On the local stack, signed in as the owner: create one rule of each kind, edit a threshold, disable one, delete one with the confirmation, and see the matching notice each time
+- [x] 2.5 Signed out, a visit to `/dashboard/alerts` redirects to sign-in and a direct POST to `/api/alert-rules` is refused
+- [x] 2.6 The page has one `h1`, labelled form controls and a visible keyboard focus on every action
 
 ### Phase 3: Evaluator and Telegram
 
