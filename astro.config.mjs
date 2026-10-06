@@ -26,6 +26,8 @@ export default defineConfig({
       APP_VERSION: envField.string({ context: "server", access: "secret", optional: true, default: "development" }),
       APP_ENV: envField.string({ context: "server", access: "secret", optional: true, default: "development" }),
       APP_ORIGIN: envField.string({ context: "server", access: "secret", optional: true }),
+      TELEGRAM_BOT_TOKEN: envField.string({ context: "server", access: "secret", optional: true }),
+      TELEGRAM_CHAT_ID: envField.string({ context: "server", access: "secret", optional: true }),
     },
   },
 });

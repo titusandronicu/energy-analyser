@@ -35,11 +35,14 @@ const ROUTES: Record<string, RouteEntry> = {
   "/api/health": get("public"),
   "/dashboard": get("middleware-prefix", true),
   "/dashboard/history": get("middleware-prefix", true),
+  "/dashboard/alerts": get("middleware-prefix", true),
   "/api/auth/signin": post("public"),
   "/api/auth/magic-link": post("public"),
   "/api/auth/signout": post("public"),
   "/api/notes": post("handler-session"),
+  "/api/alert-rules": post("handler-session"),
   "/api/ingest": post("token"),
+  "/api/alerts/evaluate": post("token"),
 };
 
 // The prefix the middleware protects, written from CLAUDE.md (Auth flow), not read from the code.
@@ -139,11 +142,11 @@ describe("route guard inventory", () => {
   });
 
   it("keeps cookie-authenticated mutating routes out of the token exemption", () => {
-    // /api/notes is cookie-authenticated; the only token route is /api/ingest.
+    // /api/notes and /api/alert-rules are cookie-authenticated; the token routes are /api/ingest and /api/alerts/evaluate.
     const tokenRoutes = Object.entries(ROUTES)
       .filter(([, entry]) => entry.guard === "token")
       .map(([route]) => route);
 
-    expect(tokenRoutes).toEqual(["/api/ingest"]);
+    expect(tokenRoutes).toEqual(["/api/ingest", "/api/alerts/evaluate"]);
   });
 });

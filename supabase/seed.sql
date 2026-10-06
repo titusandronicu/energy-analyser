@@ -3,6 +3,11 @@
 insert into public.ingest_tokens (label, token_hash)
 values ('local-dev', extensions.digest('local-dev-ingest-token-not-secret', 'sha256'));
 
+-- Local development and CI only, like the ingest token above: the alerts token for POST /api/alerts/evaluate. The
+-- secret is deliberately public; production tokens come from scripts/create-alert-token.mjs and never from a seed.
+insert into public.alert_tokens (label, token_hash)
+values ('local-dev-alerts', extensions.digest('local-dev-alert-token-not-secret', 'sha256'));
+
 -- Local development and CI only: every new user becomes an app owner, so smoke-created users can read
 -- the owner-only data. NEVER copy this into a migration — in production only the listed owner may read.
 create or replace function public.seed_make_every_user_owner()

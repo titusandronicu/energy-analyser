@@ -16,6 +16,8 @@ export default {
     "src/lib/services/live-state.ts",
     "src/lib/services/recommendation.ts",
     "src/lib/services/period-summary.ts",
+    "src/lib/services/alert-evaluation.ts",
+    "src/lib/services/alert-rules.ts",
     "src/lib/bars.ts",
     "src/lib/sparkline.ts",
     "src/lib/flow-geometry.ts",

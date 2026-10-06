@@ -5,7 +5,7 @@ import { onRequest } from "./middleware";
 //
 // Expected outcomes are written from the rules in CLAUDE.md (Environment) and docs/architecture.md, not read off the
 // middleware: a mutating /api/* request must carry an Origin equal to APP_ORIGIN (or the request origin when it is
-// unset), only the exact path /api/ingest skips that check and the session lookup, and a signed-out request to a
+// unset), only the exact paths /api/ingest and /api/alerts/evaluate skip that check and the session lookup, and a signed-out request to a
 // /dashboard path goes to /auth/signin. The auth-outage, request-id and logging cases are written from the
 // 2026-10-05 entry in docs/decisions.md (observability capture layer): an inbound x-request-id is kept only when it is
 // 8-64 characters of A-Za-z0-9._-, a network failure, a 5xx or a 429 from the auth provider answers 503 with
@@ -190,14 +190,18 @@ describe("onRequest", () => {
   });
 
   describe("every mutating /api route needs the Origin", () => {
-    it.each(["/api/auth/signin", "/api/auth/magic-link", "/api/auth/signout", "/api/notes", "/api/anything-new"])(
-      "POST %s with a foreign Origin is refused before the session lookup",
-      async (path) => {
-        env.APP_ORIGIN = APP_ORIGIN;
+    it.each([
+      "/api/auth/signin",
+      "/api/auth/magic-link",
+      "/api/auth/signout",
+      "/api/notes",
+      "/api/alert-rules",
+      "/api/anything-new",
+    ])("POST %s with a foreign Origin is refused before the session lookup", async (path) => {
+      env.APP_ORIGIN = APP_ORIGIN;
 
-        expect(await call({ method: "POST", path, origin: "https://evil.example.test" })).toMatchObject(REFUSED);
-      },
-    );
+      expect(await call({ method: "POST", path, origin: "https://evil.example.test" })).toMatchObject(REFUSED);
+    });
   });
 
   describe("safe methods", () => {
@@ -240,7 +244,7 @@ describe("onRequest", () => {
       },
     );
 
-    it("the exempt set is exactly /api/ingest", async () => {
+    it("the exempt set is exactly /api/ingest and /api/alerts/evaluate", async () => {
       env.APP_ORIGIN = APP_ORIGIN;
       // Every path the app serves or could plausibly add, plus near misses of the exempt one. A path is exempt when a
       // POST with a foreign Origin still reaches next without a session lookup.
@@ -262,6 +266,13 @@ describe("onRequest", () => {
         "/api/ingest/",
         "/api/ingest/x",
         "/api/ingestx",
+        "/api/alerts",
+        "/api/alerts/",
+        "/api/alerts/evaluate",
+        "/api/alerts/evaluate/",
+        "/api/alerts/evaluate/x",
+        "/api/alerts/evaluatex",
+        "/api/alert-rules",
         "/api/anything-new",
       ];
 
@@ -272,12 +283,12 @@ describe("onRequest", () => {
       }
 
       // Pages outside /api/ are not Origin-checked, but they still do the session lookup, so they never count as exempt.
-      expect(exempt).toEqual(["/api/ingest"]);
+      expect(exempt).toEqual(["/api/ingest", "/api/alerts/evaluate"]);
     });
   });
 
   describe("protected pages", () => {
-    it.each(["/dashboard", "/dashboard/history", "/dashboardX"])(
+    it.each(["/dashboard", "/dashboard/history", "/dashboard/alerts", "/dashboardX"])(
       "%s without a user redirects to /auth/signin with 302",
       async (path) => {
         const outcome = await call({ path });
@@ -286,11 +297,14 @@ describe("onRequest", () => {
       },
     );
 
-    it.each(["/dashboard", "/dashboard/history", "/dashboardX"])("%s with a user passes", async (path) => {
-      const outcome = await call({ path, user: { id: "user-1" } });
+    it.each(["/dashboard", "/dashboard/history", "/dashboard/alerts", "/dashboardX"])(
+      "%s with a user passes",
+      async (path) => {
+        const outcome = await call({ path, user: { id: "user-1" } });
 
-      expect(outcome).toMatchObject({ ...PASSED, user: { id: "user-1" } });
-    });
+        expect(outcome).toMatchObject({ ...PASSED, user: { id: "user-1" } });
+      },
+    );
 
     it.each(["/auth/signin", "/api/health", "/"])("%s needs no user", async (path) => {
       const outcome = await call({ path });
@@ -397,7 +411,9 @@ describe("onRequest", () => {
       ["GET", "/"],
       ["GET", "/dashboard"],
       ["GET", "/dashboard/history"],
+      ["GET", "/dashboard/alerts"],
       ["POST", "/api/notes"],
+      ["POST", "/api/alert-rules"],
     ];
     // Everything else keeps working as anonymous, so the owner can still reach the sign-in routes.
     const KEEP_WORKING: [string, string][] = [

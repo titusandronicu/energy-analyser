@@ -17,6 +17,7 @@ The rules Energy Analyser and the home lab apply to the data, with the exact thr
 | Day and month ratings: self-sufficiency, recent norm, bands, low-sun note         | App                                           | `src/lib/services/period-rating.ts`, `src/lib/services/complete-day.ts`             |
 | Day notes: one per day, length, which days, redirect notices                      | App and database                              | `src/lib/services/day-notes.ts`, `supabase/migrations/20261001072438_day_notes.sql` |
 | Grid sensor caveat: its dates and texts, the sensor-change window                 | App                                           | `src/lib/services/grid-sensor.ts`                                                   |
+| Alert rules: kinds, alarm lines, transitions, reminders, messages                 | App and database                              | `src/lib/services/alert-evaluation.ts`, `alert-rules.ts`, `alerts-evaluate.ts`      |
 | Daily totals per day, which days are complete                                     | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/push-energy-analyser.py`                |
 | Current-month bill forecast                                                       | Lab                                           | homelab-2 `infra/compose/energy-app/scripts/build-current-month-bill-forecast.py`   |
 | Period summaries: which periods, their facts, the narration and its numbers check | Lab (facts, then cloud LLM narration)         | homelab-2 `infra/compose/energy-app/scripts/build-period-summaries.py`              |
@@ -216,6 +217,33 @@ The owner can write a short note on a calendar day ("urlop", "pompa ciepła od d
 - **Expired session (known limitation):** a post with an expired session redirects to sign-in, and the typed text is lost.
 - **A note that fails to load** shows a load error in the panel and no form, since the page can't tell whether a note exists.
 - **Notes stay notes:** they never change ratings, summaries or recommendations, and nothing sends them to the lab or to an LLM.
+
+## Alert rules
+
+The owner keeps rules on `/dashboard/alerts` and a scheduled run tells the owner on Telegram when one fires. Built in `alert-rules`; the evaluation is pure code in `src/lib/services/alert-evaluation.ts`, the form limits are in `src/lib/services/alert-rules.ts` (repeated as `check` constraints in `public.alert_rules`, `supabase/migrations/20261007090000_alert_rules.sql`, with a parity test), and the route and its security model are in [architecture.md](architecture.md#alert-notifications). Uptime Kuma already alerts on lab push silence (about 15 minutes); these rules cover the lab that keeps pushing stale or degraded data, and the bill.
+
+- **Schedule.** A GitHub Actions workflow calls `POST /api/alerts/evaluate` every **10 minutes** (it may run several minutes late); every enabled rule of every owner is evaluated each time (single-owner assumption: one chat id). The schedule is off until the repository variable `ALERTS_ENABLED` is `true` ([prerequisites.md](prerequisites.md)).
+- **Kinds.** `live_stale`: the threshold is whole minutes, **15 to 1440** (15 is the app's own stale line for the live state). `bill_above`: the threshold is PLN, **1 to 7000** (7,000 is the bill card's plausibility ceiling). The kind is fixed at creation. A rule has an optional label of at most 60 characters and a reminder interval of **1 to 72** hours, default **6**. At most one rule per kind and threshold (`unique (user_id, kind, threshold)`; a duplicate is refused).
+- **`live_stale`.** The age is now minus `captured_at` of the newest push from the lab. Alarm when it is **strictly greater** than the threshold; exactly on the line is not an alarm, as everywhere else in the app. **No push on record is an alarm** ("brak zapisanych danych"), because raw pushes are kept for 14 days and an empty table is the very thing the rule watches for. It compares `captured_at` directly and does not use the live card's view, so a degraded but fresh snapshot is not an alarm here.
+- **`bill_above`.** It compares the central gross figure (`projected_bill_gross_pln`, shown on the card as "ok. 258 zł") with the threshold, **strictly greater** alarms. It evaluates only when the bill card's own view is a fresh forecast for the current month, so every refusal rule of the card ([What the app shows (S-07)](#what-the-app-shows-s-07): freshness, 7 complete days, plausibility ceiling, no range) applies unchanged, and the figure is never re-priced.
+- **Unknown ("cannot evaluate").** The rule is not judged when the bill forecast is unavailable, has no data, is stale, rests on fewer than 7 days, covers another month (`isOtherMonth`), or when the newest push's `captured_at` is more than **5 minutes** ahead of the app's clock (a producer clock error; `LIVE_FUTURE_SKEW_MS`, exactly 5 minutes ahead is still evaluated) or unreadable. An unknown rule **sends nothing and keeps its stored state**: it is neither alarmed nor declared ok. The reason is stored and shown on `/dashboard/alerts`. A failed forecast must never read as "the bill is fine" or as a false alarm.
+- **Transitions** (stored state, then this run's outcome):
+
+  | Stored state | Outcome | Message                                                                                          |
+  | ------------ | ------- | ------------------------------------------------------------------------------------------------ |
+  | ok           | alarm   | alarm ("ALARM: ...")                                                                             |
+  | alarm        | alarm   | reminder ("PRZYPOMNIENIE: ..."), only when now minus `last_notified_at` is at least the interval |
+  | alarm        | ok      | recovery ("WRÓCIŁO DO NORMY: ...")                                                               |
+  | ok           | ok      | none                                                                                             |
+  | any          | unknown | none; state kept, reason recorded                                                                |
+
+  A reminder is due exactly at the interval (`>=`), and a rule that never sent a message is due at once.
+
+- **Messages** are deterministic Polish text built from the rule (its label, else the kind's name), the threshold and the observed value ("Ostatnie dane z domu: 40 min (próg: 30 min).", "Prognozowany rachunek: ok. 258 zł (próg: 250 zł)."). No LLM writes them.
+- **Send first, then record.** The route sends each message, then records only what actually went out. A failed send leaves that rule's state and `last_notified_at` as they were, so the next run decides again and retries; a message is never marked as sent before Telegram accepted it. If the record write fails after messages were sent, the next run may send them again.
+- **Editing a rule resets it.** Changing `enabled` or `threshold` sets the state back to ok and clears the reason (a database trigger), so a re-enabled or edited rule never inherits an old alarm, and no recovery message follows an edit. Changing the label or the interval does not reset it.
+- **Missing Telegram configuration.** With a valid token but no `TELEGRAM_BOT_TOKEN` or `TELEGRAM_CHAT_ID` the route answers 503 `telegram_not_configured` and records nothing; the run shows red in GitHub.
+- **Answer and logs.** The JSON answer carries counts only (`evaluated`, `sent`, `unknown`, `failed`). Neither the bot token, the chat id nor a message text is logged or returned.
 
 ## Daily totals (lab → app)
 

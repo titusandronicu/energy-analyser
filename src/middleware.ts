@@ -12,7 +12,7 @@ const MAX_LOGGED_ORIGIN_CHARS = 200;
 
 // Machine endpoints authenticated by bearer token, not cookies: exempt from the Origin (CSRF) check
 // and from the per-request session lookup. Exact paths only.
-const TOKEN_AUTH_ROUTES = new Set(["/api/ingest"]);
+const TOKEN_AUTH_ROUTES = new Set(["/api/ingest", "/api/alerts/evaluate"]);
 
 const rootLogger = createLogger({ version: APP_VERSION, environment: APP_ENV });
 

@@ -35,7 +35,9 @@ describe("decideAuth during an outage", () => {
     ["GET", "/"],
     ["GET", "/dashboard"],
     ["GET", "/dashboard/history"],
+    ["GET", "/dashboard/alerts"],
     ["POST", "/api/notes"],
+    ["POST", "/api/alert-rules"],
   ])("refuses %s %s with the 503 and logs the outage", (method, pathname) => {
     expect(decideAuth({ pathname, method, user: null, error: networkDown })).toEqual({
       action: "unavailable",
@@ -51,6 +53,7 @@ describe("decideAuth during an outage", () => {
     ["POST", "/api/auth/signout"],
     ["GET", "/api/health"],
     ["GET", "/api/notes"],
+    ["GET", "/api/alert-rules"],
   ])("lets %s %s continue as anonymous but still logs the outage", (method, pathname) => {
     expect(decideAuth({ pathname, method, user: null, error: networkDown })).toEqual({
       action: "continue",
@@ -82,7 +85,14 @@ describe("decideAuth without an outage", () => {
   });
 
   it("lets a signed-in owner through everywhere", () => {
-    for (const pathname of ["/", "/dashboard", "/dashboard/history", "/api/notes"]) {
+    for (const pathname of [
+      "/",
+      "/dashboard",
+      "/dashboard/history",
+      "/dashboard/alerts",
+      "/api/notes",
+      "/api/alert-rules",
+    ]) {
       expect(decideAuth({ pathname, method: "POST", user: owner, error: null })).toEqual({
         action: "continue",
         logEvent: null,

@@ -1,0 +1,34 @@
+# Alert rules: every 10 minutes (and on demand) POST to the app's evaluate route, which checks the owner's rules and
+# sends Telegram messages itself (docs/prerequisites.md, "One-time production steps (app)"; docs/logic.md, "Alert rules").
+# Gate: the job runs only when the repository variable ALERTS_ENABLED is exactly 'true', the last production step, so
+# merging this workflow cannot produce red runs before the migration, deploy, token and secrets exist. The gate applies to
+# workflow_dispatch too. Scheduled runs only ever run on the default branch, and GitHub may delay them by several minutes.
+# A non-2xx answer (route down, 401 bad token, 503 Telegram not configured) fails the run, so it shows red in Actions.
+# No third-party action: one curl, with the token passed through the environment and never printed.
+name: Alerts evaluate
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+
+permissions: {}
+
+concurrency:
+  group: alerts-evaluate
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    if: vars.ALERTS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Evaluate alert rules
+        env:
+          ALERTS_TOKEN: ${{ secrets.ALERTS_TOKEN }}
+          ALERTS_BASE_URL: ${{ vars.ALERTS_BASE_URL }}
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 60 \
+            -X POST -H "Authorization: Bearer $ALERTS_TOKEN" \
+            "$ALERTS_BASE_URL/api/alerts/evaluate"

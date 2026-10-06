@@ -92,6 +92,28 @@ export async function revokeToken(label: string): Promise<void> {
   );
 }
 
+// Inserts an active alerts token with a label and a secret unique to this call, the way insertToken does for ingest.
+export async function insertAlertToken(label: string): Promise<{ label: string; token: string }> {
+  const unique = `${String(Date.now())}-${Math.random().toString(36).slice(2, 10)}`;
+  const uniqueLabel = `${label}-${unique}`;
+  const token = `alert-rules-token-${unique}`;
+  await withPrivileged((db) =>
+    db.query("insert into public.alert_tokens (label, token_hash) values ($1, extensions.digest($2::text, 'sha256'))", [
+      uniqueLabel,
+      token,
+    ]),
+  );
+  return { label: uniqueLabel, token };
+}
+
+export async function revokeAlertToken(label: string): Promise<void> {
+  await withPrivileged((db) => db.query("update public.alert_tokens set revoked_at = now() where label = $1", [label]));
+}
+
+export async function deleteAlertToken(label: string): Promise<void> {
+  await withPrivileged((db) => db.query("delete from public.alert_tokens where label = $1", [label]));
+}
+
 // Removes the token and the raw pushes that were stored under it (ingest_pushes.token_id has no cascade).
 export async function deleteToken(label: string): Promise<void> {
   await withPrivileged(async (db) => {

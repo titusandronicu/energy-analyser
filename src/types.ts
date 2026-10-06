@@ -60,6 +60,24 @@ export interface DayNoteRow {
   updated_at: string;
 }
 
+// A row of public.alert_rules as the owner reads it: every column except user_id. `kind` decides what `threshold`
+// means (live_stale: minutes of snapshot age; bill_above: PLN). `state`, `last_notified_at`, `last_evaluated_at` and
+// `unevaluable_reason` belong to the evaluator. Timestamps are the ISO strings PostgREST returns; `threshold` is numeric.
+export interface AlertRuleRow {
+  id: number;
+  kind: "live_stale" | "bill_above";
+  threshold: number;
+  label: string | null;
+  enabled: boolean;
+  renotify_hours: number;
+  state: "ok" | "alarm";
+  last_notified_at: string | null;
+  last_evaluated_at: string | null;
+  unevaluable_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // A row of public.period_summaries: the lab's plain-language text for today, a completed day or a completed month,
 // one row per (kind, period). `period` is the Europe/Warsaw date ("YYYY-MM-DD") for today and day, the month
 // ("YYYY-MM") for month. `facts` is the pushed jsonb the text was written from (validated by the ingest contract on

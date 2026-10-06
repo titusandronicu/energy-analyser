@@ -1,0 +1,30 @@
+---
+import AppShell from "@/components/AppShell.astro";
+import AlertRulesPanel from "@/components/alerts/AlertRulesPanel.astro";
+import Layout from "@/layouts/Layout.astro";
+import { orLoadError } from "@/lib/or-load-error";
+import { pageClient } from "@/lib/page-load";
+import { alertNotice, loadAlertRules } from "@/lib/services/alert-rules";
+
+// The owner's alert rules. The list loads through the page's lazily created Supabase client and fails on its own: a
+// failure shows a load error in the panel, never a 500. Like the history page, it has no reload script.
+const { user, log } = Astro.locals;
+const getClient = pageClient(Astro.request.headers, Astro.cookies);
+
+const rules = await orLoadError(
+  "alerts.rules",
+  async () => {
+    const supabase = getClient();
+    return supabase ? await loadAlertRules(supabase) : [];
+  },
+  log,
+);
+// The outcome of the last post (/api/alert-rules redirects back with ?alert=).
+const notice = alertNotice(Astro.url.searchParams.get("alert"));
+---
+
+<Layout title="Alerty">
+  <AppShell email={user?.email} current="alerts">
+    <AlertRulesPanel rules={rules} notice={notice} />
+  </AppShell>
+</Layout>
