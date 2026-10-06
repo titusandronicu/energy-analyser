@@ -40,18 +40,19 @@ This project was built with the 10xDevs workflow: shape, PRD, roadmap, then per 
 | CRUD                     | Day notes: `src/pages/api/notes.ts`, `src/lib/services/day-notes.ts`, `supabase/migrations/20261001072438_day_notes.sql`. The calendar shows a note, and the owner creates, edits and deletes it                                                    |
 | Business logic           | Staleness rules, the seasonal baseline, the bill forecast and period ratings in `src/lib/services/`, written down in [docs/logic.md](docs/logic.md)                                                                                                 |
 | Context documents        | [`context/foundation/`](context/foundation/): `prd-v3.md`, `roadmap.md`, `tech-stack.md`, `infrastructure.md`, `test-plan.md`, `lessons.md`; one folder per change in `context/changes/` and `context/archive/` with its research, plan and reviews |
-| Tests for a defined risk | [`context/foundation/test-plan.md`](context/foundation/test-plan.md) ranks seven risks; see Testing below                                                                                                                                           |
+| Tests for a defined risk | [`context/foundation/test-plan.md`](context/foundation/test-plan.md) ranks eight risks; see Testing below                                                                                                                                           |
 | Public URL               | https://neil170-20170.mikrus.cloud                                                                                                                                                                                                                  |
 
 ## Testing
 
-The risks are ranked in [`context/foundation/test-plan.md`](context/foundation/test-plan.md) (stale data shown as current, wrong money figures, a broken push-to-page path, silent history loss, day and month boundaries, a non-owner getting in, and markup in lab text or notes). Each layer is the cheapest one that proves its risk:
+The risks are ranked in [`context/foundation/test-plan.md`](context/foundation/test-plan.md) (stale data shown as current, wrong money figures, a broken push-to-page path, silent history loss, day and month boundaries, a non-owner getting in, markup in lab text or notes, and a page's forms drifting from the route that parses them). Each layer is the cheapest one that proves its risk:
 
 | Layer                          | Where                                                | Run                             |
 | ------------------------------ | ---------------------------------------------------- | ------------------------------- |
 | Unit and contract tests        | `src/**/*.test.ts`, including the request guard      | `npm test`                      |
 | Integration, real Postgres     | `tests/integration/`                                 | `npm run test:integration`      |
 | End to end over HTTP           | `scripts/smoke.mjs` against a built server           | `npm run smoke`                 |
+| End to end in a browser        | `tests/e2e/`, Playwright (Chromium), alert rules     | `npm run test:e2e`              |
 | Mutation testing (report only) | Stryker on the pure logic in `src/lib`, weekly in CI | the `Mutation testing` workflow |
 
 Differences between layers that were found and deliberately not fixed are pinned by tests whose names start with `KNOWN GAP`, so a later fix flips them knowingly (see [docs/decisions.md](docs/decisions.md)).
@@ -99,6 +100,7 @@ Sign-in on `/auth/signin` offers an emailed one-time link (`POST /api/auth/magic
 - `npm run preview` — local production preview
 - `npm test` — Vitest unit tests
 - `npm run smoke` — smoke test of sign-in and push ingestion against `BASE_URL`
+- `npm run test:e2e` — browser tests (Playwright, Chromium) of the alert-rules page against a local Supabase and a production build the run starts itself; needs `SUPABASE_URL` and `SUPABASE_ANON_KEY` (anon key only), a one-time `npx playwright install chromium`, and the stack's Postgres on port 54322 for its teardown; refuses non-local URLs; not part of `npm test` (`context/foundation/test-stack.md`)
 - `npm run test:integration` — integration tests of push ingestion, owner-only access and notes limits against a local Supabase (`SUPABASE_URL` and `SUPABASE_ANON_KEY`; the access tests also use the stack's Postgres on port 54322, optionally `SUPABASE_DB_URL`; refuses non-local URLs; not part of `npm test`)
 
 The smoke test creates a user and reads its sign-in email from Mailpit. Run it only against a disposable/local Supabase instance with `ALLOW_SIGNUP=true`, never against production.
@@ -146,7 +148,7 @@ The production service listens on the VPS's dedicated IPv6 address, port `20170`
 
 ## Delivery
 
-- `ci.yml` runs on pushes and pull requests to `main`: the `ci` job (lint, unit tests, type checks, build), the `smoke` job (a local Supabase, then the smoke test) and the `integration` job (a local Supabase, then the integration tests). A ruleset requires all three on `main`, so a red or missing check blocks the merge.
+- `ci.yml` runs on pushes and pull requests to `main`: the `ci` job (lint, unit tests, type checks, build), the `smoke` job (a local Supabase, then the smoke test) and the `integration` job (a local Supabase, then the integration tests). A ruleset requires these three on `main`, so a red or missing check blocks the merge. A fourth job, `e2e` (a local Supabase, then the browser tests), runs on the same events but is not a required check.
 - `publish-image.yml` publishes `ghcr.io/titusandronicu/energy-analyser:sha-<full-sha>` after successful push CI.
 - `deploy-production.yml` accepts a full SHA, uses the protected `production` environment, deploys over SSH and rolls back when health verification fails.
 - `code-review.yml` reviews a pull request's diff with Claude Code when the `claude-code-review` label is added, and posts the review as a comment; `code-review-fix.yml` applies the fixes from that review when the `claude-code-support` label is added. Both are driven by the prompts in `.ai/prompts/`. Add the label **before** the pull request is merged, or there is no diff to review.

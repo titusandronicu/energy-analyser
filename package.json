@@ -13,6 +13,7 @@
     "smoke": "node scripts/smoke.mjs",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "playwright test",
     "contract:export": "UPDATE_INGEST_CONTRACT=1 vitest run src/lib/ingest/contract.test.ts",
     "prepare": "husky",
     "mutate": "stryker run"
@@ -38,6 +39,7 @@
     "@eslint/compat": "^2.1.1",
     "@eslint/config-helpers": "^0.7.0",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.63.0",
     "@stryker-mutator/core": "^10.0.0",
     "@stryker-mutator/vitest-runner": "^10.0.0",
     "@tailwindcss/vite": "^4.2.4",

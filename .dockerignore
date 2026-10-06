@@ -10,3 +10,8 @@ context
 dist
 node_modules
 npm-debug.log*
+
+# Playwright output
+test-results
+playwright-report
+blob-report

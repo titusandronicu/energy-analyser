@@ -5,3 +5,9 @@
 # arrays, the exporter re-expands them, and the pair ping-pong forever. The drift assertion in
 # contract.test.ts compares parsed JSON, so formatting here is not load-bearing.
 docs/ingest/contract-v1.schema.json
+
+# Playwright output
+test-results/
+playwright-report/
+blob-report/
+tests/e2e/.auth/
