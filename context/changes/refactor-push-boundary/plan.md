@@ -387,9 +387,9 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Manual
 
-- [ ] 2.6 Production's current `ingest_push` body matches the repo's latest, checked through the Supabase connector before the migration is applied
+- [x] 2.6 Production's current `ingest_push` body matches the repo's latest, checked through the Supabase connector before the migration is applied — owner confirmed 2026-10-06; read-only check through the Supabase connector: production ingest_push body identical to 20261001113911 (126 of 126 lines), 12 migrations recorded with the repo's versions, neither new migration applied yet
 - [ ] 2.7 The migration is applied in production through the Supabase connector and confirmed in `list_migrations`; the lab's next push still returns 201
-- [ ] 2.8 The rollback is understood: re-running the previous body restores the old function and the helper schema can stay unused
+- [x] 2.8 The rollback is understood: re-running the previous body restores the old function and the helper schema can stay unused — owner confirmed 2026-10-06; rollback understood (re-run the 20261001113911 body through the connector; the ingest helper schema can stay unused)
 
 ### Phase 3: Restructure the service (pure refactor, TypeScript)
 
