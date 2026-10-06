@@ -373,7 +373,7 @@ Two migrations, each applied in production by hand through the Supabase connecto
 
 #### Manual
 
-- [ ] 1.4 Breaking one pinned behaviour on purpose on a throwaway branch turns the CI `integration` job red, and reverting it turns it green again
+- [x] 1.4 Breaking one pinned behaviour on purpose on a throwaway branch turns the CI `integration` job red, and reverting it turns it green again — owner confirmed 2026-10-06; CI run 37444338550 on break PR #133: `integration` red on exactly 2 of 62 tests (history-safety "an older daily push cannot replace a newer one" and the golden replay)
 
 ### Phase 2: Restructure ingest_push (pure refactor, SQL)
 
