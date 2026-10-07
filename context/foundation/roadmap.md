@@ -64,7 +64,7 @@ The owner of a home PV + battery + grid system gets PGE cost feedback a month la
 | S-10 | usage-profile             | see how consumption spreads across the day, week and unusual hours                          | F-01, S-01    | US-04, FR-014                         | proposed    |
 | S-12 | inverter-schedule-view    | see the inverter's current schedule next to the recommendation                              | S-03          | US-07, FR-016                         | proposed    |
 | S-13 | pipeline-health           | see why advice or live data is missing or degraded                                          | S-02, S-03    | US-07, FR-017, FR-004                 | proposed    |
-| S-21 | alert-rules               | set alert rules and get a Telegram message when one fires, reminds or recovers              | S-02, S-07    | US-08, FR-032–036                     | in-progress |
+| S-21 | alert-rules               | set alert rules and get a Telegram message when one fires, reminds or recovers              | S-02, S-07    | US-08, FR-032–036                     | done        |
 
 ## Streams
 
@@ -320,7 +320,7 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **Blockers:** —
 - **Unknowns:** whether a real alarm reaches the owner's Telegram in production (plan row 4.6; the forecast must reach 7 days first, about 8–9 October).
 - **Risk:** The second client-written table and the first outbound call; the evaluator runs without a session through two anon-callable database functions guarded by their own token. Built before this entry existed (PRD v3.2 records it); live in production with a VPS trigger every 5 minutes. Implementation review 2026-10-06: eight fixes applied.
-- **Status:** in-progress
+- **Status:** done
 
 ### F-07: Browser e2e for alert rules
 
@@ -498,3 +498,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-19: user can add a note to a calendar day, see it on that day and see which days in a month have notes, and edit or delete it.** — Archived 2026-10-01 → `context/archive/2026-10-01-day-notes/`. Lesson: —.
 - **S-18: user can read on the dashboard a short plain-language explanation of what today's figures mean, and in the calendar the home lab's summary of what happened on a completed day or in a completed month, next to its rating.** — Archived 2026-10-01 → `context/archive/2026-10-01-period-summaries/`. Lesson: —.
 - **F-07: (foundation) a Playwright test drives the alert-rules page (create, edit, switch off, delete, invalid and duplicate) against a local Supabase stack and runs in CI as a non-required job.** — Archived 2026-10-07 → `context/archive/2026-10-06-e2e-alert-rules/`. Lesson: —.
+- **S-21: user can keep alert rules on a page and get a Telegram message when a rule starts to hold, still holds after its reminder interval, or stops holding.** — Archived 2026-10-07 → `context/archive/2026-10-06-alert-rules/`. Lesson: —.
