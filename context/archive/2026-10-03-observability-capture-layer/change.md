@@ -1,10 +1,10 @@
 ---
 change_id: observability-capture-layer
 title: Capture layer with a structured logger, error boundary and auth outage 503
-status: implemented
+status: archived
 created: 2026-10-03
-updated: 2026-10-05
-archived_at: null
+updated: 2026-10-07
+archived_at: 2026-10-07T13:22:14Z
 ---
 
 ## Notes

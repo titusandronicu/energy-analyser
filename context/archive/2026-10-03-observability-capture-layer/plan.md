@@ -312,9 +312,9 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [x] 1.1 Logger and request-id tests pass: `npx vitest run src/lib/logger.test.ts src/lib/request-id.test.ts` — f046a52
-- [x] 1.2 Linting passes: `npm run lint` — f046a52
-- [x] 1.3 Type check passes: `npx astro check` — f046a52
+- [x] 1.1 Logger and request-id tests pass: `npx vitest run src/lib/logger.test.ts src/lib/request-id.test.ts` — 40f7be2
+- [x] 1.2 Linting passes: `npm run lint` — 40f7be2
+- [x] 1.3 Type check passes: `npx astro check` — 40f7be2
 
 #### Manual
 
@@ -324,9 +324,9 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [x] 2.1 Updated service tests pass: `npx vitest run src/lib/services/day-notes.test.ts src/lib/services/magic-link.test.ts src/lib/services/password-signin.test.ts src/lib/services/ingest.test.ts` — 3d57067
-- [x] 2.2 The routes no longer write to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts` and `src/lib/page-load.ts` (replaced in Phase 3) — 3d57067
-- [x] 2.3 Linting and type check pass: `npm run lint && npx astro check` — 3d57067
+- [x] 2.1 Updated service tests pass: `npx vitest run src/lib/services/day-notes.test.ts src/lib/services/magic-link.test.ts src/lib/services/password-signin.test.ts src/lib/services/ingest.test.ts` — 40f7be2
+- [x] 2.2 The routes no longer write to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts` and `src/lib/page-load.ts` (replaced in Phase 3) — 40f7be2
+- [x] 2.3 Linting and type check pass: `npm run lint && npx astro check` — 40f7be2
 
 #### Manual
 
@@ -337,11 +337,11 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [x] 3.1 New helper tests pass: `npx vitest run src/lib/query-error.test.ts src/lib/or-load-error.test.ts` — e7a54b3
-- [x] 3.2 Loader tests still pass with the unchanged message format: `npx vitest run src/lib/services` — e7a54b3
-- [x] 3.3 No message-only rethrow is left in the loaders: `grep -rnF 'failed: ${error.message}' src/lib/services` returns nothing — e7a54b3
-- [x] 3.4 Linting and type check pass: `npm run lint && npx astro check` — e7a54b3
-- [x] 3.6 Only the logger itself writes to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts` — e7a54b3
+- [x] 3.1 New helper tests pass: `npx vitest run src/lib/query-error.test.ts src/lib/or-load-error.test.ts` — 40f7be2
+- [x] 3.2 Loader tests still pass with the unchanged message format: `npx vitest run src/lib/services` — 40f7be2
+- [x] 3.3 No message-only rethrow is left in the loaders: `grep -rnF 'failed: ${error.message}' src/lib/services` returns nothing — 40f7be2
+- [x] 3.4 Linting and type check pass: `npm run lint && npx astro check` — 40f7be2
+- [x] 3.6 Only the logger itself writes to the console: `grep -rnE 'console\.(error|warn|log)' src | grep -v '\.test\.ts'` lists only `src/lib/logger.ts` — 40f7be2
 
 #### Manual
 
@@ -351,8 +351,8 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [x] 4.1 Classifier, decision and response tests pass: `npx vitest run src/lib/auth-outage.test.ts` — fb29933
-- [x] 4.2 Full unit suite, lint, type check and build pass: `npm test && npm run lint && npx astro check && npm run build` — fb29933
+- [x] 4.1 Classifier, decision and response tests pass: `npx vitest run src/lib/auth-outage.test.ts` — 40f7be2
+- [x] 4.2 Full unit suite, lint, type check and build pass: `npm test && npm run lint && npx astro check && npm run build` — 40f7be2
 
 #### Manual
 
@@ -365,8 +365,8 @@ No data migration. Production needs only the next deploy: `compose.yaml` sets `A
 
 #### Automated
 
-- [x] 5.1 `APP_ENV` is named everywhere the env vars are listed: `grep -rl APP_ENV README.md CLAUDE.md .env.example compose.yaml docs/prerequisites.md astro.config.mjs` lists all six files — e3f502d
-- [x] 5.2 Prettier passes on the changed docs: `npx prettier --check README.md CLAUDE.md docs context/changes/observability-capture-layer` (the wider `docs context` also lists four files this change does not touch: two archived design HTML files, `test-plan.md`, and one unrelated research.md) — e3f502d
+- [x] 5.1 `APP_ENV` is named everywhere the env vars are listed: `grep -rl APP_ENV README.md CLAUDE.md .env.example compose.yaml docs/prerequisites.md astro.config.mjs` lists all six files — 40f7be2
+- [x] 5.2 Prettier passes on the changed docs: `npx prettier --check README.md CLAUDE.md docs context/changes/observability-capture-layer` (the wider `docs context` also lists four files this change does not touch: two archived design HTML files, `test-plan.md`, and one unrelated research.md) — 40f7be2
 
 #### Manual
 
