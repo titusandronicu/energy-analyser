@@ -3,9 +3,8 @@
 // the integration suite (tests/integration/support/stack.ts, privileged.ts) call it with their own wording.
 // tests/integration/db-url-guard.test.ts runs one table against every caller, so a change here is checked for all.
 // Pure on purpose: no supabase-js, no pg, so Playwright and vitest can both import it. The anon-key rules come from
-// src/lib/anon-key.ts, the same classifier src/lib/supabase.ts uses. The two differ only in what they do with a key
-// that is neither publishable nor an anon JWT: the app warns about it (until phase 5 of
-// context/changes/refactor-followups/plan.md), a test run refuses it (docs/decisions.md).
+// src/lib/anon-key.ts, the same classifier src/lib/supabase.ts uses. The app and a test run refuse the same keys: a
+// secret or service_role key, and any shape that is neither publishable nor an anon JWT (docs/decisions.md).
 
 import { classifyAnonKey } from "../../src/lib/anon-key";
 
