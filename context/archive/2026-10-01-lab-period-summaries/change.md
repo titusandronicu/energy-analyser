@@ -1,10 +1,10 @@
 ---
 change_id: lab-period-summaries
 title: Lab writes plain-language summaries of today, days and months and pushes them to the app
-status: impl_reviewed
+status: archived
 created: 2026-10-01
-updated: 2026-10-01
-archived_at: null
+updated: 2026-10-07
+archived_at: 2026-10-07T13:34:43Z
 ---
 
 ## Notes
