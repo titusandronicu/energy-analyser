@@ -378,11 +378,11 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Automated
 
-- [x] 4.1 Classifier table and app-check tests pass: `npm test -- anon-key supabase`
-- [x] 4.2 Guard table still passes unchanged: `npm run test:integration -- db-url-guard`
-- [x] 4.3 Break check: removing the `service_role` branch of the classifier makes both the classifier test and the guard table go red
-- [x] 4.4 `npx playwright test --list` (with env set) still loads the config through the new relative import
-- [x] 4.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
+- [x] 4.1 Classifier table and app-check tests pass: `npm test -- anon-key supabase` — fc80b4e
+- [x] 4.2 Guard table still passes unchanged: `npm run test:integration -- db-url-guard` — fc80b4e
+- [x] 4.3 Break check: removing the `service_role` branch of the classifier makes both the classifier test and the guard table go red — fc80b4e
+- [x] 4.4 `npx playwright test --list` (with env set) still loads the config through the new relative import — fc80b4e
+- [x] 4.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — fc80b4e
 - [ ] 4.6 Integration, smoke and e2e pass in CI
 
 #### Manual
