@@ -387,8 +387,8 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Manual
 
-- [ ] 4.7 After this release is deployed to production and has served real requests, the production logs show no `anon_key_unexpected_shape` event (owner checks)
-- [ ] 4.8 Sign-in and the dashboard work as before on production
+- [x] 4.7 After this release is deployed to production and has served real requests, the production logs show no `anon_key_unexpected_shape` event (owner checks) — 9cd0171
+- [x] 4.8 Sign-in and the dashboard work as before on production — 9cd0171
 
 ### Phase 5: Enforce the strict anon-key rule (PR C)
 
@@ -400,4 +400,4 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Manual
 
-- [ ] 5.4 After deploy, sign-in and `/api/health` work on production (owner checks)
+- [x] 5.4 After deploy, sign-in and `/api/health` work on production (owner checks) — 9cd0171
