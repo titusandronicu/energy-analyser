@@ -1,6 +1,6 @@
 # Architecture report: Energy Analyser
 
-Repository: `titusandronicu/energy-analyser`. History covered: 2026-09-14 to 2026-10-06 (3 weeks, 268 counted commits, one human author, 246 of 269 commits co-authored with an AI agent).
+Repository: `titusandronicu/energy-analyser`. History covered: 2026-09-14 to 2026-10-06 (3 weeks, 268 counted commits, one human author, 246 of 269 commits co-authored with an AI agent). The repo map has an addendum (section 8) for the 11 commits after its snapshot, mainly the alert-rules capability and the e2e layer.
 
 ## 1. The product in one paragraph
 
