@@ -341,10 +341,10 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Automated
 
-- [x] 4.1 `grep -rn "Spróbuj odświeżyć stronę" src` shows only `RefreshHint.astro`
-- [x] 4.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build`
-- [x] 4.3 Unit tests pass: `npm test`
-- [x] 4.4 `grep -rn "SUBMIT_CLASS =" src` shows one definition
+- [x] 4.1 `grep -rn "Spróbuj odświeżyć stronę" src` shows only `RefreshHint.astro` — 3930e3b
+- [x] 4.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build` — 3930e3b
+- [x] 4.3 Unit tests pass: `npm test` — 3930e3b
+- [x] 4.4 `grep -rn "SUBMIT_CLASS =" src` shows one definition — 3930e3b
 - [ ] 4.5 E2E alert-rules passes in CI: `npm run test:e2e`
 
 #### Manual
