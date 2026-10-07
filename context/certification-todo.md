@@ -2,13 +2,13 @@
 
 Rules in one place: one attempt, one submission window, everything in one round. If you want Architect or Champion, send the Builder form and the extra-badges form in the same window. Windows: 2026-11-04 (chance of a distinction), 2026-12-06, 2027-01-10 (final). The badges form is https://baserow.io/form/Nht4zggvrLgHUE1__yPugj6gLbob449ETNTe9kehLA8. The Builder form link is not recorded here yet.
 
-Status as of 2026-10-07 (later): Architect report updated to the current state and its open questions resolved; Champion proof still needs screenshots; Builder not scored (criteria not in the repo). The README now has a section on the three badges and these rules.
+Status as of 2026-10-07 (later): Architect report updated to the current state and its open questions resolved; Champion proof still needs screenshots; Builder scored against the saved criteria (all met); the Builder form link is still not recorded. The README now has a section on the three badges and these rules.
 
 ## Before choosing a window
 
 - [ ] Decide the window and which badges to go for (Builder alone, plus Architect, plus Champion).
-- [ ] Save the official 10xBuilder criteria (M1-3) into the repo, for example `context/foundation/certification-criteria.md`, then score the project against them. The earlier "criteria pasted by the user" in `context/foundation/shape-notes.md` were never stored.
-- [ ] Save the Builder submission form link next to the badges form link above.
+- [x] Save the official 10xBuilder criteria (M1-3) into the repo and score the project against them: done in `context/foundation/certification-criteria.md` (English summary, a proof for each requirement, the dates and rules, the verbatim Polish text). All five mandatory requirements and the optional public URL are met; for a distinction only the submission date (2026-11-04) is open.
+- [ ] Save the Builder submission form link next to the badges form link above (the course said it would share the form by week 3 at the latest).
 
 ## 10xChampion (code-review pipeline, M5 L2-L3)
 
