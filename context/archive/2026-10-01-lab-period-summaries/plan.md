@@ -396,37 +396,37 @@ Built differently from the plan, or added after `reviews/impl-review.md`:
 
 #### Automated
 
-- [x] 1.1 Unit tests pass, including the contract schema drift test: `npm test` — 19c42ad
-- [x] 1.2 Linting passes: `npm run lint` — 19c42ad
-- [x] 1.3 Type checks pass: `npx astro check` — 19c42ad
-- [x] 1.4 Production build succeeds: `npm run build` — 19c42ad
-- [x] 1.5 The migration applies to a fresh local database: `npx supabase db reset --local` — 19c42ad
-- [x] 1.6 Smoke passes against the local stack: `npm run smoke` — 19c42ad
+- [x] 1.1 Unit tests pass, including the contract schema drift test: `npm test` — 0056976
+- [x] 1.2 Linting passes: `npm run lint` — 0056976
+- [x] 1.3 Type checks pass: `npx astro check` — 0056976
+- [x] 1.4 Production build succeeds: `npm run build` — 0056976
+- [x] 1.5 The migration applies to a fresh local database: `npx supabase db reset --local` — 0056976
+- [x] 1.6 Smoke passes against the local stack: `npm run smoke` — 0056976
 
 #### Manual
 
-- [x] 1.7 Local push-fixture: 3 rows stored; older built_at leaves them, newer replaces them — 19c42ad
+- [x] 1.7 Local push-fixture: 3 rows stored; older built_at leaves them, newer replaces them — 0056976
 
 ### Phase 2: Lab facts bundles and summary job
 
 #### Automated
 
-- [x] 2.1 Summary job tests pass: `python3 -m unittest scripts/test_build_period_summaries.py` — 7101a1a
-- [x] 2.2 Advisory client tests pass: `python3 -m unittest scripts/test_run_energy_advisory.py` — 7101a1a
-- [x] 2.3 Existing lab tests still pass: `make test-solar-analyser` and the push tests — 7101a1a
-- [x] 2.4 Scripts compile: `py_compile` on both scripts; `sh -n` on the refresh script — 7101a1a
+- [x] 2.1 Summary job tests pass: `python3 -m unittest scripts/test_build_period_summaries.py` — bd42189
+- [x] 2.2 Advisory client tests pass: `python3 -m unittest scripts/test_run_energy_advisory.py` — bd42189
+- [x] 2.3 Existing lab tests still pass: `make test-solar-analyser` and the push tests — bd42189
+- [x] 2.4 Scripts compile: `py_compile` on both scripts; `sh -n` on the refresh script — bd42189
 
 #### Manual
 
-- [x] 2.5 Docker-core dry run: today, yesterday and September 2026 texts read by the owner (descriptive, no advice, no grid figures, natural Polish) — eae8269
+- [x] 2.5 Docker-core dry run: today, yesterday and September 2026 texts read by the owner (descriptive, no advice, no grid figures, natural Polish) — bd42189
 
 ### Phase 3: Push, backfill and deploy
 
 #### Automated
 
-- [x] 3.1 Push tests pass: `python3 -m unittest scripts/test_push_energy_analyser.py` — dafa9d9
-- [x] 3.2 All lab tests pass: `make test-solar-analyser` and the two new test files — dafa9d9
-- [x] 3.3 The runbook lists the new script: grep prints at least one line — dafa9d9
+- [x] 3.1 Push tests pass: `python3 -m unittest scripts/test_push_energy_analyser.py` — bd42189
+- [x] 3.2 All lab tests pass: `make test-solar-analyser` and the two new test files — bd42189
+- [x] 3.3 The runbook lists the new script: grep prints at least one line — bd42189
 
 #### Manual
 
