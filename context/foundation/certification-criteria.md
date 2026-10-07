@@ -12,7 +12,16 @@ Status of the project as of 2026-10-07: **all five mandatory 10xBuilder requirem
 | 10xArchitect (optional) | Extending and modernising architecture and working with AI at larger scale (module 4).          |
 | 10xChampion (optional)  | AI integrations in team work, among them CI/CD pipelines (module 5).                            |
 
-The text says Architect and Champion work starts after week 3, treats them as an announcement, and says their full rules come in a separate message later. Those rules are therefore **not** in this text; `context/architect-report.md` and `context/champion-evidence.md` follow what was recorded elsewhere (see `context/certification-todo.md`).
+The first text says Architect and Champion work starts after week 3 and that their full rules come in a separate message. That second message is stored below (section 1a and appendix B), but **it was cut off when pasted**, so what the Architect report and the Champion proof must contain is still unknown. `context/architect-report.md` and `context/champion-evidence.md` follow what was recorded elsewhere (see `context/certification-todo.md`) and are not yet checked against the official text.
+
+## 1a. The extra badges: rules received so far
+
+From the second message (appendix B), which says the two blocks are optional extra badges added to the certificate and that modules 4 and 5 are not needed for the base certificate with the 10xBuilder badge:
+
+- The same three terms apply: up to 2026-11-04 (with a chance of a distinction), up to 2026-12-06, and up to 2027-01-10 (final).
+- One term for the whole project. Whoever wants 10xArchitect or 10xChampion sends the 10xBuilder submission and the extra-badges submission (Architect and/or Champion) **in the same window**.
+- The same rules as for 10xBuilder apply (the message links to them; the link was lost in the paste). Three matter most: everything in one round, one attempt in the chosen term (better to send closer to the end of the term, when you know which badges you apply for), and nothing added later (a November Builder-only submission cannot be topped up with Architect or Champion).
+- **Cut off:** the message ends at "Dowodem jest raport architektoniczny, czyli z" ("The proof is an architecture report, that is…"). The rest of the Architect requirements and all of the Champion requirements are missing.
 
 ## 2. 10xBuilder: mandatory requirements and the proof for each
 
@@ -58,7 +67,7 @@ This project is a custom project (not a 10xCards variant). It meets all mandator
 ## 7. What is not recorded
 
 - The 10xBuilder submission form link (the link of the extra-badges form is in `context/certification-todo.md`).
-- The full rules of 10xArchitect and 10xChampion (announced separately by the course).
+- The rest of the 10xArchitect proof requirements and all of the 10xChampion requirements: the second message was cut off after "Dowodem jest raport architektoniczny, czyli z". Paste the remainder to complete this file.
 - Any grading rubric beyond the text below.
 
 ## Appendix: source text (verbatim, Polish)
@@ -162,3 +171,34 @@ This project is a custom project (not a 10xCards variant). It meets all mandator
 > - Niezależnie od IDE: Claude Code lub Codex CLI jako domyślne narzędzie.
 >
 > Powodzenia w dalszym programowaniu z AI. W razie pytań piszcie w komentarzach.
+
+## Appendix B: source text of the second message (verbatim, Polish; cut off where it was pasted)
+
+> Cześć 👋
+> poniżej zasady dotyczące dodatkowych bloków 10xArchitect i 10xChampion. Każdy z nich to dodatkowa odznaka, którą możesz dodać do swojego Certyfikatu.
+>
+> To ścieżki dla chętnych. Moduły 4 i 5 nie są wymagane do zdobycia bazowego Certyfikatu z odznaką 10xBuilder.
+>
+> **Kiedy wysłać projekt?**
+>
+> Masz do wyboru 3 terminy:
+>
+> - do 4 listopada 2026 - z szansą na wyróżnienie,
+> - do 6 grudnia 2026,
+> - do 10 stycznia 2027 → termin ostateczny!
+>
+> Wybierasz jeden termin dla całego projektu. Jeśli chcesz zdobyć 10xArchitect lub 10xChampion - zgłoszenie do 10xBuilder'a i zgłoszenie do odznak dodatkowych (Architect i/lub Champion) wysyłasz w tym samym oknie.
+>
+> **Zasady zgłoszeń - przemyśl swoją strategię**
+>
+> Obowiązują te same reguły co przy 10xBuilder (M1-3). Znajdziesz je tutaj: [the link was not in the paste] Przy odznakach dla chętnych szczególnie ważne jest:
+>
+> - Wszystko w jednej turze. Projekt przesyłasz w całości, w jednym terminie. Jeśli oprócz 10xBuilder chcesz zdobyć 10xArchitect, 10xChampion lub obie odznaki, wyślij formularz 10xBuildera i formularz bloków dodatkowych w tym samym oknie.
+> - Tylko jedno podejście. Do certyfikacji podchodzisz raz, w wybranym terminie. Warto wysłać projekt bliżej końca terminu, gdy wiesz już dokładnie, na jakie odznaki się zgłaszasz.
+> - Bez dorzucania zadań. Jeśli w listopadzie zgłosisz tylko blok Builder, dostaniesz certyfikat z tą jedną odznaką. W kolejnym terminie nie uzupełnisz go już o Architect ani Champion.
+>
+> **Co przygotować - 10xArchitect (moduł 4)**
+>
+> Dowodem jest raport architektoniczny, czyli z
+
+[The message is cut off here in the paste; everything after this point is missing.]

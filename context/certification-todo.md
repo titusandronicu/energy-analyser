@@ -8,6 +8,7 @@ Status as of 2026-10-07 (later): Architect report updated to the current state a
 
 - [ ] Decide the window and which badges to go for (Builder alone, plus Architect, plus Champion).
 - [x] Save the official 10xBuilder criteria (M1-3) into the repo and score the project against them: done in `context/foundation/certification-criteria.md` (English summary, a proof for each requirement, the dates and rules, the verbatim Polish text). All five mandatory requirements and the optional public URL are met; for a distinction only the submission date (2026-11-04) is open.
+- [ ] Paste the rest of the official Architect and Champion message (it was cut off at "Dowodem jest raport architektoniczny, czyli z") into `context/foundation/certification-criteria.md`, then check `context/architect-report.md` and `context/champion-evidence.md` against it. Until then they follow earlier notes, not the official text.
 - [ ] Save the Builder submission form link next to the badges form link above (the course said it would share the form by week 3 at the latest).
 
 ## 10xChampion (code-review pipeline, M5 L2-L3)
