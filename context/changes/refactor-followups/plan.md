@@ -348,11 +348,11 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Automated
 
-- [x] 2.1 No duration constant is redefined in tests: `grep -rn "const \(MIN\|MINUTE\|HOUR\|DAY\)\(_MS\)\? = " src tests` shows only `src/lib/format/age.ts`, `src/lib/ingest/contract.ts` and `live-state.test.ts:342` (the day string)
-- [x] 2.2 One seed-token declaration in tests: `grep -rn "local-dev-ingest-token-not-secret" tests` shows only `tests/integration/support/push.ts`
-- [x] 2.3 `LibBadge` is gone: `grep -rn "LibBadge" src tests docs` finds nothing
-- [x] 2.4 Unit tests pass: `npm test`
-- [x] 2.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
+- [x] 2.1 No duration constant is redefined in tests: `grep -rn "const \(MIN\|MINUTE\|HOUR\|DAY\)\(_MS\)\? = " src tests` shows only `src/lib/format/age.ts`, `src/lib/ingest/contract.ts` and `live-state.test.ts:342` (the day string) — 81740f1
+- [x] 2.2 One seed-token declaration in tests: `grep -rn "local-dev-ingest-token-not-secret" tests` shows only `tests/integration/support/push.ts` — 81740f1
+- [x] 2.3 `LibBadge` is gone: `grep -rn "LibBadge" src tests docs` finds nothing — 81740f1
+- [x] 2.4 Unit tests pass: `npm test` — 81740f1
+- [x] 2.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 81740f1
 - [ ] 2.6 Integration suite passes in CI: `npm run test:integration`
 
 #### Manual
@@ -363,10 +363,10 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Automated
 
-- [ ] 3.1 Characterization test passes against the old code before the move and against the moved code after: `npm test -- flow-nodes`
-- [ ] 3.2 Break check: breaking a `spoken` or icon branch makes `flow-nodes.test.ts` go red
-- [ ] 3.3 Existing calendar tests pass with import edits and the added `calendarCopy` scan in the wording guard: `npm test -- calendar-view`
-- [ ] 3.4 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
+- [x] 3.1 Characterization test passes against the old code before the move and against the moved code after: `npm test -- flow-nodes`
+- [x] 3.2 Break check: breaking a `spoken` or icon branch makes `flow-nodes.test.ts` go red
+- [x] 3.3 Existing calendar tests pass with import edits and the added `calendarCopy` scan in the wording guard: `npm test -- calendar-view`
+- [x] 3.4 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
 - [ ] 3.5 E2E and smoke pass in CI: `npm run test:e2e`, `npm run smoke`
 
 #### Manual

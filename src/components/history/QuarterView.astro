@@ -8,13 +8,8 @@ import TotalsPanel from "@/components/history/TotalsPanel.astro";
 import Panel from "@/components/ui/Panel.astro";
 import { periodHref } from "@/lib/calendar/nav";
 import { LOAD_FAILED } from "@/lib/format/status";
-import {
-  completeDaysText,
-  QUARTER_CHART_NOTE,
-  quarterChartMonths,
-  sentence,
-  type QuarterView,
-} from "@/lib/services/calendar-view";
+import { QUARTER_CHART_NOTE } from "@/lib/services/calendar-copy";
+import { completeDaysText, quarterChartMonths, sentence, type QuarterView } from "@/lib/services/calendar-view";
 
 interface Props {
   // null: the quarter's daily rows failed to load.

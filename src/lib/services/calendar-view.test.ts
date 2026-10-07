@@ -5,19 +5,9 @@ import { addDays } from "@/lib/format/warsaw-time";
 import {
   BEFORE_HISTORY,
   BEFORE_MORNING,
-  buildDayView,
-  buildMonthView,
-  buildQuarterView,
-  completeDaysText,
-  dayCellName,
-  dayCellWord,
-  defaultPeriodFromRows,
-  defaultPeriodRange,
   FORECAST_EXPLANATION,
   FORECAST_NOT_COLLECTED,
   FORECAST_TOO_FEW,
-  forecastDaysText,
-  HAS_NOTE_WORD,
   HISTORY_START_NOTE,
   INCOMPLETE_DAY,
   MARKERS_INCOMPLETE,
@@ -27,16 +17,29 @@ import {
   NO_FORECAST,
   NO_RECOMMENDATION,
   QUARTER_CHART_NOTE,
-  quarterChartMonths,
   RATING_EXPLANATION,
   RATING_TERM,
-  ratedPeriodRange,
   SELF_SUFFICIENCY_EXPLANATION,
-  sentence,
   TOO_FEW_EXPLANATION,
+} from "./calendar-copy";
+import {
+  buildDayView,
+  buildMonthView,
+  buildQuarterView,
+  completeDaysText,
+  dayCellName,
+  dayCellWord,
+  defaultPeriodFromRows,
+  defaultPeriodRange,
+  forecastDaysText,
+  HAS_NOTE_WORD,
+  quarterChartMonths,
+  ratedPeriodRange,
+  sentence,
   type DayCell,
   type MonthView,
 } from "./calendar-view";
+import * as calendarCopy from "./calendar-copy";
 import * as calendarView from "./calendar-view";
 import { isCompleteDay } from "./complete-day";
 import { DAY_NO_USE, notRated, rowsNeededFrom } from "./period-rating";
@@ -770,8 +773,11 @@ describe("history copy", () => {
   });
 
   it("keeps no copy saying grid import is overstated from a date", () => {
-    const texts = Object.values(calendarView).filter((value): value is string => typeof value === "string");
-    expect(texts.length).toBeGreaterThan(0);
+    const isText = (value: unknown): value is string => typeof value === "string";
+    const copyTexts = Object.values(calendarCopy).filter(isText);
+    const texts = [...Object.values(calendarView).filter(isText), ...copyTexts];
+    // The long explanations live in calendar-copy.ts, so the scan has to cover that module too.
+    expect(copyTexts.length).toBeGreaterThan(0);
     for (const text of texts) expect(text).not.toMatch(/zawyżon\w* od/i);
   });
 
