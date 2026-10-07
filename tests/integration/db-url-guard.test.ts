@@ -130,3 +130,15 @@ describe.each([
     }
   });
 });
+
+// The one behavioural difference between the two stack guards: the e2e one hands the URL on without trailing slashes,
+// the integration one returns it as given.
+describe("trailing slashes on SUPABASE_URL", () => {
+  it("are stripped by requireStackEnv (e2e run)", () => {
+    expect(stackWith(requireStackEnv, "http://127.0.0.1:54321///", PUBLISHABLE_KEY).url).toBe("http://127.0.0.1:54321");
+  });
+
+  it("are kept by requireStack (integration suite)", () => {
+    expect(stackWith(requireStack, "http://127.0.0.1:54321/", PUBLISHABLE_KEY).url).toBe("http://127.0.0.1:54321/");
+  });
+});

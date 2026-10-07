@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { HOUR_MS } from "@/lib/format/age";
 import {
   dayKeyToUtcMs,
   dayMonthYear,
   formatDayMonth,
   formatMonth,
   formatWeekday,
-  HOUR_MS,
   utcMsToDayKey,
   warsawDayHours,
   warsawHour,

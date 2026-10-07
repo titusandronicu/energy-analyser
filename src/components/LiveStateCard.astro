@@ -7,6 +7,7 @@ import Panel from "@/components/ui/Panel.astro";
 import Sparkline from "@/components/ui/Sparkline.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED } from "@/lib/format/status";
+import { capitalize } from "@/lib/format/values";
 import { SENSOR_CAVEAT } from "@/lib/services/grid-sensor";
 import type { LiveStateView } from "@/lib/services/live-state";
 import { cn } from "@/lib/utils";
@@ -124,7 +125,7 @@ const kpis =
 
       <div class="space-y-1">
         <p class="text-muted-foreground text-xs" data-testid="live-today-period">
-          {view.today.periodLabel.charAt(0).toUpperCase() + view.today.periodLabel.slice(1)}
+          {capitalize(view.today.periodLabel)}
         </p>
         <p class="text-muted-foreground text-xs">
           Odczyt z {view.capturedAtLabel} · wykresy: poprzednie 14 dni, bez dzisiejszego

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { addDays, HOUR_MS } from "@/lib/format/warsaw-time";
+import { HOUR_MS } from "@/lib/format/age";
+import { addDays } from "@/lib/format/warsaw-time";
 
 const MAX_DRAWS = 25;
 const DAY_RANGE_START = Date.UTC(1900, 0, 1);

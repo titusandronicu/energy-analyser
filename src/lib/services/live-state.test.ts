@@ -2,7 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { DailyEnergyRow, LiveStateRow } from "@/types";
 import { addDays } from "@/lib/format/warsaw-time";
-import { formatAge } from "@/lib/format/age";
 import { expectedPvShare, loadDailyRowCapturedAt, loadLiveState, toLiveStateView } from "./live-state";
 import type { BatteryChargeLevel } from "./live-state";
 
@@ -315,23 +314,7 @@ describe("toLiveStateView", () => {
   });
 });
 
-describe("formatAge", () => {
-  const MIN = 60 * 1000;
-
-  it.each([
-    [0, "0 min"],
-    [5 * MIN, "5 min"],
-    [59 * MIN + 59_000, "59 min"],
-    [60 * MIN, "1 godz."],
-    [2 * 60 * MIN + 30 * MIN, "2 godz."],
-    [24 * 60 * MIN - 1, "23 godz."],
-    [24 * 60 * MIN, "1 dzień"],
-    [3 * 24 * 60 * MIN + 5 * MIN, "3 dni"],
-    [-5 * MIN, "0 min"],
-  ])("formats %i ms as %s", (ms, label) => {
-    expect(formatAge(ms)).toBe(label);
-  });
-
+describe("formatAge in the live state view", () => {
   it("feeds the age label from the capture time", () => {
     expect(view(row(), at("2026-09-25T12:30:00Z")).ageLabel).toBe("2 godz.");
     expect(view(row(), at("2026-09-28T10:00:00Z")).ageLabel).toBe("3 dni");

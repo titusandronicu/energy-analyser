@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { HourlyEnergyRow } from "@/types";
+import { HOUR_MS } from "@/lib/format/age";
 import { formatPeriod } from "@/lib/format/period";
 import { NO_STATUS, type Status } from "@/lib/format/status";
 import { asNumber, kwhLabel } from "@/lib/format/values";
@@ -7,7 +8,6 @@ import {
   addDays,
   formatDayMonth,
   formatWeekday,
-  HOUR_MS,
   warsawDayHours,
   warsawHour,
   warsawParts,

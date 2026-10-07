@@ -8,6 +8,7 @@ import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { GLOSSARY } from "@/lib/format/glossary";
 import { LOAD_FAILED } from "@/lib/format/status";
+import { sentence } from "@/lib/services/calendar-view";
 import { SENSOR_CAVEAT, SENSOR_CHANGE_BASELINE_NOTE } from "@/lib/services/grid-sensor";
 import type { UsageInsightView } from "@/lib/services/usage-insight";
 import { cn } from "@/lib/utils";
@@ -60,7 +61,7 @@ const rows =
 
   {view?.kind === "insufficient" && (
     <p class="text-muted-foreground text-sm" data-testid="usage-insufficient-reason">
-      {view.reason.charAt(0).toUpperCase() + view.reason.slice(1)}.
+      {sentence(view.reason)}
     </p>
   )}
 

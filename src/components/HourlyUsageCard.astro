@@ -7,6 +7,7 @@ import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
 import { LOAD_FAILED, NO_STATUS } from "@/lib/format/status";
 import { SENSOR_CAVEAT } from "@/lib/services/grid-sensor";
+import { sentence } from "@/lib/services/calendar-view";
 import type { HourlyUsageView, RankedDay, RankedHour, Ranking } from "@/lib/services/hourly-usage";
 
 interface Props {
@@ -31,8 +32,6 @@ const badgeText =
 // Why the lists rank by house use and leave some hours out; it follows the sensor caveat in the footer.
 const RANKING_NOTE =
   "Godziny i dni są uszeregowane według zużycia domu, a godziny, w których pobór z sieci wyraźnie przewyższa zużycie domu, nie trafiają na listę najniższych.";
-
-const sentence = (text: string) => `${text.charAt(0).toUpperCase()}${text.slice(1)}.`;
 
 // Both lists of a ranking, highest first; each list names its own direction for a screen reader.
 function lists<T>(ranking: Ranking<T>) {

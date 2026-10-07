@@ -77,8 +77,6 @@ export function warsawMonthKey(date: Date): string {
 // Clock hours in Warsaw. An hour is keyed by the UTC instant it starts at (as `hourly_energy.hour_start` is) and
 // labelled by its Warsaw date and clock hour. A Warsaw day has 23, 24 or 25 of them: on the spring change 02:00
 // does not exist, on the autumn change 02:00 happens twice (first in CEST, then in CET).
-export { HOUR_MS };
-
 const warsawHourFormat = new Intl.DateTimeFormat("en-CA", {
   timeZone: TIME_ZONE,
   year: "numeric",
