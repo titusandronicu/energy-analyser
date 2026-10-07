@@ -383,19 +383,19 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 - [x] 4.3 Break check: removing the `service_role` branch of the classifier makes both the classifier test and the guard table go red — fc80b4e
 - [x] 4.4 `npx playwright test --list` (with env set) still loads the config through the new relative import — fc80b4e
 - [x] 4.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — fc80b4e
-- [ ] 4.6 Integration, smoke and e2e pass in CI
+- [x] 4.6 Integration, smoke and e2e pass in CI — cedff13
 
 #### Manual
 
-- [ ] 4.7 After this release is deployed to production and has served real requests, the production logs show no `anon_key_unexpected_shape` event (owner checks)
-- [ ] 4.8 Sign-in and the dashboard work as before on production
+- [x] 4.7 After this release is deployed to production and has served real requests, the production logs show no `anon_key_unexpected_shape` event (owner checks) — cedff13
+- [x] 4.8 Sign-in and the dashboard work as before on production — cedff13
 
 ### Phase 5: Enforce the strict anon-key rule (PR C)
 
 #### Automated
 
-- [ ] 5.1 Tests assert `other` now throws and `publishable`/`anon` do not: `npm test -- supabase`
-- [ ] 5.2 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
+- [x] 5.1 Tests assert `other` now throws and `publishable`/`anon` do not: `npm test -- supabase` — 1d64c06
+- [x] 5.2 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 1d64c06
 - [ ] 5.3 Integration, smoke and e2e pass in CI
 
 #### Manual

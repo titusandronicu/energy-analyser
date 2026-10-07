@@ -1,16 +1,13 @@
 import { createServerClient, parseCookieHeader } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { AstroCookies } from "astro";
-import { APP_ENV, APP_ORIGIN, APP_VERSION, SUPABASE_ANON_KEY, SUPABASE_URL } from "astro:env/server";
+import { APP_ORIGIN, SUPABASE_ANON_KEY, SUPABASE_URL } from "astro:env/server";
 import { classifyAnonKey } from "@/lib/anon-key";
-import { createLogger } from "@/lib/logger";
 
-const log = createLogger({ version: APP_VERSION, environment: APP_ENV });
-let warnedUnexpectedKey = false;
-
-// Refuses a secret or service_role key, as it always has. A key that is neither a publishable key nor an anon JWT is
-// only reported, once per process and by class: this release finds out what production really uses, and the next one
-// refuses it (context/changes/refactor-followups/plan.md, phases 4 and 5). The key itself is never logged.
+// Only a publishable key or an anon JWT may be the app's key. A secret or service_role key, and any other shape
+// (another role, an opaque string, surrounding whitespace), stops the client from being created. The message names the
+// rule and never the key, a prefix or a length. Phase 4 ran this as a once-per-process warning first, so production's real
+// key was known to be fine before this started refusing (context/changes/refactor-followups/plan.md).
 function assertAnonKey(key: string) {
   switch (classifyAnonKey(key)) {
     case "secret":
@@ -18,11 +15,7 @@ function assertAnonKey(key: string) {
     case "service_role":
       throw new Error("SUPABASE_ANON_KEY must not contain a service_role key");
     case "other":
-      if (!warnedUnexpectedKey) {
-        warnedUnexpectedKey = true;
-        log.warn("anon_key_unexpected_shape", { keyClass: "other" });
-      }
-      return;
+      throw new Error("SUPABASE_ANON_KEY must be an sb_publishable_ key or a JWT with role anon");
     case "publishable":
     case "anon":
       return;
