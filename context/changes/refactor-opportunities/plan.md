@@ -304,7 +304,7 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 #### Manual
 
 - [x] 1.7 CI `integration` and `e2e` jobs are green on the PR (the local stack needs the owner's OK to start) — 47627b7
-- [ ] 1.8 Temporarily setting `SUPABASE_URL=http://example.com` makes `npm run test:integration` refuse with the same wording as before
+- [x] 1.8 Temporarily setting `SUPABASE_URL=http://example.com` makes `npm run test:integration` refuse with the same wording as before — 61e876a
 
 ### Phase 2: Shared time and status helpers in `src/lib`
 
@@ -320,7 +320,7 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Manual
 
-- [ ] 2.8 Dashboard and `/dashboard/history` render with the same status words and ages as before (compare against production or a pre-change screenshot)
+- [x] 2.8 Dashboard and `/dashboard/history` render with the same status words and ages as before (compare against production or a pre-change screenshot) — 61e876a
 
 ### Phase 3: API route and page-load helpers
 
@@ -334,8 +334,8 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Manual
 
-- [ ] 3.6 `/dashboard`, `/dashboard/history` and `/dashboard/alerts` load with data as before
-- [ ] 3.7 `npm run test:e2e` (alert rules) passes on a local stack
+- [x] 3.6 `/dashboard`, `/dashboard/history` and `/dashboard/alerts` load with data as before — 61e876a
+- [x] 3.7 `npm run test:e2e` (alert rules) passes on a local stack — 61e876a
 
 ### Phase 4: Component dedupes
 
@@ -349,5 +349,5 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Manual
 
-- [ ] 4.6 Alerts page and a day-note form look unchanged (buttons, summary row)
-- [ ] 4.7 A card in a load-error state still shows the hint text and the same status badge
+- [x] 4.6 Alerts page and a day-note form look unchanged (buttons, summary row) — 61e876a
+- [x] 4.7 A card in a load-error state still shows the hint text and the same status badge — 61e876a
