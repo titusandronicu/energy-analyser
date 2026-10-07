@@ -394,8 +394,8 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Automated
 
-- [x] 5.1 Tests assert `other` now throws and `publishable`/`anon` do not: `npm test -- supabase`
-- [x] 5.2 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
+- [x] 5.1 Tests assert `other` now throws and `publishable`/`anon` do not: `npm test -- supabase` — 1d64c06
+- [x] 5.2 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 1d64c06
 - [ ] 5.3 Integration, smoke and e2e pass in CI
 
 #### Manual
