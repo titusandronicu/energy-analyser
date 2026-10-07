@@ -342,7 +342,7 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Manual
 
-- [ ] 1.6 The three cards render the same capitalised text as before
+- [x] 1.6 The three cards render the same capitalised text as before — 384b4ce
 
 ### Phase 2: Test helper dedupes and LibBadge
 
@@ -357,7 +357,7 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Manual
 
-- [ ] 2.7 Nothing on the dashboard, history or alerts pages changed visually
+- [x] 2.7 Nothing on the dashboard, history or alerts pages changed visually — 384b4ce
 
 ### Phase 3: Two safe splits
 
@@ -371,8 +371,8 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Manual
 
-- [ ] 3.6 The live flow diagram and its readings view render the same on `/dashboard`
-- [ ] 3.7 The history day, month and quarter pages show the same explanations
+- [x] 3.6 The live flow diagram and its readings view render the same on `/dashboard` — 384b4ce
+- [x] 3.7 The history day, month and quarter pages show the same explanations — 384b4ce
 
 ### Phase 4: Anon-key module, warn-only (PR B)
 
