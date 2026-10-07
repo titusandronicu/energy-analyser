@@ -326,11 +326,11 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Automated
 
-- [x] 3.1 Unit tests pass, including the two new tests: `npm test`
-- [x] 3.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build`
+- [x] 3.1 Unit tests pass, including the two new tests: `npm test` — 242746d
+- [x] 3.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build` — 242746d
 - [ ] 3.3 Integration suite passes (ingest and alerts-evaluate paths): `npm run test:integration`
 - [ ] 3.4 Smoke test passes against a local server and local Supabase only: `npm run smoke`
-- [x] 3.5 `grep -c "const supabase = getClient()"` over the three pages is lower than 14 in total; remaining sites listed in the commit message
+- [x] 3.5 `grep -c "const supabase = getClient()"` over the three pages is lower than 14 in total; remaining sites listed in the commit message — 242746d
 
 #### Manual
 
@@ -341,10 +341,10 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Automated
 
-- [ ] 4.1 `grep -rn "Spróbuj odświeżyć stronę" src` shows only `RefreshHint.astro`
-- [ ] 4.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build`
-- [ ] 4.3 Unit tests pass: `npm test`
-- [ ] 4.4 `grep -rn "SUBMIT_CLASS =" src` shows one definition
+- [x] 4.1 `grep -rn "Spróbuj odświeżyć stronę" src` shows only `RefreshHint.astro`
+- [x] 4.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build`
+- [x] 4.3 Unit tests pass: `npm test`
+- [x] 4.4 `grep -rn "SUBMIT_CLASS =" src` shows one definition
 - [ ] 4.5 E2E alert-rules passes in CI: `npm run test:e2e`
 
 #### Manual

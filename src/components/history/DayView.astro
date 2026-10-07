@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { CalendarCheck, Sparkles, Sun } from "lucide-react";
 import AdviceBlocks from "@/components/AdviceBlocks.astro";
 import CardHeading from "@/components/CardHeading.astro";
@@ -68,7 +69,7 @@ const figures =
     )}
   </div>
 
-  {rowFailed && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {rowFailed && <RefreshHint />}
 
   {!rowFailed && totals.kind === "none" && (
     <p class="text-muted-foreground text-sm">
@@ -113,7 +114,7 @@ const figures =
   {rowFailed ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : forecast.kind === "none" ? (
     <StatusBadge status={NO_STATUS} text={capitalize(forecast.reason)} />
@@ -152,7 +153,7 @@ const figures =
     )}
   </div>
 
-  {advice === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {advice === null && <RefreshHint />}
 
   {main !== null && (
     <div class="space-y-4">

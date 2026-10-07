@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { CalendarDays, ChartColumn, Sun } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
@@ -88,7 +89,7 @@ const dayKeys = days.map((cell) => cell.day);
   {view === null ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : (
     <div class="space-y-4">
@@ -186,7 +187,7 @@ const dayKeys = days.map((cell) => cell.day);
   {view === null ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : (
     <div class="space-y-5">
@@ -226,7 +227,7 @@ const dayKeys = days.map((cell) => cell.day);
   {view === null ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : view.forecast.kind === "comparison" ? (
     <div class="space-y-3">

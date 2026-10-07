@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import AppShell from "@/components/AppShell.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import DayView from "@/components/history/DayView.astro";
@@ -241,7 +242,7 @@ const pageNotice = page !== null && (page.kind !== "day" || page.view === null) 
         (page.view === null ? (
           <Panel>
             <StatusBadge status={LOAD_FAILED} testId="history-day-status" />
-            <p class="text-muted-foreground mt-2 text-sm">Spróbuj odświeżyć stronę.</p>
+            <RefreshHint class="mt-2" />
           </Panel>
         ) : (
           <DayView

@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { Sparkles } from "lucide-react";
 import Panel from "@/components/ui/Panel.astro";
 import AdviceBlocks from "@/components/AdviceBlocks.astro";
@@ -36,7 +37,7 @@ const explained =
     )}
   </div>
 
-  {view === null && <p class="text-sm text-muted-foreground">Spróbuj odświeżyć stronę.</p>}
+  {view === null && <RefreshHint />}
 
   {view?.kind === "recommendation" && (
     <div class="space-y-4">

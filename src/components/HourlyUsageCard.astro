@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { Clock } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import Panel from "@/components/ui/Panel.astro";
@@ -52,7 +53,7 @@ const dayLists: { title: string; items: RankedDay[] }[] = usage === null ? [] : 
     <StatusBadge status={status} text={badgeText} testId="hourly-status" />
   </div>
 
-  {view === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {view === null && <RefreshHint />}
 
   {view?.kind === "empty" && (
     <p class="text-muted-foreground text-sm" data-testid="hourly-empty-reason">

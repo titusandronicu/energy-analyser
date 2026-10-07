@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { Sun, TowerControl, Upload } from "lucide-react";
 import LiveCardTitle from "@/components/LiveCardTitle.astro";
 import { LiveFlow } from "@/components/live/LiveFlow";
@@ -62,7 +63,7 @@ const kpis =
     </div>
   )}
 
-  {view === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {view === null && <RefreshHint />}
 
   {view?.kind === "state" && (
     <div class="space-y-4">

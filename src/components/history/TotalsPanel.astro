@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { Sigma } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
@@ -45,7 +46,7 @@ const figures =
     )}
   </div>
 
-  {totals === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {totals === null && <RefreshHint />}
 
   {totals?.kind === "insufficient" && (
     <p class="text-muted-foreground text-sm">
