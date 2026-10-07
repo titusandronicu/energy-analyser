@@ -1,6 +1,6 @@
 # Architecture report: Energy Analyser
 
-Repository: `titusandronicu/energy-analyser`. History covered: 2026-09-14 to 2026-10-06 (3 weeks, 268 counted commits, one human author, 246 of 269 commits co-authored with an AI agent). The repo map has an addendum (section 8) for the 11 commits after its snapshot, mainly the alert-rules capability and the e2e layer.
+Repository: `titusandronicu/energy-analyser`. History covered: 2026-09-14 to 2026-10-07 (3.5 weeks, 280 counted commits, one human author, 256 of 271 human commits co-authored with an AI agent). The repo map was regenerated at head `e630d36`; sections 3-6 below describe the work as it stood on 2026-10-06, before the alert-rules capability landed.
 
 ## 1. The product in one paragraph
 
@@ -8,12 +8,12 @@ A single-owner web app (Astro 7 SSR, React 19, Supabase) for a home solar system
 
 ## 2. Repo map (M4 L2): where the business lives and where it hurts
 
-`context/map/repo-map.md` ranks 9 product capabilities (ingest, access, live-flow, bill, advice, history, ratings, notes, dashboard) plus platform, shared foundations and docs, by criticality times buzz from four evidence sources (git history, GitHub discussion, an import graph, authorship).
+`context/map/repo-map.md` ranks 10 product capabilities (ingest, access, live-flow, bill, advice, history, ratings, notes, alerts, dashboard) plus platform, shared foundations and docs, by criticality times buzz from four evidence sources (git history, GitHub discussion, an import graph, authorship).
 
-- **Risk zones (4):** the push boundary (contract plus the `ingest_push` SQL function), live flow (imported by 6 capabilities), sign-in and owner access (the only capability with real behaviour defects), and the Warsaw-time and value helpers every money and boundary decision rests on.
+- **Risk zones (5):** the push boundary (contract plus the `ingest_push` SQL function), live flow (imported by 7 capabilities), sign-in and owner access (the only capability with real behaviour defects), and the Warsaw-time and value helpers every money and boundary decision rests on. The fifth is new: the unattended alert evaluator, which runs from cron and reads the bill and live-state loaders with no page view to show a break.
 - **Watch:** bill forecast (money logic, one week old) and history (widest fan-out: its page imports 20 files).
-- **Looks hot, is not:** platform CI churn, a flat 20-30% fix share (about 60% are planned review-fix rounds), 0 reverts, seven deliberate break-proof PRs, bot-only reviews, planning-doc churn.
-- **Limits stated in the map:** 3 weeks of history, one author (every concentration is a baseline), SQL and RLS have no import graph.
+- **Looks hot, is not:** platform CI churn, a flat 19-30% fix share (55% of fix commits are planned review-fix rounds), 0 reverts, eleven deliberate break-proof PRs, bot-only reviews, planning-doc churn.
+- **Limits stated in the map:** 3.5 weeks of history (one day for alerts), one author (every concentration is a baseline), SQL and RLS have no import graph (a hand-built table stands in).
 
 ## 3. Feature research (M4 L3)
 
