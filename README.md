@@ -26,6 +26,8 @@ Still to come (see [the roadmap](context/foundation/roadmap.md)): a year view, c
 | [docs/ingest/README.md](docs/ingest/README.md)                                                            | The push contract the home lab follows                                                                          |
 | [context/foundation/prd-v3.md](context/foundation/prd-v3.md), [roadmap.md](context/foundation/roadmap.md) | Product requirements and the ordered work                                                                       |
 
+Beyond `docs/`, the [`context/`](context/) folder holds the working record of the project: `foundation/` (PRD, roadmap, test plan, lessons), `changes/` (work in flight) and `archive/` (finished changes, each with its research, plan and reviews), `map/` (the repo map), `domain/` (domain notes and glossary), `audits/`, `deployment/` (rollout plan and runbook), and the certification files described below.
+
 ## Access model
 
 The app has one owner. Signing in is not enough to see data: the owner's user id must be in `public.app_owners`, and every data table and view is closed to `anon` and `authenticated` by default and opened again only by an owner policy and column grants (a user can read only their own `app_owners` row). A signed-in user who is not an owner reads nothing and writes nothing. This is proven against a real non-owner and an anonymous client in [`tests/integration/access-abuse.test.ts`](tests/integration/access-abuse.test.ts), and the request guard (the `Origin` check on mutating routes and the bearer-token exemption for the lab's push) is pinned in [`src/middleware.test.ts`](src/middleware.test.ts). Details are in [docs/architecture.md](docs/architecture.md).
@@ -43,6 +45,20 @@ This project was built with the 10xDevs workflow: shape, PRD, roadmap, then per 
 | Tests for a defined risk | [`context/foundation/test-plan.md`](context/foundation/test-plan.md) ranks eight risks; see Testing below                                                                                                                                           |
 | Public URL               | https://neil170-20170.mikrus.cloud                                                                                                                                                                                                                  |
 
+## Badges and certification
+
+The course awards the 10xBuilder certificate and two extra badges, 10xArchitect and 10xChampion. This repository carries the evidence for all three (Builder is not scored yet). What is still open is tracked in [`context/certification-todo.md`](context/certification-todo.md) (status as of 2026-10-07).
+
+| Badge                 | What it asks for, as recorded here                                                                                                                                                                       | Evidence in this repo                                                                                        |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 10xBuilder (M1-3)     | A working app built with the course workflow: access control, CRUD, business logic, context documents, tests for a defined risk, a public URL. The official criteria text is not stored in the repo yet. | The table above, [`context/`](context/), the public URL                                                      |
+| 10xArchitect (M4)     | A report of about two pages built on four artifacts: a repo map (L2), a feature research (L3), a refactoring plan with its evidence (L4) and domain notes (L5).                                          | [`context/architect-report.md`](context/architect-report.md) and the artifacts it lists                      |
+| 10xChampion (M5 L2-3) | Proof of a code-review pipeline in CI: a pipeline view with a visible job, the job's logs during a review, and the agent's review comment on a pull request.                                             | [`context/champion-evidence.md`](context/champion-evidence.md), `.github/workflows/code-review.yml`, PR #120 |
+
+Rules, as recorded in the to-do: one attempt, one submission window, everything in one round. Whoever wants Architect or Champion sends the Builder form and the extra-badges form in the same window. The windows are 2026-11-04 (the chance of a distinction), 2026-12-06 and 2027-01-10 (final). The badges form is <https://baserow.io/form/Nht4zggvrLgHUE1__yPugj6gLbob449ETNTe9kehLA8>; the Builder form link is not recorded yet.
+
+Still open: choosing the window and the badges, saving the official Builder criteria in the repo and scoring the project against them, three Champion screenshots (taken by hand, not stored in the repo), defending each Architect artifact, and re-running the repo map near submission because it is tied to a commit.
+
 ## Testing
 
 The risks are ranked in [`context/foundation/test-plan.md`](context/foundation/test-plan.md) (stale data shown as current, wrong money figures, a broken push-to-page path, silent history loss, day and month boundaries, a non-owner getting in, markup in lab text or notes, and a page's forms drifting from the route that parses them). Each layer is the cheapest one that proves its risk:
@@ -54,6 +70,8 @@ The risks are ranked in [`context/foundation/test-plan.md`](context/foundation/t
 | End to end over HTTP           | `scripts/smoke.mjs` against a built server           | `npm run smoke`                 |
 | End to end in a browser        | `tests/e2e/`, Playwright (Chromium), alert rules     | `npm run test:e2e`              |
 | Mutation testing (report only) | Stryker on the pure logic in `src/lib`, weekly in CI | the `Mutation testing` workflow |
+
+The integration and browser suites share one guard, [`tests/support/local-guards.ts`](tests/support/local-guards.ts): they refuse a non-local Supabase URL, a database URL that can be redirected, and any key that is not an anon key. A table test runs the same cases against every caller.
 
 Differences between layers that were found and deliberately not fixed are pinned by tests whose names start with `KNOWN GAP`, so a later fix flips them knowingly (see [docs/decisions.md](docs/decisions.md)).
 
@@ -77,28 +95,30 @@ npm run dev
 
 Configuration:
 
-| Variable             | Purpose                                                                                                                           | Default        |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `SUPABASE_URL`       | Supabase project URL                                                                                                              | unset          |
-| `SUPABASE_ANON_KEY`  | Public/anon Supabase key; service-role and secret keys are rejected                                                               | unset          |
-| `ALLOW_SIGNUP`       | When exactly `true`, a sign-in link request may create a new user                                                                 | `false`        |
-| `APP_VERSION`        | Release identifier returned by `/api/health`                                                                                      | `development`  |
-| `APP_ORIGIN`         | Trusted public origin for CSRF checks on mutating API requests                                                                    | request origin |
-| `APP_ENV`            | Environment name written on every log line (`production` in compose)                                                              | `development`  |
-| `TELEGRAM_BOT_TOKEN` | Bot token for alert messages (the lab's bot, shared; secret). Without it and the chat id, `POST /api/alerts/evaluate` answers 503 | unset          |
-| `TELEGRAM_CHAT_ID`   | Telegram chat the alert messages go to (secret)                                                                                   | unset          |
-| `HOST`               | Address used by the standalone Node server                                                                                        | `::`           |
+| Variable             | Purpose                                                                                                                                                             | Default        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
+| `SUPABASE_URL`       | Supabase project URL                                                                                                                                                | unset          |
+| `SUPABASE_ANON_KEY`  | The Supabase key the app uses: an `sb_publishable_` key or an anon JWT only. A secret or service-role key, or any other shape, is rejected when a client is created | unset          |
+| `ALLOW_SIGNUP`       | When exactly `true`, a sign-in link request may create a new user                                                                                                   | `false`        |
+| `APP_VERSION`        | Release identifier returned by `/api/health`                                                                                                                        | `development`  |
+| `APP_ORIGIN`         | Trusted public origin for CSRF checks on mutating API requests                                                                                                      | request origin |
+| `APP_ENV`            | Environment name written on every log line (`production` in compose)                                                                                                | `development`  |
+| `TELEGRAM_BOT_TOKEN` | Bot token for alert messages (the lab's bot, shared; secret). Without it and the chat id, `POST /api/alerts/evaluate` answers 503                                   | unset          |
+| `TELEGRAM_CHAT_ID`   | Telegram chat the alert messages go to (secret)                                                                                                                     | unset          |
+| `HOST`               | Address used by the standalone Node server                                                                                                                          | `::`           |
 
 Sign-in on `/auth/signin` offers an emailed one-time link (`POST /api/auth/magic-link` → email → `/auth/confirm`) or email + password (`POST /api/auth/signin`) for existing accounts; there is no sign-up form. The email template lives in `supabase/templates/magic-link.html`; production must use the same template for "Magic link" and "Confirm signup" (Supabase → Authentication → Emails), or links won't work. For local testing, start Supabase with `npx supabase start` (emails land in Mailpit on port 54324), copy its API URL and anon key to `.env`, and set `ALLOW_SIGNUP=true` so new addresses can sign in. Production keeps `ALLOW_SIGNUP=false` and the global `auth.enable_signup` option off, so only the existing owner account gets a link.
 
 ## Commands
 
 - `npm run dev` — development server
-- `npm run lint` — ESLint
+- `npm run lint` — ESLint (`npm run lint:fix` fixes what it can; `npm run format` runs Prettier)
 - `npx astro check` — Astro and TypeScript checks
 - `npm run build` — standalone Node production build
 - `npm run preview` — local production preview
 - `npm test` — Vitest unit tests
+- `npm run contract:export` — regenerates `docs/ingest/contract-v1.schema.json` from the zod contract; `npm test` fails if the committed schema drifts
+- `npm run mutate` — Stryker mutation testing of the pure logic in `src/lib` (report only; weekly in CI)
 - `npm run smoke` — smoke test of sign-in and push ingestion against `BASE_URL`
 - `npm run test:e2e` — browser tests (Playwright, Chromium) of the alert-rules page against a local Supabase and a production build the run starts itself; needs `SUPABASE_URL` and `SUPABASE_ANON_KEY` (anon key only), a one-time `npx playwright install chromium`, and the stack's Postgres on port 54322 for its teardown; refuses non-local URLs; not part of `npm test` (`context/foundation/test-stack.md`)
 - `npm run test:integration` — integration tests of push ingestion, owner-only access and notes limits against a local Supabase (`SUPABASE_URL` and `SUPABASE_ANON_KEY`; the access tests also use the stack's Postgres on port 54322, optionally `SUPABASE_DB_URL`; refuses non-local URLs; not part of `npm test`)

@@ -2,7 +2,7 @@
 
 Rules in one place: one attempt, one submission window, everything in one round. If you want Architect or Champion, send the Builder form and the extra-badges form in the same window. Windows: 2026-11-04 (chance of a distinction), 2026-12-06, 2027-01-10 (final). The badges form is https://baserow.io/form/Nht4zggvrLgHUE1__yPugj6gLbob449ETNTe9kehLA8. The Builder form link is not recorded here yet.
 
-Status as of 2026-10-07: Architect artifacts complete, Champion proof needs screenshots, Builder not scored (criteria not in the repo).
+Status as of 2026-10-07 (later): Architect report updated to the current state and its open questions resolved; Champion proof still needs screenshots; Builder not scored (criteria not in the repo). The README now has a section on the three badges and these rules.
 
 ## Before choosing a window
 
@@ -21,9 +21,9 @@ Status as of 2026-10-07: Architect artifacts complete, Champion proof needs scre
 
 ## 10xArchitect (report, M4)
 
-- [ ] Reread `context/architect-report.md` against the regenerated map. Sections 3-6 describe 2026-10-06; the opening and section 2 were updated.
-- [ ] Resolve the refactor mismatch before defending the report: PR #131 is titled "phases 1-2 of 5" but contains both migrations (including `ingest_token_ok`), and the report describes all five phases as done. Check `context/archive/2026-10-06-refactor-push-boundary/plan.md` ticks and say which is true.
-- [ ] Check the report prints to about two pages (875 words before the last edits).
+- [x] Reread `context/architect-report.md` against the regenerated map. Sections 3-6 describe the 2026-10-06 refactor and say so; the opening names the map head (`e630d36`) and the 10 commits since; section 7 is new (two smaller refactors, the warn-first anon-key release, and a gate that turned out not to be real). The map itself was not regenerated, see the last item of this block.
+- [x] Resolve the refactor mismatch: PR #131 is titled "phases 1-2 of 5" because it was squash-merged as a draft while commits were still coming, but its five phase commits, both migrations (including `ingest_token_ok`) and the docs are all in it, the plan's 22 ticks carry its squash SHA, and `reviews/archive-sha-repoint.md` records the repoint. The report is right and says so in section 6.
+- [x] Check the report length: 1,070 words now (939 before this update, 875 before that). That is about two printed pages; confirm the official page limit, which is not recorded in the repo.
 - [ ] Prepare to defend each artifact in your own words: map (L2), research (L3), refactor plan (L4), domain notes (L5).
 - [ ] Re-run the map once more near submission if `main` moves a lot (the map is tied to a head SHA).
 
