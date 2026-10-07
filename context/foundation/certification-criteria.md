@@ -2,7 +2,7 @@
 
 The official criteria were pasted by the owner on 2026-10-07 and are kept verbatim (Polish) in the appendix. This file gives the English summary, scores the project against each requirement with a proof a reviewer can check, and lists what the text does not say. It was written from the text below; it adds no criterion of its own. The submission form is not in the text (the course says it is shared by week 3 at the latest), so its link is not recorded here.
 
-Status of the project as of 2026-10-07: **all five mandatory 10xBuilder requirements are met, and the optional public URL is live.**
+Status of the project as of 2026-10-07: **all five mandatory 10xBuilder requirements are met, and the optional public URL is live.** For the extra badges: the four 10xArchitect artifacts and the report exist (to be defended, the map to be re-run); for 10xChampion, option A (the code-review pipeline) is built and its three screenshots are still to be taken; option B (the artifact registry) is not attempted.
 
 ## 1. The three pillars
 
@@ -12,16 +12,15 @@ Status of the project as of 2026-10-07: **all five mandatory 10xBuilder requirem
 | 10xArchitect (optional) | Extending and modernising architecture and working with AI at larger scale (module 4).          |
 | 10xChampion (optional)  | AI integrations in team work, among them CI/CD pipelines (module 5).                            |
 
-The first text says Architect and Champion work starts after week 3 and that their full rules come in a separate message. That second message is stored below (section 1a and appendix B), but **it was cut off when pasted**, so what the Architect report and the Champion proof must contain is still unknown. `context/architect-report.md` and `context/champion-evidence.md` follow what was recorded elsewhere (see `context/certification-todo.md`) and are not yet checked against the official text.
+The first text says Architect and Champion work starts after week 3 and that their full rules come in a separate message. That second message is stored in full in appendix B, and its proof requirements are scored in sections 2a and 2b. The M4L5 prompt the message mentions for generating the Architect report is not stored in this repo.
 
-## 1a. The extra badges: rules received so far
+## 1a. The extra badges: submission rules
 
 From the second message (appendix B), which says the two blocks are optional extra badges added to the certificate and that modules 4 and 5 are not needed for the base certificate with the 10xBuilder badge:
 
 - The same three terms apply: up to 2026-11-04 (with a chance of a distinction), up to 2026-12-06, and up to 2027-01-10 (final).
 - One term for the whole project. Whoever wants 10xArchitect or 10xChampion sends the 10xBuilder submission and the extra-badges submission (Architect and/or Champion) **in the same window**.
 - The same rules as for 10xBuilder apply (the message links to them; the link was lost in the paste). Three matter most: everything in one round, one attempt in the chosen term (better to send closer to the end of the term, when you know which badges you apply for), and nothing added later (a November Builder-only submission cannot be topped up with Architect or Champion).
-- **Cut off:** the message ends at "Dowodem jest raport architektoniczny, czyli z" ("The proof is an architecture report, that is…"). The rest of the Architect requirements and all of the Champion requirements are missing.
 
 ## 2. 10xBuilder: mandatory requirements and the proof for each
 
@@ -32,6 +31,34 @@ From the second message (appendix B), which says the two blocks are optional ext
 | **Business logic:** at least one function that implements logic (AI is not required)                                 | Yes | Several, all written down in `docs/logic.md` and tested next to the code: staleness verdicts (`src/lib/services/live-state.ts`), the season-adjusted usage baseline (`usage-insight.ts`), the bill forecast as a range (`bill-forecast.ts`), day and month ratings (`period-rating.ts`) and alert evaluation with throttling (`alert-evaluation.ts`), all in `src/lib/services/`.                                                                                                                                                                                                                                                                                                                                                                                |
 | **Context documents:** for example `prd.md`, `infrastructure.md`, `roadmap.md`                                       | Yes | `context/foundation/`: `prd.md`, `prd-v2.md`, `prd-v3.md`, `infrastructure.md`, `roadmap.md`, `tech-stack.md`, `test-plan.md`, `test-stack.md`, `lessons.md`, `shape-notes.md`. Beyond these, 35 archived changes and 4 active ones in `context/archive/` and `context/changes/`, each with its research, plan and reviews.                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | **Tests:** at least one suite for a concrete risk defined in the test plan, verifying behaviour from the user's side | Yes | `context/foundation/test-plan.md` ranks eight risks. Risk 6 (a non-owner or forged client gets in) is covered by `tests/integration/access-abuse.test.ts`; the other layers are `npm test` (unit and contract), `npm run test:integration` (real Postgres), `npm run smoke` (sign-in and push over HTTP against a built server) and `npm run test:e2e` (Playwright in a browser: the owner's alert-rules flow). CI requires `ci`, `smoke` and `integration` on `main` (`.github/rulesets/main-quality-gates.json`); `e2e` runs but is not required.                                                                                                                                                                                                              |
+
+## 2a. 10xArchitect (M4): the required proof and where it is
+
+The text says the proof is an architecture report: a concise two-pager made of four artifacts from the module 4 lessons, a repo map (L2), a research of a chosen feature (L3), a refactoring plan (L4) and DDD-inspired domain notes in `context/domain/` (L5). The report is generated with the M4L5 prompt, but it must be the owner's: one that can be defended, not one generated by a single prompt and taken on faith.
+
+| Requirement (from the text)              | Met            | Proof in this repository                                                                                                                                                                                            |
+| ---------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Repo map (L2)                            | Yes, not fresh | `context/map/repo-map.md` with `context/map/evidence/`. It was generated at head `e630d36`; the repo has moved on since, so re-run it near submission.                                                              |
+| Research of a chosen feature (L3)        | Yes            | `context/archive/2026-10-01-testing-push-to-page-integration/research.md`, the push-to-page write path.                                                                                                             |
+| Refactoring plan (L4)                    | Yes            | `context/archive/2026-10-06-refactor-push-boundary/plan.md`, `plan-brief.md` and `reviews/plan-review.md` (7 findings, all fixed before coding); executed in PR #131, with the evidence in section 5 of the report. |
+| Domain notes inspired by DDD (L5)        | Yes            | `context/domain/domain-distillation.md`, `glossary.md` and `evidence/`.                                                                                                                                             |
+| A concise two-pager made of the four     | Probably       | `context/architect-report.md`, 1,070 words and a table, about two printed pages. Confirm by printing it.                                                                                                            |
+| The report is the owner's and defensible | Open (owner)   | The report cites decisions, evidence and limits. Defending each artifact in one's own words cannot be proven from the repo.                                                                                         |
+
+## 2b. 10xChampion (M5): the required proof and where it is
+
+The text says to build one of the two module 5 projects; a company repository need not be published. The proof is screenshots showing that the flow works in the owner's context or in a standalone PoC.
+
+- **Option A, a CI/CD pipeline for code review (M5L2-L3):** a pipeline view with at least one visible job; logs of the pipeline or job during a code review; the flow on a pull request, a screenshot with the agent's review comment.
+- **Option B, a team artifact registry (M5L4):** a repository or registry where the flow works (screenshot); a package definition or equivalent (for example `package.json`); the list of released versions (from the registry UI or a CLI command).
+
+| Item                                  | Status                 | Proof or what is missing                                                                                                                                                                                                                                                                  |
+| ------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Option A chosen**                   | Built                  | `.github/workflows/code-review.yml` (reviews a PR's diff with Claude Code when the `claude-code-review` label is added and posts a sticky comment) and `code-review-fix.yml`; the evidence index is `context/champion-evidence.md`.                                                       |
+| Pipeline view with a visible job      | **Screenshot missing** | Actions run `37309617780`, job `code-review` (success). Taken by hand, not stored in the repo.                                                                                                                                                                                            |
+| Logs during a code review             | **Screenshot missing** | The same run, expanded step "Run Claude Code Review".                                                                                                                                                                                                                                     |
+| The agent's review comment on a PR    | **Screenshot missing** | PR #120, comment by `github-actions` titled "Code Review", label `claude-code-review`.                                                                                                                                                                                                    |
+| **Option B (M5L4 artifact registry)** | **Not attempted**      | No team registry, package definition or version list exists in this repo for it. `publish-image.yml` publishes the app's own container image to GHCR for each release; that is a release flow, not the M5L4 deliverable, and whether it would count is unconfirmed. One option is enough. |
 
 ## 3. Optional (welcome, not required)
 
@@ -66,9 +93,9 @@ This project is a custom project (not a 10xCards variant). It meets all mandator
 
 ## 7. What is not recorded
 
-- The 10xBuilder submission form link (the link of the extra-badges form is in `context/certification-todo.md`).
-- The rest of the 10xArchitect proof requirements and all of the 10xChampion requirements: the second message was cut off after "Dowodem jest raport architektoniczny, czyli z". Paste the remainder to complete this file.
-- Any grading rubric beyond the text below.
+- The 10xBuilder submission form link, and the field lists of both submission forms (the link of the extra-badges form is in `context/certification-todo.md`). The course said it would share the Builder form by week 3 at the latest.
+- The M4L5 prompt for generating the Architect report, and the lessons for module 5 (this repo has no skills for them).
+- Any grading rubric beyond the texts below, and the exact page limit beyond "concise two-pager".
 
 ## Appendix: source text (verbatim, Polish)
 
@@ -172,7 +199,7 @@ This project is a custom project (not a 10xCards variant). It meets all mandator
 >
 > Powodzenia w dalszym programowaniu z AI. W razie pytań piszcie w komentarzach.
 
-## Appendix B: source text of the second message (verbatim, Polish; cut off where it was pasted)
+## Appendix B: source text of the second message (verbatim, Polish)
 
 > Cześć 👋
 > poniżej zasady dotyczące dodatkowych bloków 10xArchitect i 10xChampion. Każdy z nich to dodatkowa odznaka, którą możesz dodać do swojego Certyfikatu.
@@ -199,6 +226,27 @@ This project is a custom project (not a 10xCards variant). It meets all mandator
 >
 > **Co przygotować - 10xArchitect (moduł 4)**
 >
-> Dowodem jest raport architektoniczny, czyli z
-
-[The message is cut off here in the paste; everything after this point is missing.]
+> Dowodem jest raport architektoniczny, czyli zwięzły two-pager złożony z czterech artefaktów z lekcji modułu 4:
+>
+> - mapa repozytorium (L2),
+> - research wybranego ficzera (L3),
+> - plan refaktoryzacji (L4),
+> - notatki o domenie inspirowane DDD, context/domain/ (L5).
+>
+> Raport wygenerujesz promptem z lekcji M4L5. Najważniejsze: raport ma być Twój. Taki, który potrafisz obronić, a nie wygenerowany jednym promptem i przyjęty na wiarę.
+>
+> **Co przygotować - 10xChampion (moduł 5)**
+>
+> Wystarczy zbudować jeden z dwóch projektów modułu 5. Nie wymagamy publikowania firmowego repozytorium. Dowodem są zrzuty ekranu, które pokazują, że przepływ działa w Twoim kontekście albo w samodzielnym PoC.
+>
+> Pipeline CI/CD do review kodu (M5L2-L3):
+>
+> - widok pipeline'u z co najmniej jednym widocznym jobem,
+> - logi z pipeline'u albo joba podczas code review,
+> - działanie na PR: zrzut z komentarzem code review od agenta.
+>
+> Rejestr artefaktów zespołowych (M5L4):
+>
+> - repozytorium albo rejestr, w którym działa przepływ (screenshot),
+> - definicja paczki albo równoważna definicja artefaktu (np. package.json),
+> - lista wydanych wersji (z UI rejestru albo z komendy CLI).
