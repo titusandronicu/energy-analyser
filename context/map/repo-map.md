@@ -1,6 +1,7 @@
 ---
 artifact: repo-map
 generated: 2026-10-06
+updated: 2026-10-07 (addendum, section 8; sections 1-7 are still the e334854 snapshot)
 repo_root: .
 history_window: 12 months ago..HEAD @ e334854 (effective 2026-09-14..2026-10-05, the whole history, 3 weeks)
 evidence_sources: git + gh (titusandronicu/energy-analyser)
@@ -189,3 +190,13 @@ Read in this order; each is a path that exists at HEAD.
   6. The lab consumer of `/api/ingest` in homelab-2 is `unknown (external)`; contract drift on that side is invisible here.
   7. Observability audit fixes 4-9 (real readiness check, ingest rejection logging, lab heartbeat, auth message classification, startup config validation, log retention) have no change folder yet (inference).
   8. The dashboard shell has 4% test-file changes; its coverage rests on `scripts/smoke.mjs`.
+
+## 8. Addendum: changes since the snapshot (e334854..8c18ae5, 11 commits, 2026-10-05..2026-10-07)
+
+Sections 1-7 were not regenerated. This lists what moved so a reader does not take the snapshot for current.
+
+- **New capability: alert rules (10th).** The owner manages rules on `/dashboard/alerts` (`src/pages/api/alert-rules.ts`); a bearer-token route `POST /api/alerts/evaluate` (`TOKEN_AUTH_ROUTES`, like ingest) runs the evaluator from a VPS service and sends Telegram messages (`src/lib/services/telegram.ts`). Tables and RLS in `20261007090000_alert_rules.sql` and `20261007120000_alert_rules_review_fixes.sql`. It reads the ingest data, so it sits downstream of the push boundary risk zone. Not yet scored for buzz or criticality.
+- **Push boundary (risk zone 1) changed shape.** The refactor landed: `ingest_push` is split into per-section helpers in a non-exposed `ingest` schema, and `ingest_token_ok` checks the token first (`20261006120000`, `20261006130000`). Section 4's description of it as "redefined in five migrations" is now historical.
+- **New test layers.** Playwright e2e (`tests/e2e/`, alert rules page) and a larger integration suite (`tests/integration/`: golden replay, retention, boundary, access abuse, alert rules, evaluate).
+- **Still true:** no SQL import graph, one author, three weeks of history. Unknown 7 (observability fixes) is not re-checked.
+- **To regenerate fully:** re-run the evidence scripts in `context/map/.work/` from HEAD and re-rank with alert rules included.
