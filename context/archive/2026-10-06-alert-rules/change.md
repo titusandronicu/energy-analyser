@@ -1,10 +1,10 @@
 ---
 change_id: alert-rules
 title: Owner-managed alert rules with Telegram notifications
-status: impl_reviewed
+status: archived
 created: 2026-10-06
-updated: 2026-10-06
-archived_at: null
+updated: 2026-10-07
+archived_at: 2026-10-07T13:12:25Z
 ---
 
 ## Notes
