@@ -3,7 +3,7 @@ project: energy-analyser
 version: 2
 status: draft
 created: 2026-09-23
-updated: 2026-10-06
+updated: 2026-10-07
 prd_version: 3
 main_goal: speed
 top_blocker: time
@@ -497,3 +497,4 @@ Foundations below assume these are present and do NOT re-scaffold them.
 - **S-17: user can see a good / neutral / bad rating for each completed day and month in the calendar, based on self-sufficiency against a norm (the season-adjusted one when a year of history exists, otherwise the recent trailing one, said plainly on the card), with the basis stated and no advice.** — Archived 2026-09-30 → `context/archive/2026-09-30-period-ratings/`. Lesson: —.
 - **S-19: user can add a note to a calendar day, see it on that day and see which days in a month have notes, and edit or delete it.** — Archived 2026-10-01 → `context/archive/2026-10-01-day-notes/`. Lesson: —.
 - **S-18: user can read on the dashboard a short plain-language explanation of what today's figures mean, and in the calendar the home lab's summary of what happened on a completed day or in a completed month, next to its rating.** — Archived 2026-10-01 → `context/archive/2026-10-01-period-summaries/`. Lesson: —.
+- **F-07: (foundation) a Playwright test drives the alert-rules page (create, edit, switch off, delete, invalid and duplicate) against a local Supabase stack and runs in CI as a non-required job.** — Archived 2026-10-07 → `context/archive/2026-10-06-e2e-alert-rules/`. Lesson: —.

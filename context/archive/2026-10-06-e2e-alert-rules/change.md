@@ -1,10 +1,10 @@
 ---
 change_id: e2e-alert-rules
 title: First browser e2e test: the owner manages an alert rule
-status: impl_reviewed
+status: archived
 created: 2026-10-06
-updated: 2026-10-06
-archived_at: null
+updated: 2026-10-07
+archived_at: 2026-10-07T13:12:12Z
 ---
 
 ## Notes
