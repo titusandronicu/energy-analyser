@@ -3,9 +3,9 @@ import { periodDays } from "@/lib/calendar/period";
 import { edgePointsLabel } from "@/lib/format/edge-percent";
 import { formatPeriod } from "@/lib/format/period";
 import type { StatusTone } from "@/lib/format/status";
-import { kwhLabel, oneDecimal } from "@/lib/format/values";
+import { capitalize, kwhLabel, oneDecimal } from "@/lib/format/values";
 import { addDays } from "@/lib/format/warsaw-time";
-import { isCompleteDay, kwh } from "@/lib/services/complete-day";
+import { byDay, isCompleteDay, kwh } from "@/lib/services/complete-day";
 import {
   crossesSensorChange,
   SENSOR_CHANGE_DAY,
@@ -97,14 +97,9 @@ export type PeriodRating =
   // Not rated at all (today, the future, incomplete days, the current month): "Bez oceny", and the reason says why.
   | { kind: "none"; tone: StatusTone; word: string; reason: string; basis: string };
 
-// "brak danych" → "Brak danych".
-function capitalized(text: string): string {
-  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
-}
-
 // A slot with nothing to rate: the grey "Bez oceny" badge and the reason as a sentence.
 export function notRated(reason: string): PeriodRating {
-  return { kind: "none", tone: "insufficient", word: NOT_RATED_WORD, reason, basis: `${capitalized(reason)}.` };
+  return { kind: "none", tone: "insufficient", word: NOT_RATED_WORD, reason, basis: `${capitalize(reason)}.` };
 }
 
 // 1 − import ÷ use in percent for a complete day with use above 0; "inconsistent" when the import exceeds the use;
@@ -148,10 +143,6 @@ function rangeOf(periodLabel: string): string {
 // "9 dni: 5–20 września" → "9 dni (5–20 września)".
 function countWithRange(periodLabel: string): string {
   return `${periodLabel.slice(0, periodLabel.indexOf(": "))} (${rangeOf(periodLabel)})`;
-}
-
-function byDay(rows: readonly DailyEnergyRow[]): Map<string, DailyEnergyRow> {
-  return new Map(rows.map((row) => [row.day, row]));
 }
 
 function rateDayIn(day: string, rows: Map<string, DailyEnergyRow>, today: string): PeriodRating {

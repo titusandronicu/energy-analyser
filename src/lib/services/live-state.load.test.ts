@@ -5,5 +5,5 @@ import { expect, it } from "vitest";
 // which Stryker's Vitest runner reports as a surviving mutant rather than a killed one.
 it("initialises its number formatter on import", async () => {
   const mod = await import("./live-state");
-  expect(mod.formatAge(0)).toBe("0 min");
+  expect(mod.toLiveStateView(null, new Date()).status.tone).toBe("insufficient");
 });

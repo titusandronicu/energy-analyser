@@ -294,12 +294,12 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Automated
 
-- [x] 1.1 Guard table passes against the OLD copies before the move: `npm run test:integration -- db-url-guard`
-- [x] 1.2 Same table passes after the move: `npm run test:integration -- db-url-guard`
-- [x] 1.3 `grep -rn "LOCAL_HOSTS" tests` returns exactly one definition (in `tests/support/local-guards.ts`)
-- [x] 1.4 Lint and types pass: `npm run lint` and `npx astro check`
-- [x] 1.5 Unit tests pass: `npm test`
-- [x] 1.6 E2E config still loads: `npx playwright test --list`
+- [x] 1.1 Guard table passes against the OLD copies before the move: `npm run test:integration -- db-url-guard` — 11727ea
+- [x] 1.2 Same table passes after the move: `npm run test:integration -- db-url-guard` — 11727ea
+- [x] 1.3 `grep -rn "LOCAL_HOSTS" tests` returns exactly one definition (in `tests/support/local-guards.ts`) — 11727ea
+- [x] 1.4 Lint and types pass: `npm run lint` and `npx astro check` — 11727ea
+- [x] 1.5 Unit tests pass: `npm test` — 11727ea
+- [x] 1.6 E2E config still loads: `npx playwright test --list` — 11727ea
 
 #### Manual
 
@@ -310,12 +310,12 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Automated
 
-- [ ] 2.1 Unit tests pass with no assertion edits: `npm test`
-- [ ] 2.2 Lint and types pass: `npm run lint` and `npx astro check`
-- [ ] 2.3 Build passes: `npm run build`
-- [ ] 2.4 Contract schema unchanged: `npm run contract:export` leaves `git diff --stat docs/ingest` empty
-- [ ] 2.5 `grep -rn "function capitali" src` shows one definition
-- [ ] 2.6 `grep -rn "tone: \"insufficient\", label: \"\"" src` shows only `NO_STATUS`
+- [x] 2.1 Unit tests pass with no assertion edits: `npm test`
+- [x] 2.2 Lint and types pass: `npm run lint` and `npx astro check`
+- [x] 2.3 Build passes: `npm run build`
+- [x] 2.4 Contract schema unchanged: `npm run contract:export` leaves `git diff --stat docs/ingest` empty
+- [x] 2.5 `grep -rn "function capitali" src` shows one definition
+- [x] 2.6 `grep -rn "tone: \"insufficient\", label: \"\"" src` shows only `NO_STATUS`
 - [ ] 2.7 Integration suite passes in CI: `npm run test:integration`
 
 #### Manual

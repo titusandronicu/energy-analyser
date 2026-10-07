@@ -13,8 +13,7 @@ import {
 } from "@/lib/calendar/period";
 import type { MonthGroup } from "@/lib/bars";
 import { formatPeriod } from "@/lib/format/period";
-import type { Status } from "@/lib/format/status";
-import { kwhLabel } from "@/lib/format/values";
+import { capitalize, kwhLabel } from "@/lib/format/values";
 import {
   addDays,
   dayMonthYear,
@@ -24,7 +23,7 @@ import {
   warsawHour,
   warsawParts,
 } from "@/lib/format/warsaw-time";
-import { isCompleteDay, kwh } from "@/lib/services/complete-day";
+import { byDay, isCompleteDay, kwh } from "@/lib/services/complete-day";
 import { dailySeries, type DailySeries } from "@/lib/services/daily-series";
 import { SENSOR_CHANGE_DAY, SENSOR_DIRECTION_CHANGED_ON } from "@/lib/services/grid-sensor";
 import { MIN_RANKED_DAYS } from "@/lib/services/hourly-usage";
@@ -87,14 +86,6 @@ export const RATING_EXPLANATION = `Dzień jest porównywany z normą domu: media
 
 // A running month's rating slot still says why it is not rated, under the grey "Bez oceny" badge.
 export const MONTH_NOT_RATED = `${MONTH_RUNNING} — oceniamy tylko zakończone miesiące`;
-
-// The views' badges rate nothing, so they keep the neutral tone.
-export const NEUTRAL: Status = { tone: "insufficient", label: "" };
-
-// "brak danych" → "Brak danych", for badges and short labels.
-export function capitalize(text: string): string {
-  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
-}
 
 // "brak danych" → "Brak danych.", for a view-model phrase shown as a sentence.
 export function sentence(text: string): string {
@@ -323,10 +314,6 @@ export function defaultPeriodRange(today: string): { first: string; last: string
 export function ratedPeriodRange(p: CalendarPeriod): { first: string; last: string } {
   const { first, last } = periodBounds(p);
   return { first: rowsNeededFrom(first), last };
-}
-
-function byDay(rows: readonly DailyEnergyRow[]): Map<string, DailyEnergyRow> {
-  return new Map(rows.map((row) => [row.day, row]));
 }
 
 function dayStatus(day: string, row: DailyEnergyRow | undefined, today: string): DayStatus {

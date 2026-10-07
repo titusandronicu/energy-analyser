@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DailyEnergyRow, LiveStateRow } from "@/types";
 import { asNumber, asRecord, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
+import { formatAge } from "@/lib/format/age";
 import { TONE_WORD } from "@/lib/format/status";
 import type { Status, StatusTone } from "@/lib/format/status";
 import { addDays, formatDayMonth, warsawParts } from "@/lib/format/warsaw-time";
@@ -56,9 +57,6 @@ export const LOAD_RATE_FROM_HOUR = 6;
 export const DAILY_ROW_MAX_LAG_MS = LIVE_STALE_AFTER_MS;
 // Absorbs floating point error so an exact line stays on the milder side.
 const EPSILON = 1e-9;
-const MINUTE_MS = 60 * 1000;
-const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
 
 export type BatteryChargeLevel = "full" | "medium" | "low" | "warning";
 
@@ -335,15 +333,6 @@ function homeVerdict(
   if (ratio > 1 + FAR_ABOVE_THRESHOLD + EPSILON) return verdict("problem", detail, explanation);
   if (ratio > 1 + STATUS_THRESHOLD + EPSILON) return verdict("watch", detail, explanation);
   return verdict("good", detail, explanation);
-}
-
-// "5 min" under an hour, "2 godz." under a day, "3 dni" beyond. A capture time in the future counts as 0.
-export function formatAge(ageMs: number): string {
-  const age = Math.max(0, ageMs);
-  if (age < HOUR_MS) return `${String(Math.floor(age / MINUTE_MS))} min`;
-  if (age < DAY_MS) return `${String(Math.floor(age / HOUR_MS))} godz.`;
-  const days = Math.floor(age / DAY_MS);
-  return days === 1 ? "1 dzień" : `${String(days)} dni`;
 }
 
 // Staleness wins over degraded: an old snapshot says nothing about the source's health now. Exactly at a line is

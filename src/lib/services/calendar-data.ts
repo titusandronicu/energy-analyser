@@ -9,12 +9,15 @@ import { queryError } from "@/lib/query-error";
 // full page means the list may have been cut.
 export const RECOMMENDATION_TIMES_LIMIT = 1000;
 
+// The columns of a daily_energy row, as DailyEnergyRow reads them.
+export const DAILY_COLUMNS = "day, pv_kwh, load_kwh, grid_import_kwh, grid_export_kwh, pv_forecast_kwh";
+
 // Daily totals for the Warsaw days `from` to `to` inclusive (day keys), oldest first. A month is at most 31 rows and a
 // quarter 92.
 export async function loadDailyRange(client: SupabaseClient, from: string, to: string): Promise<DailyEnergyRow[]> {
   const { data, error } = await client
     .from("daily_energy")
-    .select("day, pv_kwh, load_kwh, grid_import_kwh, grid_export_kwh, pv_forecast_kwh")
+    .select(DAILY_COLUMNS)
     .gte("day", from)
     .lte("day", to)
     .order("day", { ascending: true })

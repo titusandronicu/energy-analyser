@@ -1,16 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RecommendationRow } from "@/types";
+import { CLOCK_SKEW_MS, formatAge } from "@/lib/format/age";
 import type { Status, StatusTone } from "@/lib/format/status";
 import { asRecord, kwhLabel } from "@/lib/format/values";
 import { addDays, formatDayMonth, formatWarsawDateTime, warsawParts } from "@/lib/format/warsaw-time";
-import { formatAge } from "@/lib/services/live-state";
 import { queryError } from "@/lib/query-error";
 
 // The lab narrates roughly hourly; two missed runs make the advice stale.
 export const STALE_AFTER_MS = 2 * 60 * 60 * 1000;
 // A generation time ahead of the app's clock by more than this is a producer clock error, not fresh advice. The same
 // 5-minute skew the bill forecast and the ingest contract allow.
-export const FUTURE_SKEW_MS = 5 * 60 * 1000;
+export const FUTURE_SKEW_MS = CLOCK_SKEW_MS;
 // The app stores forecasts from this Warsaw day on; certainty can only be computed from that history (S-11).
 export const FORECAST_HISTORY_START = "2026-09-27";
 

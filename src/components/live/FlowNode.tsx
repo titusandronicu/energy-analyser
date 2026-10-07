@@ -1,5 +1,6 @@
 import { CircleCheck, OctagonAlert, TriangleAlert, type LucideIcon } from "lucide-react";
 import type { StatusTone } from "@/lib/format/status";
+import { capitalize } from "@/lib/format/values";
 import type { FlowNodeId } from "@/lib/flow-connector-state";
 import type { NodeVerdict } from "@/lib/services/live-state";
 import { cn } from "@/lib/utils";
@@ -79,14 +80,10 @@ interface FlowNodeProps {
   onSelect: (id: NodeId) => void;
 }
 
-export function capitalise(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
 // The chip merges the verdict word and its detail in one line, as in the artboards; no verdict is the neutral chip.
 export function chipFor(verdict: NodeVerdict | null): { tone: StatusTone; word: string } {
   if (!verdict) return { tone: "insufficient", word: NO_VERDICT_WORD };
-  const word = capitalise(verdict.word);
+  const word = capitalize(verdict.word);
   return { tone: verdict.tone, word: verdict.detail ? `${word} · ${verdict.detail}` : word };
 }
 
@@ -113,7 +110,7 @@ export function FlowNode({
       type="button"
       data-node-id={id}
       aria-pressed={selected}
-      aria-label={`${label}: ${spoken}${verdict ? `, ${capitalise(verdict.word)}, ${verdict.detail}` : ""}`}
+      aria-label={`${label}: ${spoken}${verdict ? `, ${capitalize(verdict.word)}, ${verdict.detail}` : ""}`}
       onClick={() => {
         onSelect(id);
       }}

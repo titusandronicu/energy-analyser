@@ -1,7 +1,7 @@
+import { CLOCK_SKEW_MS, formatAge, HOUR_MS, MINUTE_MS } from "@/lib/format/age";
 import { plnLabel } from "@/lib/format/values";
 import { ALERT_KIND_LABELS, type AlertKind } from "@/lib/services/alert-rules";
 import { toBillForecastView } from "@/lib/services/bill-forecast";
-import { formatAge } from "@/lib/services/live-state";
 import type { BillForecastRow } from "@/types";
 
 // Pure evaluation of the alert rules: from the snapshot alerts_snapshot returns and `now`, what each enabled rule's
@@ -10,10 +10,7 @@ import type { BillForecastRow } from "@/types";
 
 // A newest `captured_at` ahead of this app's clock by more than this is a producer clock error, so the rule cannot be
 // judged. The same 5 minutes the ingest contract allows; live-state.ts has no such rule, so it is stated here.
-export const LIVE_FUTURE_SKEW_MS = 5 * 60 * 1000;
-
-const MINUTE_MS = 60 * 1000;
-const HOUR_MS = 60 * MINUTE_MS;
+export const LIVE_FUTURE_SKEW_MS = CLOCK_SKEW_MS;
 
 export type AlertState = "ok" | "alarm";
 

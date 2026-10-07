@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DailyEnergyRow, PeriodSummaryRow, RecommendationRow } from "@/types";
+import { capitalize } from "@/lib/format/values";
 import { addDays } from "@/lib/format/warsaw-time";
 import {
   BEFORE_HISTORY,
@@ -7,7 +8,6 @@ import {
   buildDayView,
   buildMonthView,
   buildQuarterView,
-  capitalize,
   completeDaysText,
   dayCellName,
   dayCellWord,

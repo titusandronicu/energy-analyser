@@ -15,7 +15,8 @@ import {
 import { useState, type ReactNode } from "react";
 import { usePreference } from "@/components/hooks/usePreference";
 import { Button } from "@/components/ui/button";
-import { FlowNode, capitalise, chipFor, type NodeId } from "@/components/live/FlowNode";
+import { FlowNode, chipFor, type NodeId } from "@/components/live/FlowNode";
+import { capitalize } from "@/lib/format/values";
 import { VerdictChip } from "@/components/live/VerdictChip";
 import { useFlowLines } from "@/components/hooks/useFlowLines";
 import { connectorState } from "@/lib/flow-connector-state";
@@ -374,7 +375,7 @@ export function LiveFlow(props: LiveFlowProps) {
               {node.sub && <dd className="text-muted-foreground text-xs">{node.sub}</dd>}
               {node.verdict && (
                 <dd className="mt-1.5">
-                  <VerdictChip tone={node.verdict.tone} word={capitalise(node.verdict.word)} />
+                  <VerdictChip tone={node.verdict.tone} word={capitalize(node.verdict.word)} />
                   <span className="text-muted-foreground block text-xs">{node.verdict.detail}</span>
                 </dd>
               )}

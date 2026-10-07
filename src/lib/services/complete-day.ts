@@ -14,3 +14,8 @@ export function isCompleteDay(row: DailyEnergyRow | undefined, today: string): b
   if (row === undefined || row.day >= today) return false;
   return kwh(row.pv_kwh) !== null && kwh(row.load_kwh) !== null && kwh(row.grid_import_kwh) !== null;
 }
+
+// The rows keyed by day, for looking a day up.
+export function byDay(rows: readonly DailyEnergyRow[]): Map<string, DailyEnergyRow> {
+  return new Map(rows.map((row) => [row.day, row]));
+}

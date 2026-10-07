@@ -1,3 +1,5 @@
+import { capitalize } from "@/lib/format/values";
+
 // Shared status vocabulary for the dashboard cards. Every tone has a word, so the colour only supports the text.
 export type StatusTone = "good" | "watch" | "problem" | "insufficient";
 
@@ -18,8 +20,11 @@ export const TONE_WORD: Record<StatusTone, string> = {
 export function statusText(status: Status): string {
   const word = TONE_WORD[status.tone];
   const text = status.label ? `${word} · ${status.label}` : word;
-  return text.charAt(0).toUpperCase() + text.slice(1);
+  return capitalize(text);
 }
 
 // A card whose data failed to load: the page never throws a 500 for a data problem.
 export const LOAD_FAILED: Status = { tone: "problem", label: "nie udało się wczytać" };
+
+// A badge that rates nothing: the neutral tone with no detail ("za mało danych").
+export const NO_STATUS: Status = { tone: "insufficient", label: "" };
