@@ -294,60 +294,60 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Automated
 
-- [x] 1.1 Guard table passes against the OLD copies before the move: `npm run test:integration -- db-url-guard` — 11727ea
-- [x] 1.2 Same table passes after the move: `npm run test:integration -- db-url-guard` — 11727ea
-- [x] 1.3 `grep -rn "LOCAL_HOSTS" tests` returns exactly one definition (in `tests/support/local-guards.ts`) — 11727ea
-- [x] 1.4 Lint and types pass: `npm run lint` and `npx astro check` — 11727ea
-- [x] 1.5 Unit tests pass: `npm test` — 11727ea
-- [x] 1.6 E2E config still loads: `npx playwright test --list` — 11727ea
+- [x] 1.1 Guard table passes against the OLD copies before the move: `npm run test:integration -- db-url-guard` — 61e876a
+- [x] 1.2 Same table passes after the move: `npm run test:integration -- db-url-guard` — 61e876a
+- [x] 1.3 `grep -rn "LOCAL_HOSTS" tests` returns exactly one definition (in `tests/support/local-guards.ts`) — 61e876a
+- [x] 1.4 Lint and types pass: `npm run lint` and `npx astro check` — 61e876a
+- [x] 1.5 Unit tests pass: `npm test` — 61e876a
+- [x] 1.6 E2E config still loads: `npx playwright test --list` — 61e876a
 
 #### Manual
 
-- [x] 1.7 CI `integration` and `e2e` jobs are green on the PR (the local stack needs the owner's OK to start) — 47627b7
-- [ ] 1.8 Temporarily setting `SUPABASE_URL=http://example.com` makes `npm run test:integration` refuse with the same wording as before
+- [x] 1.7 CI `integration` and `e2e` jobs are green on the PR (the local stack needs the owner's OK to start) — 61e876a
+- [x] 1.8 Temporarily setting `SUPABASE_URL=http://example.com` makes `npm run test:integration` refuse with the same wording as before — 61e876a
 
 ### Phase 2: Shared time and status helpers in `src/lib`
 
 #### Automated
 
-- [x] 2.1 Unit tests pass with no assertion edits: `npm test` — 8e3bd4b
-- [x] 2.2 Lint and types pass: `npm run lint` and `npx astro check` — 8e3bd4b
-- [x] 2.3 Build passes: `npm run build` — 8e3bd4b
-- [x] 2.4 Contract schema unchanged: `npm run contract:export` leaves `git diff --stat docs/ingest` empty — 8e3bd4b
-- [x] 2.5 `grep -rn "function capitali" src` shows one definition — 8e3bd4b
-- [x] 2.6 `grep -rn "tone: \"insufficient\", label: \"\"" src` shows only `NO_STATUS` — 8e3bd4b
-- [x] 2.7 Integration suite passes in CI: `npm run test:integration` — 47627b7
+- [x] 2.1 Unit tests pass with no assertion edits: `npm test` — 61e876a
+- [x] 2.2 Lint and types pass: `npm run lint` and `npx astro check` — 61e876a
+- [x] 2.3 Build passes: `npm run build` — 61e876a
+- [x] 2.4 Contract schema unchanged: `npm run contract:export` leaves `git diff --stat docs/ingest` empty — 61e876a
+- [x] 2.5 `grep -rn "function capitali" src` shows one definition — 61e876a
+- [x] 2.6 `grep -rn "tone: \"insufficient\", label: \"\"" src` shows only `NO_STATUS` — 61e876a
+- [x] 2.7 Integration suite passes in CI: `npm run test:integration` — 61e876a
 
 #### Manual
 
-- [ ] 2.8 Dashboard and `/dashboard/history` render with the same status words and ages as before (compare against production or a pre-change screenshot)
+- [x] 2.8 Dashboard and `/dashboard/history` render with the same status words and ages as before (compare against production or a pre-change screenshot) — 61e876a
 
 ### Phase 3: API route and page-load helpers
 
 #### Automated
 
-- [x] 3.1 Unit tests pass, including the two new tests: `npm test` — 242746d
-- [x] 3.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build` — 242746d
-- [x] 3.3 Integration suite passes (ingest and alerts-evaluate paths): `npm run test:integration` — 47627b7
-- [x] 3.4 Smoke test passes against a local server and local Supabase only: `npm run smoke` — 47627b7
-- [x] 3.5 `grep -c "const supabase = getClient()"` over the three pages is lower than 14 in total; remaining sites listed in the commit message — 242746d
+- [x] 3.1 Unit tests pass, including the two new tests: `npm test` — 61e876a
+- [x] 3.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build` — 61e876a
+- [x] 3.3 Integration suite passes (ingest and alerts-evaluate paths): `npm run test:integration` — 61e876a
+- [x] 3.4 Smoke test passes against a local server and local Supabase only: `npm run smoke` — 61e876a
+- [x] 3.5 `grep -c "const supabase = getClient()"` over the three pages is lower than 14 in total; remaining sites listed in the commit message — 61e876a
 
 #### Manual
 
-- [ ] 3.6 `/dashboard`, `/dashboard/history` and `/dashboard/alerts` load with data as before
-- [ ] 3.7 `npm run test:e2e` (alert rules) passes on a local stack
+- [x] 3.6 `/dashboard`, `/dashboard/history` and `/dashboard/alerts` load with data as before — 61e876a
+- [x] 3.7 `npm run test:e2e` (alert rules) passes on a local stack — 61e876a
 
 ### Phase 4: Component dedupes
 
 #### Automated
 
-- [x] 4.1 `grep -rn "Spróbuj odświeżyć stronę" src` shows only `RefreshHint.astro` — 3930e3b
-- [x] 4.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build` — 3930e3b
-- [x] 4.3 Unit tests pass: `npm test` — 3930e3b
-- [x] 4.4 `grep -rn "SUBMIT_CLASS =" src` shows one definition — 3930e3b
-- [x] 4.5 E2E alert-rules passes in CI: `npm run test:e2e` — 47627b7
+- [x] 4.1 `grep -rn "Spróbuj odświeżyć stronę" src` shows only `RefreshHint.astro` — 61e876a
+- [x] 4.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build` — 61e876a
+- [x] 4.3 Unit tests pass: `npm test` — 61e876a
+- [x] 4.4 `grep -rn "SUBMIT_CLASS =" src` shows one definition — 61e876a
+- [x] 4.5 E2E alert-rules passes in CI: `npm run test:e2e` — 61e876a
 
 #### Manual
 
-- [ ] 4.6 Alerts page and a day-note form look unchanged (buttons, summary row)
-- [ ] 4.7 A card in a load-error state still shows the hint text and the same status badge
+- [x] 4.6 Alerts page and a day-note form look unchanged (buttons, summary row) — 61e876a
+- [x] 4.7 A card in a load-error state still shows the hint text and the same status badge — 61e876a
