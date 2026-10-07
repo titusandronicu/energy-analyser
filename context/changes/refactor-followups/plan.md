@@ -334,11 +334,11 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Automated
 
-- [x] 1.1 No inline capitalize copy remains: `grep -rn "charAt(0).toUpperCase" src` shows only `src/lib/format/values.ts`
-- [x] 1.2 `HOUR_MS` is no longer re-exported: `grep -n "export { HOUR_MS }" src/lib/format/warsaw-time.ts` finds nothing
-- [x] 1.3 New and moved tests pass, including `src/lib/format/age.test.ts`: `npm test`
-- [x] 1.4 Guard table passes with the new cases: `npm run test:integration -- db-url-guard`
-- [x] 1.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
+- [x] 1.1 No inline capitalize copy remains: `grep -rn "charAt(0).toUpperCase" src` shows only `src/lib/format/values.ts` — 0d0984d
+- [x] 1.2 `HOUR_MS` is no longer re-exported: `grep -n "export { HOUR_MS }" src/lib/format/warsaw-time.ts` finds nothing — 0d0984d
+- [x] 1.3 New and moved tests pass, including `src/lib/format/age.test.ts`: `npm test` — 0d0984d
+- [x] 1.4 Guard table passes with the new cases: `npm run test:integration -- db-url-guard` — 0d0984d
+- [x] 1.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 0d0984d
 
 #### Manual
 
@@ -348,11 +348,11 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Automated
 
-- [ ] 2.1 No duration constant is redefined in tests: `grep -rn "const \(MIN\|MINUTE\|HOUR\|DAY\)\(_MS\)\? = " src tests` shows only `src/lib/format/age.ts`, `src/lib/ingest/contract.ts` and `live-state.test.ts:342` (the day string)
-- [ ] 2.2 One seed-token declaration in tests: `grep -rn "local-dev-ingest-token-not-secret" tests` shows only `tests/integration/support/push.ts`
-- [ ] 2.3 `LibBadge` is gone: `grep -rn "LibBadge" src tests docs` finds nothing
-- [ ] 2.4 Unit tests pass: `npm test`
-- [ ] 2.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
+- [x] 2.1 No duration constant is redefined in tests: `grep -rn "const \(MIN\|MINUTE\|HOUR\|DAY\)\(_MS\)\? = " src tests` shows only `src/lib/format/age.ts`, `src/lib/ingest/contract.ts` and `live-state.test.ts:342` (the day string)
+- [x] 2.2 One seed-token declaration in tests: `grep -rn "local-dev-ingest-token-not-secret" tests` shows only `tests/integration/support/push.ts`
+- [x] 2.3 `LibBadge` is gone: `grep -rn "LibBadge" src tests docs` finds nothing
+- [x] 2.4 Unit tests pass: `npm test`
+- [x] 2.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
 - [ ] 2.6 Integration suite passes in CI: `npm run test:integration`
 
 #### Manual

@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@/lib/format/age";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { handleAlertsEvaluate } from "@/lib/services/alerts-evaluate";
 import { loadBillForecast, toBillForecastView } from "@/lib/services/bill-forecast";
@@ -15,8 +16,6 @@ import { anonClient, ownerClient, requireStack } from "./support/stack";
 // rule walks through alarm, no repeat, reminder, recovery and a failed send; another keeps its state when it cannot be
 // evaluated.
 
-const MIN = 60_000;
-const HOUR = 60 * MIN;
 const PLAN_RATE_HOURS = 1;
 
 type Owner = Awaited<ReturnType<typeof ownerClient>>;
@@ -173,13 +172,13 @@ describe("alerts evaluate: the real path with a fake Telegram", () => {
     expect(messagesFor(texts, billLabel)).toHaveLength(1);
     expect(messagesFor(texts, billLabel)[0]).toMatch(/^PRZYPOMNIENIE: /);
     const bill = await readRule(billLabel);
-    expect(Date.now() - Date.parse(bill.last_notified_at ?? "")).toBeLessThan(HOUR);
+    expect(Date.now() - Date.parse(bill.last_notified_at ?? "")).toBeLessThan(HOUR_MS);
   });
 
   it("alarms a stale live state, then sends one recovery when a fresh push arrives", async () => {
     // Twenty minutes on, the pushed state is past the 15-minute line (the forecast, 30-minute line, is still fresh).
     const stale = telegram();
-    await evaluate(stale.fake, later(20 * MIN));
+    await evaluate(stale.fake, later(20 * MINUTE_MS));
     expect(messagesFor(stale.texts, liveLabel)).toHaveLength(1);
     expect(messagesFor(stale.texts, liveLabel)[0]).toMatch(/^ALARM: /);
     expect((await readRule(liveLabel)).state).toBe("alarm");
@@ -195,7 +194,7 @@ describe("alerts evaluate: the real path with a fake Telegram", () => {
 
   it("keeps the state of a rule it cannot evaluate, records why and sends nothing for it", async () => {
     // The newest forecast was generated two hours ago: the bill rule cannot be judged.
-    const generatedAt = new Date(Date.now() - 2 * HOUR).toISOString();
+    const generatedAt = new Date(Date.now() - 2 * HOUR_MS).toISOString();
     expect(
       await push({ ...baseBody(nextCapturedAt()), bill_forecast: { ...billForecast(), generated_at: generatedAt } }),
     ).toEqual({ status: 201, body: { status: "created" } });
@@ -211,7 +210,7 @@ describe("alerts evaluate: the real path with a fake Telegram", () => {
   });
 
   it("retries a rule whose send failed on the next run", async () => {
-    const later20 = later(20 * MIN);
+    const later20 = later(20 * MINUTE_MS);
     const failing = telegram(500);
     await evaluate(failing.fake, later20);
 

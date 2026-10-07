@@ -3,7 +3,7 @@ import { handleIngest, type IngestResponse } from "@/lib/services/ingest";
 import { anonClient } from "./stack";
 
 // The public local/CI token from supabase/seed.sql.
-const SEED_TOKEN = "local-dev-ingest-token-not-secret";
+export const SEED_TOKEN = "local-dev-ingest-token-not-secret";
 
 let anon: ReturnType<typeof anonClient> | undefined;
 

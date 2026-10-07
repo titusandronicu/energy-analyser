@@ -21,12 +21,20 @@ export function anonClient() {
   return createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
+// A throwaway sign-up identity: unique per call, so parallel files and reruns never collide. The password meets the
+// local stack's rules.
+export function uniqueUser(prefix: string): { email: string; password: string } {
+  return {
+    email: `${prefix}-${String(Date.now())}-${Math.random().toString(36).slice(2, 10)}@example.com`,
+    password: `Integration-${Math.random().toString(36).slice(2, 12)}-Pw1!`,
+  };
+}
+
 // A fresh signed-up user. On a local stack every new user becomes an owner through the seed trigger
 // (supabase/seed.sql), so the returned client can read the owner-only tables and views.
 export async function ownerClient() {
   const client = anonClient();
-  const email = `integration-${String(Date.now())}-${Math.random().toString(36).slice(2, 10)}@example.com`;
-  const password = `Integration-${Math.random().toString(36).slice(2, 12)}-Pw1!`;
+  const { email, password } = uniqueUser("integration");
   const { data, error } = await client.auth.signUp({ email, password });
   if (error) throw new Error(`owner sign-up failed: ${error.message}`);
   if (!data.session) {

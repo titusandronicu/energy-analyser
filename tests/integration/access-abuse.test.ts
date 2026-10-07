@@ -12,7 +12,7 @@ import {
   revokeToken,
   withPrivileged,
 } from "./support/privileged";
-import { push } from "./support/push";
+import { push, SEED_TOKEN } from "./support/push";
 import { anonClient, ownerClient, requireStack } from "./support/stack";
 
 // Risk #6: a signed-out, anon or non-owner client reads and writes nothing, and the ingest token rules hold. Every test
@@ -27,7 +27,6 @@ type Owner = Awaited<ReturnType<typeof ownerClient>>;
 const CREATED = { status: 201, body: { status: "created" } };
 
 // The public local/CI token from supabase/seed.sql (the same one tests/integration/support/push.ts uses).
-const SEED_TOKEN = "local-dev-ingest-token-not-secret";
 
 const instant = (value: unknown): number => Date.parse(typeof value === "string" ? value : "");
 

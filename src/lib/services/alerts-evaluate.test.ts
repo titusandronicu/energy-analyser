@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@/lib/format/age";
 import { describe, expect, it, vi } from "vitest";
 import { handleAlertsEvaluate, type AlertsEvaluateDeps, type AlertsRpcResult } from "./alerts-evaluate";
 
@@ -9,7 +10,6 @@ const now = new Date("2026-09-23T10:00:00Z");
 const TOKEN = "SYNTHETIC-alerts-token";
 const BOT = "123456:SYNTHETIC-bot-token";
 const CHAT = "-1009999";
-const HOUR = 3_600_000;
 
 const rule = (overrides: Record<string, unknown> = {}) => ({
   id: 1,
@@ -21,7 +21,7 @@ const rule = (overrides: Record<string, unknown> = {}) => ({
   last_notified_at: null,
   ...overrides,
 });
-const staleLive = { captured_at: new Date(now.getTime() - 2 * HOUR).toISOString(), received_at: "x" };
+const staleLive = { captured_at: new Date(now.getTime() - 2 * HOUR_MS).toISOString(), received_at: "x" };
 const freshLive = { captured_at: new Date(now.getTime() - 60_000).toISOString(), received_at: "x" };
 
 function snapshotOf(rules: unknown[], liveRow: unknown = staleLive) {
@@ -109,7 +109,12 @@ describe("handleAlertsEvaluate", () => {
     const d = build({
       snapshot: snapshotOf([
         rule({ id: 1, threshold: 300, state: "ok" }),
-        rule({ id: 2, threshold: 31, state: "alarm", last_notified_at: new Date(now.getTime() - HOUR).toISOString() }),
+        rule({
+          id: 2,
+          threshold: 31,
+          state: "alarm",
+          last_notified_at: new Date(now.getTime() - HOUR_MS).toISOString(),
+        }),
       ]),
     });
 

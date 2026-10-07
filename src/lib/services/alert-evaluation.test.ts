@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@/lib/format/age";
 import { describe, expect, it } from "vitest";
 import type { BillForecastRow } from "@/types";
 import {
@@ -14,8 +15,6 @@ import {
 // for another month) is "unknown", and the action table decides the message.
 
 const now = new Date("2026-09-23T10:00:00Z");
-const MIN = 60_000;
-const HOUR = 60 * MIN;
 const ago = (ms: number) => new Date(now.getTime() - ms).toISOString();
 
 function rule(overrides: Partial<SnapshotRule> = {}): SnapshotRule {
@@ -55,14 +54,14 @@ function forecastRow(overrides: Record<string, unknown> = {}): BillForecastRow {
     credit_left_kwh: 0,
     settlement: { reference_period: "2026-08", reference_lag_months: 0, export_ratio: 0.809 },
     pricing: {},
-    generated_at: ago(5 * MIN),
+    generated_at: ago(5 * MINUTE_MS),
     ...overrides,
   };
-  return { captured_at: ago(5 * MIN), received_at: ago(5 * MIN), bill_forecast: body };
+  return { captured_at: ago(5 * MINUTE_MS), received_at: ago(5 * MINUTE_MS), bill_forecast: body };
 }
 
 function snapshot(overrides: Partial<AlertSnapshot> = {}): AlertSnapshot {
-  return { rules: [], live: live(MIN), forecast: forecastRow(), ...overrides };
+  return { rules: [], live: live(MINUTE_MS), forecast: forecastRow(), ...overrides };
 }
 
 const billRule = (overrides: Partial<SnapshotRule> = {}) =>
@@ -70,19 +69,22 @@ const billRule = (overrides: Partial<SnapshotRule> = {}) =>
 
 describe("evaluateRule: live_stale", () => {
   it("is ok below the line", () => {
-    expect(evaluateRule(rule(), snapshot({ live: live(29 * MIN) }), now)).toEqual({ status: "ok", observed: "29 min" });
+    expect(evaluateRule(rule(), snapshot({ live: live(29 * MINUTE_MS) }), now)).toEqual({
+      status: "ok",
+      observed: "29 min",
+    });
   });
 
   it("is ok exactly on the line", () => {
-    expect(evaluateRule(rule(), snapshot({ live: live(30 * MIN) }), now).status).toBe("ok");
+    expect(evaluateRule(rule(), snapshot({ live: live(30 * MINUTE_MS) }), now).status).toBe("ok");
   });
 
   it("is an alarm one millisecond past the line", () => {
-    expect(evaluateRule(rule(), snapshot({ live: live(30 * MIN + 1) }), now).status).toBe("alarm");
+    expect(evaluateRule(rule(), snapshot({ live: live(30 * MINUTE_MS + 1) }), now).status).toBe("alarm");
   });
 
   it("quotes the age in hours once it is past an hour", () => {
-    expect(evaluateRule(rule(), snapshot({ live: live(3 * HOUR) }), now)).toEqual({
+    expect(evaluateRule(rule(), snapshot({ live: live(3 * HOUR_MS) }), now)).toEqual({
       status: "alarm",
       observed: "3 godz.",
     });
@@ -140,7 +142,11 @@ describe("evaluateRule: bill_above", () => {
   });
 
   it("is unknown with the view's reason for a stale forecast", () => {
-    const outcome = evaluateRule(billRule(), snapshot({ forecast: forecastRow({ generated_at: ago(31 * MIN) }) }), now);
+    const outcome = evaluateRule(
+      billRule(),
+      snapshot({ forecast: forecastRow({ generated_at: ago(31 * MINUTE_MS) }) }),
+      now,
+    );
     expect(outcome).toEqual({
       status: "unknown",
       reason: "Ostatnie wyliczenie ma już 31 min — kwota z niego byłaby nieaktualna.",
@@ -200,8 +206,8 @@ describe("evaluateRule: bill_above", () => {
 
 describe("evaluateAlerts: the action table", () => {
   // live(1 min) is ok for a 30-minute rule; live(2 h) is an alarm.
-  const okSnapshot = (rules: SnapshotRule[]) => snapshot({ rules, live: live(MIN) });
-  const alarmSnapshot = (rules: SnapshotRule[]) => snapshot({ rules, live: live(2 * HOUR) });
+  const okSnapshot = (rules: SnapshotRule[]) => snapshot({ rules, live: live(MINUTE_MS) });
+  const alarmSnapshot = (rules: SnapshotRule[]) => snapshot({ rules, live: live(2 * HOUR_MS) });
 
   it("ok -> ok sends nothing", () => {
     const [decision] = evaluateAlerts(okSnapshot([rule({ state: "ok" })]), now);
@@ -218,7 +224,7 @@ describe("evaluateAlerts: the action table", () => {
   });
 
   it("alarm -> ok sends the recovery message", () => {
-    const [decision] = evaluateAlerts(okSnapshot([rule({ state: "alarm", last_notified_at: ago(MIN) })]), now);
+    const [decision] = evaluateAlerts(okSnapshot([rule({ state: "alarm", last_notified_at: ago(MINUTE_MS) })]), now);
     expect(decision.notification).toEqual({
       type: "recovery",
       text: "WRÓCIŁO DO NORMY: Dane z domu są nieaktualne\nOstatnie dane z domu: 1 min (próg: 30 min).",
@@ -226,12 +232,12 @@ describe("evaluateAlerts: the action table", () => {
   });
 
   it("alarm -> alarm inside the interval sends nothing", () => {
-    const stored = rule({ state: "alarm", renotify_hours: 6, last_notified_at: ago(6 * HOUR - 1) });
+    const stored = rule({ state: "alarm", renotify_hours: 6, last_notified_at: ago(6 * HOUR_MS - 1) });
     expect(evaluateAlerts(alarmSnapshot([stored]), now)[0].notification).toBeNull();
   });
 
   it("alarm -> alarm exactly at the interval sends a reminder", () => {
-    const stored = rule({ state: "alarm", renotify_hours: 6, last_notified_at: ago(6 * HOUR) });
+    const stored = rule({ state: "alarm", renotify_hours: 6, last_notified_at: ago(6 * HOUR_MS) });
     expect(evaluateAlerts(alarmSnapshot([stored]), now)[0].notification?.type).toBe("reminder");
   });
 
@@ -246,12 +252,12 @@ describe("evaluateAlerts: the action table", () => {
   });
 
   it("the reminder interval is the rule's own", () => {
-    const stored = rule({ state: "alarm", renotify_hours: 1, last_notified_at: ago(HOUR) });
+    const stored = rule({ state: "alarm", renotify_hours: 1, last_notified_at: ago(HOUR_MS) });
     expect(evaluateAlerts(alarmSnapshot([stored]), now)[0].notification?.type).toBe("reminder");
   });
 
   it.each<["ok" | "alarm"]>([["ok"], ["alarm"]])("unknown with a stored %s state sends nothing", (state) => {
-    const stored = billRule({ state, last_notified_at: ago(48 * HOUR) });
+    const stored = billRule({ state, last_notified_at: ago(48 * HOUR_MS) });
     const [decision] = evaluateAlerts(snapshot({ rules: [stored], forecast: null }), now);
     expect(decision.outcome.status).toBe("unknown");
     expect(decision.notification).toBeNull();
@@ -259,7 +265,7 @@ describe("evaluateAlerts: the action table", () => {
 
   it("decides every rule on its own", () => {
     const decisions = evaluateAlerts(
-      snapshot({ rules: [rule({ id: 1 }), billRule({ id: 2, threshold: 100 })], live: live(MIN) }),
+      snapshot({ rules: [rule({ id: 1 }), billRule({ id: 2, threshold: 100 })], live: live(MINUTE_MS) }),
       now,
     );
     expect(decisions.map((d) => [d.rule.id, d.outcome.status, d.notification?.type ?? null])).toEqual([
@@ -292,7 +298,7 @@ describe("buildMessage", () => {
       },
     });
 
-    const decisions = evaluateAlerts(snapshot({ rules: [broken, rule({ id: 2 })], live: live(2 * HOUR) }), now);
+    const decisions = evaluateAlerts(snapshot({ rules: [broken, rule({ id: 2 })], live: live(2 * HOUR_MS) }), now);
 
     expect(decisions[0].outcome).toEqual({ status: "unknown", reason: "Nie udało się ocenić tej reguły." });
     expect(decisions[0].notification).toBeNull();

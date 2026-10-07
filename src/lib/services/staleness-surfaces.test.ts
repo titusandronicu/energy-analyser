@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@/lib/format/age";
 import { describe, expect, it } from "vitest";
 import type { BillForecastRow, LiveStateRow, PeriodSummaryRow, RecommendationRow } from "@/types";
 import { FORECAST_FUTURE_SKEW_MS, toBillForecastView } from "./bill-forecast";
@@ -14,8 +15,6 @@ import { FUTURE_SKEW_MS, toRecommendationView } from "./recommendation";
 
 // The app's clock is fixed: 12:00 UTC is 14:00 in Warsaw (CEST, UTC+2) on 23 September 2026. No fake timers.
 const NOW = new Date("2026-09-23T12:00:00Z");
-const MINUTE = 60 * 1000;
-const HOUR = 60 * MINUTE;
 
 // A positive age is in the past, a negative age is ahead of the app's clock.
 const timeAt = (ageMs: number) => new Date(NOW.getTime() - ageMs).toISOString();
@@ -107,31 +106,31 @@ const surfaces = {
 const rows: [keyof typeof surfaces, number, Outcome, string | null][] = [
   // Live state: 15 minutes is stale (watch), 2 hours is a problem. Both lines are inclusive on the milder side.
   ["live state", 0, "current", "aktualne"],
-  ["live state", 15 * MINUTE, "current", "aktualne"],
-  ["live state", 15 * MINUTE + 1, "watch", "dane sprzed 15 min"],
-  ["live state", 2 * HOUR, "watch", "dane sprzed 2 godz."],
-  ["live state", 2 * HOUR + 1, "problem", "brak nowych danych od 2 godz."],
+  ["live state", 15 * MINUTE_MS, "current", "aktualne"],
+  ["live state", 15 * MINUTE_MS + 1, "watch", "dane sprzed 15 min"],
+  ["live state", 2 * HOUR_MS, "watch", "dane sprzed 2 godz."],
+  ["live state", 2 * HOUR_MS + 1, "problem", "brak nowych danych od 2 godz."],
   // The contract guards captured_at against the future only at receipt and within 5 minutes, and the live view has no
   // future guard of its own, so the only future case that can occur is one within the 5-minute skew: current.
-  ["live state", -5 * MINUTE, "current", "aktualne"],
+  ["live state", -5 * MINUTE_MS, "current", "aktualne"],
 
   // Recommendation: 2 hours.
-  ["recommendation", 2 * HOUR, "current", "aktualna"],
-  ["recommendation", 2 * HOUR + 1, "watch", "sprzed 2 godz."],
-  ["recommendation", -5 * MINUTE, "current", "aktualna"],
-  ["recommendation", -(5 * MINUTE + 1), "problem", "czas z przyszłości"],
+  ["recommendation", 2 * HOUR_MS, "current", "aktualna"],
+  ["recommendation", 2 * HOUR_MS + 1, "watch", "sprzed 2 godz."],
+  ["recommendation", -5 * MINUTE_MS, "current", "aktualna"],
+  ["recommendation", -(5 * MINUTE_MS + 1), "problem", "czas z przyszłości"],
 
   // Today summary: the recommendation's rule, 2 hours.
-  ["today summary", 2 * HOUR, "current", "aktualna"],
-  ["today summary", 2 * HOUR + 1, "watch", "sprzed 2 godz."],
-  ["today summary", -5 * MINUTE, "current", "aktualna"],
-  ["today summary", -(5 * MINUTE + 1), "problem", "czas z przyszłości"],
+  ["today summary", 2 * HOUR_MS, "current", "aktualna"],
+  ["today summary", 2 * HOUR_MS + 1, "watch", "sprzed 2 godz."],
+  ["today summary", -5 * MINUTE_MS, "current", "aktualna"],
+  ["today summary", -(5 * MINUTE_MS + 1), "problem", "czas z przyszłości"],
 
   // Bill forecast: 30 minutes stale, 5 minutes ahead of the clock a producer clock error. Both refuse the figure.
-  ["bill forecast", 30 * MINUTE, "current", null],
-  ["bill forecast", 30 * MINUTE + 1, "problem", "wyliczona 30 min temu"],
-  ["bill forecast", -5 * MINUTE, "current", null],
-  ["bill forecast", -(5 * MINUTE + 1), "problem", "czas wyliczenia z przyszłości"],
+  ["bill forecast", 30 * MINUTE_MS, "current", null],
+  ["bill forecast", 30 * MINUTE_MS + 1, "problem", "wyliczona 30 min temu"],
+  ["bill forecast", -5 * MINUTE_MS, "current", null],
+  ["bill forecast", -(5 * MINUTE_MS + 1), "problem", "czas wyliczenia z przyszłości"],
 ];
 
 describe("age-bearing surfaces at their edges", () => {
@@ -151,7 +150,7 @@ describe("age-bearing surfaces at their edges", () => {
   // other three surfaces. The contract refuses a future `captured_at` beyond 5 minutes at receipt, so this is only
   // reachable through a stored row that skipped it.
   it("KNOWN GAP: live state with a time more than 5 minutes ahead of the clock still reads current", () => {
-    const reading = liveState(-(5 * MINUTE + 1));
+    const reading = liveState(-(5 * MINUTE_MS + 1));
     expect(reading.outcome).toBe("current");
     expect(reading.isStale).toBe(false);
     // A future guard should flip this to a problem, as on the recommendation ("czas z przyszłości").
@@ -200,7 +199,7 @@ describe("a text from another Warsaw day", () => {
 });
 
 describe("the historical recommendation", () => {
-  it.each([0, 2 * HOUR + 1, 3 * 24 * HOUR, -(5 * MINUTE + 1)])(
+  it.each([0, 2 * HOUR_MS + 1, 3 * 24 * HOUR_MS, -(5 * MINUTE_MS + 1)])(
     "never reports stale, current or future-dated for a text %i ms old (negative: in the future)",
     (ageMs) => {
       const row: RecommendationRow = {
