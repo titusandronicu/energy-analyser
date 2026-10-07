@@ -310,12 +310,12 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Automated
 
-- [x] 2.1 Unit tests pass with no assertion edits: `npm test`
-- [x] 2.2 Lint and types pass: `npm run lint` and `npx astro check`
-- [x] 2.3 Build passes: `npm run build`
-- [x] 2.4 Contract schema unchanged: `npm run contract:export` leaves `git diff --stat docs/ingest` empty
-- [x] 2.5 `grep -rn "function capitali" src` shows one definition
-- [x] 2.6 `grep -rn "tone: \"insufficient\", label: \"\"" src` shows only `NO_STATUS`
+- [x] 2.1 Unit tests pass with no assertion edits: `npm test` — 8e3bd4b
+- [x] 2.2 Lint and types pass: `npm run lint` and `npx astro check` — 8e3bd4b
+- [x] 2.3 Build passes: `npm run build` — 8e3bd4b
+- [x] 2.4 Contract schema unchanged: `npm run contract:export` leaves `git diff --stat docs/ingest` empty — 8e3bd4b
+- [x] 2.5 `grep -rn "function capitali" src` shows one definition — 8e3bd4b
+- [x] 2.6 `grep -rn "tone: \"insufficient\", label: \"\"" src` shows only `NO_STATUS` — 8e3bd4b
 - [ ] 2.7 Integration suite passes in CI: `npm run test:integration`
 
 #### Manual
@@ -326,11 +326,11 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Automated
 
-- [ ] 3.1 Unit tests pass, including the two new tests: `npm test`
-- [ ] 3.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build`
+- [x] 3.1 Unit tests pass, including the two new tests: `npm test`
+- [x] 3.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build`
 - [ ] 3.3 Integration suite passes (ingest and alerts-evaluate paths): `npm run test:integration`
 - [ ] 3.4 Smoke test passes against a local server and local Supabase only: `npm run smoke`
-- [ ] 3.5 `grep -c "const supabase = getClient()"` over the three pages is lower than 14 in total; remaining sites listed in the commit message
+- [x] 3.5 `grep -c "const supabase = getClient()"` over the three pages is lower than 14 in total; remaining sites listed in the commit message
 
 #### Manual
 

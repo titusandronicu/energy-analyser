@@ -1,4 +1,5 @@
 import { validateIngestPayload, type IngestPayloadV1 } from "@/lib/ingest/contract";
+import { bearerToken } from "@/lib/services/bearer-token";
 
 export const MAX_INGEST_BODY_BYTES = 256 * 1024;
 
@@ -22,11 +23,6 @@ export interface IngestResponse {
 // One body for every token failure so callers can't tell missing, unknown and revoked apart.
 const UNAUTHORIZED: IngestResponse = { status: 401, body: { error: "unauthorized" } };
 const TOO_LARGE: IngestResponse = { status: 413, body: { error: "payload too large" } };
-
-function bearerToken(request: Request) {
-  const match = /^Bearer\s+(\S+)\s*$/i.exec(request.headers.get("Authorization") ?? "");
-  return match?.[1] ?? null;
-}
 
 // Reads at most `limit` bytes; returns null as soon as the body exceeds it, whatever Content-Length says.
 async function readBodyWithLimit(request: Request, limit: number) {

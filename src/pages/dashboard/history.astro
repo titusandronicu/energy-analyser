@@ -14,6 +14,7 @@ import { parsePeriod, periodBounds, periodInstants, periodLabel, type CalendarPe
 import { LOAD_FAILED } from "@/lib/format/status";
 import { warsawParts } from "@/lib/format/warsaw-time";
 import { orLoadError } from "@/lib/or-load-error";
+import { withClient } from "@/lib/load-with-client";
 import { pageClient } from "@/lib/page-load";
 import {
   loadDailyRange,
@@ -49,10 +50,7 @@ const getClient = pageClient(Astro.request.headers, Astro.cookies);
 function dailyRange(from: string, to: string): Promise<DailyEnergyRow[] | null> {
   return orLoadError(
     "history.daily-range",
-    async () => {
-      const supabase = getClient();
-      return supabase ? await loadDailyRange(supabase, from, to) : [];
-    },
+    () => withClient(getClient, (supabase) => loadDailyRange(supabase, from, to), []),
     log,
   );
 }
@@ -106,18 +104,16 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
     const [times, noteDays, summary] = await Promise.all([
       orLoadError(
         "history.month.recommendation-times",
-        async () => {
-          const supabase = getClient();
-          return supabase ? await loadRecommendationTimes(supabase, fromMs, toMs) : { times: [], truncated: false };
-        },
+        () =>
+          withClient(getClient, (supabase) => loadRecommendationTimes(supabase, fromMs, toMs), {
+            times: [],
+            truncated: false,
+          }),
         log,
       ),
       orLoadError(
         "history.month.note-days",
-        async () => {
-          const supabase = getClient();
-          return supabase ? await loadNoteDays(supabase, first, last) : [];
-        },
+        () => withClient(getClient, (supabase) => loadNoteDays(supabase, first, last), []),
         log,
       ),
       // Only a completed month has a text. A failed load shows no panel (the panel is decorative, so no error line).
@@ -157,19 +153,13 @@ async function loadPage(parsed: CalendarPeriod | "default"): Promise<PageData> {
       dailyRange(range.first, range.last),
       orLoadError(
         "history.day.recommendations",
-        async () => {
-          const supabase = getClient();
-          return supabase ? await loadRecommendationsForDay(supabase, fromMs, toMs) : [];
-        },
+        () => withClient(getClient, (supabase) => loadRecommendationsForDay(supabase, fromMs, toMs), []),
         log,
       ),
       // Wrapped, so orLoadError's null still means the note failed to load, not a day without one.
       orLoadError(
         "history.day.note",
-        async () => {
-          const supabase = getClient();
-          return { row: supabase ? await loadNoteForDay(supabase, day) : null };
-        },
+        async () => ({ row: await withClient(getClient, (supabase) => loadNoteForDay(supabase, day), null) }),
         log,
       ),
       // Only a completed day has a text. A failed load shows no panel (the panel is decorative, so no error line).

@@ -9,6 +9,7 @@ import { loadLatestRecommendation, toRecommendationView, type RecommendationView
 import { loadTodaySummary, toTodaySummaryView, type TodaySummaryView } from "@/lib/services/period-summary";
 import { loadDailyEnergy, toUsageInsightView, type UsageInsightView } from "@/lib/services/usage-insight";
 import { orLoadError } from "@/lib/or-load-error";
+import { withClient } from "@/lib/load-with-client";
 import { pageClient } from "@/lib/page-load";
 
 const { user, log } = Astro.locals;
@@ -21,10 +22,7 @@ const now = new Date();
 // card's load error and leaves the live card's PV and consumption verdicts unrated.
 const dailyRowsPromise = orLoadError(
   "dashboard.daily-energy",
-  async () => {
-    const supabase = getClient();
-    return supabase ? await loadDailyEnergy(supabase, now) : [];
-  },
+  () => withClient(getClient, (supabase) => loadDailyEnergy(supabase, now), []),
   log,
 );
 const [liveView, billView, usageView, view, todaySummary, hourlyView]: [
@@ -55,10 +53,7 @@ const [liveView, billView, usageView, view, todaySummary, hourlyView]: [
   ),
   orLoadError(
     "dashboard.bill-forecast",
-    async () => {
-      const supabase = getClient();
-      return toBillForecastView(supabase ? await loadBillForecast(supabase) : null, now);
-    },
+    async () => toBillForecastView(await withClient(getClient, loadBillForecast, null), now),
     log,
   ),
   orLoadError(
@@ -71,26 +66,21 @@ const [liveView, billView, usageView, view, todaySummary, hourlyView]: [
   ),
   orLoadError(
     "dashboard.recommendation",
-    async () => {
-      const supabase = getClient();
-      return toRecommendationView(supabase ? await loadLatestRecommendation(supabase) : null, now);
-    },
+    async () => toRecommendationView(await withClient(getClient, loadLatestRecommendation, null), now),
     log,
   ),
   orLoadError(
     "dashboard.today-summary",
-    async () => {
-      const supabase = getClient();
-      return toTodaySummaryView(supabase ? await loadTodaySummary(supabase, warsawParts(now).dayKey) : null, now);
-    },
+    async () =>
+      toTodaySummaryView(
+        await withClient(getClient, (supabase) => loadTodaySummary(supabase, warsawParts(now).dayKey), null),
+        now,
+      ),
     log,
   ),
   orLoadError(
     "dashboard.hourly-usage",
-    async () => {
-      const supabase = getClient();
-      return toHourlyUsageView(supabase ? await loadHourlyEnergy(supabase, now) : [], now);
-    },
+    async () => toHourlyUsageView(await withClient(getClient, (supabase) => loadHourlyEnergy(supabase, now), []), now),
     log,
   ),
 ]);
