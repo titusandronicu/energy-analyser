@@ -1,24 +1,31 @@
 import { createServerClient, parseCookieHeader } from "@supabase/ssr";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { AstroCookies } from "astro";
-import { APP_ORIGIN, SUPABASE_ANON_KEY, SUPABASE_URL } from "astro:env/server";
+import { APP_ENV, APP_ORIGIN, APP_VERSION, SUPABASE_ANON_KEY, SUPABASE_URL } from "astro:env/server";
+import { classifyAnonKey } from "@/lib/anon-key";
+import { createLogger } from "@/lib/logger";
 
+const log = createLogger({ version: APP_VERSION, environment: APP_ENV });
+let warnedUnexpectedKey = false;
+
+// Refuses a secret or service_role key, as it always has. A key that is neither a publishable key nor an anon JWT is
+// only reported, once per process and by class: this release finds out what production really uses, and the next one
+// refuses it (context/changes/refactor-followups/plan.md, phases 4 and 5). The key itself is never logged.
 function assertAnonKey(key: string) {
-  if (key.startsWith("sb_secret_")) {
-    throw new Error("SUPABASE_ANON_KEY must not contain a Supabase secret key");
-  }
-
-  const payload = key.split(".")[1];
-  if (!payload) return;
-
-  try {
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const decoded = JSON.parse(Buffer.from(normalized, "base64").toString("utf8")) as { role?: string };
-    if (decoded.role === "service_role") {
+  switch (classifyAnonKey(key)) {
+    case "secret":
+      throw new Error("SUPABASE_ANON_KEY must not contain a Supabase secret key");
+    case "service_role":
       throw new Error("SUPABASE_ANON_KEY must not contain a service_role key");
-    }
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("service_role")) throw error;
+    case "other":
+      if (!warnedUnexpectedKey) {
+        warnedUnexpectedKey = true;
+        log.warn("anon_key_unexpected_shape", { keyClass: "other" });
+      }
+      return;
+    case "publishable":
+    case "anon":
+      return;
   }
 }
 

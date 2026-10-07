@@ -2,27 +2,16 @@
 // never a secret key, and no database URL that can be redirected elsewhere. The e2e run (tests/e2e/support/env.ts) and
 // the integration suite (tests/integration/support/stack.ts, privileged.ts) call it with their own wording.
 // tests/integration/db-url-guard.test.ts runs one table against every caller, so a change here is checked for all.
-// Pure on purpose: no supabase-js, no pg, so Playwright and vitest can both import it. src/lib/supabase.ts has its own,
-// weaker anon-key check because it imports `astro:env/server`; it is not shared (docs/decisions.md).
+// Pure on purpose: no supabase-js, no pg, so Playwright and vitest can both import it. The anon-key rules come from
+// src/lib/anon-key.ts, the same classifier src/lib/supabase.ts uses. The two differ only in what they do with a key
+// that is neither publishable nor an anon JWT: the app warns about it (until phase 5 of
+// context/changes/refactor-followups/plan.md), a test run refuses it (docs/decisions.md).
+
+import { classifyAnonKey } from "../../src/lib/anon-key";
 
 const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
 const DEFAULT_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
 const OVERRIDING_PARAMS = new Set(["host", "hostaddr", "port"]);
-
-// The role claim of a JWT-shaped key, or null when the key is not a decodable JWT.
-function jwtRole(key: string): string | null {
-  const parts = key.split(".");
-  if (parts.length !== 3) return null;
-  try {
-    const claims: unknown = JSON.parse(Buffer.from(parts[1], "base64url").toString("utf8"));
-    if (typeof claims === "object" && claims !== null && "role" in claims && typeof claims.role === "string") {
-      return claims.role;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 export interface LocalStack {
   url: string;
@@ -53,12 +42,13 @@ export function resolveLocalStack(subject: string, missing: string): LocalStack 
   }
 
   // Fails closed: only an anon key passes, whatever shape a secret key might take.
-  if (anonKey.startsWith("sb_secret_") || jwtRole(anonKey) === "service_role") {
+  const keyClass = classifyAnonKey(anonKey);
+  if (keyClass === "secret" || keyClass === "service_role") {
     throw new Error(
       "SUPABASE_ANON_KEY holds a secret or service_role key; secret keys are forbidden here. Use the anon (publishable) key.",
     );
   }
-  if (!anonKey.startsWith("sb_publishable_") && jwtRole(anonKey) !== "anon") {
+  if (keyClass === "other") {
     throw new Error("SUPABASE_ANON_KEY must be the anon key (an sb_publishable_ key or a JWT with role anon).");
   }
   return { url, anonKey };
