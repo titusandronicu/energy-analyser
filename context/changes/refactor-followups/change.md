@@ -1,7 +1,7 @@
 ---
 change_id: refactor-followups
 title: Review and follow-ups for refactor-opportunities
-status: implementing
+status: implemented
 created: 2026-10-07
 updated: 2026-10-07
 archived_at: null
