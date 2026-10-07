@@ -4,6 +4,7 @@ import { handleIngest, type IngestResponse } from "@/lib/services/ingest";
 import { baseBody, dailyRow } from "./support/bodies";
 import { freshDays, nextCapturedAt } from "./support/keys";
 import { requirePrivileged, withPrivileged } from "./support/privileged";
+import { SEED_TOKEN } from "./support/push";
 import { anonClient, ownerClient, requireStack } from "./support/stack";
 
 // Two interactions of the push boundary that no other test pins: which answer a request gets when its token is unknown
@@ -13,7 +14,6 @@ import { anonClient, ownerClient, requireStack } from "./support/stack";
 type Owner = Awaited<ReturnType<typeof ownerClient>>;
 
 // The public local/CI token from supabase/seed.sql (the same one tests/integration/support/push.ts uses).
-const SEED_TOKEN = "local-dev-ingest-token-not-secret";
 
 const CREATED = { status: 201, body: { status: "created" } };
 

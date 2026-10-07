@@ -1,9 +1,10 @@
+import { MINUTE_MS, HOUR_MS, DAY_MS } from "@/lib/format/age";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { HOURLY_RETENTION_DAYS, RAW_PUSH_RETENTION_DAYS } from "@/lib/ingest/retention";
 import { baseBody, hourRow } from "./support/bodies";
 import { nextCapturedAt } from "./support/keys";
 import { requirePrivileged, withPrivileged } from "./support/privileged";
-import { push } from "./support/push";
+import { push, SEED_TOKEN } from "./support/push";
 import { anonClient, ownerClient, requireStack } from "./support/stack";
 
 // The SQL retention windows (ingest.prune() in supabase/migrations/20261006120000_ingest_push_sections.sql) must match
@@ -14,11 +15,7 @@ import { anonClient, ownerClient, requireStack } from "./support/stack";
 type Owner = Awaited<ReturnType<typeof ownerClient>>;
 
 // The public local/CI token from supabase/seed.sql (the same one tests/integration/support/push.ts uses).
-const SEED_TOKEN = "local-dev-ingest-token-not-secret";
 
-const MINUTE_MS = 60 * 1000;
-const HOUR_MS = 60 * MINUTE_MS;
-const DAY_MS = 24 * HOUR_MS;
 const MARGIN_MS = 5 * MINUTE_MS;
 
 const round3 = (value: number): number => Math.round(value * 1000) / 1000;

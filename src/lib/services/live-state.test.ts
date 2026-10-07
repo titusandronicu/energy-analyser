@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { DailyEnergyRow, LiveStateRow } from "@/types";
+import { MINUTE_MS } from "@/lib/format/age";
 import { addDays } from "@/lib/format/warsaw-time";
-import { formatAge } from "@/lib/format/age";
 import { expectedPvShare, loadDailyRowCapturedAt, loadLiveState, toLiveStateView } from "./live-state";
 import type { BatteryChargeLevel } from "./live-state";
 
@@ -315,23 +315,7 @@ describe("toLiveStateView", () => {
   });
 });
 
-describe("formatAge", () => {
-  const MIN = 60 * 1000;
-
-  it.each([
-    [0, "0 min"],
-    [5 * MIN, "5 min"],
-    [59 * MIN + 59_000, "59 min"],
-    [60 * MIN, "1 godz."],
-    [2 * 60 * MIN + 30 * MIN, "2 godz."],
-    [24 * 60 * MIN - 1, "23 godz."],
-    [24 * 60 * MIN, "1 dzień"],
-    [3 * 24 * 60 * MIN + 5 * MIN, "3 dni"],
-    [-5 * MIN, "0 min"],
-  ])("formats %i ms as %s", (ms, label) => {
-    expect(formatAge(ms)).toBe(label);
-  });
-
+describe("formatAge in the live state view", () => {
   it("feeds the age label from the capture time", () => {
     expect(view(row(), at("2026-09-25T12:30:00Z")).ageLabel).toBe("2 godz.");
     expect(view(row(), at("2026-09-28T10:00:00Z")).ageLabel).toBe("3 dni");
@@ -605,20 +589,19 @@ describe("consumption verdict", () => {
   });
 
   describe("age of today's row", () => {
-    const MIN = 60_000;
     const homeAt = (rowAt: (captured: Date) => string | null | undefined) =>
       verdictsAt("12:00", rows(10), {}, DAY, rowAt).home;
 
     it.each([
       ["captured with the snapshot", sameTime],
-      ["exactly 15 minutes behind", behind(15 * MIN)],
-      ["newer than the snapshot", behind(-2 * MIN)],
+      ["exactly 15 minutes behind", behind(15 * MINUTE_MS)],
+      ["newer than the snapshot", behind(-2 * MINUTE_MS)],
     ])("rates a row %s", (_name, rowAt) => {
       expect(homeAt(rowAt)).toMatchObject({ tone: "good", detail: "0% wobec normy" });
     });
 
     it("does not rate a row 15 minutes and 1 second behind", () => {
-      expect(homeAt(behind(15 * MIN + 1000))).toMatchObject({
+      expect(homeAt(behind(15 * MINUTE_MS + 1000))).toMatchObject({
         tone: "insufficient",
         word: "bez oceny",
         detail: "historia nieaktualna",
@@ -636,7 +619,7 @@ describe("consumption verdict", () => {
     it("never rates an earlier push's partial total against the new snapshot's time", () => {
       // A 06:00 push stored 5 kWh; a state-only push at 12:00 left it. Norm 20 kWh gives 10 kWh by noon, so
       // reading 5 kWh as consumption to 12:00 would be a false "good" at -50%.
-      const v = verdictsAt("12:00", rows(5), {}, DAY, behind(6 * 60 * MIN)).home;
+      const v = verdictsAt("12:00", rows(5), {}, DAY, behind(6 * 60 * MINUTE_MS)).home;
       expect(v).toMatchObject({ tone: "insufficient", detail: "historia nieaktualna" });
       expect(v.tone).not.toBe("good");
     });
@@ -645,7 +628,7 @@ describe("consumption verdict", () => {
       const captured = new Date("2026-09-25T12:00:00+02:00");
       const stale = view(
         row({ captured_at: captured.toISOString() }),
-        new Date(captured.getTime() + 16 * MIN),
+        new Date(captured.getTime() + 16 * MINUTE_MS),
         rows(10),
         null,
       );

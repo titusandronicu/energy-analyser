@@ -1,3 +1,4 @@
+import { MINUTE_MS, HOUR_MS } from "@/lib/format/age";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { RecommendationRow } from "@/types";
@@ -61,17 +62,14 @@ describe("isStaleRecommendation", () => {
   });
 });
 
-const MINUTE = 60 * 1000;
-const HOUR = 60 * MINUTE;
-
 describe("ageStatus", () => {
   it.each([
     [0, { tone: "good", label: "aktualna" }],
-    [2 * HOUR, { tone: "good", label: "aktualna" }],
-    [2 * HOUR + 1, { tone: "watch", label: "sprzed 2 godz." }],
-    [-5 * MINUTE, { tone: "good", label: "aktualna" }],
-    [-(5 * MINUTE + 1), { tone: "problem", label: "czas z przyszłości" }],
-    [-3 * HOUR, { tone: "problem", label: "czas z przyszłości" }],
+    [2 * HOUR_MS, { tone: "good", label: "aktualna" }],
+    [2 * HOUR_MS + 1, { tone: "watch", label: "sprzed 2 godz." }],
+    [-5 * MINUTE_MS, { tone: "good", label: "aktualna" }],
+    [-(5 * MINUTE_MS + 1), { tone: "problem", label: "czas z przyszłości" }],
+    [-3 * HOUR_MS, { tone: "problem", label: "czas z przyszłości" }],
   ])("rates an age of %i ms as %j", (ageMs, status) => {
     expect(ageStatus(ageMs)).toEqual(status);
   });

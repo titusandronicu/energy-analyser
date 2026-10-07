@@ -1,29 +1,17 @@
-import {
-  Battery,
-  BatteryCharging,
-  BatteryFull,
-  BatteryLow,
-  BatteryMedium,
-  BatteryWarning,
-  House,
-  Info,
-  Scale,
-  Sun,
-  TowerControl,
-  type LucideIcon,
-} from "lucide-react";
+import { Info, Scale } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { usePreference } from "@/components/hooks/usePreference";
 import { Button } from "@/components/ui/button";
 import { FlowNode, chipFor, type NodeId } from "@/components/live/FlowNode";
+import { buildNodes } from "@/components/live/flow-nodes";
 import { capitalize } from "@/lib/format/values";
 import { VerdictChip } from "@/components/live/VerdictChip";
 import { useFlowLines } from "@/components/hooks/useFlowLines";
 import { connectorState } from "@/lib/flow-connector-state";
 import { flowPath } from "@/lib/flow-geometry";
-import { GLOSSARY, type GlossaryTerm } from "@/lib/format/glossary";
+import { GLOSSARY } from "@/lib/format/glossary";
 import { FLOW_PAUSED_KEY, FLOW_VIEW_KEY } from "@/lib/preferences";
-import type { LiveStateView, NodeVerdict } from "@/lib/services/live-state";
+import type { LiveStateView } from "@/lib/services/live-state";
 import { cn } from "@/lib/utils";
 
 type StateView = Extract<LiveStateView, { kind: "state" }>;
@@ -41,113 +29,12 @@ export type LiveFlowProps = Pick<
 const VIEWS = ["diagram", "readings"] as const;
 const PAUSED = ["0", "1"] as const;
 
-interface NodeData {
-  id: NodeId;
-  label: string;
-  // The phone label; direction and the detail line only show from `sm` (the details strip carries them on the phone).
-  short: string;
-  direction: string | null;
-  detailLine: string | null;
-  Icon: LucideIcon;
-  value: string;
-  // The reading in words: value plus direction and, for the battery, the charge level.
-  spoken: string;
-  sub: string | null;
-  verdict: NodeVerdict | null;
-  // What the details strip says about the rating; the verdict's own explanation when there is one.
-  why: string;
-  terms: GlossaryTerm[];
-}
-
 const LINE_TEXT: Record<NodeId, string> = {
   pv: "text-flow-pv",
   home: "text-flow-home",
   battery: "text-flow-battery",
   grid: "text-flow-grid",
 };
-
-// Charging wins regardless of level; otherwise the icon follows the mapper-owned charge-level band.
-function batteryIcon(battery: LiveFlowProps["battery"]): LucideIcon {
-  if (battery.charging) return BatteryCharging;
-  switch (battery.chargeLevel) {
-    case "full":
-      return BatteryFull;
-    case "medium":
-      return BatteryMedium;
-    case "low":
-      return BatteryLow;
-    case "warning":
-      return BatteryWarning;
-    case null:
-      return Battery;
-  }
-}
-
-function withDirection(value: string, direction: string | null): string {
-  return direction ? `${value}, ${direction}` : value;
-}
-
-function buildNodes(props: LiveFlowProps): NodeData[] {
-  const { pv, homeLoad, grid, battery, verdicts } = props;
-  return [
-    {
-      id: "pv",
-      label: "Produkcja PV",
-      short: "Panele",
-      direction: null,
-      detailLine: null,
-      Icon: Sun,
-      value: pv,
-      spoken: pv,
-      sub: null,
-      verdict: verdicts.pv,
-      why: verdicts.pv.explanation,
-      terms: ["pv", "kw"],
-    },
-    {
-      id: "home",
-      label: "Zużycie domu",
-      short: "Dom",
-      direction: null,
-      detailLine: null,
-      Icon: House,
-      value: homeLoad,
-      spoken: homeLoad,
-      sub: null,
-      verdict: verdicts.home,
-      why: verdicts.home.explanation,
-      terms: ["kw"],
-    },
-    {
-      id: "battery",
-      label: "Bateria",
-      short: "Bateria",
-      direction: battery.direction,
-      detailLine: `Naładowanie: ${battery.socLabel}`,
-      Icon: batteryIcon(battery),
-      value: battery.value,
-      spoken: `${withDirection(battery.value, battery.direction)}, naładowanie ${battery.socLabel}`,
-      sub: `Naładowanie: ${battery.socLabel}${battery.direction ? ` · ${battery.direction}` : ""}`,
-      verdict: verdicts.battery,
-      why: verdicts.battery.explanation,
-      terms: ["kw", "battery_soc"],
-    },
-    {
-      id: "grid",
-      label: "Sieć",
-      short: "Sieć",
-      direction: grid.direction,
-      detailLine: null,
-      Icon: TowerControl,
-      value: grid.value,
-      spoken: withDirection(grid.value, grid.direction),
-      sub: grid.direction ?? "bez przepływu",
-      verdict: null,
-      why: "Sieć nie ma oceny: pobór ani oddawanie nie są ani dobre, ani złe same w sobie. Pokazujemy tylko kierunek.",
-      terms: grid.direction === null ? ["kw"] : ["kw", (grid.watts ?? 0) > 0 ? "grid_import" : "grid_export"],
-    },
-  ];
-}
 
 // PV feeds the hub from the left; the other three nodes sit in the right column.
 const HUB_SIDE: Record<NodeId, "left" | "right"> = { pv: "left", home: "right", battery: "right", grid: "right" };

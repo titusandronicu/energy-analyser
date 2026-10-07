@@ -1,6 +1,6 @@
 import { Client } from "pg";
 import { resolveLocalDbUrl } from "../../support/local-guards";
-import { anonClient } from "./stack";
+import { anonClient, uniqueUser } from "./stack";
 
 // Resolves the connection string for privileged SQL on the local stack and refuses anything that is not local.
 // SUPABASE_DB_URL overrides the local default. Never skips and never echoes the string (it carries a password).
@@ -36,8 +36,7 @@ export async function withPrivileged<T>(fn: (db: Client) => Promise<T>): Promise
 // so nothing global changes. Returns the session client and the user id so a test can clean up with `removeUser`.
 export async function nonOwnerClient() {
   const client = anonClient();
-  const email = `integration-nonowner-${String(Date.now())}-${Math.random().toString(36).slice(2, 10)}@example.com`;
-  const password = `Integration-${Math.random().toString(36).slice(2, 12)}-Pw1!`;
+  const { email, password } = uniqueUser("integration-nonowner");
   const { data, error } = await client.auth.signUp({ email, password });
   if (error) throw new Error(`non-owner sign-up failed: ${error.message}`);
   if (!data.session || !data.user) {

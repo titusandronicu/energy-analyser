@@ -21,7 +21,7 @@ import {
   revokeAlertToken,
   withPrivileged,
 } from "./support/privileged";
-import { push } from "./support/push";
+import { push, SEED_TOKEN } from "./support/push";
 import { anonClient, ownerClient, requireStack } from "./support/stack";
 
 // Phase 1 of the alert rules (context/changes/alert-rules/plan.md): the owner-only table, the client column grants,
@@ -39,7 +39,6 @@ const INVALID_PARAMETER = "22023";
 const RULE_CAP = "P0429";
 
 // The public local/CI token from supabase/seed.sql; it belongs to ingest and must not open the alerts functions.
-const INGEST_SEED_TOKEN = "local-dev-ingest-token-not-secret";
 
 // The snapshot the evaluator gets, in the row shape the loaders produce (src/types.ts LiveStateRow, BillForecastRow).
 const snapshotSchema = z.object({
@@ -432,7 +431,7 @@ describe("alert rules: access, column grants, limits and the alerts token", () =
     it.each([
       { kind: "unknown", token: () => `unknown-token-${String(Date.now())}` },
       { kind: "empty", token: () => "" },
-      { kind: "ingest seed", token: () => INGEST_SEED_TOKEN },
+      { kind: "ingest seed", token: () => SEED_TOKEN },
     ])("a $kind token is refused by both functions with P0401 and no data", async ({ token }) => {
       const row = await createRule();
 

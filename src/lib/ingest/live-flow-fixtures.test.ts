@@ -1,3 +1,4 @@
+import { MINUTE_MS } from "@/lib/format/age";
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -39,8 +40,6 @@ function viewOf(name: string, afterCaptureMs: number) {
   if (view.kind !== "state") throw new Error("expected a state view");
   return view;
 }
-
-const MINUTE_MS = 60 * 1000;
 
 describe("live-flow fixtures", () => {
   it("has the four documented scenarios", () => {

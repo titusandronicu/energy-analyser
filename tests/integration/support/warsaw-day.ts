@@ -1,4 +1,4 @@
-const HOUR_MS = 60 * 60 * 1000;
+import { HOUR_MS } from "@/lib/format/age";
 
 // Written on purpose without the app's own warsaw-time helpers (a mirror of `warsawDayHours` in scripts/smoke.mjs), so
 // the hours a test pushes are built by a second, independent implementation of Europe/Warsaw rules.

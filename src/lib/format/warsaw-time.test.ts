@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { DAY_MS, HOUR_MS } from "@/lib/format/age";
 import {
   dayKeyToUtcMs,
   dayMonthYear,
   formatDayMonth,
   formatMonth,
   formatWeekday,
-  HOUR_MS,
   utcMsToDayKey,
   warsawDayHours,
   warsawHour,
@@ -55,11 +55,10 @@ describe("dayKeyToUtcMs and utcMsToDayKey", () => {
   });
 
   it("keeps a day key at 24 hours across both DST changes and the new year", () => {
-    const DAY = 86_400_000;
     // Warsaw's offset changes on 29 March and 25 October, but a day key is a plain calendar date.
-    expect(dayKeyToUtcMs("2026-03-30") - dayKeyToUtcMs("2026-03-29")).toBe(DAY);
-    expect(dayKeyToUtcMs("2026-10-26") - dayKeyToUtcMs("2026-10-25")).toBe(DAY);
-    expect(dayKeyToUtcMs("2027-01-01") - dayKeyToUtcMs("2026-12-31")).toBe(DAY);
+    expect(dayKeyToUtcMs("2026-03-30") - dayKeyToUtcMs("2026-03-29")).toBe(DAY_MS);
+    expect(dayKeyToUtcMs("2026-10-26") - dayKeyToUtcMs("2026-10-25")).toBe(DAY_MS);
+    expect(dayKeyToUtcMs("2027-01-01") - dayKeyToUtcMs("2026-12-31")).toBe(DAY_MS);
   });
 
   it("turns a UTC instant into its UTC date, one second either side of midnight", () => {

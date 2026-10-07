@@ -1,3 +1,4 @@
+import { HOUR_MS } from "@/lib/format/age";
 import { beforeAll, describe, expect, it } from "vitest";
 import { loadDailyRange } from "@/lib/services/calendar-data";
 import { dailySeries } from "@/lib/services/daily-series";
@@ -28,8 +29,6 @@ type Owner = Awaited<ReturnType<typeof ownerClient>>;
 const CREATED = { status: 201, body: { status: "created" } };
 const DUPLICATE = { status: 200, body: { status: "duplicate" } };
 const CONFLICT = { status: 409, body: { error: "capture time conflict" } };
-
-const HOUR_MS = 60 * 60 * 1000;
 
 // Postgres hands timestamptz back as "...+00:00"; compare instants, not spellings.
 const instant = (value: string | null | undefined): number => Date.parse(value ?? "");
