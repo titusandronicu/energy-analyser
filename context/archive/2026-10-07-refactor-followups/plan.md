@@ -334,55 +334,55 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Automated
 
-- [x] 1.1 No inline capitalize copy remains: `grep -rn "charAt(0).toUpperCase" src` shows only `src/lib/format/values.ts` — 0d0984d
-- [x] 1.2 `HOUR_MS` is no longer re-exported: `grep -n "export { HOUR_MS }" src/lib/format/warsaw-time.ts` finds nothing — 0d0984d
-- [x] 1.3 New and moved tests pass, including `src/lib/format/age.test.ts`: `npm test` — 0d0984d
-- [x] 1.4 Guard table passes with the new cases: `npm run test:integration -- db-url-guard` — 0d0984d
-- [x] 1.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 0d0984d
+- [x] 1.1 No inline capitalize copy remains: `grep -rn "charAt(0).toUpperCase" src` shows only `src/lib/format/values.ts` — 4630c65
+- [x] 1.2 `HOUR_MS` is no longer re-exported: `grep -n "export { HOUR_MS }" src/lib/format/warsaw-time.ts` finds nothing — 4630c65
+- [x] 1.3 New and moved tests pass, including `src/lib/format/age.test.ts`: `npm test` — 4630c65
+- [x] 1.4 Guard table passes with the new cases: `npm run test:integration -- db-url-guard` — 4630c65
+- [x] 1.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 4630c65
 
 #### Manual
 
-- [x] 1.6 The three cards render the same capitalised text as before — 384b4ce
+- [x] 1.6 The three cards render the same capitalised text as before — 4630c65
 
 ### Phase 2: Test helper dedupes and LibBadge
 
 #### Automated
 
-- [x] 2.1 No duration constant is redefined in tests: `grep -rn "const \(MIN\|MINUTE\|HOUR\|DAY\)\(_MS\)\? = " src tests` shows only `src/lib/format/age.ts`, `src/lib/ingest/contract.ts` and `live-state.test.ts:342` (the day string) — 81740f1
-- [x] 2.2 One seed-token declaration in tests: `grep -rn "local-dev-ingest-token-not-secret" tests` shows only `tests/integration/support/push.ts` — 81740f1
-- [x] 2.3 `LibBadge` is gone: `grep -rn "LibBadge" src tests docs` finds nothing — 81740f1
-- [x] 2.4 Unit tests pass: `npm test` — 81740f1
-- [x] 2.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 81740f1
-- [x] 2.6 Integration suite passes in CI: `npm run test:integration` — f06f2e4
+- [x] 2.1 No duration constant is redefined in tests: `grep -rn "const \(MIN\|MINUTE\|HOUR\|DAY\)\(_MS\)\? = " src tests` shows only `src/lib/format/age.ts`, `src/lib/ingest/contract.ts` and `live-state.test.ts:342` (the day string) — 4630c65
+- [x] 2.2 One seed-token declaration in tests: `grep -rn "local-dev-ingest-token-not-secret" tests` shows only `tests/integration/support/push.ts` — 4630c65
+- [x] 2.3 `LibBadge` is gone: `grep -rn "LibBadge" src tests docs` finds nothing — 4630c65
+- [x] 2.4 Unit tests pass: `npm test` — 4630c65
+- [x] 2.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 4630c65
+- [x] 2.6 Integration suite passes in CI: `npm run test:integration` — 4630c65
 
 #### Manual
 
-- [x] 2.7 Nothing on the dashboard, history or alerts pages changed visually — 384b4ce
+- [x] 2.7 Nothing on the dashboard, history or alerts pages changed visually — 4630c65
 
 ### Phase 3: Two safe splits
 
 #### Automated
 
-- [x] 3.1 Characterization test passes against the old code before the move and against the moved code after: `npm test -- flow-nodes` — d3ec5c8
-- [x] 3.2 Break check: breaking a `spoken` or icon branch makes `flow-nodes.test.ts` go red — d3ec5c8
-- [x] 3.3 Existing calendar tests pass with import edits and the added `calendarCopy` scan in the wording guard: `npm test -- calendar-view` — d3ec5c8
-- [x] 3.4 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — d3ec5c8
-- [x] 3.5 E2E and smoke pass in CI: `npm run test:e2e`, `npm run smoke` — f06f2e4
+- [x] 3.1 Characterization test passes against the old code before the move and against the moved code after: `npm test -- flow-nodes` — 4630c65
+- [x] 3.2 Break check: breaking a `spoken` or icon branch makes `flow-nodes.test.ts` go red — 4630c65
+- [x] 3.3 Existing calendar tests pass with import edits and the added `calendarCopy` scan in the wording guard: `npm test -- calendar-view` — 4630c65
+- [x] 3.4 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 4630c65
+- [x] 3.5 E2E and smoke pass in CI: `npm run test:e2e`, `npm run smoke` — 4630c65
 
 #### Manual
 
-- [x] 3.6 The live flow diagram and its readings view render the same on `/dashboard` — 384b4ce
-- [x] 3.7 The history day, month and quarter pages show the same explanations — 384b4ce
+- [x] 3.6 The live flow diagram and its readings view render the same on `/dashboard` — 4630c65
+- [x] 3.7 The history day, month and quarter pages show the same explanations — 4630c65
 
 ### Phase 4: Anon-key module, warn-only (PR B)
 
 #### Automated
 
-- [x] 4.1 Classifier table and app-check tests pass: `npm test -- anon-key supabase` — fc80b4e
-- [x] 4.2 Guard table still passes unchanged: `npm run test:integration -- db-url-guard` — fc80b4e
-- [x] 4.3 Break check: removing the `service_role` branch of the classifier makes both the classifier test and the guard table go red — fc80b4e
-- [x] 4.4 `npx playwright test --list` (with env set) still loads the config through the new relative import — fc80b4e
-- [x] 4.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — fc80b4e
+- [x] 4.1 Classifier table and app-check tests pass: `npm test -- anon-key supabase` — cedff13
+- [x] 4.2 Guard table still passes unchanged: `npm run test:integration -- db-url-guard` — cedff13
+- [x] 4.3 Break check: removing the `service_role` branch of the classifier makes both the classifier test and the guard table go red — cedff13
+- [x] 4.4 `npx playwright test --list` (with env set) still loads the config through the new relative import — cedff13
+- [x] 4.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — cedff13
 - [x] 4.6 Integration, smoke and e2e pass in CI — cedff13
 
 #### Manual
@@ -394,8 +394,8 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Automated
 
-- [x] 5.1 Tests assert `other` now throws and `publishable`/`anon` do not: `npm test -- supabase` — 1d64c06
-- [x] 5.2 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 1d64c06
+- [x] 5.1 Tests assert `other` now throws and `publishable`/`anon` do not: `npm test -- supabase` — 9cd0171
+- [x] 5.2 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 9cd0171
 - [x] 5.3 Integration, smoke and e2e pass in CI — 9cd0171
 
 #### Manual
