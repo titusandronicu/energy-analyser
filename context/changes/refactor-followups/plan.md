@@ -353,7 +353,7 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 - [x] 2.3 `LibBadge` is gone: `grep -rn "LibBadge" src tests docs` finds nothing — 81740f1
 - [x] 2.4 Unit tests pass: `npm test` — 81740f1
 - [x] 2.5 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — 81740f1
-- [ ] 2.6 Integration suite passes in CI: `npm run test:integration`
+- [x] 2.6 Integration suite passes in CI: `npm run test:integration` — f06f2e4
 
 #### Manual
 
@@ -367,7 +367,7 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 - [x] 3.2 Break check: breaking a `spoken` or icon branch makes `flow-nodes.test.ts` go red — d3ec5c8
 - [x] 3.3 Existing calendar tests pass with import edits and the added `calendarCopy` scan in the wording guard: `npm test -- calendar-view` — d3ec5c8
 - [x] 3.4 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — d3ec5c8
-- [ ] 3.5 E2E and smoke pass in CI: `npm run test:e2e`, `npm run smoke`
+- [x] 3.5 E2E and smoke pass in CI: `npm run test:e2e`, `npm run smoke` — f06f2e4
 
 #### Manual
 
