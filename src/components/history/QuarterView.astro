@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { CalendarRange, ChartColumn } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
@@ -42,7 +43,7 @@ const months = (view?.months ?? []).map((month) => ({
   {view === null ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : (
     <ul class="divide-hairline divide-y" data-testid="history-quarter-months">
@@ -98,7 +99,7 @@ const months = (view?.months ?? []).map((month) => ({
   {view === null ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : (
     <div class="space-y-2">

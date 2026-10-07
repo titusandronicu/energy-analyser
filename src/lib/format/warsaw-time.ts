@@ -1,4 +1,6 @@
 // Europe/Warsaw date helpers shared by the dashboard cards.
+import { DAY_MS, HOUR_MS } from "@/lib/format/age";
+
 const TIME_ZONE = "Europe/Warsaw";
 
 // `dayKey` ("2026-09-23") compares calendar days; `label` ("23 września 2026, 12:00") is what the cards show;
@@ -33,7 +35,6 @@ export function formatWarsawDateTime(date: Date): string {
 
 // Calendar arithmetic on day keys ("YYYY-MM-DD"). A day key is a plain calendar date, so it is handled in UTC
 // where every day has 24 hours; DST in Warsaw can't shift it.
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function dayKeyToUtcMs(dayKey: string): number {
   const [year, month, day] = dayKey.split("-").map(Number);
@@ -76,7 +77,7 @@ export function warsawMonthKey(date: Date): string {
 // Clock hours in Warsaw. An hour is keyed by the UTC instant it starts at (as `hourly_energy.hour_start` is) and
 // labelled by its Warsaw date and clock hour. A Warsaw day has 23, 24 or 25 of them: on the spring change 02:00
 // does not exist, on the autumn change 02:00 happens twice (first in CEST, then in CET).
-export const HOUR_MS = 60 * 60 * 1000;
+export { HOUR_MS };
 
 const warsawHourFormat = new Intl.DateTimeFormat("en-CA", {
   timeZone: TIME_ZONE,

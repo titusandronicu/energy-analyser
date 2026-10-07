@@ -1,10 +1,11 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { Sigma } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import Panel from "@/components/ui/Panel.astro";
-import { LOAD_FAILED } from "@/lib/format/status";
-import { completeDaysText, NEUTRAL, sentence, type PeriodTotals } from "@/lib/services/calendar-view";
+import { LOAD_FAILED, NO_STATUS } from "@/lib/format/status";
+import { completeDaysText, sentence, type PeriodTotals } from "@/lib/services/calendar-view";
 
 interface Props {
   title: string;
@@ -35,13 +36,17 @@ const figures =
     {totals === null ? (
       <StatusBadge status={LOAD_FAILED} testId={testId} />
     ) : totals.kind === "totals" ? (
-      <StatusBadge status={NEUTRAL} text={completeDaysText(totals.completeDays, totals.calendarDays)} testId={testId} />
+      <StatusBadge
+        status={NO_STATUS}
+        text={completeDaysText(totals.completeDays, totals.calendarDays)}
+        testId={testId}
+      />
     ) : (
-      <StatusBadge status={NEUTRAL} testId={testId} />
+      <StatusBadge status={NO_STATUS} testId={testId} />
     )}
   </div>
 
-  {totals === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {totals === null && <RefreshHint />}
 
   {totals?.kind === "insufficient" && (
     <p class="text-muted-foreground text-sm">

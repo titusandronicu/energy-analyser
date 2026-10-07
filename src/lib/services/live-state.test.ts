@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { describe, expect, it } from "vitest";
 import type { DailyEnergyRow, LiveStateRow } from "@/types";
 import { addDays } from "@/lib/format/warsaw-time";
-import { expectedPvShare, formatAge, loadDailyRowCapturedAt, loadLiveState, toLiveStateView } from "./live-state";
+import { formatAge } from "@/lib/format/age";
+import { expectedPvShare, loadDailyRowCapturedAt, loadLiveState, toLiveStateView } from "./live-state";
 import type { BatteryChargeLevel } from "./live-state";
 
 const state = {

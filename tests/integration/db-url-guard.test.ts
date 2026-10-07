@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { requireDbUrl } from "../e2e/support/env";
+import { requireDbUrl, requireStackEnv } from "../e2e/support/env";
 import { requirePrivileged } from "./support/privileged";
+import { requireStack } from "./support/stack";
 
-// Two copies of one guard stand between a test run and a database that is not the local stack: requirePrivileged (the
-// integration suite) and requireDbUrl (the e2e teardown, whose DELETE runs behind it). They must refuse the same
-// things, so both go through the same table. Nothing here connects to a database: the guards only resolve a string.
+// Copies of one guard stand between a test run and a database that is not the local stack: requirePrivileged (the
+// integration suite) and requireDbUrl (the e2e teardown, whose DELETE runs behind it) for the database URL, and
+// requireStack (integration) and requireStackEnv (e2e) for the API URL and key. Each pair must refuse the same
+// things, so each goes through the same table. Nothing here connects to a database: the guards only resolve strings.
 
 const DEFAULT_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
 const original = process.env.SUPABASE_DB_URL;
@@ -56,6 +58,75 @@ describe.each([
       resolveWith(guard, url);
     } catch (error) {
       expect(String(error)).not.toContain("hunter2-not-a-real-password");
+    }
+  });
+});
+
+const STACK_URL = "http://127.0.0.1:54321";
+const PUBLISHABLE_KEY = "sb_publishable_not-a-real-key";
+const originalStack = { url: process.env.SUPABASE_URL, key: process.env.SUPABASE_ANON_KEY };
+
+function jwtWithRole(role: string): string {
+  const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  return `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ role })}.signature`;
+}
+
+function stackWith(guard: () => { url: string; anonKey: string }, url: string | undefined, key: string | undefined) {
+  if (url === undefined) delete process.env.SUPABASE_URL;
+  else process.env.SUPABASE_URL = url;
+  if (key === undefined) delete process.env.SUPABASE_ANON_KEY;
+  else process.env.SUPABASE_ANON_KEY = key;
+  return guard();
+}
+
+afterEach(() => {
+  if (originalStack.url === undefined) delete process.env.SUPABASE_URL;
+  else process.env.SUPABASE_URL = originalStack.url;
+  if (originalStack.key === undefined) delete process.env.SUPABASE_ANON_KEY;
+  else process.env.SUPABASE_ANON_KEY = originalStack.key;
+});
+
+describe.each([
+  ["requireStack (integration suite)", requireStack],
+  ["requireStackEnv (e2e run)", requireStackEnv],
+])("%s", (_name, guard) => {
+  it.each([
+    ["a publishable key", PUBLISHABLE_KEY],
+    ["a JWT with role anon", jwtWithRole("anon")],
+  ])("accepts the local URL with %s", (_label, key) => {
+    expect(stackWith(guard, STACK_URL, key)).toMatchObject({ anonKey: key });
+    expect(stackWith(guard, "http://localhost:54321", key).url).toContain("localhost");
+  });
+
+  it.each([
+    ["no URL", undefined, PUBLISHABLE_KEY],
+    ["no key", STACK_URL, undefined],
+    ["an empty key", STACK_URL, "   "],
+  ])("refuses %s", (_label, url, key) => {
+    expect(() => stackWith(guard, url, key)).toThrow();
+  });
+
+  it.each([
+    ["another host", "http://db.example.com:54321"],
+    ["a host hidden in the userinfo", "http://127.0.0.1@evil.example.com:54321"],
+    ["https", "https://127.0.0.1:54321"],
+    ["a value that is not a URL", "not a url"],
+  ])("refuses %s", (_label, url) => {
+    expect(() => stackWith(guard, url, PUBLISHABLE_KEY)).toThrow();
+  });
+
+  it.each([
+    ["an sb_secret_ key", "sb_secret_not-a-real-key", /secret or service_role/],
+    ["a JWT with role service_role", jwtWithRole("service_role"), /secret or service_role/],
+    ["a JWT with another role", jwtWithRole("authenticated"), /must be the anon key/],
+    ["a key that is neither shape", "just-a-string", /must be the anon key/],
+    ["a JWT-shaped key that does not decode", "a.b.c", /must be the anon key/],
+  ])("refuses %s as the anon key, without echoing it", (_label, key, message) => {
+    expect(() => stackWith(guard, STACK_URL, key)).toThrow(message);
+    try {
+      stackWith(guard, STACK_URL, key);
+    } catch (error) {
+      expect(String(error)).not.toContain(key);
     }
   });
 });

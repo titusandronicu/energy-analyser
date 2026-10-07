@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { CalendarCheck, Sparkles, Sun } from "lucide-react";
 import AdviceBlocks from "@/components/AdviceBlocks.astro";
 import CardHeading from "@/components/CardHeading.astro";
@@ -11,8 +12,9 @@ import SummaryPanel from "@/components/history/SummaryPanel.astro";
 import { VerdictChip } from "@/components/live/VerdictChip";
 import Panel from "@/components/ui/Panel.astro";
 import { parseAdviceMarkdown, splitAdviceLead } from "@/lib/format/advice-markdown";
-import { LOAD_FAILED } from "@/lib/format/status";
-import { capitalize, NEUTRAL, type DayView } from "@/lib/services/calendar-view";
+import { LOAD_FAILED, NO_STATUS } from "@/lib/format/status";
+import { capitalize } from "@/lib/format/values";
+import type { DayView } from "@/lib/services/calendar-view";
 import type { noteNotice } from "@/lib/services/day-notes";
 
 interface Props {
@@ -57,17 +59,17 @@ const figures =
     {rowFailed ? (
       <StatusBadge status={LOAD_FAILED} testId="history-day-status" />
     ) : totals.kind === "none" ? (
-      <StatusBadge status={NEUTRAL} text={capitalize(totals.reason)} testId="history-day-status" />
+      <StatusBadge status={NO_STATUS} text={capitalize(totals.reason)} testId="history-day-status" />
     ) : (
       <StatusBadge
-        status={NEUTRAL}
+        status={NO_STATUS}
         text={totals.running ? "Dzień jeszcze trwa" : "Pełne dane"}
         testId="history-day-status"
       />
     )}
   </div>
 
-  {rowFailed && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {rowFailed && <RefreshHint />}
 
   {!rowFailed && totals.kind === "none" && (
     <p class="text-muted-foreground text-sm">
@@ -112,10 +114,10 @@ const figures =
   {rowFailed ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : forecast.kind === "none" ? (
-    <StatusBadge status={NEUTRAL} text={capitalize(forecast.reason)} />
+    <StatusBadge status={NO_STATUS} text={capitalize(forecast.reason)} />
   ) : (
     <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <div class="bg-inset rounded-xl px-4 py-3">
@@ -138,7 +140,7 @@ const figures =
     {advice === null ? (
       <StatusBadge status={LOAD_FAILED} testId="history-advice-status" />
     ) : advice.kind === "none" ? (
-      <StatusBadge status={NEUTRAL} text={capitalize(advice.reason)} testId="history-advice-status" />
+      <StatusBadge status={NO_STATUS} text={capitalize(advice.reason)} testId="history-advice-status" />
     ) : (
       <>
         <StatusBadge
@@ -151,7 +153,7 @@ const figures =
     )}
   </div>
 
-  {advice === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {advice === null && <RefreshHint />}
 
   {main !== null && (
     <div class="space-y-4">

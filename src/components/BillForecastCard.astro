@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { FileText, Minus, TrendingDown, TrendingUp } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import Panel from "@/components/ui/Panel.astro";
@@ -67,7 +68,7 @@ const checkLine =
     <StatusBadge status={status} testId="bill-status" />
   </div>
 
-  {view === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {view === null && <RefreshHint />}
 
   {view?.kind === "unavailable" && (
     <p class="text-muted-foreground text-sm" data-testid="bill-unavailable-reason">

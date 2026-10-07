@@ -2,6 +2,12 @@
 
 The main product and technical decisions, newest first, each with the reason. Detailed plans for each change are in `context/changes/` (active) and `context/archive/` (done); the product requirements are in `context/foundation/prd-v3.md` and the ordered work in `context/foundation/roadmap.md`.
 
+## 2026-10-07 (refactor opportunities)
+
+- **The local-stack test guards live in one module, `tests/support/local-guards.ts`.** _Why:_ the host allowlist, the database URL check and the anon-key check existed as three copies (e2e, integration stack, integration privileged), and a past flaw sat in two of them unnoticed. `tests/integration/db-url-guard.test.ts` now runs one table against all four entry points (`requireDbUrl`, `requirePrivileged`, `requireStackEnv`, `requireStack`). The callers keep their names; only the refusal wording is now common ("the e2e run" and "the integration suite" name the caller).
+  - **`src/lib/supabase.ts` keeps its own, weaker anon-key check on purpose.** _Why:_ it imports `astro:env/server` and changing it would change production start-up behaviour, which a pure refactor must not do. Aligning it is a separate decision if the owner wants one.
+- **The 5-minute clock-skew tolerance, the time units and `formatAge` live in `src/lib/format/age.ts`; `capitalize` in `format/values.ts`; the empty badge status is `NO_STATUS`.** _Why:_ each existed as two to four copies, and three services imported `formatAge` from `live-state.ts` only to reuse it. The live-state, recommendation and bill-forecast skew constants keep their own exported names as aliases of one value, because their tests pin them and the three policies may diverge. The ingest contract's own skew and hour constants (write side) and `live-state.ts`'s `wholeNumber` formatter (its load test pins it) are deliberately not merged.
+
 ## 2026-10-06 (alert-rules review fixes)
 
 - **Fixes after the implementation review (`context/changes/alert-rules/reviews/impl-review.md`), applied with a new migration `20261007120000_alert_rules_review_fixes.sql`.** _Why:_ a review of the live alerting found eight things worth fixing and two worth accepting.

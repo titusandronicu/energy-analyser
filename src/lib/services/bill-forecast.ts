@@ -1,11 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { BillForecastRow } from "@/types";
+import { CLOCK_SKEW_MS, formatAge } from "@/lib/format/age";
 import { edgePercentLabel } from "@/lib/format/edge-percent";
 import { formatPeriod } from "@/lib/format/period";
 import type { Status, StatusTone } from "@/lib/format/status";
 import { asNumber, asRecord, kwhLabel, MISSING, plnLabel } from "@/lib/format/values";
 import { formatDayMonth, formatMonth, warsawMonthKey, warsawParts } from "@/lib/format/warsaw-time";
-import { formatAge } from "@/lib/services/live-state";
 import { queryError } from "@/lib/query-error";
 
 // The lab recomputes the forecast with every 5-minute push, so anything older than half an hour means it has
@@ -17,7 +17,7 @@ export const FORECAST_STALE_AFTER_MS = 30 * 60 * 1000;
 // A `generated_at` ahead of this app's clock by more than this is a producer clock error: it would otherwise keep an
 // obsolete figure fresh until 30 minutes after that future instant. The same 5-minute skew the ingest contract
 // allows for `captured_at`.
-export const FORECAST_FUTURE_SKEW_MS = 5 * 60 * 1000;
+export const FORECAST_FUTURE_SKEW_MS = CLOCK_SKEW_MS;
 // Below this many complete days the month is too short to project from, and the card says so instead of
 // showing a figure (context/archive/2026-09-27-bill-forecast/change.md:14).
 export const MIN_COMPLETE_DAYS = 7;

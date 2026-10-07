@@ -3,6 +3,7 @@ import type { Logger } from "@/lib/logger";
 import { evaluateAlerts, type AlertSnapshot, type AlertState } from "@/lib/services/alert-evaluation";
 import { ALERT_KINDS } from "@/lib/services/alert-rules";
 import { sendTelegramMessage } from "@/lib/services/telegram";
+import { bearerToken } from "@/lib/services/bearer-token";
 
 // POST /api/alerts/evaluate: bearer-authenticated like /api/ingest (the alerts token is checked inside the two database
 // functions). Reads the snapshot, evaluates, sends to Telegram and records what actually went out, each sent rule right after its own message (at-least-once delivery). The token, the chat
@@ -38,11 +39,6 @@ export interface AlertsEvaluateResponse {
 // One body for a missing, unknown and revoked token.
 const UNAUTHORIZED: AlertsEvaluateResponse = { status: 401, body: { error: "unauthorized" } };
 const FAILED: AlertsEvaluateResponse = { status: 500, body: { error: "alerts evaluation failed" } };
-
-function bearerToken(request: Request) {
-  const match = /^Bearer\s+(\S+)\s*$/i.exec(request.headers.get("Authorization") ?? "");
-  return match?.[1] ?? null;
-}
 
 // The shape alerts_snapshot returns (supabase/migrations/20261007090000_alert_rules.sql). The pushed jsonb inside
 // `bill_forecast` stays untrusted: the view mapper reads it defensively.

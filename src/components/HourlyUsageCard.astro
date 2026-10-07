@@ -1,10 +1,11 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { Clock } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import Panel from "@/components/ui/Panel.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import TermsExplained from "@/components/TermsExplained.astro";
-import { LOAD_FAILED, type Status } from "@/lib/format/status";
+import { LOAD_FAILED, NO_STATUS } from "@/lib/format/status";
 import { SENSOR_CAVEAT } from "@/lib/services/grid-sensor";
 import type { HourlyUsageView, RankedDay, RankedHour, Ranking } from "@/lib/services/hourly-usage";
 
@@ -18,8 +19,7 @@ const usage = view?.kind === "usage" ? view : null;
 
 // The card rates nothing, so its data badge is the neutral tone and says what the figures rest on rather than
 // borrowing "za mało danych"; the empty and failed states keep their usual status.
-const NEUTRAL: Status = { tone: "insufficient", label: "" };
-const status = view === null ? LOAD_FAILED : view.kind === "empty" ? view.status : NEUTRAL;
+const status = view === null ? LOAD_FAILED : view.kind === "empty" ? view.status : NO_STATUS;
 const completeDays = usage?.window.completeDays ?? 0;
 const badgeText =
   usage === null
@@ -53,7 +53,7 @@ const dayLists: { title: string; items: RankedDay[] }[] = usage === null ? [] : 
     <StatusBadge status={status} text={badgeText} testId="hourly-status" />
   </div>
 
-  {view === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {view === null && <RefreshHint />}
 
   {view?.kind === "empty" && (
     <p class="text-muted-foreground text-sm" data-testid="hourly-empty-reason">

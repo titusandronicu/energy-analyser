@@ -3,9 +3,10 @@ import type { DailyEnergyRow } from "@/types";
 import { edgePercentLabel } from "@/lib/format/edge-percent";
 import { formatPeriod } from "@/lib/format/period";
 import { referenceUsageSentence } from "@/lib/format/reference-usage";
-import type { Status } from "@/lib/format/status";
+import { NO_STATUS, type Status } from "@/lib/format/status";
 import { asNumber, kwhLabel, MISSING, oneDecimal } from "@/lib/format/values";
 import { addDays, formatDayMonth, utcMsToDayKey, warsawParts } from "@/lib/format/warsaw-time";
+import { DAILY_COLUMNS } from "@/lib/services/calendar-data";
 import { dailySeries, USAGE_SERIES_DAYS } from "@/lib/services/daily-series";
 import type { DailySeries } from "@/lib/services/daily-series";
 import { crossesSensorChange } from "@/lib/services/grid-sensor";
@@ -65,7 +66,7 @@ export async function loadDailyEnergy(client: SupabaseClient, now: Date = new Da
   const since = addDays(warsawParts(now).dayKey, -HISTORY_DAYS);
   const { data, error } = await client
     .from("daily_energy")
-    .select("day, pv_kwh, load_kwh, grid_import_kwh, grid_export_kwh, pv_forecast_kwh")
+    .select(DAILY_COLUMNS)
     .gte("day", since)
     .order("day", { ascending: false })
     .overrideTypes<DailyEnergyRow[], { merge: false }>();
@@ -170,7 +171,7 @@ function meaningOf(load: number, norm: number | null, dayKey: string): UsageMean
 }
 
 function insufficient(reason: string): UsageInsightView {
-  return { kind: "insufficient", status: { tone: "insufficient", label: "" }, reason };
+  return { kind: "insufficient", status: NO_STATUS, reason };
 }
 
 // "+12%", "−8%" (minus sign), "0%"; MISSING without a usable baseline.

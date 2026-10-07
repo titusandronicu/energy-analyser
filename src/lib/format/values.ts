@@ -26,3 +26,8 @@ export function plnLabel(value: unknown): string {
   const pln = asNumber(value);
   return pln === null ? MISSING : `${wholeZloty.format(pln)} zł`;
 }
+
+// "brak danych" → "Brak danych", for badges and short labels.
+export function capitalize(text: string): string {
+  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
+}

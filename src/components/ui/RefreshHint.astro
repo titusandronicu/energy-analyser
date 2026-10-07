@@ -1,0 +1,10 @@
+---
+interface Props {
+  class?: string;
+}
+
+// The line under a "nie udało się wczytać" badge (or alone, on a card whose badge says so). One place for the words.
+const { class: className } = Astro.props;
+---
+
+<p class:list={["text-muted-foreground text-sm", className]}>Spróbuj odświeżyć stronę.</p>

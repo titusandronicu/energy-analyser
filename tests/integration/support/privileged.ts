@@ -1,42 +1,14 @@
 import { Client } from "pg";
+import { resolveLocalDbUrl } from "../../support/local-guards";
 import { anonClient } from "./stack";
-
-const LOCAL_HOSTS = new Set(["127.0.0.1", "localhost"]);
-const DEFAULT_DB_URL = "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
-const OVERRIDING_PARAMS = new Set(["host", "hostaddr", "port"]);
 
 // Resolves the connection string for privileged SQL on the local stack and refuses anything that is not local.
 // SUPABASE_DB_URL overrides the local default. Never skips and never echoes the string (it carries a password).
 // This is the one place the suite runs as postgres: it exists to make a non-owner and an extra ingest token, which the
 // anon-key-only stack.ts cannot do (context/archive/2026-10-02-testing-access-and-input-abuse/plan.md, Phase 2). Local only.
+// The rules live in tests/support/local-guards.ts, shared with the e2e teardown.
 export function requirePrivileged(): string {
-  const fromEnv = process.env.SUPABASE_DB_URL?.trim();
-  // An empty value means "unset", so it falls back to the default like a missing one.
-  const raw = fromEnv === undefined || fromEnv === "" ? DEFAULT_DB_URL : fromEnv;
-
-  let parsed: URL;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    throw new Error(
-      "SUPABASE_DB_URL is not a valid connection URL; the integration suite only runs against 127.0.0.1 or localhost.",
-    );
-  }
-  if (!LOCAL_HOSTS.has(parsed.hostname)) {
-    throw new Error(
-      `Refusing to run privileged SQL against database host "${parsed.hostname}": the integration suite writes data and only runs against a local stack (127.0.0.1 or localhost).`,
-    );
-  }
-  // The pg driver lets these query parameters override the host or port in the URL (`?host=db.example.com` connects
-  // to that host while `hostname` above still reads 127.0.0.1), which would walk around the check. Refuse them.
-  for (const key of parsed.searchParams.keys()) {
-    if (OVERRIDING_PARAMS.has(key.toLowerCase())) {
-      throw new Error(
-        `Refusing SUPABASE_DB_URL with a "${key}" query parameter: it can redirect the connection away from the host checked here.`,
-      );
-    }
-  }
-  return raw;
+  return resolveLocalDbUrl("the integration suite");
 }
 
 // Connects as postgres, runs `fn`, and always disconnects.

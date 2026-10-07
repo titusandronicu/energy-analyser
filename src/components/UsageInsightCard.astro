@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { House } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import Panel from "@/components/ui/Panel.astro";
@@ -55,7 +56,7 @@ const rows =
     <StatusBadge status={status} testId="usage-status" />
   </div>
 
-  {view === null && <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>}
+  {view === null && <RefreshHint />}
 
   {view?.kind === "insufficient" && (
     <p class="text-muted-foreground text-sm" data-testid="usage-insufficient-reason">

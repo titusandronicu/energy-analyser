@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { HourlyEnergyRow } from "@/types";
 import { formatPeriod } from "@/lib/format/period";
-import type { Status } from "@/lib/format/status";
+import { NO_STATUS, type Status } from "@/lib/format/status";
 import { asNumber, kwhLabel } from "@/lib/format/values";
 import {
   addDays,
@@ -189,7 +189,7 @@ function tooFewDays(completeDays: number, needed: number) {
 }
 
 function empty(reason: string): HourlyUsageView {
-  return { kind: "empty", status: { tone: "insufficient", label: "" }, reason };
+  return { kind: "empty", status: NO_STATUS, reason };
 }
 
 export function toHourlyUsageView(rows: HourlyEnergyRow[], now: Date): HourlyUsageView {

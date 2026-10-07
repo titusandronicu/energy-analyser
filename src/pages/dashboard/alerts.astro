@@ -3,6 +3,7 @@ import AppShell from "@/components/AppShell.astro";
 import AlertRulesPanel from "@/components/alerts/AlertRulesPanel.astro";
 import Layout from "@/layouts/Layout.astro";
 import { orLoadError } from "@/lib/or-load-error";
+import { withClient } from "@/lib/load-with-client";
 import { pageClient } from "@/lib/page-load";
 import { alertNotice, loadAlertRules } from "@/lib/services/alert-rules";
 
@@ -13,10 +14,7 @@ const getClient = pageClient(Astro.request.headers, Astro.cookies);
 
 const rules = await orLoadError(
   "alerts.rules",
-  async () => {
-    const supabase = getClient();
-    return supabase ? await loadAlertRules(supabase) : [];
-  },
+  () => withClient(getClient, (supabase) => loadAlertRules(supabase), []),
   log,
 );
 // The outcome of the last post (/api/alert-rules redirects back with ?alert=).

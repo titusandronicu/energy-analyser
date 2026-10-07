@@ -1,9 +1,11 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { BellRing } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
 import AlertNotice from "@/components/alerts/AlertNotice.astro";
 import { buttonVariants } from "@/components/ui/button";
+import { DELETE_CLASS, SUBMIT_CLASS, SUMMARY_CLASS } from "@/components/ui/form-classes";
 import Panel from "@/components/ui/Panel.astro";
 import { LOAD_FAILED, type Status } from "@/lib/format/status";
 import { formatWarsawDateTime } from "@/lib/format/warsaw-time";
@@ -37,16 +39,10 @@ interface Props {
 // text, rendered escaped, never as HTML.
 const { rules, notice } = Astro.props;
 
-const SUMMARY_CLASS = cn(
-  buttonVariants({ variant: "outline" }),
-  "border-border-strong h-11 cursor-pointer list-none rounded-xl bg-transparent px-4 [&::-webkit-details-marker]:hidden",
-);
-const SUBMIT_CLASS = cn(buttonVariants(), "h-11 rounded-xl px-4");
 const OUTLINE_CLASS = cn(
   buttonVariants({ variant: "outline" }),
   "border-border-strong h-11 rounded-xl bg-transparent px-4",
 );
-const DELETE_CLASS = cn(buttonVariants({ variant: "destructive" }), "h-11 rounded-xl px-4");
 const INPUT_CLASS =
   "bg-inset border-border-strong text-card-foreground focus-visible:border-ring focus-visible:ring-ring/50 block h-11 w-full rounded-xl border px-3 text-sm outline-none focus-visible:ring-[3px]";
 const LABEL_CLASS = "text-card-foreground block text-sm font-medium";
@@ -75,7 +71,7 @@ function thresholdAttrs(kind: AlertRuleRow["kind"]) {
     {rules === null ? (
       <div class="space-y-2">
         <StatusBadge status={LOAD_FAILED} testId="alert-rules-status" />
-        <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+        <RefreshHint />
       </div>
     ) : (
       <div class="space-y-6">

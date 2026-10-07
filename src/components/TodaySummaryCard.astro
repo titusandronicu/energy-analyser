@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { FileText } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
@@ -32,7 +33,7 @@ const status = todaySummaryStatus(view);
       )}
     </div>
 
-    {view === null && <p class="text-sm text-muted-foreground">Spróbuj odświeżyć stronę.</p>}
+    {view === null && <RefreshHint />}
 
     {view?.kind === "narrated" && <SummaryText text={view.text} meta={`Dotyczy: ${view.periodLabel}`} />}
 

@@ -1,4 +1,5 @@
 ---
+import RefreshHint from "@/components/ui/RefreshHint.astro";
 import { CalendarDays, ChartColumn, Sun } from "lucide-react";
 import CardHeading from "@/components/CardHeading.astro";
 import StatusBadge from "@/components/StatusBadge.astro";
@@ -9,7 +10,7 @@ import TotalsPanel from "@/components/history/TotalsPanel.astro";
 import Panel from "@/components/ui/Panel.astro";
 import { periodHref } from "@/lib/calendar/nav";
 import { HISTORY_START } from "@/lib/calendar/period";
-import { LOAD_FAILED } from "@/lib/format/status";
+import { LOAD_FAILED, NO_STATUS } from "@/lib/format/status";
 import {
   BEFORE_HISTORY_WORD,
   DAY_STATUS_WORD,
@@ -18,7 +19,6 @@ import {
   HAS_NOTE_WORD,
   HAS_RECOMMENDATION_WORD,
   MONTH_CHART_NOTE,
-  NEUTRAL,
   sentence,
   type DayCell,
   type DayStatus,
@@ -89,7 +89,7 @@ const dayKeys = days.map((cell) => cell.day);
   {view === null ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : (
     <div class="space-y-4">
@@ -187,7 +187,7 @@ const dayKeys = days.map((cell) => cell.day);
   {view === null ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : (
     <div class="space-y-5">
@@ -227,11 +227,11 @@ const dayKeys = days.map((cell) => cell.day);
   {view === null ? (
     <div class="space-y-2">
       <StatusBadge status={LOAD_FAILED} />
-      <p class="text-muted-foreground text-sm">Spróbuj odświeżyć stronę.</p>
+      <RefreshHint />
     </div>
   ) : view.forecast.kind === "comparison" ? (
     <div class="space-y-3">
-      <StatusBadge status={NEUTRAL} text={`Dni z prognozą: ${String(view.forecast.days)}`} />
+      <StatusBadge status={NO_STATUS} text={`Dni z prognozą: ${String(view.forecast.days)}`} />
       <dl class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div class="bg-inset rounded-xl px-4 py-3">
           <dt class="text-muted-foreground text-[13px]">Prognoza produkcji z paneli</dt>
@@ -246,7 +246,7 @@ const dayKeys = days.map((cell) => cell.day);
     </div>
   ) : (
     <div class="space-y-2">
-      <StatusBadge status={NEUTRAL} />
+      <StatusBadge status={NO_STATUS} />
       <p class="text-muted-foreground text-sm">
         {sentence(view.forecast.reason)} Teraz: {forecastDaysText(view.forecast.days, view.forecast.needed)}.
       </p>
