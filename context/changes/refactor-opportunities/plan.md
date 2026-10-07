@@ -303,7 +303,7 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 #### Manual
 
-- [ ] 1.7 CI `integration` and `e2e` jobs are green on the PR (the local stack needs the owner's OK to start)
+- [x] 1.7 CI `integration` and `e2e` jobs are green on the PR (the local stack needs the owner's OK to start) — 47627b7
 - [ ] 1.8 Temporarily setting `SUPABASE_URL=http://example.com` makes `npm run test:integration` refuse with the same wording as before
 
 ### Phase 2: Shared time and status helpers in `src/lib`
@@ -316,7 +316,7 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 - [x] 2.4 Contract schema unchanged: `npm run contract:export` leaves `git diff --stat docs/ingest` empty — 8e3bd4b
 - [x] 2.5 `grep -rn "function capitali" src` shows one definition — 8e3bd4b
 - [x] 2.6 `grep -rn "tone: \"insufficient\", label: \"\"" src` shows only `NO_STATUS` — 8e3bd4b
-- [ ] 2.7 Integration suite passes in CI: `npm run test:integration`
+- [x] 2.7 Integration suite passes in CI: `npm run test:integration` — 47627b7
 
 #### Manual
 
@@ -328,8 +328,8 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 
 - [x] 3.1 Unit tests pass, including the two new tests: `npm test` — 242746d
 - [x] 3.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build` — 242746d
-- [ ] 3.3 Integration suite passes (ingest and alerts-evaluate paths): `npm run test:integration`
-- [ ] 3.4 Smoke test passes against a local server and local Supabase only: `npm run smoke`
+- [x] 3.3 Integration suite passes (ingest and alerts-evaluate paths): `npm run test:integration` — 47627b7
+- [x] 3.4 Smoke test passes against a local server and local Supabase only: `npm run smoke` — 47627b7
 - [x] 3.5 `grep -c "const supabase = getClient()"` over the three pages is lower than 14 in total; remaining sites listed in the commit message — 242746d
 
 #### Manual
@@ -345,7 +345,7 @@ No migration, no schema, no production step. `docs/prerequisites.md` is unaffect
 - [x] 4.2 Lint, types, build pass: `npm run lint`, `npx astro check`, `npm run build` — 3930e3b
 - [x] 4.3 Unit tests pass: `npm test` — 3930e3b
 - [x] 4.4 `grep -rn "SUBMIT_CLASS =" src` shows one definition — 3930e3b
-- [ ] 4.5 E2E alert-rules passes in CI: `npm run test:e2e`
+- [x] 4.5 E2E alert-rules passes in CI: `npm run test:e2e` — 47627b7
 
 #### Manual
 
