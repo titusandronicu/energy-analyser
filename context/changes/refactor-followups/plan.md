@@ -363,10 +363,10 @@ No database migration. Phase 4 and 5 change start-up behaviour of the app on pro
 
 #### Automated
 
-- [x] 3.1 Characterization test passes against the old code before the move and against the moved code after: `npm test -- flow-nodes`
-- [x] 3.2 Break check: breaking a `spoken` or icon branch makes `flow-nodes.test.ts` go red
-- [x] 3.3 Existing calendar tests pass with import edits and the added `calendarCopy` scan in the wording guard: `npm test -- calendar-view`
-- [x] 3.4 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build`
+- [x] 3.1 Characterization test passes against the old code before the move and against the moved code after: `npm test -- flow-nodes` — d3ec5c8
+- [x] 3.2 Break check: breaking a `spoken` or icon branch makes `flow-nodes.test.ts` go red — d3ec5c8
+- [x] 3.3 Existing calendar tests pass with import edits and the added `calendarCopy` scan in the wording guard: `npm test -- calendar-view` — d3ec5c8
+- [x] 3.4 Lint, types and build pass: `npm run lint` (src, tests, scripts), `npx astro check`, `npm run build` — d3ec5c8
 - [ ] 3.5 E2E and smoke pass in CI: `npm run test:e2e`, `npm run smoke`
 
 #### Manual
