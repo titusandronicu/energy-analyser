@@ -2,7 +2,7 @@
 
 Rules in one place: one attempt, one submission window, everything in one round. If you want Architect or Champion, send the Builder form and the extra-badges form in the same window. Windows: 2026-11-04 (chance of a distinction), 2026-12-06, 2027-01-10 (final). The badges form is https://baserow.io/form/Nht4zggvrLgHUE1__yPugj6gLbob449ETNTe9kehLA8. The Builder form link is not recorded here yet.
 
-Status as of 2026-10-07 (latest): the official criteria for all three badges are stored in `context/foundation/certification-criteria.md` with a proof table; Builder scored (all met); Architect artifacts and report exist and match the official four-artifact list (defend them, re-run the map); Champion option A is built and only the three screenshots are missing; Champion option B is not attempted (one option is enough); the submission forms' link and fields are not recorded yet. All finished changes are archived.
+Status as of 2026-10-07 (latest): the official criteria for all three badges are stored in `context/foundation/certification-criteria.md` with a proof table; Builder scored (all met); Architect artifacts and report exist and match the official four-artifact list (defend them, re-run the map); Champion option A is built (the M5 L2-L3 AI review agent, PR #163, plus the earlier label-driven pipeline) and only the three screenshots are missing; Champion option B is not attempted (one option is enough); the submission forms' link and fields are not recorded yet. All finished changes are archived.
 
 ## Before choosing a window
 
@@ -13,11 +13,14 @@ Status as of 2026-10-07 (latest): the official criteria for all three badges are
 
 ## 10xChampion (code-review pipeline, M5 L2-L3)
 
-- [ ] Screenshot 1: pipeline view with the `code-review` job (run `37309617780`).
-- [ ] Screenshot 2: expanded job log, step "Run Claude Code Review", same run.
-- [ ] Screenshot 3: the agent's review comment on PR #120 (`github-actions`, titled "Code Review").
-- [ ] Optional, stronger proof: label a fresh PR `claude-code-review` close to submission so the run and comment are recent. The workflow only fires on the label.
-- [ ] Attach the pipeline definition if the form asks: `.github/workflows/code-review.yml`.
+- [x] PR #163 (the AI review agent) merged on 2026-10-12 (`a4fd89a`); confirm the checks stay green on `main`.
+- [ ] Screenshot 1: pipeline view with the `review` job (run `38266639726`, or a newer green run).
+- [ ] Screenshot 2: expanded step "Run ./.github/actions/ai-reviewer" in the same run (shows usage and cost).
+- [ ] Screenshot 3: the agent's comment on PR #163 ("AI Code Review: pass", score table) with the `ai-cr:passed` label.
+- [ ] Optional, stronger proof: the earlier fail then pass pair (runs `38264337016` then `38264657608`), and the `ai-cr:eval` run `38266255275`.
+- [ ] Fallback proof, already available: the label-driven pipeline (run `37309617780`, PR #120).
+- [ ] Attach the pipeline definition if the form asks: `.github/workflows/ai-review.yml` and `.github/actions/ai-reviewer/action.yml`.
+- [ ] Decide whether to make `AI Code Review / review` a required check (it is not in the `main-quality-gates` ruleset; say so honestly if it stays optional).
 - Option B (the M5L4 artifact registry) is not attempted; the official text requires only one of the two options.
 - Reference: `context/champion-evidence.md`.
 
