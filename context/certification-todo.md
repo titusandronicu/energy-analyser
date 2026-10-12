@@ -13,7 +13,7 @@ Status as of 2026-10-07 (latest): the official criteria for all three badges are
 
 ## 10xChampion (code-review pipeline, M5 L2-L3)
 
-- [ ] Merge PR #163 (the AI review agent) and confirm the checks stay green on `main`.
+- [x] PR #163 (the AI review agent) merged on 2026-10-12 (`a4fd89a`); confirm the checks stay green on `main`.
 - [ ] Screenshot 1: pipeline view with the `review` job (run `38266639726`, or a newer green run).
 - [ ] Screenshot 2: expanded step "Run ./.github/actions/ai-reviewer" in the same run (shows usage and cost).
 - [ ] Screenshot 3: the agent's comment on PR #163 ("AI Code Review: pass", score table) with the `ai-cr:passed` label.
