@@ -81,6 +81,8 @@ const scriptsConfig = defineConfig({
 
 export default defineConfig(
   includeIgnoreFile(gitignorePath),
+  // The AI reviewer is its own package (own tsconfig/deps) and its bundle is generated.
+  { ignores: ["tools/ai-reviewer/**", ".github/actions/ai-reviewer/dist/**"] },
   baseConfig,
   reactConfig,
   eslintPluginAstro.configs["flat/recommended"],

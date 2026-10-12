@@ -1,0 +1,15 @@
+diff --git a/src/users.js b/src/users.js
+index 3b1c2a1..8f0d9e4 100644
+--- a/src/users.js
++++ b/src/users.js
+@@ -1,9 +1,8 @@
+ const db = require("./db");
+
+-async function findUser(email) {
+-  return db.query("SELECT id, email FROM users WHERE email = $1", [email]);
+-}
++async function findUser(email) {
++  return db.query(`SELECT id, email, password_hash FROM users WHERE email = '${email}'`);
++}
+
+ module.exports = { findUser };

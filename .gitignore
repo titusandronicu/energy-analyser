@@ -41,3 +41,6 @@ test-results/
 playwright-report/
 blob-report/
 tests/e2e/.auth/
+
+# committed bundle of the AI reviewer composite action (run directly by GitHub Actions)
+!.github/actions/ai-reviewer/dist/
