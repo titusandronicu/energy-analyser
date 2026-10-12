@@ -25,7 +25,7 @@ index 1a2b3c4..5d6e7f8 100644
 -
 -  render() {
 -    if (!this.state.user) return <p>Loading...</p>;
--    return <h1 dangerouslySetInnerHTML={{ __html: this.state.user.bio }} />;
+-    return <h1 dangerouslySetInnerHTML={ { __html: this.state.user.bio } } />;
 -  }
 -}
 -
@@ -43,5 +43,5 @@ index 1a2b3c4..5d6e7f8 100644
 +  });
 +
 +  if (!user) return <p>Loading...</p>;
-+  return <h1 dangerouslySetInnerHTML={{ __html: user.bio }} />;
++  return <h1 dangerouslySetInnerHTML={ { __html: user.bio } } />;
 +}

@@ -2,10 +2,16 @@
 # prompts/review.txt must contain SYSTEM_PROMPT verbatim (guarded by a unit test) plus {{diff}}.
 description: Code review agent — same diffs, several models
 
+# Reasoning models spend most of the default output cap on thinking and never reach the JSON; JSON mode + a high cap fixes that.
 providers:
   - id: openrouter:z-ai/glm-5.3
+    config: &llm
+      max_tokens: 8000
+      response_format: { type: json_object }
   - id: openrouter:deepseek/deepseek-v4.1-flash
+    config: *llm
   - id: openrouter:openai/gpt-5.6-luna
+    config: *llm
 
 prompts:
   - file://prompts/review.txt
