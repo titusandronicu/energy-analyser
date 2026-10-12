@@ -1,8 +1,5 @@
-# m5l3-promptfooconfig.yaml — evaluate the review prompt across models (M5L3).
-# Copy to <reviewer-dir>/promptfooconfig.yaml. Run: OPENROUTER_API_KEY=... npx promptfoo eval
-# promptfoo needs Node 22.22+. prompts/review.txt holds the system prompt from
-# review-schema.ts plus a {{diff}} placeholder and an instruction to answer with JSON
-# matching REVIEW_SCHEMA (six scores, verdict, summary).
+# Evaluates the review prompt across models. Run: OPENROUTER_API_KEY=... npm run eval (Node 22.22+).
+# prompts/review.txt must contain SYSTEM_PROMPT verbatim (guarded by a unit test) plus {{diff}}.
 description: Code review agent — same diffs, several models
 
 providers:
@@ -41,3 +38,13 @@ tests:
         value: The review rejects the change and points to the SQL injection
       - type: javascript
         value: JSON.parse(output).verdict === "fail" && JSON.parse(output).securitySafety <= 3
+
+  # Positive control: a well-made change must pass, otherwise a reviewer that rejects everything
+  # would satisfy every other case here while being useless as a merge gate.
+  - description: Clean, tested change passes
+    vars:
+      diff: file://fixtures/clean-change.diff
+    assert:
+      - type: is-json
+      - type: javascript
+        value: JSON.parse(output).verdict === "pass"

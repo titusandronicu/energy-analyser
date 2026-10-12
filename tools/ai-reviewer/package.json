@@ -9,6 +9,7 @@
     "review": "tsx src/index.ts",
     "build": "esbuild src/index.ts --bundle --platform=node --format=esm --target=node22 --outfile=../../.github/actions/ai-reviewer/dist/review.js --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\"",
     "typecheck": "tsc --noEmit",
+    "sync-prompt": "tsx src/sync-prompt.ts",
     "test": "tsx --test src/*.test.ts",
     "eval": "promptfoo eval"
   },

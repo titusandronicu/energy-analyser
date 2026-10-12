@@ -1,0 +1,56 @@
+# Guards the AI reviewer itself: typecheck, unit tests, and that the committed bundle matches src/.
+# Adding the ai-cr:eval label also runs the promptfoo evals (three models, costs a few cents) using the review secret.
+name: AI Reviewer Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ["tools/ai-reviewer/**", ".github/actions/ai-reviewer/**", ".github/workflows/ai-reviewer-check.yml"]
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    if: github.event.action != 'labeled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: tools/ai-reviewer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/ai-reviewer/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Committed bundle is up to date
+        run: |
+          npm run build
+          git diff --exit-code -- ../../.github/actions/ai-reviewer/dist || { echo "dist/review.js is stale: run npm run build in tools/ai-reviewer and commit"; exit 1; }
+
+  eval:
+    if: >-
+      github.event.action == 'labeled' && github.event.label.name == 'ai-cr:eval' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: tools/ai-reviewer
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tools/ai-reviewer/package-lock.json
+      - run: npm ci
+      - run: npm run eval -- --no-cache
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.LLM_PROVIDER_API_KEY }}

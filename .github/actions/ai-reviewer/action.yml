@@ -1,8 +1,7 @@
-# m5l3-action.yml — composite action that runs the team's review agent (M5L3).
-# Copy to .github/actions/ai-reviewer/action.yml (local action) or to the root of a
-# dedicated ai-reviewer repository. Consumers reference it pinned to a commit SHA.
-# Expects a built reviewer at <action dir>/dist/review.js that reads the diff from
-# DIFF_FILE, PR_TITLE / PR_BODY from env, and prints JSON matching m5l2-review-schema.
+# Composite action that runs the team's review agent (tools/ai-reviewer) on a PR diff.
+# Runs the committed bundle dist/review.js (rebuild with `npm run build` in tools/ai-reviewer; CI checks it is current).
+# The bundle reads the diff from DIFF_FILE, PR_TITLE / PR_BODY from env, and prints JSON matching review-schema.ts.
+# From another repository, reference it pinned to a full commit SHA.
 name: AI Reviewer
 description: Run the team's code review agent on a pull request diff
 
