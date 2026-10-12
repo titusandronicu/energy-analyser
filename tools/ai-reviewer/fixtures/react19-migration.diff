@@ -1,0 +1,47 @@
+diff --git a/src/Profile.jsx b/src/Profile.jsx
+index 1a2b3c4..5d6e7f8 100644
+--- a/src/Profile.jsx
++++ b/src/Profile.jsx
+@@ -1,28 +1,10 @@
+-import React from "react";
+-import PropTypes from "prop-types";
+-
+-class Profile extends React.Component {
+-  state = { user: null };
+-
+-  componentDidMount() {
+-    fetch(`/api/users/${this.props.userId}`)
+-      .then((r) => r.json())
+-      .then((user) => this.setState({ user }));
+-  }
+-
+-  componentDidUpdate(prev) {
+-    if (prev.userId !== this.props.userId) {
+-      fetch(`/api/users/${this.props.userId}`)
+-        .then((r) => r.json())
+-        .then((user) => this.setState({ user }));
+-    }
+-  }
+-
+-  render() {
+-    if (!this.state.user) return <p>Loading...</p>;
+-    return <h1 dangerouslySetInnerHTML={{ __html: this.state.user.bio }} />;
+-  }
+-}
+-
+-Profile.propTypes = { userId: PropTypes.string.isRequired };
+-export default Profile;
++import { useEffect, useState } from "react";
++
++export default function Profile({ userId }) {
++  const [user, setUser] = useState(null);
++
++  useEffect(() => {
++    fetch(`/api/users/${userId}`)
++      .then((r) => r.json())
++      .then((u) => setUser(u));
++  });
++
++  if (!user) return <p>Loading...</p>;
++  return <h1 dangerouslySetInnerHTML={{ __html: user.bio }} />;
++}

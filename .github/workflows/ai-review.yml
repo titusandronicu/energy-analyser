@@ -1,0 +1,71 @@
+# AI code review on every pull request to main (M5L3): an agent built on AI SDK 7 (tools/ai-reviewer),
+# run through the composite action .github/actions/ai-reviewer.
+# - comments with the summary, labels ai-cr:passed / ai-cr:failed, fails the check on a "fail" verdict
+# - re-run on demand by adding the ai-cr:review label
+# Requires the LLM_PROVIDER_API_KEY secret (OpenRouter). Not needed for the label-driven code-review.yml.
+name: AI Code Review
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, labeled]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write # labels live on the issues API
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Forks get no secrets, and a label other than ai-cr:review must not trigger a run.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action != 'labeled' || github.event.label.name == 'ai-cr:review')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history, otherwise there is no base to diff against
+
+      - name: Compute diff
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # The lockfile is generated and noisy; the diff is read from a file, so size limits on arguments don't apply.
+          git diff "origin/$BASE_REF...HEAD" -- . ':(exclude)package-lock.json' ':(exclude).github/actions/ai-reviewer/dist' > "$RUNNER_TEMP/pr.diff"
+
+      - id: review
+        uses: ./.github/actions/ai-reviewer
+        with:
+          api-key: ${{ secrets.LLM_PROVIDER_API_KEY }}
+          pr-title: ${{ github.event.pull_request.title }}
+          pr-body: ${{ github.event.pull_request.body }}
+          diff-file: ${{ runner.temp }}/pr.diff
+
+      - name: Comment and label
+        if: always() && steps.review.outputs.verdict != ''
+        env:
+          VERDICT: ${{ steps.review.outputs.verdict }}
+          REVIEW_FILE: ${{ steps.review.outputs.review-file }}
+        run: |
+          node -e 'const r = JSON.parse(require("fs").readFileSync(process.argv[1], "utf8")); console.log(`## AI Code Review: ${r.verdict}\n\n| Kryterium | Ocena |\n|---|---|\n| Poprawność | ${r.implementationCorrectness} |\n| Idiomatyczność | ${r.idiomaticity} |\n| Złożoność | ${r.complexity} |\n| Testy vs ryzyko | ${r.testRiskCoverage} |\n| Dokumentacja | ${r.documentation} |\n| Bezpieczeństwo | ${r.securitySafety} |\n\n${r.summary}`)' "$REVIEW_FILE" > "$RUNNER_TEMP/comment.md"
+          gh pr comment "$PR" --body-file "$RUNNER_TEMP/comment.md"
+          gh label create ai-cr:passed --color 0E8A16 --force
+          gh label create ai-cr:failed --color B60205 --force
+          if [ "$VERDICT" = pass ]; then add=ai-cr:passed; drop=ai-cr:failed; else add=ai-cr:failed; drop=ai-cr:passed; fi
+          gh pr edit "$PR" --add-label "$add" --remove-label "$drop"
+          gh pr edit "$PR" --remove-label ai-cr:review || true
+
+      - name: Gate on verdict
+        env:
+          VERDICT: ${{ steps.review.outputs.verdict }}
+        run: |
+          test "$VERDICT" = pass || { echo "AI review verdict: ${VERDICT:-missing}"; exit 1; }
