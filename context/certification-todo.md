@@ -37,5 +37,5 @@ Status as of 2026-10-07 (latest): the official criteria for all three badges are
 - [x] Archive `context/changes/alert-rules` and `e2e-alert-rules` (done in #159; `observability-capture-layer` followed in #160).
 - [x] Close or revive `lab-period-summaries`: archived in #161. `context/changes/` now holds no active change.
 - [ ] Verify alert delivery end to end (plan row 4.6: a manual run produces an alarm and a recovery message), or say plainly that it is unverified.
-- [ ] Tidy GitHub issues, which are stale (last update 2026-09-27, shipped slices still open), or note that Linear is the tracker.
+- [x] Tidy GitHub issues: on 2026-10-12 closed the 5 shipped slices (#45, #46, #47, #49, #50) and 2 decided decisions (#20, #21). 9 stay open on purpose: 6 `proposed` slices (#48, #51, #52, #54, #55, #56), 1 `blocked` (#53), and #18 and #19 (Supabase dashboard settings not verifiable from the repo; check the dashboard and close).
 - [ ] Decide on `.claude/launch.json` (untracked): commit or ignore.
