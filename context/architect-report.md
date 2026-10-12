@@ -17,15 +17,15 @@ A single-owner web app (Astro 7 SSR, React 19, Supabase) for a home solar system
 
 ## 3. Feature research (M4 L3)
 
-`context/archive/2026-10-01-testing-push-to-page-integration/research.md` (three read-only agents plus spot checks) verified how the write path orders its checks and which history-safety rules are enforced or left open. It gave the refactoring its facts: the token was checked only after the body was validated, five latest-wins rules live only as upsert clauses, and five behaviours were pinned as KNOWN GAPs instead of fixed.
+`context/archive/2026-10-01-testing-push-to-page-integration/research.md` (three read-only agents plus spot checks) verified how the write path orders its checks and which history-safety rules are enforced or left open. It gave the refactoring its facts: the token was checked only after the body was validated, five latest-wins rules live only as upsert clauses, and five behaviours were pinned as KNOWN GAPs instead of fixed (five tests in `tests/integration/history-safety.test.ts`; repo-wide, 12 tests carry a `KNOWN GAP` title).
 
 ## 4. Domain notes (M4 L5): the language and the rules
 
 `context/domain/domain-distillation.md` and the glossary `context/domain/glossary.md` came from three independent agents (documents, code language, code rules).
 
-- **43 terms** in the table: 15 Core, 28 Supporting; 5 are missing in code, all documented as planned. **Core subdomains:** advice and usage verdicts, and cost foresight.
+- **43 terms** in the table: 15 Core, 28 Supporting, plus 5 Generic terms counted separately (owner check, session, access key, PGE and the G11 tariff, Origin check); 5 of the 43 are missing in code, all documented as planned. **Core subdomains:** advice and usage verdicts, and cost foresight.
 - **Overloaded words** are the strongest drift: "complete" carries five rules, "state" six meanings.
-- **35 rules** checked against the code: 19 enforced, 14 declared (soft, client-only or held by absence), 1 undocumented exposure, none ignored or contradicted. **14 drift rows:** 3 fixed in code, 8 in docs, 3 need a decision.
+- **35 rules** checked against the code: 19 enforced, 1 enforced as documented (R-04, a known gap the docs already record), 14 declared (soft, client-only or held by absence), 1 undocumented exposure, none ignored or contradicted. **14 drift rows:** 3 fixed in code, 8 in docs, 3 need a decision.
 - **Ranking #1:** the push boundary: rules in a zod contract, a service and an SQL function redefined in five migrations; a direct RPC call skips the contract.
 
 ## 5. Refactoring plan (M4 L4) and what it did
@@ -49,7 +49,7 @@ Evidence: CI green at every phase. A TypeScript-level break turned the new tests
 
 ## 7. Since the map: the same method on two smaller changes
 
-- **`refactor-opportunities` (#149):** four read-only agents ranked the duplication; one PR shared three copied test-safety guards and a few helpers without changing behaviour (the 12 `KNOWN GAP` tests and the schema drift test stayed untouched).
+- **`refactor-opportunities` (#149):** four read-only agents ranked the duplication; one PR shared three copied test-safety guards and a few helpers without changing behaviour (all 12 `KNOWN GAP` tests, the five from section 3 among them, and the schema drift test stayed untouched).
 - **`refactor-followups` (#151-#153):** a review of that PR by two independent readers found no behaviour change, only low-severity leftovers. Its one behaviour change, refusing an app key that is not a publishable or anon key, shipped warn-only first and refusing second, because the middleware builds the client on every request and a wrong guess would return 500 on every page.
 - **A gate that was not real:** a "no warning in the production logs" answer came before that release was deployed; `/api/health` still reported the old commit. The rows were reopened (#154) and the deploys ordered: warn-only, a real log check, then the refusing release (now live). Lesson: verify a gate against the deployed version.
 
