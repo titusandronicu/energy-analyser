@@ -26,7 +26,7 @@ A single-owner web app (Astro 7 SSR, React 19, Supabase) for a home solar system
 - **43 terms** in the table: 15 Core, 28 Supporting, plus 5 Generic terms counted separately (owner check, session, access key, PGE and the G11 tariff, Origin check); 5 of the 43 are missing in code, all documented as planned. **Core subdomains:** advice and usage verdicts, and cost foresight.
 - **Overloaded words** are the strongest drift: "complete" carries five rules, "state" six meanings.
 - **35 rules** checked against the code: 19 enforced, 1 enforced as documented (R-04, a known gap the docs already record), 14 declared (soft, client-only or held by absence), 1 undocumented exposure, none ignored or contradicted. **14 drift rows:** 3 fixed in code, 8 in docs, 3 need a decision.
-- **Ranking #1:** the push boundary: rules in a zod contract, a service and an SQL function redefined in five migrations; a direct RPC call skips the contract.
+- **Ranking #1:** the push boundary: rules in a zod contract, a service and an SQL function defined in five migrations when this was ranked (six now: the refactor's own rewrite is the sixth); a direct RPC call skips the contract.
 
 ## 5. Refactoring plan (M4 L4) and what it did
 
