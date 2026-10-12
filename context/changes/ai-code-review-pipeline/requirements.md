@@ -1,6 +1,6 @@
 ## Overall concept
 
-- GHA workflow run for every new pull request to master
+- GHA workflow run for every new pull request to main
 - composite action for the review itself so that main workflow is easy to reason about
 
 ## Input parameters

@@ -39,8 +39,10 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
-          # The lockfile is generated and noisy; the diff is read from a file, so size limits on arguments don't apply.
-          git diff "origin/$BASE_REF...HEAD" -- . ':(exclude)package-lock.json' ':(exclude).github/actions/ai-reviewer/dist' > "$RUNNER_TEMP/pr.diff"
+          # Lockfiles are generated and noisy; the diff is read from a file, so size limits on arguments don't apply.
+          git diff "origin/$BASE_REF...HEAD" -- . ':(exclude)**/package-lock.json' ':(exclude).github/actions/ai-reviewer/dist' > "$RUNNER_TEMP/pr.diff"
+          # Say what was left out, otherwise the reviewer reports the generated bundle as missing.
+          git diff --stat "origin/$BASE_REF...HEAD" -- '.github/actions/ai-reviewer/dist' | sed 's/^/[Pominięto wygenerowany plik, jest w PR] /' >> "$RUNNER_TEMP/pr.diff"
 
       - id: review
         uses: ./.github/actions/ai-reviewer
