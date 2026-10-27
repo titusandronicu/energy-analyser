@@ -69,6 +69,17 @@ Narration runs in the lab (`scripts/run-energy-advisory.py`), never in this app.
 
 **Period summaries (F-04, `lab-period-summaries`).** `build-period-summaries.py` (homelab-2 `infra/compose/energy-app/scripts/`, run from the 5-minute refresh before the push) writes the explanation of today and the day and month summaries. It reads the same `.env.llm` but uses **only the OpenRouter settings** (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `OPENROUTER_BASE_URL`, `OPENROUTER_TEMPERATURE`, `OPENROUTER_HTTP_REFERER`, `OPENROUTER_X_TITLE`) with its own 30-second timeout; it ignores `LLM_PROVIDER_ORDER` and never falls back to Ollama or Home Assistant. Without a working OpenRouter key the summaries go out as facts with no text (`docs/logic.md`, Period summaries). It keeps its state in `web/data/period-summaries.json` on docker-core.
 
+## Developer tooling (optional)
+
+Not needed to run or deploy the app. This is for the owner's machine only.
+
+| Piece                               | Where                                                                                     | Notes                                                                                                                                                                                                                                   |
+| ----------------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MEGA course MCP connector (**TBD**) | UGREEN, `/mcp` (URL, transport and tool names not recorded yet; fill in when it is wired) | From the MEGA developer course (`MEGA-DOT-DEV/examples`, public). Placeholder: the connector has not been inspected from this repo. Any API key it needs lives in the owner's user config, never in this repo (name the location here). |
+| Project skills                      | `.claude/skills/` in this repo                                                            | `ingest-contract`, `supabase-migration`, `local-supabase`, `prerequisites-update`. Written for this repo, in the Agent Skills format the MEGA examples use; not installed from MEGA (its `skills/` folder is empty).                    |
+
+Ideas from the MEGA examples worth reusing for the lab's LLM narration (not implemented): code-checked evals of recommendations against the verified facts in the push (`structured-output`, `confabulation-probe`), and `tools/request-inspector` to see what Claude Code sends.
+
 ## Secrets and where they live
 
 | Secret                                  | Location                                                                                                                                                                                                                                                                                                                        | Used by                                                  |
